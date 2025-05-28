@@ -1,25 +1,15 @@
 #!/bin/bash
 
 # Build script for Render deployment
-
-echo "🚀 Starting build process..."
+echo "🚀 Starting build process for Render..."
 
 # Install dependencies
 echo "📦 Installing dependencies..."
 npm install
 
-# Create data directory for SQLite
-echo "📁 Creating data directory..."
-mkdir -p /var/data
-
-# Move existing database if it exists
-if [ -f "trades.db" ]; then
-    echo "📂 Moving existing database to persistent storage..."
-    cp trades.db /var/data/trades.db
-fi
-
-# Create symbolic link to database in persistent storage
-echo "🔗 Creating database link..."
-ln -sf /var/data/trades.db trades.db
+# Install better-sqlite3 with proper build flags for Render
+echo "📦 Reinstalling better-sqlite3 for Render environment..."
+npm uninstall better-sqlite3
+npm install better-sqlite3 --build-from-source
 
 echo "✅ Build complete!"

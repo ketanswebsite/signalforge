@@ -1,8 +1,41 @@
 const Database = require('better-sqlite3');
 const path = require('path');
+const fs = require('fs');
+const { DB_PATH } = require('./database-config');
+
+// Ensure database directory exists
+const dbDir = path.dirname(DB_PATH);
+console.log('Database path:', DB_PATH);
+console.log('Database directory:', dbDir);
+
+try {
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+    console.log('Created database directory:', dbDir);
+  }
+  
+  // Check if we have write permissions
+  fs.accessSync(dbDir, fs.constants.W_OK);
+  console.log('Database directory is writable');
+} catch (error) {
+  console.error('Database directory error:', error);
+  console.error('Current working directory:', process.cwd());
+  console.error('__dirname:', __dirname);
+}
 
 // Create or open the database
-const db = new Database(path.join(__dirname, 'trades.db'));
+let db;
+try {
+  db = new Database(DB_PATH);
+  console.log('Database initialized successfully at:', DB_PATH);
+  
+  // Test write
+  db.prepare('SELECT 1').get();
+  console.log('Database connection test passed');
+} catch (error) {
+  console.error('Failed to initialize database:', error);
+  throw error;
+}
 
 // Enable foreign keys
 db.pragma('foreign_keys = ON');
