@@ -2286,18 +2286,18 @@ const TradeCore = (function() {
                     const calculatedUnrealizedPL = (trade.currentPrice - trade.entryPrice) * trade.shares;
                     const calculatedCurrentValue = trade.currentPrice * trade.shares;
                     
-                    // Debug logging for UK stocks
-                    if (trade.symbol && trade.symbol.endsWith('.L')) {
-                        console.log(`UK Stock ${trade.symbol}:`, {
-                            entryPrice: trade.entryPrice,
-                            currentPrice: trade.currentPrice,
-                            shares: trade.shares,
-                            invested: invested,
-                            currentValue: calculatedCurrentValue,
-                            unrealizedPL: calculatedUnrealizedPL,
-                            plPercent: ((trade.currentPrice - trade.entryPrice) / trade.entryPrice * 100).toFixed(2) + '%'
-                        });
-                    }
+                    // Debug logging for UK stocks - commented out to reduce console noise
+                    // if (trade.symbol && trade.symbol.endsWith('.L')) {
+                    //     console.log(`UK Stock ${trade.symbol}:`, {
+                    //         entryPrice: trade.entryPrice,
+                    //         currentPrice: trade.currentPrice,
+                    //         shares: trade.shares,
+                    //         invested: invested,
+                    //         currentValue: calculatedCurrentValue,
+                    //         unrealizedPL: calculatedUnrealizedPL,
+                    //         plPercent: ((trade.currentPrice - trade.entryPrice) / trade.entryPrice * 100).toFixed(2) + '%'
+                    //     });
+                    // }
                     
                     // Update the running totals with the calculated values
                     if (!trade.unrealizedPL || Math.abs(calculatedUnrealizedPL - trade.unrealizedPL) > 0.01) {
@@ -2377,18 +2377,18 @@ const TradeCore = (function() {
                 s.openPLPercent = 0;
             }
             
-            // Debug logging for UK currency stats
-            if (currency === '£') {
-                console.log(`UK Currency Stats:`, {
-                    currency: currency,
-                    totalInvested: s.totalInvested,
-                    currentValue: s.currentValue,
-                    unrealizedPL: s.unrealizedPL,
-                    openPL: s.openPL,
-                    openPLPercent: s.openPLPercent.toFixed(2) + '%',
-                    activeTrades: s.activeTrades
-                });
-            }
+            // Debug logging for UK currency stats - commented out to reduce console noise
+            // if (currency === '£') {
+            //     console.log(`UK Currency Stats:`, {
+            //         currency: currency,
+            //         totalInvested: s.totalInvested,
+            //         currentValue: s.currentValue,
+            //         unrealizedPL: s.unrealizedPL,
+            //         openPL: s.openPL,
+            //         openPLPercent: s.openPLPercent.toFixed(2) + '%',
+            //         activeTrades: s.activeTrades
+            //     });
+            // }
             
             s.totalClosed = s.closedTrades;
             s.totalActive = s.activeTrades; // Add totalActive for UI compatibility
