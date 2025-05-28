@@ -3,6 +3,7 @@ services:
   - type: web
     name: stock-proxy
     runtime: node
+    plan: starter  # Starter plan ($7/month) required for persistent disk
     buildCommand: chmod +x build.sh && ./build.sh
     startCommand: npm start
     envVars:
