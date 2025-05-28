@@ -21,5 +21,6 @@
       "Bash(curl:*)"
     ],
     "deny": []
-  }
+  },
+  "enableAllProjectMcpServers": false
 }

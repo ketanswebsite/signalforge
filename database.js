@@ -33,8 +33,17 @@ try {
   db.prepare('SELECT 1').get();
   console.log('Database connection test passed');
 } catch (error) {
-  console.error('Failed to initialize database:', error);
-  throw error;
+  console.error('Failed to initialize database at:', DB_PATH);
+  console.error('Error:', error.message);
+  
+  // If on Render and disk not available, use in-memory database
+  if (process.env.RENDER && error.message.includes('ENOENT')) {
+    console.log('Falling back to in-memory database (data will not persist)');
+    db = new Database(':memory:');
+    console.log('In-memory database initialized');
+  } else {
+    throw error;
+  }
 }
 
 // Enable foreign keys

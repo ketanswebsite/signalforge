@@ -5,6 +5,14 @@ const path = require('path');
 
 console.log('\n=== STARTING NEW APP.JS SERVER ===\n');
 
+// Run diagnostic info on Render
+if (process.env.RENDER) {
+  console.log('Running on Render - Diagnostic Info:');
+  console.log('- Working directory:', process.cwd());
+  console.log('- NODE_ENV:', process.env.NODE_ENV);
+  console.log('- Checking /var/data:', require('fs').existsSync('/var/data') ? 'EXISTS' : 'NOT FOUND');
+}
+
 // Load database
 let TradeDB;
 try {
@@ -270,6 +278,44 @@ app.get('/yahoo/quote', async (req, res) => {
   }
 });
 
+// Helper function to check if market is open for a symbol
+function isMarketOpen(symbol) {
+  const now = new Date();
+  
+  // Determine market from symbol
+  let timezone = 'America/New_York';
+  let marketHours = { open: 9.5, close: 16, preOpen: 4, postClose: 20, days: [1,2,3,4,5] };
+  
+  if (symbol.endsWith('.NS')) {
+    timezone = 'Asia/Kolkata';
+    marketHours = { open: 9.25, close: 15.5, preOpen: 9, postClose: 16, days: [1,2,3,4,5] };
+  } else if (symbol.endsWith('.L')) {
+    timezone = 'Europe/London';
+    marketHours = { open: 8, close: 16.5, preOpen: 5.5, postClose: 17.5, days: [1,2,3,4,5] };
+  }
+  
+  try {
+    // Get current time in market timezone
+    const marketTimeStr = now.toLocaleString("en-US", {timeZone: timezone});
+    const marketTime = new Date(marketTimeStr);
+    const hours = marketTime.getHours();
+    const minutes = marketTime.getMinutes();
+    const day = marketTime.getDay();
+    const currentTime = hours + (minutes / 60);
+    
+    // Check if it's a weekday
+    if (!marketHours.days.includes(day)) {
+      return false;
+    }
+    
+    // Check if within market hours (including extended hours)
+    return currentTime >= marketHours.preOpen && currentTime < marketHours.postClose;
+  } catch (e) {
+    // If timezone conversion fails, assume market is open
+    return true;
+  }
+}
+
 // Get real-time prices for multiple symbols
 app.post('/api/prices', async (req, res) => {
   try {
@@ -284,6 +330,10 @@ app.post('/api/prices', async (req, res) => {
     // Fetch prices for each symbol
     const promises = symbols.map(async (symbol) => {
       try {
+        // Check if market is open for this symbol
+        const marketOpen = isMarketOpen(symbol);
+        
+        // Add market status to response
         const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
         
         const response = await axios.get(url, { 
@@ -311,7 +361,8 @@ app.post('/api/prices', async (req, res) => {
             change: currentPrice - previousClose,
             changePercent: ((currentPrice - previousClose) / previousClose) * 100,
             volume: quote.volume ? quote.volume[quote.volume.length - 1] : 0,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            marketOpen: marketOpen
           };
         }
       } catch (error) {
@@ -325,7 +376,8 @@ app.post('/api/prices', async (req, res) => {
           changePercent: 0,
           volume: 0,
           error: true,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          marketOpen: isMarketOpen(symbol)
         };
       }
     });

@@ -17,7 +17,9 @@ class RealTimePriceService {
         
         // Fallback to polling if WebSocket fails
         this.pollingInterval = null;
-        this.pollDelay = 1000; // 1 second for real-time updates
+        this.pollDelay = 1000; // 1 second for real-time updates during market hours
+        this.closedMarketPollDelay = 60000; // 60 seconds when markets are closed
+        this.marketStatusCache = new Map(); // Cache market status by symbol
         
         this.init();
     }
@@ -79,18 +81,100 @@ class RealTimePriceService {
         // Initial fetch
         this.fetchPrices();
         
-        // Set up interval
+        // Set up dynamic interval based on market status
+        this.updatePollingInterval();
+    }
+    
+    updatePollingInterval() {
+        // Clear existing interval
+        if (this.pollingInterval) {
+            clearInterval(this.pollingInterval);
+        }
+        
+        // Determine poll delay based on market status
+        const pollDelay = this.calculatePollDelay();
+        
         this.pollingInterval = setInterval(() => {
             if (!document.hidden) {
                 this.fetchPrices();
+                // Recalculate interval in case market status changed
+                this.updatePollingInterval();
             }
-        }, this.pollDelay);
+        }, pollDelay);
+    }
+    
+    calculatePollDelay() {
+        // Check if any subscribed symbol has an open market
+        let hasOpenMarket = false;
+        
+        for (const symbol of this.subscriptions) {
+            const marketStatus = this.getMarketStatusForSymbol(symbol);
+            if (marketStatus && (marketStatus.isOpen || marketStatus.isExtendedHours)) {
+                hasOpenMarket = true;
+                break;
+            }
+        }
+        
+        // Use fast polling only when at least one market is open
+        return hasOpenMarket ? this.pollDelay : this.closedMarketPollDelay;
+    }
+    
+    getMarketStatusForSymbol(symbol) {
+        // Use cached status if available and fresh (less than 5 minutes old)
+        const cached = this.marketStatusCache.get(symbol);
+        if (cached && (Date.now() - cached.timestamp) < 300000) {
+            return cached.status;
+        }
+        
+        // Get fresh market status
+        let status = null;
+        if (typeof getMarketStatus === 'function') {
+            status = getMarketStatus(symbol);
+        } else if (typeof getEnhancedMarketStatus === 'function') {
+            status = getEnhancedMarketStatus(symbol);
+        }
+        
+        // Cache the status
+        if (status) {
+            this.marketStatusCache.set(symbol, {
+                status: status,
+                timestamp: Date.now()
+            });
+        }
+        
+        return status;
     }
 
     async fetchPrices() {
         if (this.subscriptions.size === 0) return;
         
         const symbols = Array.from(this.subscriptions);
+        
+        // Group symbols by market status
+        const openMarketSymbols = [];
+        const closedMarketSymbols = [];
+        
+        for (const symbol of symbols) {
+            const marketStatus = this.getMarketStatusForSymbol(symbol);
+            if (marketStatus && (marketStatus.isOpen || marketStatus.isExtendedHours)) {
+                openMarketSymbols.push(symbol);
+            } else {
+                closedMarketSymbols.push(symbol);
+            }
+        }
+        
+        // Skip fetching for closed markets if we have cached prices
+        const symbolsToFetch = [...openMarketSymbols];
+        
+        // For closed markets, only fetch if we don't have cached prices or it's been a while
+        for (const symbol of closedMarketSymbols) {
+            const lastPrice = this.lastPrices.get(symbol);
+            if (!lastPrice || Date.now() - lastPrice.timestamp > 300000) { // 5 minutes
+                symbolsToFetch.push(symbol);
+            }
+        }
+        
+        if (symbolsToFetch.length === 0) return;
         
         try {
             // Update UI to show fetching status
@@ -99,7 +183,7 @@ class RealTimePriceService {
             const response = await fetch('/api/prices', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ symbols })
+                body: JSON.stringify({ symbols: symbolsToFetch })
             });
             
             if (response.ok) {
@@ -127,17 +211,27 @@ class RealTimePriceService {
 
     processPriceUpdate(data) {
         const { symbol, price, change, changePercent, volume, timestamp } = data;
-        const lastPrice = this.lastPrices.get(symbol);
+        const lastPriceData = this.lastPrices.get(symbol) || {};
+        const lastPrice = lastPriceData.price;
         
-        // Store current price
-        this.lastPrices.set(symbol, price);
+        // Store current price with timestamp
+        this.lastPrices.set(symbol, {
+            price: price,
+            timestamp: Date.now()
+        });
         
         // Calculate movement from last update
         const movement = lastPrice ? price - lastPrice : 0;
         const movementPercent = lastPrice ? (movement / lastPrice) * 100 : 0;
         
-        // Update sparkline chart
-        this.updateSparkline(symbol, price, timestamp);
+        // Check if market is open for this symbol
+        const marketStatus = this.getMarketStatusForSymbol(symbol);
+        const isMarketOpen = marketStatus && (marketStatus.isOpen || marketStatus.isExtendedHours);
+        
+        // Only update sparkline during market hours
+        if (isMarketOpen) {
+            this.updateSparkline(symbol, price, timestamp);
+        }
         
         // Notify all listeners for this symbol
         const listeners = this.priceListeners.get(symbol) || [];
@@ -151,7 +245,8 @@ class RealTimePriceService {
                 change,
                 changePercent,
                 volume,
-                timestamp
+                timestamp,
+                isMarketOpen
             });
         });
     }
@@ -199,8 +294,31 @@ class RealTimePriceService {
     showUpdateStatus(isUpdating) {
         const statusElement = document.getElementById('price-update-status');
         if (statusElement) {
-            statusElement.style.display = isUpdating ? 'block' : 'none';
-            statusElement.textContent = isUpdating ? 'Updating prices...' : '';
+            if (isUpdating) {
+                statusElement.style.display = 'block';
+                statusElement.innerHTML = '<span class="price-updating-indicator">Updating prices...</span>';
+            } else {
+                // Show market closed status if applicable
+                let hasClosedMarkets = false;
+                for (const symbol of this.subscriptions) {
+                    const marketStatus = this.getMarketStatusForSymbol(symbol);
+                    if (marketStatus && !marketStatus.isOpen && !marketStatus.isExtendedHours) {
+                        hasClosedMarkets = true;
+                        break;
+                    }
+                }
+                
+                if (hasClosedMarkets) {
+                    statusElement.style.display = 'block';
+                    statusElement.innerHTML = '<span class="market-closed-indicator">Some markets closed - prices update less frequently</span>';
+                    // Hide after 3 seconds
+                    setTimeout(() => {
+                        statusElement.style.display = 'none';
+                    }, 3000);
+                } else {
+                    statusElement.style.display = 'none';
+                }
+            }
         }
     }
 
@@ -213,6 +331,8 @@ class RealTimePriceService {
 
     resume() {
         if (!this.pollingInterval && this.subscriptions.size > 0) {
+            // Clear market status cache to get fresh data
+            this.marketStatusCache.clear();
             this.startPolling();
         }
     }
