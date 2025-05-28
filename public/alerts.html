@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ffffff">
+    <title>SignalForge - Alert Settings</title>
+    
+    <!-- Import Google Font (Inter) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Theme Toggle Script (load early to prevent flash) -->
+    <script src="js/theme-toggle.js"></script>
+    
+    <style>
+        .alerts-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .alert-section {
+            background-color: var(--background-secondary);
+            border-radius: var(--radius);
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-section h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+        
+        .setup-box {
+            background-color: var(--primary-lightest);
+            border-left: 4px solid var(--primary-color);
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: var(--radius-sm);
+        }
+        
+        .setup-box h4 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+        
+        .setup-box ol {
+            margin: 0;
+            padding-left: 25px;
+        }
+        
+        .setup-box li {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+        
+        .setup-box code {
+            background-color: var(--background-color);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+            color: var(--primary-color);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+        
+        .form-group input[type="text"] {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 16px;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 10px;
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+        
+        .checkbox-group label {
+            cursor: pointer;
+            margin-bottom: 0;
+        }
+        
+        .alert-types-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .test-button {
+            margin-top: 10px;
+        }
+        
+        .status-message {
+            padding: 15px 20px;
+            border-radius: var(--radius-sm);
+            margin: 20px 0;
+            display: none;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+            display: flex;
+        }
+        
+        .status-message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+            display: flex;
+        }
+        
+        .status-message.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border-left: 4px solid #17a2b8;
+            display: flex;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            justify-content: center;
+        }
+        
+        .bot-info {
+            background-color: var(--background-secondary);
+            padding: 15px;
+            border-radius: var(--radius-sm);
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        
+        .bot-info strong {
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="page-nav">
+                <h1 class="nav-title">Alert Settings</h1>
+                <button class="btn-nav desktop-only" onclick="window.history.back()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m15 18-6-6 6-6"/>
+                    </svg>
+                    Back
+                </button>
+            </div>
+            <p class="app-description">
+                Configure real-time alerts for your trading signals. Get notified instantly via Telegram when important events occur.
+            </p>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="alerts-container">
+            <!-- Status Message -->
+            <div id="status-message" class="status-message"></div>
+            
+            <!-- Telegram Setup Section -->
+            <div class="alert-section">
+                <h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    Telegram Notifications
+                </h3>
+                
+                <div class="setup-box">
+                    <h4>📱 Quick Setup Instructions</h4>
+                    <ol>
+                        <li>Open Telegram and search for <code>@SignalForgeBot</code></li>
+                        <li>Click "Start" or send <code>/start</code> to the bot</li>
+                        <li>The bot will send you your Chat ID (a number like <code>123456789</code>)</li>
+                        <li>Copy and paste your Chat ID in the field below</li>
+                        <li>Click "Test Connection" to verify everything works</li>
+                    </ol>
+                </div>
+                
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="telegram-enabled">
+                        <label for="telegram-enabled">Enable Telegram Alerts</label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="telegram-chat-id">Your Telegram Chat ID</label>
+                    <input type="text" id="telegram-chat-id" placeholder="Enter your Chat ID (e.g., 123456789)">
+                    <button class="btn-secondary test-button" onclick="testTelegram()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        Test Connection
+                    </button>
+                </div>
+                
+                <div id="bot-info" class="bot-info" style="display: none;">
+                    <strong>Bot Status:</strong> <span id="bot-status">Checking...</span>
+                </div>
+            </div>
+            
+            <!-- Alert Types Section -->
+            <div class="alert-section">
+                <h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                    </svg>
+                    Alert Types
+                </h3>
+                
+                <p style="margin-bottom: 20px;">Choose which events should trigger notifications:</p>
+                
+                <div class="alert-types-grid">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="alert-buy" checked>
+                        <label for="alert-buy">📈 Buy Signals</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="alert-sell" checked>
+                        <label for="alert-sell">📉 Sell Signals</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="alert-target" checked>
+                        <label for="alert-target">🎯 Target Reached</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="alert-stoploss" checked>
+                        <label for="alert-stoploss">🛑 Stop Loss Hit</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="alert-time" checked>
+                        <label for="alert-time">⏰ Time-based Exits</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="alert-market-open">
+                        <label for="alert-market-open">🔔 Market Open</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="alert-market-close">
+                        <label for="alert-market-close">🔕 Market Close</label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="btn-secondary" onclick="window.history.back()">
+                    Cancel
+                </button>
+                <button class="btn-primary" onclick="savePreferences()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                        <polyline points="7 3 7 8 15 8"></polyline>
+                    </svg>
+                    Save Settings
+                </button>
+            </div>
+        </div>
+        
+        <!-- Dark Mode Toggle -->
+        <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+            <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </button>
+    </div>
+    
+    <script>
+        // Load preferences on page load
+        async function loadPreferences() {
+            try {
+                const response = await fetch('/api/alerts/preferences');
+                if (response.ok) {
+                    const prefs = await response.json();
+                    
+                    // Set form values
+                    document.getElementById('telegram-enabled').checked = prefs.telegram_enabled || false;
+                    document.getElementById('telegram-chat-id').value = prefs.telegram_chat_id || '';
+                    document.getElementById('alert-buy').checked = prefs.alert_on_buy !== false;
+                    document.getElementById('alert-sell').checked = prefs.alert_on_sell !== false;
+                    document.getElementById('alert-target').checked = prefs.alert_on_target !== false;
+                    document.getElementById('alert-stoploss').checked = prefs.alert_on_stoploss !== false;
+                    document.getElementById('alert-time').checked = prefs.alert_on_time_exit !== false;
+                    document.getElementById('alert-market-open').checked = prefs.market_open_alert || false;
+                    document.getElementById('alert-market-close').checked = prefs.market_close_alert || false;
+                }
+                
+                // Load bot info
+                loadBotInfo();
+            } catch (error) {
+                console.error('Failed to load preferences:', error);
+                showStatus('Failed to load preferences', 'error');
+            }
+        }
+        
+        // Load bot info
+        async function loadBotInfo() {
+            try {
+                const response = await fetch('/api/alerts/bot-info');
+                if (response.ok) {
+                    const info = await response.json();
+                    if (info && info.username) {
+                        document.getElementById('bot-info').style.display = 'block';
+                        document.getElementById('bot-status').textContent = `Connected as @${info.username}`;
+                        
+                        // Update setup instructions with actual bot username
+                        const codeElements = document.querySelectorAll('code');
+                        codeElements.forEach(el => {
+                            if (el.textContent === '@SignalForgeBot') {
+                                el.textContent = `@${info.username}`;
+                            }
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load bot info:', error);
+            }
+        }
+        
+        // Test Telegram connection
+        async function testTelegram() {
+            const chatId = document.getElementById('telegram-chat-id').value;
+            
+            if (!chatId) {
+                showStatus('Please enter your Chat ID first', 'error');
+                return;
+            }
+            
+            showStatus('Testing connection...', 'info');
+            
+            try {
+                const response = await fetch('/api/alerts/test-telegram', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chatId })
+                });
+                
+                if (response.ok) {
+                    showStatus('✅ Test message sent! Check your Telegram.', 'success');
+                } else {
+                    const error = await response.json();
+                    showStatus(`❌ Failed: ${error.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`❌ Connection error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Save preferences
+        async function savePreferences() {
+            const prefs = {
+                telegram_enabled: document.getElementById('telegram-enabled').checked,
+                telegram_chat_id: document.getElementById('telegram-chat-id').value,
+                alert_on_buy: document.getElementById('alert-buy').checked,
+                alert_on_sell: document.getElementById('alert-sell').checked,
+                alert_on_target: document.getElementById('alert-target').checked,
+                alert_on_stoploss: document.getElementById('alert-stoploss').checked,
+                alert_on_time_exit: document.getElementById('alert-time').checked,
+                market_open_alert: document.getElementById('alert-market-open').checked,
+                market_close_alert: document.getElementById('alert-market-close').checked
+            };
+            
+            showStatus('Saving preferences...', 'info');
+            
+            try {
+                const response = await fetch('/api/alerts/preferences', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(prefs)
+                });
+                
+                if (response.ok) {
+                    showStatus('✅ Alert preferences saved successfully!', 'success');
+                    setTimeout(() => {
+                        window.history.back();
+                    }, 1500);
+                } else {
+                    const error = await response.json();
+                    showStatus(`❌ Failed to save: ${error.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`❌ Save error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Show status message
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.textContent = message;
+            statusDiv.className = `status-message ${type}`;
+            statusDiv.style.display = 'flex';
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+        
+        // Load preferences when page loads
+        document.addEventListener('DOMContentLoaded', loadPreferences);
+    </script>
+</body>
+</html>

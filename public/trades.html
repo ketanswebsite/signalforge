@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ffffff">
+    <title>SignalForge - Management</title>
+    
+    <!-- Import Google Font (Inter) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js and PapaParse -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
+    
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Theme Toggle Script (load early to prevent flash) -->
+    <script src="js/theme-toggle.js"></script>
+    
+    <!-- Chart Theme Script -->
+    <script src="js/chart-theme.js"></script>
+    
+    <!-- ML Insights UI -->
+    <script src="js/ml-insights-ui.js" defer></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header with navigation -->
+        <div class="header">
+            <div class="page-nav">
+                <h1 class="nav-title">Signal Management</h1>
+                <!-- Hamburger menu button for mobile -->
+                <button class="hamburger-menu" id="hamburger-menu" aria-label="Toggle navigation">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
+                <button class="btn-nav desktop-only" onclick="window.location.href='index.html'">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                    Back to Backtester
+                </button>
+            </div>
+            <!-- Mobile navigation drawer -->
+            <div class="mobile-nav-drawer" id="mobile-nav-drawer">
+                <div class="drawer-header">
+                    <h2>Navigation</h2>
+                    <button class="drawer-close" id="drawer-close" aria-label="Close navigation">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                <nav class="drawer-nav">
+                    <a href="index.html" class="drawer-nav-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                        </svg>
+                        <span>Back to Backtester</span>
+                    </a>
+                </nav>
+            </div>
+            <!-- Overlay for mobile nav -->
+            <div class="mobile-nav-overlay" id="mobile-nav-overlay"></div>
+            <p class="app-description">
+                Manage your signal positions. Track active signals, monitor performance, and analyze signal history.
+            </p>
+            
+            <!-- Market Status Indicator -->
+            <div id="market-status-container" class="market-status-container">
+                <!-- Market status badges will be dynamically inserted here -->
+            </div>
+        </div>
+        
+        <!-- Trade Statistics -->
+        <div class="card">
+            <h3 class="card-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                Signal Performance
+            </h3>
+            <div class="trade-statistics" id="trading-statistics">
+                <div class="statistic-card">
+                    <div class="statistic-value" id="active-trade-count">0</div>
+                    <div class="statistic-label">Active Signals</div>
+                </div>
+                <div class="statistic-card">
+                    <div class="statistic-value" id="total-invested">0</div>
+                    <div class="statistic-label">Total Invested</div>
+                </div>
+                <div class="statistic-card">
+                    <div class="statistic-value" id="open-pl">0%</div>
+                    <div class="statistic-label">Open P&L</div>
+                </div>
+                <div class="statistic-card">
+                    <div class="statistic-value" id="closed-trades-count">0</div>
+                    <div class="statistic-label">Closed Signals</div>
+                </div>
+                <div class="statistic-card">
+                    <div class="statistic-value" id="win-rate">0%</div>
+                    <div class="statistic-label">Win Rate</div>
+                </div>
+                <div class="statistic-card">
+                    <div class="statistic-value" id="avg-profit">0%</div>
+                    <div class="statistic-label">Avg Profit/Trade</div>
+                </div>
+            </div>
+            
+            <!-- Price update status indicator -->
+            <div id="price-update-status" class="update-status" style="display: none;">Updating prices...</div>
+        </div>
+        
+        <!-- Active Trades -->
+        <div class="card">
+            <h3 class="card-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <circle cx="12" cy="12" r="6"></circle>
+                    <circle cx="12" cy="12" r="2"></circle>
+                </svg>
+                Active Signals
+            </h3>
+            <div id="active-trades-container">
+                <!-- Empty state for no active trades -->
+                <div class="empty-state" id="no-active-trades">
+                    <div class="empty-state-icon">📈</div>
+                    <div class="empty-state-message">No active signals</div>
+                    <p>Return to the backtester to find and forge new signals</p>
+                    <button class="btn-nav" onclick="window.location.href='index.html'" style="margin: 20px auto; display: block; width: auto;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Forge New Signals
+                    </button>
+                </div>
+                
+                <!-- Active trade cards will be inserted here by JavaScript -->
+            </div>
+        </div>
+        
+        <!-- Trade History -->
+        <div class="card">
+            <h3 class="card-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                Trade History
+            </h3>
+            
+            <!-- Tab navigation -->
+            <div class="trade-tabs">
+                <div class="trade-tab active" data-tab="all-trades">All Trades</div>
+                <div class="trade-tab" data-tab="winning-trades">Winning Trades</div>
+                <div class="trade-tab" data-tab="losing-trades">Losing Trades</div>
+            </div>
+            
+            <!-- Tab content -->
+            <div class="tab-content active" id="all-trades">
+                <div id="all-trades-container">
+                    <!-- Empty state for no trade history -->
+                    <div class="empty-state" id="no-trade-history">
+                        <div class="empty-state-icon">📊</div>
+                        <div class="empty-state-message">No trade history yet</div>
+                        <p>Closed trades will appear here</p>
+                    </div>
+                    
+                    <!-- Trade history table will be inserted here by JavaScript -->
+                    <div class="trades-table-container" style="display: none;" id="trades-history-table">
+                        <table id="history-table">
+                            <thead>
+                                <tr>
+                                    <th>Stock</th>
+                                    <th>Entry Date</th>
+                                    <th>Exit Date</th>
+                                    <th>Holding Days</th>
+                                    <th>Investment</th>
+                                    <th>P/L (%)</th>
+                                    <th>P/L (Value)</th>
+                                    <th>Exit Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table-body">
+                                <!-- Trade history rows will be inserted here by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="winning-trades">
+                <div id="winning-trades-container">
+                    <!-- Will be populated by JavaScript -->
+                    <div class="empty-state" id="no-winning-trades">
+                        <div class="empty-state-icon">🏆</div>
+                        <div class="empty-state-message">No winning trades yet</div>
+                    </div>
+                    
+                    <div class="trades-table-container" style="display: none;" id="winning-trades-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Stock</th>
+                                    <th>Entry Date</th>
+                                    <th>Exit Date</th>
+                                    <th>Holding Days</th>
+                                    <th>Investment</th>
+                                    <th>P/L (%)</th>
+                                    <th>P/L (Value)</th>
+                                    <th>Exit Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody id="winning-table-body">
+                                <!-- Winning trade rows will be inserted here by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="losing-trades">
+                <div id="losing-trades-container">
+                    <!-- Will be populated by JavaScript -->
+                    <div class="empty-state" id="no-losing-trades">
+                        <div class="empty-state-icon">📉</div>
+                        <div class="empty-state-message">No losing trades yet</div>
+                    </div>
+                    
+                    <div class="trades-table-container" style="display: none;" id="losing-trades-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Stock</th>
+                                    <th>Entry Date</th>
+                                    <th>Exit Date</th>
+                                    <th>Holding Days</th>
+                                    <th>Investment</th>
+                                    <th>P/L (%)</th>
+                                    <th>P/L (Value)</th>
+                                    <th>Exit Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody id="losing-table-body">
+                                <!-- Losing trade rows will be inserted here by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Trade history actions -->
+            <div class="trade-actions" style="justify-content: flex-start; margin-top: 20px;">
+                <!-- New Export All Trades Button -->
+                <button id="btn-export-all-trades" class="btn-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Export All Trades
+                </button>
+                
+                <button id="btn-export-history" class="btn-secondary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Export Trade History
+                </button>
+                
+                <!-- New Import Trades Button -->
+                <button id="btn-import-trades" class="btn-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    Import Trades
+                </button>
+                
+                <button id="btn-clear-history" class="btn-danger">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                    Clear Trade History
+                </button>
+            </div>
+        </div>
+        
+        <!-- Trade Analytics Dashboard -->
+        <div class="card">
+            <h3 class="card-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                </svg>
+                Trade Analytics
+            </h3>
+            
+            <!-- Analytics Controls -->
+            <div class="analytics-controls">
+                <div class="time-filter">
+                    <label for="analytics-time-filter">Time Period:</label>
+                    <select id="analytics-time-filter">
+                        <option value="all">All Time</option>
+                        <option value="year">Last 12 Months</option>
+                        <option value="quarter">Last 3 Months</option>
+                        <option value="month">Last Month</option>
+                    </select>
+                </div>
+                <div class="export-controls">
+                    <button class="export-report-btn" id="export-report">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                        Export Report
+                    </button>
+                    <button class="export-report-btn" id="export-charts">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                        Export Charts
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Analytics Tabs -->
+            <div class="analytics-tabs">
+                <div class="analytics-tab active" data-tab="performance-tab">Performance</div>
+                <div class="analytics-tab" data-tab="market-tab">Market Analysis</div>
+                <div class="analytics-tab" data-tab="patterns-tab">Patterns & Trends</div>
+                <div class="analytics-tab" data-tab="metrics-tab">Advanced Metrics</div>
+            </div>
+            
+            <!-- Performance Tab -->
+            <div class="analytics-tab-content active" id="performance-tab">
+                <div class="chart-row">
+                    <div class="chart-container">
+                        <h4>Equity Curve</h4>
+                        <canvas id="equity-curve-chart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h4>Drawdown Analysis</h4>
+                        <canvas id="drawdown-chart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-row">
+                    <div class="chart-container">
+                        <h4>Monthly Performance</h4>
+                        <canvas id="monthly-performance-chart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h4>Win/Loss Breakdown</h4>
+                        <canvas id="win-loss-pie-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Market Analysis Tab -->
+            <div class="analytics-tab-content" id="market-tab">
+                <div class="chart-row">
+                    <div class="chart-container">
+                        <h4>Performance by Market</h4>
+                        <canvas id="market-comparison-chart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h4>Size vs. Return Analysis</h4>
+                        <canvas id="size-vs-return-chart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-row">
+                    <div class="chart-container chart-full">
+                        <h4>Calendar Performance</h4>
+                        <div id="calendar-heatmap" class="calendar-heatmap"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Patterns & Trends Tab -->
+            <div class="analytics-tab-content" id="patterns-tab">
+                <div class="chart-row">
+                    <div class="chart-container">
+                        <h4>P&L Distribution</h4>
+                        <canvas id="pl-distribution-chart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h4>Holding Period Analysis</h4>
+                        <canvas id="holding-period-chart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-row">
+                    <div class="chart-container chart-full">
+                        <h4>Exit Reason Analysis</h4>
+                        <div id="exit-reason-container" class="exit-reason-container"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Advanced Metrics Tab -->
+            <div class="analytics-tab-content" id="metrics-tab">
+                <div id="advanced-metrics-container">
+                    <!-- Will be populated by renderAdvancedMetricsCards() -->
+                </div>
+                
+                <div class="metrics-details">
+                    <h4>Metrics Explanation</h4>
+                    <div class="metrics-explanation">
+                        <p><strong>Sharpe Ratio</strong>: Measures risk-adjusted return. Higher is better with values above 1.0 considered good.</p>
+                        <p><strong>Max Drawdown</strong>: Largest peak-to-trough decline in portfolio value. Lower is better.</p>
+                        <p><strong>Profit Factor</strong>: Ratio of gross profits to gross losses. Values above 1.5 indicate a profitable system.</p>
+                        <p><strong>Expectancy</strong>: Expected profit/loss per trade. Positive values show a profitable strategy.</p>
+                        <p><strong>Annualized Return</strong>: Trading returns extrapolated to an annual basis.</p>
+                        <p><strong>Win Rate</strong>: Percentage of trades that are profitable.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Close Trade Confirmation Dialog -->
+        <div class="dialog-overlay" id="close-trade-dialog">
+            <div class="dialog-content">
+                <div class="dialog-header">
+                    <h3 class="dialog-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34"></path>
+                            <path d="M3 15h10"></path>
+                            <polyline points="17 8 22 12 17 16"></polyline>
+                        </svg>
+                        Close Trade
+                    </h3>
+                    <button class="dialog-close" id="close-dialog-x">&times;</button>
+                </div>
+                <div class="dialog-body">
+                    <p>Are you sure you want to close this trade?</p>
+                    <div class="parameter-group">
+                        <label for="close-trade-price">Exit Price</label>
+                        <input type="number" id="close-trade-price" step="0.01">
+                    </div>
+                    <div class="parameter-group">
+                        <label for="close-trade-reason">Exit Reason</label>
+                        <select id="close-trade-reason">
+                            <option value="Manual Exit">Manual Exit</option>
+                            <option value="Target Reached">Target Reached</option>
+                            <option value="Stop Loss Hit">Stop Loss Hit</option>
+                            <option value="Time Exit">Time Exit</option>
+                            <option value="Strategy Change">Strategy Change</option>
+                        </select>
+                    </div>
+                    <div class="parameter-group">
+                        <label for="close-trade-notes">Notes (Optional)</label>
+                        <textarea id="close-trade-notes" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="dialog-actions">
+                    <button id="close-dialog-cancel" class="btn-secondary">Cancel</button>
+                    <button id="close-dialog-confirm" class="btn-danger">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34"></path>
+                            <path d="M3 15h10"></path>
+                            <polyline points="17 8 22 12 17 16"></polyline>
+                        </svg>
+                        Close Trade
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Edit Trade Dialog -->
+        <div class="dialog-overlay" id="edit-trade-dialog">
+            <div class="dialog-content">
+                <div class="dialog-header">
+                    <h3 class="dialog-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                        Edit Trade
+                    </h3>
+                    <button class="dialog-close" id="edit-dialog-x">&times;</button>
+                </div>
+                <div class="dialog-body">
+                    <div class="trade-info">
+                        <h4 id="edit-stock-name">Stock Name</h4>
+                        <div class="trade-details">
+                            <div class="detail-row">
+                                <span class="detail-label">Entry Date:</span>
+                                <span id="edit-entry-date" class="detail-value">-</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Current P/L:</span>
+                                <span id="edit-current-pl" class="detail-value">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="parameter-group">
+                        <label for="edit-entry-price-input">Entry Price</label>
+                        <input type="number" id="edit-entry-price-input" step="0.01" min="0">
+                        <span class="form-hint" id="edit-entry-price-hint">Current: -</span>
+                    </div>
+                    
+                    <div class="parameter-group">
+                        <label for="edit-stop-loss">Stop Loss Price</label>
+                        <input type="number" id="edit-stop-loss" step="0.01" min="0">
+                        <span class="form-hint" id="edit-stop-loss-hint">Current: -</span>
+                    </div>
+                    
+                    <div class="parameter-group">
+                        <label for="edit-target">Target Price</label>
+                        <input type="number" id="edit-target" step="0.01" min="0">
+                        <span class="form-hint" id="edit-target-hint">Current: -</span>
+                    </div>
+                    
+                    <div class="parameter-group">
+                        <label for="edit-square-off-date">Square Off Date</label>
+                        <input type="date" id="edit-square-off-date">
+                        <span class="form-hint" id="edit-square-off-hint">Current: -</span>
+                    </div>
+                    
+                    <div class="parameter-group">
+                        <label for="edit-notes">Notes (Optional)</label>
+                        <textarea id="edit-notes" rows="3" placeholder="Add any notes or observations about this trade"></textarea>
+                    </div>
+                </div>
+                <div class="dialog-actions">
+                    <button id="edit-dialog-cancel" class="btn-secondary">Cancel</button>
+                    <button id="edit-dialog-confirm" class="btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                            <polyline points="7 3 7 8 15 8"></polyline>
+                        </svg>
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Delete Trade Dialog -->
+        <div class="dialog-overlay" id="delete-trade-dialog">
+            <div class="dialog-content">
+                <div class="dialog-header">
+                    <h3 class="dialog-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                        Delete Trade
+                    </h3>
+                    <button class="dialog-close" id="delete-dialog-x">&times;</button>
+                </div>
+                <div class="dialog-body">
+                    <p>Are you sure you want to delete this trade? This action cannot be undone.</p>
+                    <div id="delete-trade-info" class="trade-info">
+                        <div class="detail-row">
+                            <span class="detail-label">Stock:</span>
+                            <span id="delete-stock-name" class="detail-value">-</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Entry Date:</span>
+                            <span id="delete-entry-date" class="detail-value">-</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Investment:</span>
+                            <span id="delete-investment" class="detail-value">-</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="dialog-actions">
+                    <button id="delete-dialog-cancel" class="btn-secondary">Cancel</button>
+                    <button id="delete-dialog-confirm" class="btn-danger">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                        Delete Trade
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Clear History Confirmation Dialog -->
+        <div class="dialog-overlay" id="clear-history-dialog">
+            <div class="dialog-content">
+                <div class="dialog-header">
+                    <h3 class="dialog-title">Clear Trade History</h3>
+                    <button class="dialog-close" id="clear-dialog-x">&times;</button>
+                </div>
+                <div class="dialog-body">
+                    <p>Are you sure you want to delete all trade history? This action cannot be undone.</p>
+                </div>
+                <div class="dialog-actions">
+                    <button id="clear-dialog-cancel" class="btn-secondary">Cancel</button>
+                    <button id="clear-dialog-confirm" class="btn-danger">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                        Delete All History
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Import Trades Dialog -->
+        <div class="dialog-overlay" id="import-trades-dialog">
+            <div class="dialog-content">
+                <div class="dialog-header">
+                    <h3 class="dialog-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        Import Trades
+                    </h3>
+                    <button class="dialog-close" id="import-dialog-x" aria-label="Close dialog">&times;</button>
+                </div>
+                <div class="dialog-body">
+                    <p>Import trades from a JSON file. This will allow you to restore your trades if you clear your browser data.</p>
+                    
+                    <div class="file-upload-container">
+                        <label for="import-file-input" class="file-upload-label">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                                <polyline points="13 2 13 9 20 9"></polyline>
+                            </svg>
+                            <span>Choose File</span>
+                        </label>
+                        <input type="file" id="import-file-input" accept=".json" style="display: none;">
+                        <span id="selected-filename">No file selected</span>
+                    </div>
+                    
+                    <div id="import-preview" class="import-preview" style="display: none;">
+                        <h4>File Preview</h4>
+                        <div class="preview-stats">
+                            <div class="preview-stat">
+                                <span class="preview-label">Total Trades:</span>
+                                <span id="preview-total" class="preview-value">0</span>
+                            </div>
+                            <div class="preview-stat">
+                                <span class="preview-label">Active Trades:</span>
+                                <span id="preview-active" class="preview-value">0</span>
+                            </div>
+                            <div class="preview-stat">
+                                <span class="preview-label">Closed Trades:</span>
+                                <span id="preview-closed" class="preview-value">0</span>
+                            </div>
+                            <div class="preview-stat">
+                                <span class="preview-label">Export Date:</span>
+                                <span id="preview-date" class="preview-value">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="import-options">
+                        <h4>Import Options</h4>
+                        <div class="radio-option">
+                            <input type="radio" id="import-mode-merge" name="import-mode" value="merge" checked>
+                            <label for="import-mode-merge">Merge with existing trades (update existing, add new)</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="import-mode-add" name="import-mode" value="add">
+                            <label for="import-mode-add">Add all as new trades (avoids conflicts)</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="import-mode-replace" name="import-mode" value="replace">
+                            <label for="import-mode-replace">Replace all trades</label>
+                        </div>
+                        <div class="checkbox-option" id="keep-active-container" style="margin-left: 25px; margin-top: 8px; display: none;">
+                            <input type="checkbox" id="keep-active-trades" name="keep-active-trades" checked>
+                            <label for="keep-active-trades">Keep current active trades</label>
+                        </div>
+                    </div>
+                    
+                    <div id="import-status" class="import-status" style="display: none;">
+                        <div class="status-message" id="import-status-message"></div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="import-progress"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="dialog-actions">
+                    <button id="import-dialog-cancel" class="btn-secondary">Cancel</button>
+                    <button id="import-dialog-confirm" class="btn-primary" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        Import Trades
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Notification container -->
+        <div id="notification-container"></div>
+        
+        <!-- Dark Mode Toggle -->
+        <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+            <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </button>
+    </div>
+    
+    <!-- Active Trade Card Template (hidden, will be cloned by JavaScript) -->
+    <template id="active-trade-template">
+        <div class="trade-card active" data-trade-id="">
+            <div class="trade-card-header">
+                <div>
+                    <h4 class="stock-name"></h4>
+                    <span class="stock-symbol"></span>
+                    <span class="trade-status status-active">Active</span>
+                </div>
+                <div>
+                    <div class="trade-info-value current-pl"></div>
+                </div>
+            </div>
+            <div class="trade-info-grid">
+                <div class="trade-info-item">
+                    <span class="trade-info-label">Entry Date</span>
+                    <span class="trade-info-value entry-date"></span>
+                </div>
+                <div class="trade-info-item">
+                    <span class="trade-info-label">Entry Price</span>
+                    <span class="trade-info-value entry-price"></span>
+                </div>
+                <div class="trade-info-item">
+                    <span class="trade-info-label">Current Price</span>
+                    <span class="trade-info-value current-price"></span>
+                </div>
+                <div class="trade-info-item">
+                    <span class="trade-info-label">Investment</span>
+                    <span class="trade-info-value investment"></span>
+                </div>
+                <div class="trade-info-item">
+                    <span class="trade-info-label">Shares</span>
+                    <span class="trade-info-value shares"></span>
+                </div>
+                <div class="trade-info-item">
+                    <span class="trade-info-label">Current Value</span>
+                    <span class="trade-info-value current-value"></span>
+                </div>
+                <div class="trade-info-item">
+                    <span class="trade-info-label">Stop Loss</span>
+                    <span class="trade-info-value stop-loss"></span>
+                </div>
+                <div class="trade-info-item">
+                    <span class="trade-info-label">Target</span>
+                    <span class="trade-info-value target"></span>
+                </div>
+                <div class="trade-info-item">
+                    <span class="trade-info-label">Holding Period</span>
+                    <span class="trade-info-value holding-days"></span>
+                </div>
+                <div class="trade-info-item">
+                    <span class="trade-info-label">Square Off Date</span>
+                    <span class="trade-info-value square-off-date"></span>
+                </div>
+            </div>
+            <div class="trade-timer">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span class="days-remaining"></span> days remaining until square off
+            </div>
+            <div class="trade-actions">
+                <button class="btn-close-trade">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34"></path>
+                        <path d="M3 15h10"></path>
+                        <polyline points="17 8 22 12 17 16"></polyline>
+                    </svg>
+                    Close Trade
+                </button>
+                <button class="btn-edit-trade">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    Edit Trade
+                </button>
+                <button class="btn-delete-trade">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                    Delete Trade
+                </button>
+            </div>
+        </div>
+    </template>
+    
+<!-- Add before your script imports -->
+<script>
+function ensureModulesLoaded(moduleList, callback) {
+    const checkInterval = setInterval(() => {
+        const allLoaded = moduleList.every(module => 
+            window[module] !== undefined);
+        
+        if (allLoaded) {
+            clearInterval(checkInterval);
+            callback();
+        }
+    }, 50);
+}
+
+// Example usage
+document.addEventListener('DOMContentLoaded', function() {
+    ensureModulesLoaded(['TradeCore', 'TradeUI'], function() {
+        console.log('All trade modules loaded!');
+        // Any additional initialization could go here
+    });
+});
+</script>
+
+   <!-- API Client -->
+   <script src="js/api-client.js"></script>
+   
+   <!-- Company Names Mapping -->
+   <script src="js/company-names.js"></script>
+   
+   <!-- Mobile Navigation -->
+   <script src="js/mobile-nav.js"></script>
+   
+   <!-- DTI Core (for showNotification and utils) -->
+   <script src="js/dti-core.js"></script>
+   
+   <!-- Real-time Price Updates -->
+   <script src="js/real-time-prices.js"></script>
+   
+   <!-- Market Holidays Module -->
+   <script src="js/market-holidays.js"></script>
+   
+   <!-- Enhanced Market Status -->
+   <script src="js/enhanced-market-status.js"></script>
+   <script src="js/market-status-manager.js"></script>
+   
+   <!-- Only need trade modules on the trades page -->
+   <script src="js/trade-core.js"></script>
+   <!-- Add this before TradeUI-Core.js -->
+   <script src="js/trade-filters.js"></script>
+
+<!-- Include these in your HTML file in this order -->
+<script src="js/TradeUI-Core.js"></script>
+<script src="js/TradeUI-Trades.js"></script>
+<script src="js/TradeUI-Dialogs.js"></script>
+<script src="js/TradeUI-Charts.js"></script>
+<script src="js/TradeUI-Export-Metrics.js"></script>
+
+   <script src="js/trade-importer.js"></script>
+   
+   <!-- Alerts UI -->
+   <script src="js/alerts-ui.js"></script>
+   
+   <!-- Import/Export UI Styles -->
+   <style>
+        /* Import Dialog Styles */
+        .file-upload-container {
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .file-upload-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 20px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 8px;
+        }
+        
+        .file-upload-label:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+        
+        #selected-filename {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+        
+        .import-preview {
+            background-color: var(--primary-lightest);
+            border-radius: var(--radius);
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .import-preview h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 16px;
+            color: var(--primary-color);
+        }
+        
+        .preview-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
+        }
+        
+        .preview-stat {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .preview-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .preview-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        
+        .import-options {
+            margin: 20px 0;
+        }
+        
+        .import-options h4 {
+            margin-top: 0;
+            margin-bottom: 12px;
+            font-size: 16px;
+            color: var(--primary-color);
+        }
+        
+        .radio-option, .checkbox-option {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .radio-option input, .checkbox-option input {
+            margin-right: 8px;
+        }
+        
+        .import-status {
+            margin-top: 20px;
+        }
+        
+        .status-message {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background-color: var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        /* Update status indicator */
+        .update-status {
+            background-color: var(--primary-lightest);
+            border-left: 3px solid var(--primary-color);
+            padding: 10px 15px;
+            margin-top: 15px;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            color: var(--primary-color);
+            transition: all 0.3s ease;
+        }
+        
+        /* Exit reason table styles */
+        .exit-reason-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 0;
+        }
+        
+        .exit-reason-table th {
+            text-align: left;
+            padding: 10px 15px;
+            font-size: 13px;
+            background-color: var(--primary-lightest);
+            color: var(--primary-color);
+        }
+        
+        .exit-reason-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+        }
+        
+        .exit-reason-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .exit-reason-table tr:hover {
+            background-color: rgba(243, 244, 246, 0.5);
+        }
+        
+        /* Metrics explanation styles */
+        .metrics-details {
+            background-color: white;
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-top: 24px;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .metrics-details h4 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+        
+        .metrics-explanation {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 12px;
+        }
+        
+        .metrics-explanation p {
+            margin-bottom: 10px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .spinner {
+            animation: rotate 1s linear infinite;
+        }
+    </style>
+</body>
+</html>

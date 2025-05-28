@@ -1,0 +1,16 @@
+services:
+  # Web service for your Express server
+  - type: web
+    name: stock-proxy
+    runtime: node
+    buildCommand: chmod +x build.sh && ./build.sh
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: RENDER
+        value: true
+    disk:
+      name: sqlite-data
+      mountPath: /var/data
+      sizeGB: 1  # 1GB persistent storage for SQLite database
