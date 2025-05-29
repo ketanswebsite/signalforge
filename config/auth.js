@@ -59,6 +59,8 @@ passport.use(new GoogleStrategy({
             console.log('Access denied for email:', user.email);
             console.log('Allowed users:', allowedUsers);
             return done(null, false, { message: 'Access denied. Your email is not authorized.' });
+        } else if (allowedUsers.length === 0) {
+            console.warn('WARNING: ALLOWED_USERS not configured - allowing all authenticated users');
         }
         
         console.log('User authenticated successfully:', user.email);

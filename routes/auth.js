@@ -22,9 +22,15 @@ router.get('/auth/google/callback',
         failureMessage: true 
     }),
     (req, res) => {
+        console.log('OAuth callback success handler called');
+        console.log('User authenticated:', req.user);
+        console.log('Session ID:', req.sessionID);
+        
         // Successful authentication, redirect to home or intended page
         const redirectTo = req.session.returnTo || '/';
         delete req.session.returnTo;
+        
+        console.log('Redirecting to:', redirectTo);
         res.redirect(redirectTo);
     }
 );
