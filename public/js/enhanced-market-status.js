@@ -24,20 +24,33 @@ function getMarketStatus(symbol) {
     
     // Get current time in market timezone
     const now = new Date();
-    let marketTime;
+    let marketTime = now; // Keep as actual Date object for calculations
     let hours, minutes, day;
     
     try {
-        // This method might not work in all browsers
-        const marketTimeStr = now.toLocaleString("en-US", {timeZone: timezone});
-        marketTime = new Date(marketTimeStr);
-        hours = marketTime.getHours();
-        minutes = marketTime.getMinutes();
-        day = marketTime.getDay(); // 0 = Sunday, 6 = Saturday
+        // Get the time components in the market timezone
+        const marketTimeStr = now.toLocaleString("en-US", {
+            timeZone: timezone,
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric',
+            second: 'numeric',
+            hour12: false
+        });
+        
+        // Parse the components
+        const [date, time] = marketTimeStr.split(', ');
+        const [month, dayStr, year] = date.split('/');
+        const [hourStr, minuteStr, secondStr] = time.split(':');
+        
+        hours = parseInt(hourStr, 10);
+        minutes = parseInt(minuteStr, 10);
+        day = new Date(year, month - 1, dayStr).getDay(); // 0 = Sunday, 6 = Saturday
     } catch (e) {
         console.warn(`Timezone conversion failed for ${timezone}, using local time`, e);
         // Fallback to local time
-        marketTime = now;
         hours = now.getHours();
         minutes = now.getMinutes();
         day = now.getDay();
@@ -188,7 +201,7 @@ function getMarketStatus(symbol) {
         statusText: statusText,
         marketName: marketName,
         timezone: timezone,
-        currentMarketTime: marketTime,
+        currentMarketTime: now, // Return the actual Date object, not the parsed one
         isOpen: isOpen,
         isExtendedHours: isExtendedHours,
         nextOpen: nextOpen,

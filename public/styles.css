@@ -874,7 +874,8 @@ table tr:last-child td:last-child {
 .nav-links {
     display: flex;
     gap: 12px;
-    margin-right: 80px; /* Space for user menu */
+    position: relative;
+    right: 120px; /* Dynamic spacing from right edge */
 }
 
 .nav-link {
