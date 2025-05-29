@@ -75,7 +75,8 @@ passport.use(new GoogleStrategy({
 const sessionConfig = {
     store: new SQLiteStore({
         db: 'sessions.db',
-        dir: dbDir
+        dir: dbDir,
+        concurrentDB: true
     }),
     secret: process.env.SESSION_SECRET || 'your-secret-key-change-this',
     resave: false,
@@ -84,9 +85,11 @@ const sessionConfig = {
         secure: process.env.NODE_ENV === 'production', // HTTPS only in production
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
-        sameSite: 'lax' // Add SameSite for better security
+        sameSite: 'lax', // Add SameSite for better security
+        domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
     },
-    name: 'sessionId' // Custom session name
+    name: 'sessionId', // Custom session name
+    proxy: true // Trust the reverse proxy (Render uses one)
 };
 
 // Middleware to check if user is authenticated

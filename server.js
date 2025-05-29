@@ -102,6 +102,11 @@ if (authEnabled) {
 // Request logging
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  if (req.url.includes('auth') || req.url === '/') {
+    console.log('Session ID:', req.sessionID);
+    console.log('Is Authenticated:', req.isAuthenticated ? req.isAuthenticated() : 'N/A');
+    console.log('User:', req.user);
+  }
   next();
 });
 
