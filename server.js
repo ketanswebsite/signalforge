@@ -2,6 +2,10 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const path = require('path');
+const session = require('express-session');
+
+// Load environment variables
+require('dotenv').config();
 
 console.log('\n=== STARTING NEW APP.JS SERVER ===\n');
 
@@ -51,9 +55,23 @@ try {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Load authentication configuration
+const { passport, sessionConfig, ensureAuthenticated, ensureAuthenticatedAPI } = require('./config/auth');
+const authRoutes = require('./routes/auth');
+
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Session middleware (must come before passport)
+app.use(session(sessionConfig));
+
+// Passport middleware
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Authentication routes (no auth required for these)
+app.use('/', authRoutes);
 
 // Request logging
 app.use((req, res, next) => {
@@ -62,6 +80,9 @@ app.use((req, res, next) => {
 });
 
 // === API ROUTES ===
+
+// Protect all API routes except auth routes
+app.use('/api', ensureAuthenticatedAPI);
 
 // ML routes
 try {
@@ -546,6 +567,18 @@ app.get('/health', (req, res) => {
 // Favicon
 app.get('/favicon.ico', (req, res) => {
   res.sendStatus(204);
+});
+
+// Protect static files except login page
+app.use((req, res, next) => {
+  // Allow access to login page and its assets without authentication
+  if (req.path === '/login.html' || 
+      req.path === '/styles.css' || 
+      req.path.startsWith('/js/theme-toggle.js')) {
+    return next();
+  }
+  // All other static files require authentication
+  ensureAuthenticated(req, res, next);
 });
 
 // Static files (MUST BE LAST!)

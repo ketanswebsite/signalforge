@@ -21,6 +21,7 @@ Thumbs.db
 .env.development.local
 .env.test.local
 .env.production.local
+RENDER_ENV_VARS.txt
 
 # Logs
 logs/

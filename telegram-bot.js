@@ -1,14 +1,22 @@
 const TelegramBot = require('node-telegram-bot-api');
 
 // Bot configuration
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '7628504638:AAG_ehLISYdCT4JEMdHJh2tSTCVl0Df5JR0';
-const bot = new TelegramBot(BOT_TOKEN, { polling: true });
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+if (!BOT_TOKEN) {
+    console.warn('WARNING: TELEGRAM_BOT_TOKEN not set in environment variables. Telegram bot features disabled.');
+}
+const bot = BOT_TOKEN ? new TelegramBot(BOT_TOKEN, { polling: true }) : null;
 
 // Store user chat IDs (in production, this should be in database)
 const userChatIds = new Map();
 
 // Initialize bot
 function initializeTelegramBot() {
+  if (!bot) {
+    console.log('⚠️ Telegram bot disabled - no token provided');
+    return;
+  }
+  
   console.log('🤖 Initializing Telegram bot...');
   
   // Handle /start command

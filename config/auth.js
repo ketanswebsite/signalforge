@@ -1,0 +1,82 @@
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const session = require('express-session');
+const SQLiteStore = require('connect-sqlite3')(session);
+
+// Load environment variables
+require('dotenv').config();
+
+// Parse allowed users from environment variable
+const allowedUsers = process.env.ALLOWED_USERS 
+    ? process.env.ALLOWED_USERS.split(',').map(email => email.trim().toLowerCase())
+    : [];
+
+// User serialization
+passport.serializeUser((user, done) => {
+    done(null, user);
+});
+
+passport.deserializeUser((user, done) => {
+    done(null, user);
+});
+
+// Google OAuth2 Strategy
+passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: process.env.CALLBACK_URL
+}, (accessToken, refreshToken, profile, done) => {
+    // Extract user information
+    const user = {
+        id: profile.id,
+        email: profile.emails[0].value.toLowerCase(),
+        name: profile.displayName,
+        picture: profile.photos[0].value
+    };
+    
+    // Check if user is allowed
+    if (allowedUsers.length > 0 && !allowedUsers.includes(user.email)) {
+        return done(null, false, { message: 'Access denied. Your email is not authorized.' });
+    }
+    
+    return done(null, user);
+}));
+
+// Session configuration
+const sessionConfig = {
+    store: new SQLiteStore({
+        db: 'sessions.db',
+        dir: './database'
+    }),
+    secret: process.env.SESSION_SECRET || 'your-secret-key-change-this',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+};
+
+// Middleware to check if user is authenticated
+const ensureAuthenticated = (req, res, next) => {
+    if (req.isAuthenticated()) {
+        return next();
+    }
+    res.redirect('/login');
+};
+
+// Middleware to check if user is authenticated for API routes
+const ensureAuthenticatedAPI = (req, res, next) => {
+    if (req.isAuthenticated()) {
+        return next();
+    }
+    res.status(401).json({ error: 'Authentication required' });
+};
+
+module.exports = {
+    passport,
+    sessionConfig,
+    ensureAuthenticated,
+    ensureAuthenticatedAPI
+};

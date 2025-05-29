@@ -37,6 +37,9 @@ const AlertsUI = (function() {
     
     // Add alerts button to trades page
     function addAlertsButton() {
+        // Alert button disabled - functionality hidden from UI
+        return;
+        
         // Check if button already exists
         if (document.querySelector('.alerts-button')) return;
         
