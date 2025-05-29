@@ -26,12 +26,21 @@ router.get('/auth/google/callback',
         console.log('User authenticated:', req.user);
         console.log('Session ID:', req.sessionID);
         
-        // Successful authentication, redirect to home or intended page
-        const redirectTo = req.session.returnTo || '/';
-        delete req.session.returnTo;
-        
-        console.log('Redirecting to:', redirectTo);
-        res.redirect(redirectTo);
+        // Save session explicitly before redirecting
+        req.session.save((err) => {
+            if (err) {
+                console.error('Session save error:', err);
+                return res.status(500).send('Session save failed');
+            }
+            
+            // Successful authentication, redirect to home or intended page
+            const redirectTo = req.session.returnTo || '/';
+            delete req.session.returnTo;
+            
+            console.log('Session saved successfully');
+            console.log('Redirecting to:', redirectTo);
+            res.redirect(redirectTo);
+        });
     }
 );
 

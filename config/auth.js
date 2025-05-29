@@ -86,7 +86,8 @@ const sessionConfig = {
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         sameSite: 'lax', // Add SameSite for better security
-        domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
+        // Remove domain setting - let Express handle it automatically
+        path: '/' // Ensure cookie is available for all paths
     },
     name: 'sessionId', // Custom session name
     proxy: true // Trust the reverse proxy (Render uses one)
