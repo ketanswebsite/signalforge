@@ -17,7 +17,10 @@ router.get('/auth/google',
 );
 
 router.get('/auth/google/callback',
-    passport.authenticate('google', { failureRedirect: '/login' }),
+    passport.authenticate('google', { 
+        failureRedirect: '/login?error=auth_failed',
+        failureMessage: true 
+    }),
     (req, res) => {
         // Successful authentication, redirect to home or intended page
         const redirectTo = req.session.returnTo || '/';
@@ -25,6 +28,19 @@ router.get('/auth/google/callback',
         res.redirect(redirectTo);
     }
 );
+
+// Debug route for OAuth issues
+router.get('/auth/debug', (req, res) => {
+    res.json({
+        nodeEnv: process.env.NODE_ENV,
+        hasGoogleClientId: !!process.env.GOOGLE_CLIENT_ID,
+        hasGoogleClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
+        callbackUrl: process.env.CALLBACK_URL,
+        sessionConfigured: !!req.session,
+        authenticated: req.isAuthenticated(),
+        allowedUsers: process.env.ALLOWED_USERS ? process.env.ALLOWED_USERS.split(',').length : 0
+    });
+});
 
 // Logout route
 router.get('/logout', (req, res) => {

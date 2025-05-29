@@ -2,9 +2,17 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const session = require('express-session');
 const SQLiteStore = require('connect-sqlite3')(session);
+const fs = require('fs');
+const path = require('path');
 
 // Load environment variables
 require('dotenv').config();
+
+// Ensure database directory exists
+const dbDir = path.join(__dirname, '..', 'database');
+if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+}
 
 // Parse allowed users from environment variable
 const allowedUsers = process.env.ALLOWED_USERS 
@@ -26,20 +34,30 @@ passport.use(new GoogleStrategy({
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: process.env.CALLBACK_URL
 }, (accessToken, refreshToken, profile, done) => {
-    // Extract user information
-    const user = {
-        id: profile.id,
-        email: profile.emails[0].value.toLowerCase(),
-        name: profile.displayName,
-        picture: profile.photos[0].value
-    };
-    
-    // Check if user is allowed
-    if (allowedUsers.length > 0 && !allowedUsers.includes(user.email)) {
-        return done(null, false, { message: 'Access denied. Your email is not authorized.' });
+    try {
+        console.log('OAuth callback received for:', profile.emails[0].value);
+        
+        // Extract user information
+        const user = {
+            id: profile.id,
+            email: profile.emails[0].value.toLowerCase(),
+            name: profile.displayName,
+            picture: profile.photos[0].value
+        };
+        
+        // Check if user is allowed
+        if (allowedUsers.length > 0 && !allowedUsers.includes(user.email)) {
+            console.log('Access denied for email:', user.email);
+            console.log('Allowed users:', allowedUsers);
+            return done(null, false, { message: 'Access denied. Your email is not authorized.' });
+        }
+        
+        console.log('User authenticated successfully:', user.email);
+        return done(null, user);
+    } catch (error) {
+        console.error('Error in Google OAuth strategy:', error);
+        return done(error);
     }
-    
-    return done(null, user);
 }));
 
 // Session configuration
