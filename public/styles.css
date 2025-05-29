@@ -1414,7 +1414,8 @@ table tr:last-child td:last-child {
     transition: all var(--transition-fast);
     width: auto;
     margin-top: 0;
-    margin-right: 80px; /* Space for user menu */
+    position: relative;
+    right: 120px; /* Dynamic spacing from right edge */
     box-shadow: var(--shadow-xs);
 }
 
