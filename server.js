@@ -55,23 +55,49 @@ try {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Load authentication configuration
-const { passport, sessionConfig, ensureAuthenticated, ensureAuthenticatedAPI } = require('./config/auth');
-const authRoutes = require('./routes/auth');
+// Load authentication configuration with error handling
+let passport, sessionConfig, ensureAuthenticated, ensureAuthenticatedAPI, authRoutes;
+let authEnabled = false;
+
+try {
+  const authModule = require('./config/auth');
+  passport = authModule.passport;
+  sessionConfig = authModule.sessionConfig;
+  ensureAuthenticated = authModule.ensureAuthenticated;
+  ensureAuthenticatedAPI = authModule.ensureAuthenticatedAPI;
+  authRoutes = require('./routes/auth');
+  authEnabled = true;
+  console.log('✓ Authentication module loaded');
+} catch (error) {
+  console.error('✗ Authentication module failed to load:', error.message);
+  // Create dummy middleware that doesn't require auth
+  ensureAuthenticated = (req, res, next) => next();
+  ensureAuthenticatedAPI = (req, res, next) => next();
+}
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Session middleware (must come before passport)
-app.use(session(sessionConfig));
-
-// Passport middleware
-app.use(passport.initialize());
-app.use(passport.session());
-
-// Authentication routes (no auth required for these)
-app.use('/', authRoutes);
+// Session and passport middleware only if auth is enabled
+if (authEnabled) {
+  try {
+    // Session middleware (must come before passport)
+    app.use(session(sessionConfig));
+    
+    // Passport middleware
+    app.use(passport.initialize());
+    app.use(passport.session());
+    
+    // Authentication routes (no auth required for these)
+    app.use('/', authRoutes);
+    
+    console.log('✓ Auth middleware configured');
+  } catch (error) {
+    console.error('✗ Failed to configure auth middleware:', error);
+    authEnabled = false;
+  }
+}
 
 // Request logging
 app.use((req, res, next) => {
@@ -559,9 +585,18 @@ app.post('/api/alerts/send-custom', async (req, res) => {
   }
 });
 
-// Health check
+// Health check with detailed info
 app.get('/health', (req, res) => {
-  res.send('APP.JS Server Running - Version 3.0');
+  const healthInfo = {
+    status: 'ok',
+    version: '3.0',
+    auth: authEnabled ? 'enabled' : 'disabled',
+    environment: process.env.NODE_ENV || 'development',
+    render: !!process.env.RENDER,
+    sessionStore: authEnabled ? 'SQLite' : 'none',
+    timestamp: new Date().toISOString()
+  };
+  res.json(healthInfo);
 });
 
 // Favicon
@@ -672,6 +707,24 @@ async function checkTradeAlerts() {
 
 // Check alerts every 5 minutes
 setInterval(checkTradeAlerts, 5 * 60 * 1000);
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Global error handler:', err.stack);
+  res.status(500).json({ 
+    error: 'Internal Server Error',
+    message: process.env.NODE_ENV === 'development' ? err.message : 'An error occurred',
+    path: req.path
+  });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ 
+    error: 'Not Found',
+    path: req.path 
+  });
+});
 
 // Start server
 app.listen(PORT, async () => {

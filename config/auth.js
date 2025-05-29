@@ -8,11 +8,20 @@ const path = require('path');
 // Load environment variables
 require('dotenv').config();
 
-// Ensure database directory exists
-const dbDir = path.join(__dirname, '..', 'database');
-if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir, { recursive: true });
+// Determine database directory based on environment
+let dbDir;
+if (process.env.RENDER) {
+    // Use Render's persistent disk mount point
+    dbDir = '/var/data';
+} else {
+    // Use local database directory
+    dbDir = path.join(__dirname, '..', 'database');
+    if (!fs.existsSync(dbDir)) {
+        fs.mkdirSync(dbDir, { recursive: true });
+    }
 }
+
+console.log('Session database directory:', dbDir);
 
 // Parse allowed users from environment variable
 const allowedUsers = process.env.ALLOWED_USERS 
@@ -64,7 +73,7 @@ passport.use(new GoogleStrategy({
 const sessionConfig = {
     store: new SQLiteStore({
         db: 'sessions.db',
-        dir: './database'
+        dir: dbDir
     }),
     secret: process.env.SESSION_SECRET || 'your-secret-key-change-this',
     resave: false,
@@ -72,8 +81,10 @@ const sessionConfig = {
     cookie: {
         secure: process.env.NODE_ENV === 'production', // HTTPS only in production
         httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    }
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        sameSite: 'lax' // Add SameSite for better security
+    },
+    name: 'sessionId' // Custom session name
 };
 
 // Middleware to check if user is authenticated
