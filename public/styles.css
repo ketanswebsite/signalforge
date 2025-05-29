@@ -874,6 +874,7 @@ table tr:last-child td:last-child {
 .nav-links {
     display: flex;
     gap: 12px;
+    margin-right: 80px; /* Space for user menu */
 }
 
 .nav-link {
@@ -1412,6 +1413,7 @@ table tr:last-child td:last-child {
     transition: all var(--transition-fast);
     width: auto;
     margin-top: 0;
+    margin-right: 80px; /* Space for user menu */
     box-shadow: var(--shadow-xs);
 }
 
