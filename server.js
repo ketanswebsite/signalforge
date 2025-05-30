@@ -42,7 +42,7 @@ let telegramBot;
 try {
   telegramBot = require('./telegram-bot');
   // Initialize bot if token is provided
-  if (process.env.TELEGRAM_BOT_TOKEN || true) { // Remove "|| true" in production
+  if (process.env.TELEGRAM_BOT_TOKEN) {
     telegramBot.initializeTelegramBot();
     console.log('✓ Telegram bot initialized');
   } else {

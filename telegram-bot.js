@@ -2,6 +2,7 @@ const TelegramBot = require('node-telegram-bot-api');
 
 // Bot configuration
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const DEFAULT_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 if (!BOT_TOKEN) {
     console.warn('WARNING: TELEGRAM_BOT_TOKEN not set in environment variables. Telegram bot features disabled.');
 }
@@ -9,6 +10,12 @@ const bot = BOT_TOKEN ? new TelegramBot(BOT_TOKEN, { polling: true }) : null;
 
 // Store user chat IDs (in production, this should be in database)
 const userChatIds = new Map();
+
+// Initialize with default chat ID if provided
+if (DEFAULT_CHAT_ID) {
+    userChatIds.set('default', DEFAULT_CHAT_ID);
+    console.log(`📱 Default Telegram Chat ID loaded: ${DEFAULT_CHAT_ID}`);
+}
 
 // Initialize bot
 function initializeTelegramBot() {
@@ -112,6 +119,16 @@ function initializeTelegramBot() {
 
 // Send alert to user
 async function sendTelegramAlert(chatId, alert) {
+  // Use default chat ID if none provided
+  if (!chatId && DEFAULT_CHAT_ID) {
+    chatId = DEFAULT_CHAT_ID;
+  }
+  
+  if (!chatId) {
+    console.error('❌ No chat ID provided for Telegram alert');
+    return false;
+  }
+  
   try {
     let emoji = '📊';
     let urgency = '';
