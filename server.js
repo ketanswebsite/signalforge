@@ -52,6 +52,21 @@ try {
   console.log('ℹ Telegram bot module not available:', err.message);
 }
 
+// Load Stock Scanner
+let stockScanner;
+try {
+  stockScanner = require('./stock-scanner');
+  // Initialize scanner if Telegram bot is available
+  if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) {
+    stockScanner.initialize();
+    console.log('✓ Stock scanner initialized with daily scans at 7 AM UK time');
+  } else {
+    console.log('ℹ Stock scanner disabled - Telegram not configured');
+  }
+} catch (err) {
+  console.log('ℹ Stock scanner module not available:', err.message);
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -712,6 +727,48 @@ async function checkTradeAlerts() {
 
 // Check alerts every 5 minutes
 setInterval(checkTradeAlerts, 5 * 60 * 1000);
+
+// Stock scanner endpoints
+app.post('/api/scanner/run', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    if (!stockScanner) {
+      return res.status(503).json({ error: 'Stock scanner not available' });
+    }
+    
+    // Use user's Telegram chat ID if available
+    const user = await TradeDB.getUserByEmail(req.user.email);
+    const chatId = user?.telegram_chat_id || process.env.TELEGRAM_CHAT_ID;
+    
+    if (!chatId) {
+      return res.status(400).json({ error: 'No Telegram chat ID configured' });
+    }
+    
+    // Run scan asynchronously
+    stockScanner.runGlobalScan(chatId);
+    
+    res.json({ 
+      success: true, 
+      message: 'Global scan started. Results will be sent to your Telegram.' 
+    });
+  } catch (error) {
+    console.error('Error starting scan:', error);
+    res.status(500).json({ error: 'Failed to start scan' });
+  }
+});
+
+app.get('/api/scanner/status', ensureAuthenticatedAPI, (req, res) => {
+  try {
+    if (!stockScanner) {
+      return res.status(503).json({ error: 'Stock scanner not available' });
+    }
+    
+    const status = stockScanner.getStatus();
+    res.json(status);
+  } catch (error) {
+    console.error('Error getting scanner status:', error);
+    res.status(500).json({ error: 'Failed to get scanner status' });
+  }
+});
 
 // Global error handler
 app.use((err, req, res, next) => {

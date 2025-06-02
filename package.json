@@ -22,6 +22,7 @@
     "express": "^5.1.0",
     "express-session": "^1.18.1",
     "natural": "^6.10.0",
+    "node-cron": "^4.1.0",
     "node-fetch": "^2.7.0",
     "node-telegram-bot-api": "^0.64.0",
     "passport": "^0.7.0",
