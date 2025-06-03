@@ -275,6 +275,17 @@ const TradeDB = {
     }
   },
 
+  // Get user by email
+  async getUserByEmail(email) {
+    try {
+      // Check alert preferences for user data
+      return memoryDB.alert_preferences.find(p => p.user_id === email) || null;
+    } catch (error) {
+      console.error('Error getting user by email:', error);
+      return null;
+    }
+  },
+
   // Admin functions
   async getUserStatistics() {
     try {

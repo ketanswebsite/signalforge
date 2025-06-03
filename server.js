@@ -70,6 +70,9 @@ try {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Admin email constant
+const ADMIN_EMAIL = 'ketanjoshisahs@gmail.com';
+
 // Load authentication configuration with error handling
 let passport, sessionConfig, ensureAuthenticated, ensureAuthenticatedAPI, authRoutes;
 let authEnabled = false;
@@ -234,7 +237,6 @@ app.get('/api/test-admin', ensureAuthenticatedAPI, async (req, res) => {
 });
 
 // Admin routes - restricted to specific admin email
-const ADMIN_EMAIL = 'ketanjoshisahs@gmail.com';
 
 app.get('/admin', ensureAuthenticated, (req, res) => {
   // Check if user is admin
@@ -995,7 +997,7 @@ app.listen(PORT, async () => {
   console.log(`✓ API test: http://localhost:${PORT}/api/test`);
   
   try {
-    const trades = await TradeDB.getAllTrades();
+    const trades = await TradeDB.getAllTrades('default');
     console.log(`\n📊 Database Status:`);
     console.log(`   Total trades: ${trades.length}`);
     console.log(`   Active: ${trades.filter(t => t.status === 'active').length}`);
