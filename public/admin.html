@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Trading System</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .admin-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--card-background);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 0.5rem 0;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .users-table {
+            background: var(--card-background);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .users-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .users-table th,
+        .users-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .users-table th {
+            background: var(--background);
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .users-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .users-table tr:hover {
+            background: var(--hover-background);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .error-message {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+
+        .refresh-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .refresh-btn:hover {
+            background: var(--primary-hover);
+        }
+
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .admin-header h1 {
+            margin: 0;
+        }
+
+        .current-user {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .users-table {
+                overflow-x: auto;
+            }
+
+            .admin-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <div class="logo">Trading System</div>
+            <div class="nav-links">
+                <a href="/">Dashboard</a>
+                <a href="/trades.html">Trades</a>
+                <a href="/alerts.html">Alerts</a>
+                <a href="/admin" class="active">Admin</a>
+                <div class="user-menu-container">
+                    <button class="user-menu-button" id="userMenuButton">
+                        <span class="user-name" id="userName">Loading...</span>
+                        <svg class="dropdown-icon" width="12" height="8" viewBox="0 0 12 8">
+                            <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" fill="none"/>
+                        </svg>
+                    </button>
+                    <div class="user-menu-dropdown" id="userMenuDropdown">
+                        <div class="user-info">
+                            <img class="user-avatar" id="userAvatar" src="" alt="">
+                            <div>
+                                <div class="user-name" id="userNameFull"></div>
+                                <div class="user-email" id="userEmail"></div>
+                            </div>
+                        </div>
+                        <div class="menu-divider"></div>
+                        <a href="/logout" class="menu-item logout">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Sign out
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="mobile-nav" id="mobileNav">
+        <a href="/">Dashboard</a>
+        <a href="/trades.html">Trades</a>
+        <a href="/alerts.html">Alerts</a>
+        <a href="/admin" class="active">Admin</a>
+        <a href="/logout" class="logout-link">Sign out</a>
+    </div>
+
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>Admin Dashboard</h1>
+            <div class="current-user" id="currentUser"></div>
+        </div>
+
+        <button class="refresh-btn" onclick="loadAdminStats()">Refresh Stats</button>
+
+        <div id="loadingMessage" class="loading">Loading statistics...</div>
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+        <div id="statsContainer" style="display: none;">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Users</div>
+                    <div class="stat-value" id="totalUsers">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Trades</div>
+                    <div class="stat-value" id="totalTrades">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Active Trades</div>
+                    <div class="stat-value" id="activeTrades">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Closed Trades</div>
+                    <div class="stat-value" id="closedTrades">0</div>
+                </div>
+            </div>
+
+            <div class="users-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User Email</th>
+                            <th>Total Trades</th>
+                            <th>Active</th>
+                            <th>Closed</th>
+                            <th>First Trade</th>
+                            <th>Last Trade</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <!-- User rows will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/user-menu.js"></script>
+    <script src="js/mobile-nav.js"></script>
+    <script>
+        async function loadAdminStats() {
+            const loadingEl = document.getElementById('loadingMessage');
+            const errorEl = document.getElementById('errorMessage');
+            const statsEl = document.getElementById('statsContainer');
+
+            loadingEl.style.display = 'block';
+            errorEl.style.display = 'none';
+            statsEl.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/admin/stats');
+                if (!response.ok) {
+                    throw new Error('Failed to load statistics');
+                }
+
+                const data = await response.json();
+                
+                // Update current user
+                document.getElementById('currentUser').textContent = `Logged in as: ${data.currentUser}`;
+
+                // Update system stats
+                document.getElementById('totalUsers').textContent = data.system.total_users || 0;
+                document.getElementById('totalTrades').textContent = data.system.total_trades || 0;
+                document.getElementById('activeTrades').textContent = data.system.active_trades || 0;
+                document.getElementById('closedTrades').textContent = data.system.closed_trades || 0;
+
+                // Update users table
+                const tbody = document.getElementById('usersTableBody');
+                tbody.innerHTML = '';
+
+                if (data.users && data.users.length > 0) {
+                    data.users.forEach(user => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${user.user_id}</td>
+                            <td>${user.total_trades}</td>
+                            <td>${user.active_trades}</td>
+                            <td>${user.closed_trades}</td>
+                            <td>${user.first_trade_date ? new Date(user.first_trade_date).toLocaleDateString() : 'N/A'}</td>
+                            <td>${user.last_trade_date ? new Date(user.last_trade_date).toLocaleDateString() : 'N/A'}</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">No users found</td></tr>';
+                }
+
+                loadingEl.style.display = 'none';
+                statsEl.style.display = 'block';
+            } catch (error) {
+                console.error('Error loading admin stats:', error);
+                loadingEl.style.display = 'none';
+                errorEl.style.display = 'block';
+                errorEl.textContent = error.message;
+            }
+        }
+
+        // Load stats on page load
+        document.addEventListener('DOMContentLoaded', loadAdminStats);
+    </script>
+</body>
+</html>

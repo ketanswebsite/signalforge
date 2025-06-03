@@ -149,6 +149,27 @@ app.get('/api/test', (req, res) => {
   });
 });
 
+// Admin routes
+app.get('/admin', ensureAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+app.get('/api/admin/stats', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const userStats = await TradeDB.getUserStatistics();
+    const systemStats = await TradeDB.getSystemStatistics();
+    
+    res.json({
+      system: systemStats,
+      users: userStats,
+      currentUser: req.user.email
+    });
+  } catch (error) {
+    console.error('Error getting admin stats:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get all trades
 app.get('/api/trades', ensureAuthenticatedAPI, async (req, res) => {
   console.log('>>> /api/trades endpoint hit!');

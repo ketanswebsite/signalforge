@@ -223,7 +223,36 @@ const statements = {
       market_close_alert = @market_close_alert,
       updated_at = CURRENT_TIMESTAMP
   `),
-  getAllActiveAlerts: db.prepare('SELECT * FROM alert_preferences WHERE telegram_enabled = 1 OR email_enabled = 1')
+  getAllActiveAlerts: db.prepare('SELECT * FROM alert_preferences WHERE telegram_enabled = 1 OR email_enabled = 1'),
+  
+  // Admin queries
+  getUserStats: db.prepare(`
+    SELECT 
+      user_id,
+      COUNT(*) as total_trades,
+      SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_trades,
+      SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END) as closed_trades,
+      MIN(created_at) as first_trade_date,
+      MAX(created_at) as last_trade_date
+    FROM trades
+    WHERE user_id != 'default'
+    GROUP BY user_id
+    ORDER BY total_trades DESC
+  `),
+  getTotalUsers: db.prepare(`
+    SELECT COUNT(DISTINCT user_id) as total_users 
+    FROM trades 
+    WHERE user_id != 'default'
+  `),
+  getSystemStats: db.prepare(`
+    SELECT 
+      COUNT(*) as total_trades,
+      COUNT(DISTINCT user_id) as total_users,
+      SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_trades,
+      SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END) as closed_trades
+    FROM trades
+    WHERE user_id != 'default'
+  `)
 };
 
 // Database operations
@@ -398,6 +427,35 @@ const TradeDB = {
     } catch (error) {
       console.error('Error getting active alert users:', error);
       return [];
+    }
+  },
+
+  // Admin functions
+  async getUserStatistics() {
+    try {
+      return statements.getUserStats.all();
+    } catch (error) {
+      console.error('Error getting user statistics:', error);
+      return [];
+    }
+  },
+
+  async getSystemStatistics() {
+    try {
+      return statements.getSystemStats.get() || {
+        total_trades: 0,
+        total_users: 0,
+        active_trades: 0,
+        closed_trades: 0
+      };
+    } catch (error) {
+      console.error('Error getting system statistics:', error);
+      return {
+        total_trades: 0,
+        total_users: 0,
+        active_trades: 0,
+        closed_trades: 0
+      };
     }
   },
 
