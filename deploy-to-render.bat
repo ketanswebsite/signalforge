@@ -205,12 +205,23 @@ echo 1. Verify the application is running:
 echo    - Check your app URL for successful deployment
 echo    - Test login and basic functionality
 echo.
-echo 2. Test API field standardization:
+echo 2. Test the Admin Dashboard user migration:
+echo    - Go to /admin page after deployment
+echo    - Verify that Total Users shows correct count (not 0)
+echo    - Check that existing users appear in the users table
+echo    - Test that new user logins get saved to users table
+echo.
+echo 3. Verify PostgreSQL user tracking:
+echo    - Existing users should be migrated from trades table
+echo    - New Google OAuth logins should create user records
+echo    - Admin page should show all registered users
+echo.
+echo 4. Test API field standardization:
 echo    - Open Developer Tools and check API responses
 echo    - Verify 'shares' and 'profitLoss' fields are present
 echo    - No more 'quantity' or 'profit' fields should appear
 echo.
-echo 3. Verify Telegram alerts are working:
+echo 5. Verify Telegram alerts are working:
 echo    - Test alert preferences in the app
 echo    - Check that notifications use correct field values
 echo.
@@ -229,5 +240,8 @@ start https://dashboard.render.com/
 echo.
 echo Deployment script completed.
 echo.
-echo Remember: Test the API field fixes after deployment!
+echo Remember: 
+echo 1. Test the Admin Dashboard shows users correctly
+echo 2. Verify user migration worked for existing trades
+echo 3. Test new user registration via Google OAuth
 pause

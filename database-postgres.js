@@ -107,6 +107,9 @@ async function initializeDatabase() {
     await pool.query('CREATE INDEX IF NOT EXISTS idx_trades_status ON trades(status)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_trades_symbol ON trades(symbol)');
 
+    // Migrate existing users from trades table
+    await migrateExistingUsers();
+
     console.log('✅ PostgreSQL database initialized successfully');
   } catch (error) {
     console.error('Error initializing database:', error);
@@ -118,6 +121,39 @@ async function initializeDatabase() {
 function checkConnection() {
   if (!dbConnected || !pool) {
     throw new Error('PostgreSQL not configured. Please set DATABASE_URL environment variable and visit /migrate-to-postgres.html for setup instructions.');
+  }
+}
+
+// Migration function to populate users table from existing trades
+async function migrateExistingUsers() {
+  try {
+    // Get unique user_ids from trades table
+    const result = await pool.query(`
+      SELECT DISTINCT user_id, MIN(created_at) as first_trade
+      FROM trades 
+      WHERE user_id IS NOT NULL 
+      GROUP BY user_id
+    `);
+    
+    for (const row of result.rows) {
+      const userId = row.user_id === 'default' ? 'ketanjoshisahs@gmail.com' : row.user_id;
+      
+      // Check if user already exists in users table
+      const existingUser = await pool.query('SELECT email FROM users WHERE email = $1', [userId]);
+      
+      if (existingUser.rows.length === 0) {
+        // Insert user with minimal info
+        await pool.query(`
+          INSERT INTO users (email, name, first_login, last_login)
+          VALUES ($1, $2, $3, $4)
+          ON CONFLICT (email) DO NOTHING
+        `, [userId, null, row.first_trade, row.first_trade]);
+        
+        console.log('Migrated user from trades:', userId);
+      }
+    }
+  } catch (error) {
+    console.error('Error migrating existing users:', error);
   }
 }
 
