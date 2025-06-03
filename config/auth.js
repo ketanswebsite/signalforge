@@ -8,6 +8,14 @@ const path = require('path');
 // Load environment variables
 require('dotenv').config();
 
+// Load database module
+let TradeDB;
+try {
+  TradeDB = require('../database-postgres');
+} catch (err) {
+  TradeDB = require('../database-json');
+}
+
 // Determine database directory based on environment
 let dbDir;
 if (process.env.RENDER) {
@@ -42,7 +50,7 @@ passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: process.env.CALLBACK_URL
-}, (accessToken, refreshToken, profile, done) => {
+}, async (accessToken, refreshToken, profile, done) => {
     try {
         console.log('OAuth callback received for:', profile.emails[0].value);
         
@@ -53,6 +61,22 @@ passport.use(new GoogleStrategy({
             name: profile.displayName,
             picture: profile.photos[0].value
         };
+        
+        // Save or update user in database
+        if (TradeDB && TradeDB.saveOrUpdateUser) {
+            try {
+                await TradeDB.saveOrUpdateUser({
+                    email: user.email,
+                    name: user.name,
+                    google_id: user.id,
+                    picture: user.picture
+                });
+                console.log('User saved/updated in database:', user.email);
+            } catch (dbError) {
+                console.error('Error saving user to database:', dbError);
+                // Continue authentication even if database save fails
+            }
+        }
         
         // Allow all authenticated Google users
         console.log('Allowing all authenticated users - open registration mode');

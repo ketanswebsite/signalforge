@@ -226,11 +226,12 @@
                     <thead>
                         <tr>
                             <th>User Email</th>
+                            <th>Name</th>
                             <th>Total Trades</th>
                             <th>Active</th>
                             <th>Closed</th>
-                            <th>First Trade</th>
-                            <th>Last Trade</th>
+                            <th>First Login</th>
+                            <th>Last Login</th>
                         </tr>
                     </thead>
                     <tbody id="usersTableBody">
@@ -279,16 +280,17 @@
                         const row = document.createElement('tr');
                         row.innerHTML = `
                             <td>${user.user_id}</td>
+                            <td>${user.name || 'N/A'}</td>
                             <td>${user.total_trades}</td>
                             <td>${user.active_trades}</td>
                             <td>${user.closed_trades}</td>
-                            <td>${user.first_trade_date ? new Date(user.first_trade_date).toLocaleDateString() : 'N/A'}</td>
-                            <td>${user.last_trade_date ? new Date(user.last_trade_date).toLocaleDateString() : 'N/A'}</td>
+                            <td>${user.first_login ? new Date(user.first_login).toLocaleDateString() : 'Never'}</td>
+                            <td>${user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}</td>
                         `;
                         tbody.appendChild(row);
                     });
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">No users found</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">No users found</td></tr>';
                 }
 
                 loadingEl.style.display = 'none';

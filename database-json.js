@@ -9,7 +9,8 @@ const JSON_DB_PATH = process.env.RENDER
 // In-memory database for Render free tier
 let memoryDB = {
   trades: [],
-  alert_preferences: []
+  alert_preferences: [],
+  users: {}
 };
 
 // Load data from JSON file if it exists
@@ -17,8 +18,11 @@ function loadDatabase() {
   try {
     if (fs.existsSync(JSON_DB_PATH)) {
       const data = fs.readFileSync(JSON_DB_PATH, 'utf8');
-      memoryDB = JSON.parse(data);
-      console.log(`Loaded ${memoryDB.trades.length} trades from JSON database`);
+      const loaded = JSON.parse(data);
+      memoryDB.trades = loaded.trades || [];
+      memoryDB.alert_preferences = loaded.alert_preferences || [];
+      memoryDB.users = loaded.users || {};
+      console.log(`Loaded ${memoryDB.trades.length} trades and ${Object.keys(memoryDB.users).length} users from JSON database`);
     }
   } catch (error) {
     console.error('Error loading JSON database:', error);
@@ -372,12 +376,59 @@ const TradeDB = {
     }
   },
 
+  // User management functions (for compatibility)
+  async saveOrUpdateUser(userData) {
+    // Store users in memory
+    if (!memoryDB.users) {
+      memoryDB.users = {};
+    }
+    
+    const { email, name, google_id, picture } = userData;
+    const now = new Date().toISOString();
+    
+    if (!memoryDB.users[email]) {
+      memoryDB.users[email] = {
+        email,
+        name,
+        google_id,
+        picture,
+        first_login: now,
+        last_login: now,
+        created_at: now
+      };
+    } else {
+      memoryDB.users[email].last_login = now;
+      memoryDB.users[email].name = name;
+      memoryDB.users[email].picture = picture;
+    }
+    
+    await saveData();
+    return memoryDB.users[email];
+  },
+
   // Admin functions
   async getUserStatistics() {
     try {
-      // Group trades by user_id
+      // Get all registered users
+      const allUsers = memoryDB.users || {};
       const userStats = {};
       
+      // Initialize stats for all registered users
+      Object.values(allUsers).forEach(user => {
+        userStats[user.email] = {
+          user_id: user.email,
+          name: user.name,
+          total_trades: 0,
+          active_trades: 0,
+          closed_trades: 0,
+          first_trade_date: null,
+          last_trade_date: null,
+          first_login: user.first_login,
+          last_login: user.last_login
+        };
+      });
+      
+      // Add trade statistics
       memoryDB.trades.forEach(trade => {
         const userId = trade.user_id || 'default';
         // Map default to admin email
@@ -386,11 +437,14 @@ const TradeDB = {
         if (!userStats[displayUserId]) {
           userStats[displayUserId] = {
             user_id: displayUserId,
+            name: null,
             total_trades: 0,
             active_trades: 0,
             closed_trades: 0,
             first_trade_date: trade.created_at || trade.entryDate,
-            last_trade_date: trade.created_at || trade.entryDate
+            last_trade_date: trade.created_at || trade.entryDate,
+            first_login: null,
+            last_login: null
           };
         }
         
@@ -403,13 +457,11 @@ const TradeDB = {
         
         // Update first and last trade dates
         const tradeDate = new Date(trade.created_at || trade.entryDate);
-        const firstDate = new Date(userStats[displayUserId].first_trade_date);
-        const lastDate = new Date(userStats[displayUserId].last_trade_date);
         
-        if (tradeDate < firstDate) {
+        if (!userStats[displayUserId].first_trade_date || tradeDate < new Date(userStats[displayUserId].first_trade_date)) {
           userStats[displayUserId].first_trade_date = trade.created_at || trade.entryDate;
         }
-        if (tradeDate > lastDate) {
+        if (!userStats[displayUserId].last_trade_date || tradeDate > new Date(userStats[displayUserId].last_trade_date)) {
           userStats[displayUserId].last_trade_date = trade.created_at || trade.entryDate;
         }
       });
@@ -424,9 +476,14 @@ const TradeDB = {
 
   async getSystemStatistics() {
     try {
+      // Count all registered users
+      const allUsers = memoryDB.users || {};
+      const totalRegisteredUsers = Object.keys(allUsers).length;
+      
       const stats = {
         total_trades: 0,
-        total_users: new Set(),
+        total_users: totalRegisteredUsers,
+        users_with_trades: new Set(),
         active_trades: 0,
         closed_trades: 0
       };
@@ -437,7 +494,7 @@ const TradeDB = {
         const displayUserId = userId === 'default' ? 'ketanjoshisahs@gmail.com' : userId;
         
         stats.total_trades++;
-        stats.total_users.add(displayUserId);
+        stats.users_with_trades.add(displayUserId);
         
         if (trade.status === 'active') {
           stats.active_trades++;
@@ -448,7 +505,8 @@ const TradeDB = {
       
       return {
         total_trades: stats.total_trades,
-        total_users: stats.total_users.size,
+        total_users: stats.total_users,
+        users_with_trades: stats.users_with_trades.size,
         active_trades: stats.active_trades,
         closed_trades: stats.closed_trades
       };

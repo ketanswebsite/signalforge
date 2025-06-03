@@ -67,6 +67,20 @@ async function initializeDatabase() {
       )
     `);
 
+    // Create users table to track all registered users
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        name VARCHAR(255),
+        google_id VARCHAR(255),
+        picture VARCHAR(500),
+        first_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Create alert_preferences table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS alert_preferences (
@@ -605,29 +619,71 @@ const TradeDB = {
     }
   },
 
+  // User management functions
+  async saveOrUpdateUser(userData) {
+    checkConnection();
+    try {
+      const { email, name, google_id, picture } = userData;
+      
+      // Try to insert, on conflict update last_login
+      const result = await pool.query(`
+        INSERT INTO users (email, name, google_id, picture)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (email) 
+        DO UPDATE SET 
+          name = EXCLUDED.name,
+          picture = EXCLUDED.picture,
+          last_login = CURRENT_TIMESTAMP
+        RETURNING *
+      `, [email, name, google_id, picture]);
+      
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error saving/updating user:', error);
+      throw error;
+    }
+  },
+
   // Admin functions
   async getUserStatistics() {
     try {
+      // Get all registered users with their trade statistics
       const result = await pool.query(`
         SELECT 
-          user_id,
-          COUNT(*) as total_trades,
-          COUNT(CASE WHEN status = 'active' THEN 1 END) as active_trades,
-          COUNT(CASE WHEN status = 'closed' THEN 1 END) as closed_trades,
-          MIN(created_at) as first_trade_date,
-          MAX(created_at) as last_trade_date
-        FROM trades
-        GROUP BY user_id
-        ORDER BY total_trades DESC
+          u.email as user_id,
+          u.name,
+          u.first_login,
+          u.last_login,
+          COALESCE(t.total_trades, 0) as total_trades,
+          COALESCE(t.active_trades, 0) as active_trades,
+          COALESCE(t.closed_trades, 0) as closed_trades,
+          t.first_trade_date,
+          t.last_trade_date
+        FROM users u
+        LEFT JOIN (
+          SELECT 
+            user_id,
+            COUNT(*) as total_trades,
+            COUNT(CASE WHEN status = 'active' THEN 1 END) as active_trades,
+            COUNT(CASE WHEN status = 'closed' THEN 1 END) as closed_trades,
+            MIN(created_at) as first_trade_date,
+            MAX(created_at) as last_trade_date
+          FROM trades
+          GROUP BY user_id
+        ) t ON u.email = t.user_id
+        ORDER BY u.last_login DESC
       `);
       
       return result.rows.map(row => ({
-        user_id: row.user_id === 'default' ? 'ketanjoshisahs@gmail.com' : row.user_id,
-        total_trades: parseInt(row.total_trades),
-        active_trades: parseInt(row.active_trades),
-        closed_trades: parseInt(row.closed_trades),
+        user_id: row.user_id,
+        name: row.name,
+        total_trades: parseInt(row.total_trades) || 0,
+        active_trades: parseInt(row.active_trades) || 0,
+        closed_trades: parseInt(row.closed_trades) || 0,
         first_trade_date: row.first_trade_date,
-        last_trade_date: row.last_trade_date
+        last_trade_date: row.last_trade_date,
+        first_login: row.first_login,
+        last_login: row.last_login
       }));
     } catch (error) {
       console.error('Error getting user statistics:', error);
@@ -637,21 +693,27 @@ const TradeDB = {
 
   async getSystemStatistics() {
     try {
-      const result = await pool.query(`
+      // Get total registered users from users table
+      const usersResult = await pool.query('SELECT COUNT(*) as total_users FROM users');
+      
+      // Get trade statistics
+      const tradesResult = await pool.query(`
         SELECT 
           COUNT(*) as total_trades,
-          COUNT(DISTINCT user_id) as total_users,
+          COUNT(DISTINCT user_id) as users_with_trades,
           COUNT(CASE WHEN status = 'active' THEN 1 END) as active_trades,
           COUNT(CASE WHEN status = 'closed' THEN 1 END) as closed_trades
         FROM trades
       `);
       
-      const row = result.rows[0];
+      const usersRow = usersResult.rows[0];
+      const tradesRow = tradesResult.rows[0];
       return {
-        total_trades: parseInt(row.total_trades),
-        total_users: parseInt(row.total_users),
-        active_trades: parseInt(row.active_trades),
-        closed_trades: parseInt(row.closed_trades)
+        total_trades: parseInt(tradesRow.total_trades),
+        total_users: parseInt(usersRow.total_users),
+        active_trades: parseInt(tradesRow.active_trades),
+        closed_trades: parseInt(tradesRow.closed_trades),
+        users_with_trades: parseInt(tradesRow.users_with_trades)
       };
     } catch (error) {
       console.error('Error getting system statistics:', error);
