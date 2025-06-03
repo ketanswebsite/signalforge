@@ -244,9 +244,22 @@
             <div style="margin: 20px 0; padding: 15px; background: #303030; border-radius: 5px;">
                 <h3>📁 Restore from Backup File</h3>
                 <p>If you have a backup JSON file (like trades-export.json), you can upload it here:</p>
-                <input type="file" id="backupFileInput" accept=".json" style="margin: 10px 0; padding: 10px; background: #1a1a1a; color: #e0e0e0; border: 1px solid #555; border-radius: 5px;">
+                <input type="file" id="backupFileInput" accept=".json" style="margin: 10px 0; padding: 10px; background: #1a1a1a; color: #e0e0e0; border: 1px solid #555; border-radius: 5px; width: 300px;">
+                <br>
                 <button onclick="loadBackupFile()" id="loadBackupBtn" disabled>Load Backup File</button>
+                <button onclick="clearCurrentData()" id="clearDataBtn" style="background: #f44336; margin-left: 10px;" disabled>Clear Current Data</button>
                 <div id="backupFileStatus"></div>
+                
+                <div id="replaceDataSection" style="display: none; margin-top: 15px; padding: 15px; background: #1a1a1a; border-radius: 5px; border: 2px dashed #4CAF50;">
+                    <h4 style="color: #81C784; margin-top: 0;">🔄 Replace Current Data</h4>
+                    <p>You already have data loaded. You can:</p>
+                    <div style="margin: 10px 0;">
+                        <input type="file" id="replaceFileInput" accept=".json" style="margin: 10px 0; padding: 10px; background: #303030; color: #e0e0e0; border: 1px solid #555; border-radius: 5px; width: 300px;">
+                        <br>
+                        <button onclick="replaceBackupFile()" id="replaceBackupBtn" disabled style="background: #ff9800;">Replace with New File</button>
+                    </div>
+                    <div id="replaceFileStatus"></div>
+                </div>
             </div>
             
             <div id="currentDataStatus"></div>
@@ -596,7 +609,7 @@
             }
         }
         
-        // File input handler
+        // File input handlers
         document.getElementById('backupFileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             const loadBtn = document.getElementById('loadBackupBtn');
@@ -606,6 +619,18 @@
             } else {
                 loadBtn.disabled = true;
                 loadBtn.textContent = 'Load Backup File';
+            }
+        });
+        
+        document.getElementById('replaceFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const replaceBtn = document.getElementById('replaceBackupBtn');
+            if (file && file.type === 'application/json') {
+                replaceBtn.disabled = false;
+                replaceBtn.textContent = `Replace with ${file.name}`;
+            } else {
+                replaceBtn.disabled = true;
+                replaceBtn.textContent = 'Replace with New File';
             }
         });
         
@@ -695,6 +720,10 @@
                 // Enable next steps
                 document.getElementById('downloadBtn').style.display = 'inline-block';
                 document.getElementById('testConnectionBtn').disabled = false;
+                document.getElementById('clearDataBtn').disabled = false;
+                
+                // Show replace data section
+                document.getElementById('replaceDataSection').style.display = 'block';
                 
                 updateStepIndicator(1);
                 
@@ -702,6 +731,142 @@
                 statusDiv.innerHTML = `<div class="status error">✗ Error loading backup file: ${error.message}</div>`; 
                 uploadedBackupData = null;
                 currentData = null;
+            }
+        }
+        
+        // Clear current data function
+        function clearCurrentData() {
+            if (!confirm('Are you sure you want to clear the current loaded data? You will need to reload a backup file.')) {
+                return;
+            }
+            
+            // Reset all data
+            currentData = null;
+            backupData = null;
+            uploadedBackupData = null;
+            
+            // Clear displays
+            document.getElementById('currentStats').style.display = 'none';
+            document.getElementById('dataPreview').style.display = 'none';
+            document.getElementById('backupInfo').style.display = 'none';
+            document.getElementById('replaceDataSection').style.display = 'none';
+            
+            // Reset file inputs
+            document.getElementById('backupFileInput').value = '';
+            document.getElementById('replaceFileInput').value = '';
+            
+            // Disable buttons
+            document.getElementById('loadBackupBtn').disabled = true;
+            document.getElementById('loadBackupBtn').textContent = 'Load Backup File';
+            document.getElementById('clearDataBtn').disabled = true;
+            document.getElementById('downloadBtn').style.display = 'none';
+            document.getElementById('testConnectionBtn').disabled = true;
+            document.getElementById('initializeBtn').disabled = true;
+            document.getElementById('migrateBtn').disabled = true;
+            document.getElementById('verifyBtn').disabled = true;
+            
+            // Clear status
+            document.getElementById('backupFileStatus').innerHTML = '<div class="status info">Data cleared. Please load a backup file to continue.</div>';
+            
+            // Reset step indicator
+            updateStepIndicator(1);
+        }
+        
+        // Replace backup file function
+        async function replaceBackupFile() {
+            if (!confirm('Are you sure you want to replace the current data with the new file?')) {
+                return;
+            }
+            
+            const fileInput = document.getElementById('replaceFileInput');
+            const statusDiv = document.getElementById('replaceFileStatus');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                statusDiv.innerHTML = '<div class="status error">No file selected</div>';
+                return;
+            }
+            
+            statusDiv.innerHTML = '<div class="status info">Loading replacement file...</div>';
+            
+            try {
+                const text = await file.text();
+                const data = JSON.parse(text);
+                
+                // Validate the backup file structure
+                if (!data.trades || !Array.isArray(data.trades)) {
+                    throw new Error('Invalid backup file format. Missing trades array.');
+                }
+                
+                // Replace the data
+                uploadedBackupData = data;
+                currentData = {
+                    trades: data.trades,
+                    alertPreferences: data.alert_preferences && data.alert_preferences.length > 0 ? data.alert_preferences[0] : null
+                };
+                
+                // Create new backup from uploaded data
+                backupData = {
+                    exportDate: data.exportDate || new Date().toISOString(),
+                    trades: data.trades,
+                    alert_preferences: data.alert_preferences || []
+                };
+                
+                // Display stats
+                const stats = {
+                    totalTrades: data.trades.length,
+                    activeTrades: data.trades.filter(t => t.status === 'active').length,
+                    closedTrades: data.trades.filter(t => t.status === 'closed').length,
+                    hasAlertPrefs: !!(data.alert_preferences && data.alert_preferences.length > 0),
+                    exportDate: data.exportDate
+                };
+                
+                statusDiv.innerHTML = `<div class="status success">✓ Data replaced successfully with "${file.name}"!</div>`;
+                
+                // Update main status
+                document.getElementById('backupFileStatus').innerHTML = `<div class="status success">✓ Current data: ${file.name}</div>
+                    <div class="highlight-box">
+                        <h4>🔄 Data Updated</h4>
+                        <p>Your data has been replaced with "${file.name}" and is ready for migration.</p>
+                        <p><strong>Updated Stats:</strong> ${stats.totalTrades} total trades (${stats.activeTrades} active, ${stats.closedTrades} closed)</p>
+                    </div>`;
+                
+                // Update stats display
+                document.getElementById('currentStats').innerHTML = `
+                    <div class="stat-card">
+                        <h3>${stats.totalTrades}</h3>
+                        <p>Total Trades</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${stats.activeTrades}</h3>
+                        <p>Active Trades</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${stats.closedTrades}</h3>
+                        <p>Closed Trades</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${stats.hasAlertPrefs ? '✓' : '✗'}</h3>
+                        <p>Alert Preferences</p>
+                    </div>
+                `;
+                
+                // Update preview
+                document.getElementById('dataPreviewContent').textContent = 
+                    `Export Date: ${stats.exportDate}\n\n` +
+                    JSON.stringify(data.trades.slice(0, 3), null, 2) + 
+                    '\n... and ' + (data.trades.length - 3) + ' more trades';
+                
+                // Update backup info
+                document.getElementById('backupFilename').textContent = file.name;
+                
+                // Clear replace file input
+                fileInput.value = '';
+                document.getElementById('replaceBackupBtn').disabled = true;
+                document.getElementById('replaceBackupBtn').textContent = 'Replace with New File';
+                
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="status error">✗ Error loading replacement file: ${error.message}</div>`; 
             }
         }
         
