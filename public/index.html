@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#ffffff">
-    <title>SignalForge</title>
+    <meta name="description" content="Educational platform for learning technical analysis and backtesting methodologies. Explore historical market patterns and technical indicators for educational purposes only.">
+    <meta name="keywords" content="technical analysis education, backtesting learning, market patterns, educational trading tools, historical data analysis">
+    <title>SignalForge - Technical Analysis Education Platform</title>
     <!-- Import Google Font (Inter) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -98,8 +100,8 @@
             <!-- Overlay for mobile nav -->
             <div class="mobile-nav-overlay" id="mobile-nav-overlay"></div>
             <p class="app-description">
-                Forge powerful trading signals using advanced technical indicators.
-                Backtest and analyze long-only strategies with customizable parameters on historical stock data.
+                Educational platform for learning technical analysis and backtesting methodologies.
+                Explore historical market patterns and understand technical indicators through interactive data visualization.
             </p>
             
             <!-- UK Regulatory Compliance Disclaimers -->
@@ -138,27 +140,27 @@
                                 <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
                                 <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
                             </svg>
-                            Trading Rules
+                            Backtest Parameters
                         </h4>
                         <div class="parameter-group">
                             <label for="entry-threshold">Entry Threshold</label>
                             <input type="number" id="entry-threshold" value="0" max="0">
-                            <span class="form-hint">Entry when indicator is below this value</span>
+                            <span class="form-hint">Historical entry point when indicator below this value</span>
                         </div>
                         <div class="parameter-group">
                             <label for="take-profit">Take Profit (%)</label>
                             <input type="number" id="take-profit" value="8" min="0" step="0.1">
-                            <span class="form-hint">Exit when profit reaches this percentage</span>
+                            <span class="form-hint">Historical exit point at this percentage gain</span>
                         </div>
                         <div class="parameter-group">
                             <label for="stop-loss">Stop Loss (%)</label>
                             <input type="number" id="stop-loss" value="5" min="0" step="0.1">
-                            <span class="form-hint">Exit when loss exceeds this percentage</span>
+                            <span class="form-hint">Historical exit point at this percentage loss</span>
                         </div>
                         <div class="parameter-group">
                             <label for="max-days">Max Holding Period (days)</label>
                             <input type="number" id="max-days" value="30" min="1">
-                            <span class="form-hint">Exit position after this many days</span>
+                            <span class="form-hint">Historical position duration limit for analysis</span>
                         </div>
                     </div>
                     

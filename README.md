@@ -1,28 +1,30 @@
-# SignalForge - AI-Powered Stock Trading System
+# SignalForge - Technical Analysis Education Platform
 
-SignalForge is a comprehensive stock trading platform that combines technical analysis, AI-driven insights, and automated signal management. The system supports both Indian (NSE) and US stock markets with real-time price tracking and sophisticated backtesting capabilities.
+SignalForge is an educational platform for learning technical analysis and understanding market patterns through historical data visualization. The system provides tools for exploring technical indicators and backtesting methodologies across Indian (NSE) and US markets for educational purposes only.
+
+**Important Disclaimer**: This platform is for educational and informational purposes only. It does not provide investment advice. Past performance is not a reliable indicator of future results.
 
 ## 🚀 Features
 
-### Core Trading Features
+### Core Educational Features
 
-- **Multi-Market Support**: Trade Indian stocks (NSE) and US stocks with automatic currency handling
-- **Real-Time Price Updates**: Live stock price tracking with market hours awareness
-- **Signal Management**: Create, track, and manage trading signals with entry, target, and stop-loss levels
-- **Portfolio Tracking**: Monitor active positions, P&L, and overall portfolio performance
-- **Trade History**: Complete audit trail of all trades with performance metrics
+- **Multi-Market Data**: Explore historical data from Indian (NSE) and US markets
+- **Price Data Visualization**: View historical price movements and patterns
+- **Pattern Analysis Tools**: Study technical patterns with educational indicators
+- **Historical Performance Tracking**: Analyze past patterns and their outcomes
+- **Educational Analytics**: Learn from historical market data and patterns
 
-### Advanced Analytics
+### Educational Analytics Tools
 
-- **AI-Powered Insights**:
-  - Sentiment analysis for market trends
-  - Risk assessment for individual trades
-  - Pattern recognition for technical analysis
-- **DTI (Directional Trend Index) Backtesting**:
-  - High conviction trading strategy using DTI indicators
-  - 7-day DTI analysis for trend confirmation
-  - Automated scanning of all global stocks
-  - Daily Telegram alerts at 7 AM UK time
+- **AI-Powered Analysis** (For Educational Purposes):
+  - Historical sentiment pattern analysis
+  - Risk pattern education
+  - Technical pattern recognition learning
+- **DTI (Directional Trend Index) Educational Tool**:
+  - Learn about DTI indicator methodology
+  - Understand 7-day DTI pattern analysis
+  - Explore historical patterns across markets
+  - Educational alerts for learning purposes
 - **Comprehensive Backtesting**:
   - Test strategies on historical data
   - Support for multiple technical indicators (EMA, RSI, MACD, Bollinger Bands)

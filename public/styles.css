@@ -7934,8 +7934,36 @@ body.menu-open {
 .chart-compliance-notice,
 .pattern-disclaimer,
 .backtest-disclaimer,
-.legal-disclaimer {
+.legal-disclaimer,
+.performance-disclaimer {
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
+}
+
+/* Performance disclaimer styling */
+.performance-disclaimer {
+    background-color: var(--info-light);
+    border-left: 4px solid var(--info-color);
+    border-radius: var(--radius-sm);
+    margin: 0 0 16px 0;
+    padding: 10px 14px;
+}
+
+.performance-disclaimer p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--text-color);
+}
+
+.performance-disclaimer strong {
+    color: var(--info-color);
+    font-weight: 600;
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .performance-disclaimer {
+    background-color: var(--info-light);
+    border-left-color: var(--info-color);
 }
