@@ -19,16 +19,29 @@ async function backupData() {
   
   try {
     // Get all trades
-    const trades = await TradeDB.getAllTradesForBackup();
+    const trades = await TradeDB.getAllTrades ? await TradeDB.getAllTrades() : [];
     
-    // Get all alert preferences
-    const alertUsers = await TradeDB.getAllActiveAlertUsers();
+    // Get ALL alert preferences (not just active ones)
+    let alertPrefs = [];
+    try {
+      // Try to get all users' preferences
+      const users = ['default', 'ketanjoshisahs@gmail.com', 'ketan.g.joshi@hotmail.com'];
+      for (const userId of users) {
+        const prefs = await TradeDB.getAlertPreferences(userId);
+        if (prefs) {
+          alertPrefs.push(prefs);
+        }
+      }
+    } catch (err) {
+      console.log('Using getAllActiveAlertUsers fallback');
+      alertPrefs = await TradeDB.getAllActiveAlertUsers();
+    }
     
     const backup = {
       version: '1.0',
       timestamp: new Date().toISOString(),
       trades: trades,
-      alertPreferences: alertUsers
+      alertPreferences: alertPrefs
     };
     
     const backupPath = path.join(__dirname, 'backup-data.json');
@@ -36,7 +49,7 @@ async function backupData() {
     
     console.log(`✅ Backup created: ${backupPath}`);
     console.log(`   - ${trades.length} trades`);
-    console.log(`   - ${alertUsers.length} alert preferences`);
+    console.log(`   - ${alertPrefs.length} alert preferences`);
     
   } catch (error) {
     console.error('❌ Backup failed:', error);
