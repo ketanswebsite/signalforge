@@ -58,7 +58,7 @@ const AlertsUI = (function() {
         `;
         alertsButton.style.position = 'fixed';
         alertsButton.style.top = '20px';
-        alertsButton.style.right = '20px';
+        alertsButton.style.right = '70px'; // Moved left to avoid user menu overlap
         alertsButton.style.width = '40px';
         alertsButton.style.height = '40px';
         alertsButton.style.borderRadius = '50%';
