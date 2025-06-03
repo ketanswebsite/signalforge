@@ -739,26 +739,40 @@ function formatOpportunitiesMessage(opportunities) {
     for (const [market, stocks] of Object.entries(byMarket)) {
         if (stocks.length === 0) continue;
         
-        message += `*${market} Market (${stocks.length}):*\n`;
+        message += `*${market} Market (${stocks.length}):*\n\n`;
         
-        // Show top 5 for each market
-        stocks.slice(0, 5).forEach(opp => {
-            const plPercent = ((opp.currentPrice - opp.activeTrade.entryPrice) / opp.activeTrade.entryPrice) * 100;
-            const holdingDays = Math.floor((new Date() - new Date(opp.activeTrade.entryDate)) / (24 * 60 * 60 * 1000));
-            const emoji = plPercent > 0 ? '📈' : '📉';
+        // Show all opportunities for each market with your requested format
+        stocks.forEach(opp => {
+            // Calculate target and stop loss based on the parameters
+            const targetPrice = opp.activeTrade.entryPrice * 1.08; // 8% profit target
+            const stopLossPrice = opp.activeTrade.entryPrice * 0.95; // 5% stop loss
             
-            message += `${emoji} *${opp.stock.name}* (${opp.stock.symbol})\n`;
-            message += `   Entry: ${opp.activeTrade.entryPrice.toFixed(2)} | Current: ${opp.currentPrice.toFixed(2)}\n`;
-            message += `   P/L: ${plPercent > 0 ? '+' : ''}${plPercent.toFixed(2)}% | Days: ${holdingDays}\n`;
-            message += `   DTI: ${opp.currentDTI.toFixed(2)}\n\n`;
+            // Calculate exit date (30 days from entry)
+            const entryDate = new Date(opp.activeTrade.entryDate);
+            const exitDate = new Date(entryDate);
+            exitDate.setDate(exitDate.getDate() + 30);
+            
+            // Format dates
+            const formatDate = (date) => {
+                const d = new Date(date);
+                return `${d.getDate()}-${d.getMonth() + 1}-${d.getFullYear()}`;
+            };
+            
+            // Get currency symbol
+            const currencySymbol = market === 'NSE' ? '₹' : market === 'UK' ? '£' : '$';
+            
+            message += `📈 *Strong Buy Signal - ${opp.stock.name}*\n`;
+            message += `• Entry Date: ${formatDate(opp.activeTrade.entryDate)}\n`;
+            message += `• Current Price: ${currencySymbol}${opp.currentPrice.toFixed(2)}\n`;
+            message += `• Target Price: ${currencySymbol}${targetPrice.toFixed(2)}\n`;
+            message += `• Stoploss Price: ${currencySymbol}${stopLossPrice.toFixed(2)}\n`;
+            message += `• Square off Date: ${formatDate(exitDate)}\n`;
+            message += `• Market: ${market}\n`;
+            message += `• Signal Date: ${formatDate(new Date())}\n\n`;
         });
-        
-        if (stocks.length > 5) {
-            message += `... and ${stocks.length - 5} more\n\n`;
-        }
     }
     
-    message += `\n⏰ Next scan: Tomorrow at 7 AM UK time`;
+    message += `⏰ Next scan: Tomorrow at 7 AM UK time`;
     
     return message;
 }
