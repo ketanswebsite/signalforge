@@ -29,7 +29,8 @@
       "Bash(timeout:*)",
       "Bash(true)",
       "Bash(cmd.exe /c deploy-to-render.bat)",
-      "Bash(cmd.exe /c quick-deploy.bat)"
+      "Bash(cmd.exe /c quick-deploy.bat)",
+      "Bash(./quick-deploy.bat)"
     ],
     "deny": []
   },
