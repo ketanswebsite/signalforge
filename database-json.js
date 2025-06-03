@@ -212,7 +212,33 @@ const TradeDB = {
   // Get alert preferences for a user
   async getAlertPreferences(userId = 'default') {
     try {
-      return memoryDB.alert_preferences.find(p => p.user_id === userId) || null;
+      // First try to find preferences for the specific user
+      let prefs = memoryDB.alert_preferences.find(p => p.user_id === userId);
+      
+      // If not found and user is not 'default', try to find default preferences
+      if (!prefs && userId !== 'default') {
+        const defaultPrefs = memoryDB.alert_preferences.find(p => p.user_id === 'default');
+        
+        // If found default preferences, clone and save them for this user
+        if (defaultPrefs && defaultPrefs.telegram_enabled && defaultPrefs.telegram_chat_id) {
+          console.log(`Cloning default preferences for user: ${userId}`);
+          const userPrefs = {
+            ...defaultPrefs,
+            user_id: userId,
+            id: Date.now() + Math.random(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          
+          // Save the cloned preferences
+          memoryDB.alert_preferences.push(userPrefs);
+          saveDatabase();
+          
+          return userPrefs;
+        }
+      }
+      
+      return prefs || null;
     } catch (error) {
       console.error('Error getting alert preferences:', error);
       return null;
@@ -273,7 +299,10 @@ const TradeDB = {
   // Get all users with active alerts
   async getAllActiveAlertUsers() {
     try {
-      return memoryDB.alert_preferences.filter(p => p.telegram_enabled === 1 || p.email_enabled === 1);
+      return memoryDB.alert_preferences.filter(p => 
+        (p.telegram_enabled === 1 || p.telegram_enabled === true) || 
+        (p.email_enabled === 1 || p.email_enabled === true)
+      );
     } catch (error) {
       console.error('Error getting active alert users:', error);
       return [];

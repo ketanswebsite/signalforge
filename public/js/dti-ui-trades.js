@@ -687,7 +687,9 @@ async function sendDirectOpportunityAlerts(opportunities) {
         console.log(`📤 Sending alerts for ${opportunities.length} opportunities...`);
         
         // Get alert preferences
-        const prefsResponse = await fetch('/api/alerts/preferences');
+        const prefsResponse = await fetch('/api/alerts/preferences', {
+            credentials: 'include' // Include cookies for authentication
+        });
         if (!prefsResponse.ok) {
             console.log('❌ Failed to fetch alert preferences');
             return;
@@ -791,6 +793,7 @@ async function sendTelegramMessage(chatId, messageData) {
     const response = await fetch('/api/alerts/send-custom', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify({
             chatId: chatId,
             message: messageData

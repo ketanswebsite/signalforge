@@ -29,9 +29,35 @@ const AlertsUI = (function() {
             const response = await fetch('/api/alerts/preferences');
             if (response.ok) {
                 alertPreferences = await response.json();
+                console.log('Loaded alert preferences:', alertPreferences);
+            } else {
+                console.warn('No alert preferences found, using defaults');
+                alertPreferences = {
+                    telegram_enabled: false,
+                    telegram_chat_id: '',
+                    alert_on_buy: true,
+                    alert_on_sell: true,
+                    alert_on_target: true,
+                    alert_on_stoploss: true,
+                    alert_on_time_exit: true,
+                    market_open_alert: false,
+                    market_close_alert: false
+                };
             }
         } catch (error) {
             console.error('Failed to load alert preferences:', error);
+            // Use defaults on error
+            alertPreferences = {
+                telegram_enabled: false,
+                telegram_chat_id: '',
+                alert_on_buy: true,
+                alert_on_sell: true,
+                alert_on_target: true,
+                alert_on_stoploss: true,
+                alert_on_time_exit: true,
+                market_open_alert: false,
+                market_close_alert: false
+            };
         }
     }
     

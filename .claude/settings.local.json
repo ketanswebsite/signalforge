@@ -33,7 +33,8 @@
       "Bash(./quick-deploy.bat)",
       "WebFetch(domain:stock-proxy.onrender.com)",
       "Bash(./deploy-to-render.bat)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(jq:*)"
     ],
     "deny": []
   },
