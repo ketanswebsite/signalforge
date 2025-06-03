@@ -7,7 +7,7 @@ const session = require('express-session');
 // Load environment variables
 require('dotenv').config();
 
-console.log('\n=== STARTING NEW APP.JS SERVER ===\n');
+console.log('\n=== STARTING NEW APP.JS SERVER - UPDATED SCHEMA ===\n');
 
 // Run diagnostic info on Render
 if (process.env.RENDER) {
@@ -341,49 +341,13 @@ app.post('/api/trades', ensureAuthenticatedAPI, async (req, res) => {
   try {
     const userId = req.user ? req.user.email : 'default';
     
-    // Map backup fields to PostgreSQL schema (for migration compatibility)
-    const mappedTrade = {
-      symbol: req.body.symbol,
-      name: req.body.stockName || req.body.name || null,
-      stockIndex: req.body.stockIndex || null,
-      entryDate: req.body.entryDate,
-      entryPrice: req.body.entryPrice,
-      quantity: req.body.shares || req.body.quantity || null,
-      positionSize: req.body.investmentAmount || req.body.positionSize || null,
-      stopLoss: req.body.stopLossPrice || req.body.stopLoss || null,
-      targetPrice: req.body.targetPrice || null,
-      exitDate: req.body.exitDate || req.body.squareOffDate || null,
-      exitPrice: req.body.exitPrice || null,
-      status: req.body.status || 'active',
-      profitLoss: req.body.profit || req.body.profitLoss || null,
-      profitLossPercentage: req.body.percentGain || req.body.profitLossPercentage || null,
-      notes: req.body.notes || req.body.entryReason || null
-    };
-    
     // Debug logging for TBCG.L trade
     if (req.body.symbol === 'TBCG.L') {
       console.log('=== TBCG.L POST /api/trades DEBUG ===');
-      console.log('Original body:', {
-        symbol: req.body.symbol,
-        shares: req.body.shares,
-        investmentAmount: req.body.investmentAmount,
-        profit: req.body.profit,
-        percentGain: req.body.percentGain,
-        stockName: req.body.stockName,
-        stopLossPrice: req.body.stopLossPrice
-      });
-      console.log('Mapped trade:', {
-        symbol: mappedTrade.symbol,
-        quantity: mappedTrade.quantity,
-        positionSize: mappedTrade.positionSize,
-        profitLoss: mappedTrade.profitLoss,
-        profitLossPercentage: mappedTrade.profitLossPercentage,
-        name: mappedTrade.name,
-        stopLoss: mappedTrade.stopLoss
-      });
+      console.log('Raw trade data:', req.body);
     }
     
-    const trade = await TradeDB.insertTrade(mappedTrade, userId);
+    const trade = await TradeDB.insertTrade(req.body, userId);
     res.status(201).json(trade);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -536,51 +500,15 @@ app.post('/api/admin/import-backup', ensureAuthenticatedAPI, async (req, res) =>
     let importedCount = 0;
     for (const trade of trades) {
       try {
-        // Map backup fields to PostgreSQL schema
-        const mappedTrade = {
-          symbol: trade.symbol,
-          name: trade.stockName || trade.name || null,
-          stockIndex: trade.stockIndex || null,
-          entryDate: trade.entryDate,
-          entryPrice: trade.entryPrice,
-          quantity: trade.shares || trade.quantity || null,
-          positionSize: trade.investmentAmount || trade.positionSize || null,
-          stopLoss: trade.stopLossPrice || trade.stopLoss || null,
-          targetPrice: trade.targetPrice || null,
-          exitDate: trade.exitDate || trade.squareOffDate || null,
-          exitPrice: trade.exitPrice || null,
-          status: trade.status || 'active',
-          profitLoss: trade.profit || trade.profitLoss || null,
-          profitLossPercentage: trade.percentGain || trade.profitLossPercentage || null,
-          notes: trade.notes || trade.entryReason || null
-        };
-        
         // Debug logging for TBCG.L trade
         if (trade.symbol === 'TBCG.L') {
-          console.log('=== TBCG.L TRADE MAPPING DEBUG ===');
-          console.log('Original trade:', {
-            symbol: trade.symbol,
-            shares: trade.shares,
-            investmentAmount: trade.investmentAmount,
-            profit: trade.profit,
-            percentGain: trade.percentGain,
-            stockName: trade.stockName,
-            stopLossPrice: trade.stopLossPrice
-          });
-          console.log('Mapped trade:', {
-            symbol: mappedTrade.symbol,
-            quantity: mappedTrade.quantity,
-            positionSize: mappedTrade.positionSize,
-            profitLoss: mappedTrade.profitLoss,
-            profitLossPercentage: mappedTrade.profitLossPercentage,
-            name: mappedTrade.name,
-            stopLoss: mappedTrade.stopLoss
-          });
+          console.log('=== TBCG.L BULK IMPORT DEBUG ===');
+          console.log('Original trade data:', trade);
         }
         
         // Ensure user_id is set correctly
         const userId = trade.user_id || req.user.email;
-        await TradeDB.insertTrade(mappedTrade, userId);
+        await TradeDB.insertTrade(trade, userId);
         importedCount++;
       } catch (err) {
         console.error(`Failed to import trade ${trade.id}:`, err.message);
