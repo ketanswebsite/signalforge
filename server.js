@@ -149,6 +149,50 @@ app.get('/api/test', (req, res) => {
   });
 });
 
+// Debug endpoint to check all trades (admin only)
+app.get('/api/debug/all-trades', ensureAuthenticatedAPI, async (req, res) => {
+  // Check if user is admin
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+  }
+  
+  try {
+    // For JSON database, get raw data
+    if (typeof TradeDB.getAllTradesNoFilter === 'function') {
+      const allTrades = await TradeDB.getAllTradesNoFilter();
+      res.json({
+        totalTrades: allTrades.length,
+        trades: allTrades,
+        database: 'Using getAllTradesNoFilter'
+      });
+    } else {
+      // Fallback - try to get trades without user filter
+      const fs = require('fs');
+      const path = require('path');
+      
+      // Check if using JSON database
+      const jsonPath = path.join(__dirname, 'trades-db.json');
+      if (fs.existsSync(jsonPath)) {
+        const jsonData = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+        res.json({
+          totalTrades: jsonData.trades ? jsonData.trades.length : 0,
+          trades: jsonData.trades || [],
+          database: 'JSON file directly'
+        });
+      } else {
+        res.json({
+          totalTrades: 0,
+          trades: [],
+          database: 'No JSON file found',
+          error: 'Cannot access raw trade data'
+        });
+      }
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Debug endpoint for admin
 app.get('/api/test-admin', ensureAuthenticatedAPI, async (req, res) => {
   try {
@@ -293,12 +337,25 @@ app.put('/api/trades/:id', ensureAuthenticatedAPI, async (req, res) => {
   try {
     console.log('>>> UPDATE TRADE REQUEST:', {
       id: req.params.id,
+      idType: typeof req.params.id,
+      user: req.user?.email,
       body: req.body,
       hasEntryPrice: 'entryPrice' in req.body,
       entryPrice: req.body.entryPrice
     });
     
     const userId = req.user ? req.user.email : 'default';
+    
+    // First check if trade exists
+    const existingTrade = await TradeDB.getTradeById(req.params.id, userId);
+    if (!existingTrade) {
+      console.log('>>> Trade not found:', {
+        requestedId: req.params.id,
+        userId: userId
+      });
+      return res.status(404).json({ error: 'Trade not found' });
+    }
+    
     const success = await TradeDB.updateTrade(req.params.id, req.body, userId);
     if (!success) {
       return res.status(404).json({ error: 'Trade not found' });

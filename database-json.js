@@ -75,8 +75,11 @@ const TradeDB = {
 
   // Get trade by ID for a user
   async getTradeById(id, userId = 'default') {
+    // Handle both string and number IDs
+    const numId = typeof id === 'string' ? parseFloat(id) : id;
     return memoryDB.trades.find(t => 
-      t.id === id && (t.user_id || 'default') === userId
+      (t.id === id || t.id === numId || t.id === String(id)) && 
+      (t.user_id || 'default') === userId
     );
   },
 
@@ -111,15 +114,20 @@ const TradeDB = {
     try {
       console.log('>>> Database updateTrade called:', {
         id,
+        idType: typeof id,
         userId,
         hasEntryPrice: 'entryPrice' in updates,
         entryPrice: updates.entryPrice,
         updatesKeys: Object.keys(updates)
       });
       
+      // Handle both string and number IDs
+      const numId = typeof id === 'string' ? parseFloat(id) : id;
       const index = memoryDB.trades.findIndex(t => 
-        t.id === id && (t.user_id || 'default') === userId
+        (t.id === id || t.id === numId || t.id === String(id)) && 
+        (t.user_id || 'default') === userId
       );
+      
       if (index !== -1) {
         memoryDB.trades[index] = {
           ...memoryDB.trades[index],
@@ -130,7 +138,7 @@ const TradeDB = {
         console.log('>>> Update result: success');
         return true;
       }
-      console.log('>>> Update result: trade not found');
+      console.log('>>> Update result: trade not found for id:', id, 'user:', userId);
       return false;
     } catch (error) {
       console.error('Error updating trade:', error);
@@ -141,8 +149,11 @@ const TradeDB = {
   // Delete a trade for a user
   async deleteTrade(id, userId = 'default') {
     try {
+      // Handle both string and number IDs
+      const numId = typeof id === 'string' ? parseFloat(id) : id;
       const index = memoryDB.trades.findIndex(t => 
-        t.id === id && (t.user_id || 'default') === userId
+        (t.id === id || t.id === numId || t.id === String(id)) && 
+        (t.user_id || 'default') === userId
       );
       if (index !== -1) {
         memoryDB.trades.splice(index, 1);
