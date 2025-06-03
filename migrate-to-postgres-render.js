@@ -54,7 +54,7 @@ async function migrateToPostgres() {
       let successCount = 0;
       for (const trade of backupData.trades) {
         try {
-          // Map fields to PostgreSQL schema
+          // Map fields to PostgreSQL schema - INCLUDING ALL FIELDS
           const mappedTrade = {
             symbol: trade.symbol,
             name: trade.stockName || trade.name || null,
@@ -71,6 +71,10 @@ async function migrateToPostgres() {
             profitLoss: trade.profit || trade.profitLoss || null,
             profitLossPercentage: trade.percentGain || trade.profitLossPercentage || null,
             notes: trade.notes || trade.entryReason || null,
+            currencySymbol: trade.currencySymbol || '₹',
+            stopLossPercent: trade.stopLossPercent || 5,
+            takeProfitPercent: trade.takeProfitPercent || 8,
+            investmentAmount: trade.investmentAmount || trade.positionSize || null,
             userId: trade.user_id || 'default'
           };
           
@@ -79,8 +83,9 @@ async function migrateToPostgres() {
               symbol, name, stock_index, entry_date, entry_price, 
               quantity, position_size, stop_loss, target_price, 
               exit_date, exit_price, status, profit_loss, profit_loss_percentage,
-              notes, user_id
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+              notes, currency_symbol, stop_loss_percent, take_profit_percent, 
+              investment_amount, user_id
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)`,
             [
               mappedTrade.symbol,
               mappedTrade.name,
@@ -97,6 +102,10 @@ async function migrateToPostgres() {
               mappedTrade.profitLoss,
               mappedTrade.profitLossPercentage,
               mappedTrade.notes,
+              mappedTrade.currencySymbol,
+              mappedTrade.stopLossPercent,
+              mappedTrade.takeProfitPercent,
+              mappedTrade.investmentAmount,
               mappedTrade.userId
             ]
           );

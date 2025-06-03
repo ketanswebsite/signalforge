@@ -722,58 +722,66 @@ async function scanAllStocks(params = {}) {
 
 // Format opportunities for Telegram message
 function formatOpportunitiesMessage(opportunities) {
-    if (!opportunities || opportunities.length === 0) {
-        return `📊 *DTI Backtest Scan Complete*\n\nNo high conviction opportunities found at this time.\n\nNext scan: Tomorrow at 7 AM UK time`;
+    // Filter for opportunities from last 2 trading days only
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const recentOpportunities = opportunities.filter(opp => {
+        if (!opp.activeTrade || !opp.activeTrade.entryDate) return false;
+        
+        const entryDate = new Date(opp.activeTrade.entryDate);
+        entryDate.setHours(0, 0, 0, 0);
+        
+        // Calculate days difference (excluding weekends)
+        let tradingDays = 0;
+        let tempDate = new Date(today);
+        
+        while (tempDate >= entryDate && tradingDays < 3) {
+            const dayOfWeek = tempDate.getDay();
+            if (dayOfWeek !== 0 && dayOfWeek !== 6) { // Not weekend
+                tradingDays++;
+            }
+            tempDate.setDate(tempDate.getDate() - 1);
+            
+            if (tempDate < entryDate) break;
+        }
+        
+        return tradingDays <= 2; // Only last 2 trading days
+    });
+    
+    if (!recentOpportunities || recentOpportunities.length === 0) {
+        return `📊 *Daily Scan Complete*\n\nNo high conviction opportunities from last 2 days.\n\nNext scan: Tomorrow at 7 AM UK time`;
     }
     
-    let message = `🎯 *DTI High Conviction Opportunities*\n\n`;
-    message += `Found ${opportunities.length} active trading opportunities:\n\n`;
+    let message = `🎯 *HIGH CONVICTION OPPORTUNITIES*\n`;
+    message += `Found ${recentOpportunities.length} signals from last 2 days:\n\n`;
     
-    // Group by market
-    const byMarket = {
-        NSE: opportunities.filter(o => o.stock.symbol.endsWith('.NS')),
-        UK: opportunities.filter(o => o.stock.symbol.endsWith('.L')),
-        US: opportunities.filter(o => !o.stock.symbol.endsWith('.NS') && !o.stock.symbol.endsWith('.L'))
-    };
+    // Take up to 5 opportunities
+    const topOpportunities = recentOpportunities.slice(0, 5);
     
-    for (const [market, stocks] of Object.entries(byMarket)) {
-        if (stocks.length === 0) continue;
+    topOpportunities.forEach((opp, index) => {
+        const entryPrice = opp.currentPrice || opp.activeTrade.entryPrice;
+        const targetPrice = entryPrice * 1.08; // 8% profit target
+        const stopLossPrice = entryPrice * 0.95; // 5% stop loss
         
-        message += `*${market} Market (${stocks.length}):*\n\n`;
+        // Calculate exit date (30 days from entry)
+        const entryDate = new Date(opp.activeTrade.entryDate);
+        const exitDate = new Date(entryDate);
+        exitDate.setDate(exitDate.getDate() + 30);
         
-        // Show all opportunities for each market with your requested format
-        stocks.forEach(opp => {
-            // Calculate target and stop loss based on the parameters
-            const targetPrice = opp.activeTrade.entryPrice * 1.08; // 8% profit target
-            const stopLossPrice = opp.activeTrade.entryPrice * 0.95; // 5% stop loss
-            
-            // Calculate exit date (30 days from entry)
-            const entryDate = new Date(opp.activeTrade.entryDate);
-            const exitDate = new Date(entryDate);
-            exitDate.setDate(exitDate.getDate() + 30);
-            
-            // Format dates
-            const formatDate = (date) => {
-                const d = new Date(date);
-                return `${d.getDate()}-${d.getMonth() + 1}-${d.getFullYear()}`;
-            };
-            
-            // Get currency symbol
-            const currencySymbol = market === 'NSE' ? '₹' : market === 'UK' ? '£' : '$';
-            
-            message += `📈 *Strong Buy Signal - ${opp.stock.name}*\n`;
-            message += `• Entry Date: ${formatDate(opp.activeTrade.entryDate)}\n`;
-            message += `• Current Price: ${currencySymbol}${opp.currentPrice.toFixed(2)}\n`;
-            message += `• Target Price: ${currencySymbol}${targetPrice.toFixed(2)}\n`;
-            message += `• Stoploss Price: ${currencySymbol}${stopLossPrice.toFixed(2)}\n`;
-            message += `• Square off Date: ${formatDate(exitDate)}\n`;
-            message += `• Market: ${market}\n`;
-            message += `• Signal Date: ${formatDate(new Date())}\n\n`;
-        });
-    }
+        // Get currency symbol
+        const currencySymbol = opp.stock.symbol.endsWith('.NS') ? '₹' : 
+                           opp.stock.symbol.endsWith('.L') ? '£' : '$';
+        
+        message += `${index + 1}. *${opp.stock.name}*\n`;
+        message += `   Entry: ${currencySymbol}${entryPrice.toFixed(2)}\n`;
+        message += `   Target: ${currencySymbol}${targetPrice.toFixed(2)}\n`;
+        message += `   Stop Loss: ${currencySymbol}${stopLossPrice.toFixed(2)}\n`;
+        message += `   Entry Date: ${entryDate.toLocaleDateString()}\n`;
+        message += `   Exit Date: ${exitDate.toLocaleDateString()}\n\n`;
+    });
     
-    message += `⏰ Next scan: Tomorrow at 7 AM UK time`;
-    
+    message += `\nNext scan: Tomorrow at 7 AM UK time`;
     return message;
 }
 

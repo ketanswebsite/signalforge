@@ -55,17 +55,10 @@ class StockScanner {
                 return;
             }
 
-            // Send scan start notification
+            // Send scan start notification (simplified)
             await sendTelegramAlert(targetChatId, {
                 type: 'custom',
-                message: `🔍 *DTI Backtest Scan Started*\n\n` +
-                         `Using high conviction DTI strategy parameters:\n` +
-                         `• Entry Threshold: 0\n` +
-                         `• Take Profit: 8%\n` +
-                         `• Stop Loss: 5%\n` +
-                         `• Max Holding: 30 days\n\n` +
-                         `Scanning all global stocks for opportunities...\n\n` +
-                         `⏳ This may take several minutes...`
+                message: `🔍 *Daily High Conviction Scan*\n\nScanning for opportunities from last 2 days...`
             });
 
             // Use DTI scanner with default parameters

@@ -710,10 +710,10 @@ async function sendDirectOpportunityAlerts(opportunities) {
             return winRate > 75;
         });
         
-        // Filter for opportunities from last 5 trading days
+        // Filter for opportunities from last 2 trading days only
         const recentOpportunities = highConvictionOpportunities.filter(opp => {
             const signalDate = new Date(opp.trade.signalDate || opp.trade.entryDate);
-            return isWithinTradingDays(signalDate);
+            return isWithinTradingDays(signalDate, 2); // Changed to 2 days
         });
         
         // Take up to 5 recent high conviction opportunities
@@ -743,20 +743,26 @@ async function sendDirectOpportunityAlerts(opportunities) {
         
         await sendTelegramMessage(prefs.telegram_chat_id, summaryMessage);
         
-        // Send individual opportunities
+        // Send individual opportunities with simplified format
         for (const opp of alertOpportunities) {
+            // Calculate target and stop loss based on entry price
+            const entryPrice = opp.trade?.currentPrice || opp.trade?.entryPrice || 0;
+            const targetPrice = entryPrice * 1.08; // 8% profit target
+            const stopLossPrice = entryPrice * 0.95; // 5% stop loss
+            const currencySymbol = getCurrencySymbol(opp.stock.symbol);
+            
             const oppMessage = {
                 type: 'buy_opportunity',
-                title: '🎯 STRONG BUY SIGNAL',
+                title: 'HIGH CONVICTION BUY',
                 stock: opp.stock.symbol,
                 fields: [
-                    { label: 'DTI Signal', value: opp.trade?.entryDTI?.toFixed(2) || 'N/A' },
-                    { label: 'Current Price', value: `${getCurrencySymbol(opp.stock.symbol)}${opp.trade?.currentPrice?.toFixed(2) || 'N/A'}` },
-                    { label: '7-Day DTI', value: opp.trade?.entry7DayDTI?.toFixed(2) || 'N/A' },
-                    { label: 'Signal Date', value: new Date().toLocaleDateString() },
-                    { label: 'Market', value: getMarketName(opp.stock.symbol) }
-                ],
-                action: 'Consider adding to portfolio for tracking'
+                    { label: 'Stock', value: opp.stock.name || opp.stock.symbol },
+                    { label: 'Entry Price', value: `${currencySymbol}${entryPrice.toFixed(2)}` },
+                    { label: 'Target Price', value: `${currencySymbol}${targetPrice.toFixed(2)}` },
+                    { label: 'Stop Loss', value: `${currencySymbol}${stopLossPrice.toFixed(2)}` },
+                    { label: 'Entry Date', value: new Date().toLocaleDateString() },
+                    { label: 'Exit Date', value: new Date(Date.now() + 30*24*60*60*1000).toLocaleDateString() } // 30 days later
+                ]
             };
             
             await sendTelegramMessage(prefs.telegram_chat_id, oppMessage);
@@ -764,20 +770,6 @@ async function sendDirectOpportunityAlerts(opportunities) {
         }
         
         console.log('✅ All opportunity alerts sent successfully');
-        
-        // Send a simple test message to verify bot delivery
-        console.log('📤 Sending test message to verify bot delivery...');
-        const testMessage = {
-            type: 'test',
-            title: '🔔 TEST MESSAGE',
-            text: 'Bot delivery test - if you see this, the bot is working!',
-            fields: [
-                { label: 'Test Time', value: new Date().toLocaleString() },
-                { label: 'Chat ID', value: prefs.telegram_chat_id }
-            ]
-        };
-        
-        await sendTelegramMessage(prefs.telegram_chat_id, testMessage);
         
     } catch (error) {
         console.error('❌ Error sending opportunity alerts:', error);
@@ -811,9 +803,9 @@ async function sendTelegramMessage(chatId, messageData) {
 }
 
 /**
- * Check if a date is within the last 5 trading days
+ * Check if a date is within the last N trading days
  */
-function isWithinTradingDays(signalDate, currentDate = new Date()) {
+function isWithinTradingDays(signalDate, daysToCheck = 2, currentDate = new Date()) {
     const signal = new Date(signalDate);
     const today = new Date(currentDate);
     
@@ -828,11 +820,11 @@ function isWithinTradingDays(signalDate, currentDate = new Date()) {
     // Add today first
     validDates.push(new Date(tempDate));
     
-    // Go back 5 trading days
+    // Go back N trading days
     let tradingDaysCount = 0;
     let daysBack = 0;
     
-    while (tradingDaysCount < 5 && daysBack < 10) { // safety limit
+    while (tradingDaysCount < daysToCheck && daysBack < 10) { // safety limit
         daysBack++;
         tempDate.setDate(tempDate.getDate() - 1);
         const dayOfWeek = tempDate.getDay();
