@@ -244,8 +244,9 @@ const TradeDB = {
         `INSERT INTO trades (
           symbol, name, stock_index, entry_date, entry_price, 
           quantity, position_size, stop_loss, target_price, 
-          status, notes, user_id
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) 
+          exit_date, exit_price, status, profit_loss, profit_loss_percentage,
+          notes, user_id
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) 
         RETURNING *`,
         [
           trade.symbol,
@@ -257,7 +258,11 @@ const TradeDB = {
           trade.positionSize || null,
           trade.stopLoss || null,
           trade.targetPrice || null,
+          trade.exitDate || null,
+          trade.exitPrice || null,
           trade.status || 'active',
+          trade.profitLoss || null,
+          trade.profitLossPercentage || null,
           trade.notes || null,
           userId
         ]
@@ -275,9 +280,15 @@ const TradeDB = {
         positionSize: row.position_size ? parseFloat(row.position_size) : null,
         stopLoss: row.stop_loss ? parseFloat(row.stop_loss) : null,
         targetPrice: row.target_price ? parseFloat(row.target_price) : null,
+        exitDate: row.exit_date,
+        exitPrice: row.exit_price ? parseFloat(row.exit_price) : null,
         status: row.status,
+        profitLoss: row.profit_loss ? parseFloat(row.profit_loss) : null,
+        profitLossPercentage: row.profit_loss_percentage ? parseFloat(row.profit_loss_percentage) : null,
         notes: row.notes,
-        user_id: row.user_id
+        user_id: row.user_id,
+        created_at: row.created_at,
+        updated_at: row.updated_at
       };
     } catch (error) {
       console.error('Error inserting trade:', error);

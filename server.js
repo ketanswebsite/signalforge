@@ -493,12 +493,32 @@ app.post('/api/admin/import-backup', ensureAuthenticatedAPI, async (req, res) =>
     let importedCount = 0;
     for (const trade of trades) {
       try {
+        // Map backup fields to PostgreSQL schema
+        const mappedTrade = {
+          symbol: trade.symbol,
+          name: trade.stockName || trade.name || null,
+          stockIndex: trade.stockIndex || null,
+          entryDate: trade.entryDate,
+          entryPrice: trade.entryPrice,
+          quantity: trade.shares || trade.quantity || null,
+          positionSize: trade.investmentAmount || trade.positionSize || null,
+          stopLoss: trade.stopLossPrice || trade.stopLoss || null,
+          targetPrice: trade.targetPrice || null,
+          exitDate: trade.exitDate || trade.squareOffDate || null,
+          exitPrice: trade.exitPrice || null,
+          status: trade.status || 'active',
+          profitLoss: trade.profit || trade.profitLoss || null,
+          profitLossPercentage: trade.percentGain || trade.profitLossPercentage || null,
+          notes: trade.notes || trade.entryReason || null
+        };
+        
         // Ensure user_id is set correctly
         const userId = trade.user_id || req.user.email;
-        await TradeDB.insertTrade(trade, userId);
+        await TradeDB.insertTrade(mappedTrade, userId);
         importedCount++;
       } catch (err) {
         console.error(`Failed to import trade ${trade.id}:`, err.message);
+        console.error('Trade data:', trade);
       }
     }
     
