@@ -388,6 +388,25 @@ const TradeDB = {
       
       let insertedCount = 0;
       for (const trade of trades) {
+        // Map backup fields to PostgreSQL schema (same as in server.js)
+        const mappedTrade = {
+          symbol: trade.symbol,
+          name: trade.stockName || trade.name || null,
+          stockIndex: trade.stockIndex || null,
+          entryDate: trade.entryDate,
+          entryPrice: trade.entryPrice,
+          quantity: trade.shares || trade.quantity || null,
+          positionSize: trade.investmentAmount || trade.positionSize || null,
+          stopLoss: trade.stopLossPrice || trade.stopLoss || null,
+          targetPrice: trade.targetPrice || null,
+          exitDate: trade.exitDate || trade.squareOffDate || null,
+          exitPrice: trade.exitPrice || null,
+          status: trade.status || 'active',
+          profitLoss: trade.profit || trade.profitLoss || null,
+          profitLossPercentage: trade.percentGain || trade.profitLossPercentage || null,
+          notes: trade.notes || trade.entryReason || null
+        };
+        
         await client.query(
           `INSERT INTO trades (
             symbol, name, stock_index, entry_date, entry_price, 
@@ -396,21 +415,21 @@ const TradeDB = {
             notes, user_id
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
           [
-            trade.symbol,
-            trade.name || null,
-            trade.stockIndex || null,
-            trade.entryDate,
-            trade.entryPrice,
-            trade.quantity || null,
-            trade.positionSize || null,
-            trade.stopLoss || null,
-            trade.targetPrice || null,
-            trade.exitDate || null,
-            trade.exitPrice || null,
-            trade.status || 'active',
-            trade.profitLoss || null,
-            trade.profitLossPercentage || null,
-            trade.notes || null,
+            mappedTrade.symbol,
+            mappedTrade.name,
+            mappedTrade.stockIndex,
+            mappedTrade.entryDate,
+            mappedTrade.entryPrice,
+            mappedTrade.quantity,
+            mappedTrade.positionSize,
+            mappedTrade.stopLoss,
+            mappedTrade.targetPrice,
+            mappedTrade.exitDate,
+            mappedTrade.exitPrice,
+            mappedTrade.status,
+            mappedTrade.profitLoss,
+            mappedTrade.profitLossPercentage,
+            mappedTrade.notes,
             userId
           ]
         );
