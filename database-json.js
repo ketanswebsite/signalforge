@@ -55,7 +55,18 @@ const TradeDB = {
         return tradeUserId === userId;
       });
       console.log(`Database: getAllTrades returned ${userTrades.length} trades for user ${userId}`);
-      return userTrades.sort((a, b) => 
+      
+      // Apply field mapping for consistency with PostgreSQL
+      const mappedTrades = userTrades.map(trade => ({
+        ...trade,
+        shares: trade.quantity ? parseFloat(trade.quantity) : (trade.shares ? parseFloat(trade.shares) : null),
+        profitLoss: trade.profit_loss ? parseFloat(trade.profit_loss) : (trade.profitLoss ? parseFloat(trade.profitLoss) : null),
+        // Remove duplicate fields
+        quantity: undefined,
+        profit: undefined
+      }));
+      
+      return mappedTrades.sort((a, b) => 
         new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime()
       );
     } catch (error) {
@@ -66,26 +77,58 @@ const TradeDB = {
 
   // Get active trades for a user
   async getActiveTrades(userId = 'default') {
-    return memoryDB.trades.filter(t => 
+    const activeTrades = memoryDB.trades.filter(t => 
       t.status === 'active' && (t.user_id || 'default') === userId
     );
+    
+    // Apply field mapping for consistency with PostgreSQL
+    return activeTrades.map(trade => ({
+      ...trade,
+      shares: trade.quantity ? parseFloat(trade.quantity) : (trade.shares ? parseFloat(trade.shares) : null),
+      profitLoss: trade.profit_loss ? parseFloat(trade.profit_loss) : (trade.profitLoss ? parseFloat(trade.profitLoss) : null),
+      // Remove duplicate fields
+      quantity: undefined,
+      profit: undefined
+    }));
   },
 
   // Get closed trades for a user
   async getClosedTrades(userId = 'default') {
-    return memoryDB.trades.filter(t => 
+    const closedTrades = memoryDB.trades.filter(t => 
       t.status === 'closed' && (t.user_id || 'default') === userId
     );
+    
+    // Apply field mapping for consistency with PostgreSQL
+    return closedTrades.map(trade => ({
+      ...trade,
+      shares: trade.quantity ? parseFloat(trade.quantity) : (trade.shares ? parseFloat(trade.shares) : null),
+      profitLoss: trade.profit_loss ? parseFloat(trade.profit_loss) : (trade.profitLoss ? parseFloat(trade.profitLoss) : null),
+      // Remove duplicate fields
+      quantity: undefined,
+      profit: undefined
+    }));
   },
 
   // Get trade by ID for a user
   async getTradeById(id, userId = 'default') {
     // Handle both string and number IDs
     const numId = typeof id === 'string' ? parseFloat(id) : id;
-    return memoryDB.trades.find(t => 
+    const trade = memoryDB.trades.find(t => 
       (t.id === id || t.id === numId || t.id === String(id)) && 
       (t.user_id || 'default') === userId
     );
+    
+    if (!trade) return null;
+    
+    // Apply field mapping for consistency with PostgreSQL
+    return {
+      ...trade,
+      shares: trade.quantity ? parseFloat(trade.quantity) : (trade.shares ? parseFloat(trade.shares) : null),
+      profitLoss: trade.profit_loss ? parseFloat(trade.profit_loss) : (trade.profitLoss ? parseFloat(trade.profitLoss) : null),
+      // Remove duplicate fields
+      quantity: undefined,
+      profit: undefined
+    };
   },
 
   // Get trades by symbol for a user
@@ -107,7 +150,16 @@ const TradeDB = {
       };
       memoryDB.trades.push(newTrade);
       saveDatabase();
-      return newTrade;
+      
+      // Apply field mapping for consistency with PostgreSQL
+      return {
+        ...newTrade,
+        shares: newTrade.quantity ? parseFloat(newTrade.quantity) : (newTrade.shares ? parseFloat(newTrade.shares) : null),
+        profitLoss: newTrade.profit_loss ? parseFloat(newTrade.profit_loss) : (newTrade.profitLoss ? parseFloat(newTrade.profitLoss) : null),
+        // Remove duplicate fields
+        quantity: undefined,
+        profit: undefined
+      };
     } catch (error) {
       console.error('Error inserting trade:', error);
       throw error;

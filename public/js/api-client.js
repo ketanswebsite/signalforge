@@ -145,16 +145,16 @@ const TradeAPI = {
                 return { migrated: false, count: 0 };
             }
 
-            // Transform trades to match database schema
+            // Transform trades to match standardized database schema
             const transformedTrades = trades.map(trade => ({
                 symbol: trade.symbol,
                 entryDate: trade.entryDate,
                 entryPrice: trade.entryPrice,
                 exitDate: trade.exitDate || null,
                 exitPrice: trade.exitPrice || null,
-                shares: trade.shares,
+                shares: trade.shares || trade.quantity, // Handle both field names
                 status: trade.status,
-                profit: trade.profit || null,
+                profitLoss: trade.profit || trade.profitLoss || null, // Use standardized field name
                 percentGain: trade.percentGain || null,
                 entryReason: trade.entryReason || null,
                 exitReason: trade.exitReason || null,

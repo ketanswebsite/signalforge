@@ -286,20 +286,8 @@ const TradeCore = (function() {
                     console.log(`UK Stock ${trade.symbol} shares raw value:`, trade.shares, 'type:', typeof trade.shares);
                 }
                 
-                // Handle shares/quantity - API returns 'quantity' field
-                if (trade.quantity !== undefined && trade.quantity !== null && trade.quantity !== '') {
-                    trade.shares = parseFloat(trade.quantity);
-                } else if (trade.shares !== undefined && trade.shares !== null && trade.shares !== '') {
-                    trade.shares = parseFloat(trade.shares);
-                } else {
-                    console.warn(`Trade ${trade.symbol} has no shares/quantity value`);
-                    trade.shares = 0;
-                }
-                
-                if (isNaN(trade.shares)) {
-                    console.error(`Invalid shares value for ${trade.symbol}:`, trade.shares);
-                    trade.shares = 0;
-                }
+                // API now always returns standardized 'shares' field
+                trade.shares = parseFloat(trade.shares) || 0;
                 
                 // For UK stocks, check if shares need adjustment
                 // If the calculated investment is 100x too small, adjust shares
@@ -311,15 +299,12 @@ const TradeCore = (function() {
                     }
                 }
                 
-                trade.profit = parseFloat(trade.profit) || 0;
+                // API now returns standardized profitLoss field
+                trade.profitLoss = parseFloat(trade.profitLoss) || 0;
                 trade.percentGain = parseFloat(trade.percentGain) || 0;
                 
-                // Use investmentAmount from API if available, otherwise calculate
-                if (trade.investmentAmount !== undefined && trade.investmentAmount !== null) {
-                    trade.investmentAmount = parseFloat(trade.investmentAmount);
-                } else {
-                    trade.investmentAmount = trade.entryPrice * trade.shares;
-                }
+                // API now always provides investmentAmount field
+                trade.investmentAmount = parseFloat(trade.investmentAmount) || 0;
                 
                 // Debug investment amount calculation for UK stocks
                 if (trade.symbol && trade.symbol.endsWith('.L')) {
@@ -412,10 +397,7 @@ const TradeCore = (function() {
                     trade.currencySymbol = getCurrencySymbol(trade.stockIndex || trade.symbol);
                 }
                 
-                // Calculate missing fields
-                if (!trade.investmentAmount && trade.entryPrice && trade.shares) {
-                    trade.investmentAmount = trade.entryPrice * trade.shares;
-                }
+                // Calculate missing fields (API now provides investmentAmount)
                 
                 if (!trade.currentPrice) {
                     trade.currentPrice = trade.entryPrice; // Default to entry price until updated

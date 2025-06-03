@@ -489,27 +489,21 @@ function renderActiveTrades() {
                 });
             }
             
-            // Ensure all numeric values are valid
-            const investmentAmount = Number(trade.investmentAmount) || (trade.entryPrice * trade.shares) || 0;
-            // For closed trades, use percentGain and profit; for active trades, use plPercent and plValue
-            const plPercent = trade.status === 'closed' ? 
-                (Number(trade.percentGain) || 0) : 
-                (Number(trade.plPercent) || Number(trade.currentPLPercent) || 0);
-            const plValue = trade.status === 'closed' ? 
-                (Number(trade.profit) || 0) : 
-                (Number(trade.plValue) || Number(trade.unrealizedPL) || 0);
+            // Ensure all numeric values are valid - API now always provides investmentAmount
+            const investmentAmount = Number(trade.investmentAmount) || 0;
+            // API now provides consistent profitLoss and percentGain fields for all trade statuses
+            const plPercent = Number(trade.percentGain) || 0;
+            const plValue = Number(trade.profitLoss) || 0;
             
             // Debug logging for TW.L calculations
             if (trade.symbol === 'TW.L' && trade.status === 'closed') {
-                console.log('TW.L calculated values:', {
+                console.log('TW.L values from API:', {
                     investmentAmount,
                     plPercent,
                     plValue,
                     entryPrice: trade.entryPrice,
                     exitPrice: trade.exitPrice,
-                    shares: trade.shares,
-                    calculatedProfit: trade.exitPrice && trade.entryPrice && trade.shares ? 
-                        (trade.exitPrice - trade.entryPrice) * trade.shares : 'N/A'
+                    shares: trade.shares
                 });
             }
             

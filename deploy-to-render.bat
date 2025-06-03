@@ -201,17 +201,18 @@ echo ========================================
 echo.
 echo IMPORTANT: After deployment completes on Render:
 echo.
-echo 1. Check if data is missing:
-echo    - Go to Render Shell (in your service dashboard)
-echo    - Run: node check-postgres-fields.js
+echo 1. Verify the application is running:
+echo    - Check your app URL for successful deployment
+echo    - Test login and basic functionality
 echo.
-echo 2. If fields show NULL values, restore data:
-echo    - In Render Shell, run: node migrate-to-postgres-render.js
-echo    - This will restore all trade data including investment amounts
+echo 2. Test API field standardization:
+echo    - Open Developer Tools and check API responses
+echo    - Verify 'shares' and 'profitLoss' fields are present
+echo    - No more 'quantity' or 'profit' fields should appear
 echo.
 echo 3. Verify Telegram alerts are working:
-echo    - Alerts should now include opportunities from last 2 days only
-echo    - Entry dates will show actual signal dates
+echo    - Test alert preferences in the app
+echo    - Check that notifications use correct field values
 echo.
 echo ========================================
 echo.
@@ -228,5 +229,5 @@ start https://dashboard.render.com/
 echo.
 echo Deployment script completed.
 echo.
-echo Remember: Run the migration if you see missing data!
+echo Remember: Test the API field fixes after deployment!
 pause
