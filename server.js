@@ -473,6 +473,60 @@ app.post('/api/admin/import', ensureAuthenticatedAPI, async (req, res) => {
   }
 });
 
+// Import from uploaded backup data (admin only)
+app.post('/api/admin/import-backup', ensureAuthenticatedAPI, async (req, res) => {
+  // Check if user is admin
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+  }
+  
+  try {
+    const { trades, alert_preferences } = req.body;
+    
+    if (!trades || !Array.isArray(trades)) {
+      return res.status(400).json({ error: 'Invalid backup data: trades array required' });
+    }
+    
+    console.log(`Importing ${trades.length} trades from uploaded backup`);
+    
+    // Import trades
+    let importedCount = 0;
+    for (const trade of trades) {
+      try {
+        // Ensure user_id is set correctly
+        const userId = trade.user_id || req.user.email;
+        await TradeDB.insertTrade(trade, userId);
+        importedCount++;
+      } catch (err) {
+        console.error(`Failed to import trade ${trade.id}:`, err.message);
+      }
+    }
+    
+    // Import alert preferences
+    if (alert_preferences && Array.isArray(alert_preferences)) {
+      for (const pref of alert_preferences) {
+        try {
+          await TradeDB.saveAlertPreferences({
+            ...pref,
+            user_id: pref.user_id || req.user.email
+          });
+        } catch (err) {
+          console.error('Failed to import alert preference:', err.message);
+        }
+      }
+    }
+    
+    res.json({ 
+      message: `Import complete! Imported ${importedCount} of ${trades.length} trades`,
+      totalTrades: importedCount,
+      userId: req.user.email
+    });
+  } catch (error) {
+    console.error('Import backup error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Yahoo Finance proxy - Historical data
 app.get('/yahoo/history', async (req, res) => {
   try {

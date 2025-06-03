@@ -207,6 +207,19 @@
             background: #81C784;
             color: white;
         }
+        
+        .highlight-box {
+            background: #1b5e20;
+            border: 2px solid #4CAF50;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        
+        .highlight-box h4 {
+            color: #81C784;
+            margin-top: 0;
+        }
     </style>
 </head>
 <body>
@@ -224,9 +237,17 @@
         
         <div class="step">
             <h2>Step 1: Check Current Data</h2>
-            <p>First, let's check what data you currently have.</p>
+            <p>First, let's check what data you currently have or upload a backup file.</p>
             <button onclick="checkCurrentData()">Check Current Data</button>
             <button onclick="downloadBackup()" id="downloadBtn" style="display:none;">Download Backup</button>
+            
+            <div style="margin: 20px 0; padding: 15px; background: #303030; border-radius: 5px;">
+                <h3>📁 Restore from Backup File</h3>
+                <p>If you have a backup JSON file (like trades-export.json), you can upload it here:</p>
+                <input type="file" id="backupFileInput" accept=".json" style="margin: 10px 0; padding: 10px; background: #1a1a1a; color: #e0e0e0; border: 1px solid #555; border-radius: 5px;">
+                <button onclick="loadBackupFile()" id="loadBackupBtn" disabled>Load Backup File</button>
+                <div id="backupFileStatus"></div>
+            </div>
             
             <div id="currentDataStatus"></div>
             <div class="stats" id="currentStats" style="display:none;"></div>
@@ -282,6 +303,7 @@
     <script>
         let currentData = null;
         let backupData = null;
+        let uploadedBackupData = null;
         
         function updateStepIndicator(step) {
             for (let i = 1; i <= 5; i++) {
@@ -455,21 +477,49 @@
                 // Migrate trades
                 statusDiv.innerHTML = '<div class="status info">Migrating trades...</div>';
                 
-                for (const trade of currentData.trades) {
+                // Check if we're using uploaded backup data
+                if (uploadedBackupData) {
+                    // Use bulk import for uploaded backup
                     try {
-                        // For new PostgreSQL, we need to POST each trade
-                        await fetch('/api/trades', {
+                        const response = await fetch('/api/admin/import-backup', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(trade)
+                            body: JSON.stringify({
+                                trades: uploadedBackupData.trades,
+                                alert_preferences: uploadedBackupData.alert_preferences || []
+                            })
                         });
                         
-                        completed++;
-                        const progress = Math.round((completed / totalItems) * 100);
-                        progressBar.style.width = progress + '%';
-                        progressBar.textContent = progress + '%';
+                        const result = await response.json();
+                        
+                        if (response.ok) {
+                            completed = currentData.trades.length + 1;
+                            progressBar.style.width = '100%';
+                            progressBar.textContent = '100%';
+                        } else {
+                            throw new Error(result.error || 'Bulk import failed');
+                        }
                     } catch (err) {
-                        console.error('Failed to migrate trade:', trade.id, err);
+                        throw new Error(`Bulk import failed: ${err.message}`);
+                    }
+                } else {
+                    // Migrate trades one by one (existing system data)
+                    for (const trade of currentData.trades) {
+                        try {
+                            // For new PostgreSQL, we need to POST each trade
+                            await fetch('/api/trades', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(trade)
+                            });
+                            
+                            completed++;
+                            const progress = Math.round((completed / totalItems) * 100);
+                            progressBar.style.width = progress + '%';
+                            progressBar.textContent = progress + '%';
+                        } catch (err) {
+                            console.error('Failed to migrate trade:', trade.id, err);
+                        }
                     }
                 }
                 
@@ -543,6 +593,115 @@
                 
             } catch (error) {
                 statusDiv.innerHTML = `<div class="status error">✗ Verification failed: ${error.message}</div>`;
+            }
+        }
+        
+        // File input handler
+        document.getElementById('backupFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const loadBtn = document.getElementById('loadBackupBtn');
+            if (file && file.type === 'application/json') {
+                loadBtn.disabled = false;
+                loadBtn.textContent = `Load ${file.name}`;
+            } else {
+                loadBtn.disabled = true;
+                loadBtn.textContent = 'Load Backup File';
+            }
+        });
+        
+        // Load backup file function
+        async function loadBackupFile() {
+            const fileInput = document.getElementById('backupFileInput');
+            const statusDiv = document.getElementById('backupFileStatus');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                statusDiv.innerHTML = '<div class="status error">No file selected</div>';
+                return;
+            }
+            
+            statusDiv.innerHTML = '<div class="status info">Loading backup file...</div>';
+            
+            try {
+                const text = await file.text();
+                const data = JSON.parse(text);
+                
+                // Validate the backup file structure
+                if (!data.trades || !Array.isArray(data.trades)) {
+                    throw new Error('Invalid backup file format. Missing trades array.');
+                }
+                
+                uploadedBackupData = data;
+                currentData = {
+                    trades: data.trades,
+                    alertPreferences: data.alert_preferences && data.alert_preferences.length > 0 ? data.alert_preferences[0] : null
+                };
+                
+                // Create new backup from uploaded data
+                backupData = {
+                    exportDate: data.exportDate || new Date().toISOString(),
+                    trades: data.trades,
+                    alert_preferences: data.alert_preferences || []
+                };
+                
+                // Display stats
+                const stats = {
+                    totalTrades: data.trades.length,
+                    activeTrades: data.trades.filter(t => t.status === 'active').length,
+                    closedTrades: data.trades.filter(t => t.status === 'closed').length,
+                    hasAlertPrefs: !!(data.alert_preferences && data.alert_preferences.length > 0),
+                    exportDate: data.exportDate
+                };
+                
+                statusDiv.innerHTML = `<div class="status success">✓ Backup file loaded successfully!</div>
+                    <div class="highlight-box">
+                        <h4>📂 Backup Data Ready</h4>
+                        <p>Your backup file "${file.name}" has been loaded and is ready for migration to PostgreSQL.</p>
+                        <p><strong>Next:</strong> Click "Test PostgreSQL Connection" to continue with the migration process.</p>
+                    </div>`;
+                
+                // Show stats
+                document.getElementById('currentStats').style.display = 'grid';
+                document.getElementById('currentStats').innerHTML = `
+                    <div class="stat-card">
+                        <h3>${stats.totalTrades}</h3>
+                        <p>Total Trades</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${stats.activeTrades}</h3>
+                        <p>Active Trades</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${stats.closedTrades}</h3>
+                        <p>Closed Trades</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${stats.hasAlertPrefs ? '✓' : '✗'}</h3>
+                        <p>Alert Preferences</p>
+                    </div>
+                `;
+                
+                // Show preview
+                document.getElementById('dataPreview').style.display = 'block';
+                document.getElementById('dataPreviewContent').textContent = 
+                    `Export Date: ${stats.exportDate}\n\n` +
+                    JSON.stringify(data.trades.slice(0, 3), null, 2) + 
+                    '\n... and ' + (data.trades.length - 3) + ' more trades';
+                
+                // Show backup info
+                document.getElementById('backupInfo').style.display = 'block';
+                document.getElementById('backupFilename').textContent = file.name;
+                
+                // Enable next steps
+                document.getElementById('downloadBtn').style.display = 'inline-block';
+                document.getElementById('testConnectionBtn').disabled = false;
+                
+                updateStepIndicator(1);
+                
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="status error">✗ Error loading backup file: ${error.message}</div>`; 
+                uploadedBackupData = null;
+                currentData = null;
             }
         }
         
