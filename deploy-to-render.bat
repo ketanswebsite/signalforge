@@ -7,6 +7,9 @@ echo   SIGNALFORGE DEPLOYMENT TO RENDER
 echo ========================================
 echo.
 
+REM Change to script directory
+cd /d "%~dp0"
+
 REM Check if git is installed
 git --version >nul 2>&1
 if errorlevel 1 (
@@ -32,51 +35,86 @@ echo Current branch:
 git branch --show-current
 echo.
 
-REM Check for uncommitted changes
-echo Checking for uncommitted changes...
-git diff-index --quiet HEAD -- 2>nul
-if errorlevel 1 (
+REM Pull latest changes first to avoid conflicts
+echo Checking for remote updates...
+git fetch origin >nul 2>&1
+git status -uno | findstr /C:"Your branch is behind" >nul
+if not errorlevel 1 (
     echo.
-    echo WARNING: You have uncommitted changes:
+    echo WARNING: Your branch is behind origin/main
+    echo.
+    choice /C YN /M "Do you want to pull the latest changes first"
+    if errorlevel 1 if not errorlevel 2 (
+        echo Pulling latest changes...
+        git pull origin main
+        if errorlevel 1 (
+            echo.
+            echo ERROR: Failed to pull changes. Please resolve conflicts manually.
+            pause
+            exit /b
+        )
+    )
+)
+
+REM Check for uncommitted changes
+echo.
+echo Checking for uncommitted changes...
+git status --porcelain >nul 2>&1
+if errorlevel 1 (
+    echo Error checking git status
+    pause
+    exit /b
+)
+
+REM Count changes
+set changes=0
+for /f "tokens=*" %%i in ('git status --porcelain 2^>nul') do set /a changes+=1
+
+if !changes! gtr 0 (
+    echo.
+    echo You have !changes! uncommitted changes:
     echo ----------------------------------------
     git status --short
     echo ----------------------------------------
     echo.
-    choice /C YN /M "Do you want to commit these changes"
-    if errorlevel 2 (
+    
+    REM Auto-stage all changes
+    echo Staging all changes...
+    git add -A
+    
+    REM Generate default commit message with timestamp
+    for /f "tokens=2 delims==" %%a in ('wmic OS Get localdatetime /value') do set "dt=%%a"
+    set "YYYY=!dt:~0,4!"
+    set "MM=!dt:~4,2!"
+    set "DD=!dt:~6,2!"
+    set "HH=!dt:~8,2!"
+    set "Min=!dt:~10,2!"
+    
+    set default_msg=Update: !DD!-!MM!-!YYYY! !HH!:!Min!
+    
+    echo.
+    echo Enter commit message (or press Enter for: "!default_msg!")
+    set /p commit_msg=^> 
+    if "!commit_msg!"=="" set commit_msg=!default_msg!
+    
+    echo.
+    echo Committing with message: "!commit_msg!"
+    git commit -m "!commit_msg!"
+    if errorlevel 1 (
         echo.
-        echo Proceeding without committing changes...
-        echo Note: Only committed changes will be deployed to Render
-    ) else (
-        echo.
-        set /p commit_msg=Enter commit message: 
-        git add .
-        git commit -m "!commit_msg!"
-        if errorlevel 1 (
-            echo.
-            echo ERROR: Failed to commit changes!
-            echo.
-            echo The commit message might not have been captured properly.
-            echo Please commit manually with:
-            echo.
-            echo   git add .
-            echo   git commit -m "Fix UK stock price updates when markets closed and add deploy script"
-            echo.
-            echo Then run this script again to push to Render.
-            echo.
-            pause
-            exit /b
-        )
-        echo.
-        echo Changes committed successfully!
+        echo ERROR: Failed to commit changes!
+        pause
+        exit /b
     )
+    echo.
+    echo Changes committed successfully!
 ) else (
     echo No uncommitted changes found.
 )
 
 echo.
 echo ========================================
-echo   PUSHING TO REMOTE
+echo   PUSHING TO GITHUB
 echo ========================================
 echo.
 
@@ -84,6 +122,7 @@ REM Check if render.yaml exists
 if not exist render.yaml (
     echo WARNING: render.yaml not found!
     echo Make sure you have configured your Render deployment
+    echo.
 )
 
 REM Check if remote exists
@@ -97,20 +136,44 @@ if errorlevel 1 (
     exit /b
 )
 
+REM Show what we're about to push
+echo Commits to be pushed:
+echo ----------------------------------------
+git log origin/main..HEAD --oneline
+if errorlevel 1 (
+    echo No new commits to push.
+)
+echo ----------------------------------------
+
 REM Push to main branch
+echo.
 echo Pushing to origin/main...
 git push origin main
 if errorlevel 1 (
     echo.
     echo ERROR: Failed to push to remote repository!
     echo.
-    echo Possible issues:
-    echo - Check your internet connection
-    echo - Make sure you have push access to the repository
-    echo - Try: git pull origin main --rebase
+    echo Trying to pull and merge first...
+    git pull origin main --no-rebase
+    if errorlevel 1 (
+        echo.
+        echo ERROR: Merge conflicts detected!
+        echo Please resolve conflicts manually and try again.
+        pause
+        exit /b
+    )
     echo.
-    pause
-    exit /b
+    echo Retrying push...
+    git push origin main
+    if errorlevel 1 (
+        echo.
+        echo ERROR: Still unable to push. Please check:
+        echo - Your internet connection
+        echo - GitHub authentication
+        echo - Repository permissions
+        pause
+        exit /b
+    )
 )
 
 echo.
@@ -118,24 +181,40 @@ echo ========================================
 echo   DEPLOYMENT SUCCESSFUL!
 echo ========================================
 echo.
-echo Your code has been pushed to the main branch.
+echo Your code has been pushed to GitHub.
 echo.
-echo NEXT STEPS:
+echo Render auto-deployment status:
 echo 1. Go to https://dashboard.render.com/
-echo 2. Your service should auto-deploy from the latest commit
-echo 3. Check the deployment logs in Render dashboard
-echo.
-echo IMPORTANT:
-echo - Ensure environment variables are set in Render
-echo - Database persists at /opt/render/project/src
-echo - Monitor logs in Render dashboard
+echo 2. Your service should auto-deploy from this commit
+echo 3. Deployment usually takes 2-5 minutes
 echo.
 
-choice /C YN /M "Open Render dashboard in browser"
-if errorlevel 1 if not errorlevel 2 (
-    start https://dashboard.render.com/
+REM Show recent commits
+echo Recent commits pushed:
+echo ----------------------------------------
+git log --oneline -5
+echo ----------------------------------------
+echo.
+
+echo What would you like to do?
+echo 1. Open Render dashboard
+echo 2. Open GitHub repository
+echo 3. View deployment logs (opens Render)
+echo 4. Exit
+echo.
+choice /C 1234 /N /M "Select option (1-4): "
+
+if errorlevel 4 goto :end
+if errorlevel 3 start https://dashboard.render.com/ && goto :end
+if errorlevel 2 (
+    for /f "tokens=2" %%i in ('git remote get-url origin ^| findstr /C:"github.com"') do (
+        start %%i
+    )
+    goto :end
 )
+if errorlevel 1 start https://dashboard.render.com/
 
+:end
 echo.
 echo Deployment script completed.
 pause
