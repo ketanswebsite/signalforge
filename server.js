@@ -149,12 +149,23 @@ app.get('/api/test', (req, res) => {
   });
 });
 
-// Admin routes
+// Admin routes - restricted to specific admin email
+const ADMIN_EMAIL = 'ketanjoshisahs@gmail.com';
+
 app.get('/admin', ensureAuthenticated, (req, res) => {
+  // Check if user is admin
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).send('Access denied. Admin privileges required.');
+  }
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 app.get('/api/admin/stats', ensureAuthenticatedAPI, async (req, res) => {
+  // Check if user is admin
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+  }
+  
   try {
     const userStats = await TradeDB.getUserStatistics();
     const systemStats = await TradeDB.getSystemStatistics();
