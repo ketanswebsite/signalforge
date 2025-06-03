@@ -2078,15 +2078,15 @@ const MLInsightsUI = (function() {
                         <div class="ml-timeframe-grid">
                             ${createTimeframeRiskCard('Intraday', analysis.risk.timeframes?.intraday || {
                                 stopLoss: 2, takeProfit: 5, confidence: 85, 
-                                volatility: 'HIGH', recommendation: 'Quick exits recommended'
+                                volatility: 'HIGH', recommendation: 'Pattern typically shows short duration'
                             })}
                             ${createTimeframeRiskCard('Swing (2-7 days)', analysis.risk.timeframes?.swing || {
                                 stopLoss: 5, takeProfit: 12, confidence: 78,
-                                volatility: 'MEDIUM', recommendation: 'Standard risk parameters'
+                                volatility: 'MEDIUM', recommendation: 'Pattern shows typical risk profile'
                             })}
                             ${createTimeframeRiskCard('Position (7-30 days)', analysis.risk.timeframes?.position || {
                                 stopLoss: 8, takeProfit: 20, confidence: 72,
-                                volatility: 'LOW', recommendation: 'Wider stops for trends'
+                                volatility: 'LOW', recommendation: 'Pattern historically shows wider ranges'
                             })}
                         </div>
                     </div>
@@ -2441,7 +2441,7 @@ const MLInsightsUI = (function() {
         if (analysis.recommendations?.length > 0) {
             html += `
                 <div class="ml-section">
-                    <h3>AI Recommendations</h3>
+                    <h3>AI Technical Analysis</h3>
                     <ul class="ml-recommendations">
             `;
             

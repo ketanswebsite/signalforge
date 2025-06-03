@@ -197,11 +197,11 @@ const BacktestAlerts = (function() {
         if (totalTrades === 0) {
             return {
                 type: 'opportunity_scan',
-                title: '🎯 OPPORTUNITY SCAN COMPLETE',
-                text: `Found ${opportunities.length} Strong Buy Signals`,
+                title: '🎯 TECHNICAL SCAN COMPLETE',
+                text: `Found ${opportunities.length} Strong Technical Patterns`,
                 fields: [
                     { label: 'Total Opportunities Scanned', value: DTIBacktester.activeTradeOpportunities?.length || 0 },
-                    { label: 'Strong Signals Found', value: opportunities.length },
+                    { label: 'Strong Patterns Found', value: opportunities.length },
                     { label: 'Signal Strength', value: 'DTI < -40 (Strong Oversold)' },
                     { label: 'Scan Date', value: new Date().toLocaleDateString() }
                 ]
@@ -211,12 +211,12 @@ const BacktestAlerts = (function() {
         return {
             type: 'backtest_complete',
             title: '📊 BACKTEST COMPLETE',
-            text: `Found ${opportunities.length} High-Conviction Opportunities`,
+            text: `Found ${opportunities.length} High-Confidence Technical Patterns`,
             fields: [
                 { label: 'Backtest Performance', value: `${totalReturn.toFixed(2)}%` },
                 { label: 'Overall Win Rate', value: `${winRate.toFixed(1)}%` },
                 { label: 'Total Trades Analyzed', value: totalTrades },
-                { label: 'High Conviction Signals', value: opportunities.length }
+                { label: 'High Confidence Patterns', value: opportunities.length }
             ]
         };
     }
@@ -241,7 +241,7 @@ const BacktestAlerts = (function() {
         
         return {
             type: 'buy_opportunity',
-            title: '🎯 STRONG BUY SIGNAL',
+            title: '🎯 STRONG TECHNICAL PATTERN',
             stock: symbol,
             fields: [
                 { label: 'DTI Signal', value: signal.toFixed(2) },
@@ -250,7 +250,7 @@ const BacktestAlerts = (function() {
                 { label: 'Signal Date', value: new Date(opportunity.date).toLocaleDateString() },
                 { label: 'Market', value: symbol.includes('.NS') ? 'Indian' : symbol.includes('.L') ? 'UK' : 'US' }
             ],
-            action: 'Consider adding to portfolio for tracking'
+            action: 'Technical pattern identified for analysis'
         };
     }
     

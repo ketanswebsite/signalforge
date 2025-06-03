@@ -224,11 +224,11 @@ const AlertsUI = (function() {
                         <div class="alert-types">
                             <label>
                                 <input type="checkbox" id="alert-buy" ${alertPreferences?.alert_on_buy !== false ? 'checked' : ''}>
-                                Buy Signals
+                                Entry Patterns
                             </label>
                             <label>
                                 <input type="checkbox" id="alert-sell" ${alertPreferences?.alert_on_sell !== false ? 'checked' : ''}>
-                                Sell Signals
+                                Exit Patterns
                             </label>
                             <label>
                                 <input type="checkbox" id="alert-target" ${alertPreferences?.alert_on_target !== false ? 'checked' : ''}>

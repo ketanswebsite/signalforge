@@ -747,11 +747,11 @@ async function sendDirectOpportunityAlerts(opportunities) {
         // Send summary
         const summaryMessage = {
             type: 'opportunity_scan',
-            title: '🎯 BUYING OPPORTUNITIES FOUND',
-            text: `Found ${alertOpportunities.length} Strong Buy Signals`,
+            title: '🎯 TECHNICAL PATTERNS FOUND',
+            text: `Found ${alertOpportunities.length} Strong Technical Patterns`,
             fields: [
                 { label: 'Total Opportunities Scanned', value: opportunities.length },
-                { label: 'Top Signals Selected', value: alertOpportunities.length },
+                { label: 'Top Patterns Selected', value: alertOpportunities.length },
                 { label: 'Scan Date', value: new Date().toLocaleDateString() }
             ]
         };
@@ -773,7 +773,7 @@ async function sendDirectOpportunityAlerts(opportunities) {
             
             const oppMessage = {
                 type: 'buy_opportunity',
-                title: 'HIGH CONVICTION BUY',
+                title: 'HIGH CONFIDENCE PATTERN',
                 stock: opp.stock.symbol,
                 fields: [
                     { label: 'Stock', value: opp.stock.name || opp.stock.symbol },
