@@ -167,8 +167,13 @@ app.get('/api/admin/stats', ensureAuthenticatedAPI, async (req, res) => {
   }
   
   try {
+    console.log('Fetching admin statistics for:', req.user.email);
+    
     const userStats = await TradeDB.getUserStatistics();
+    console.log('User statistics:', userStats);
+    
     const systemStats = await TradeDB.getSystemStatistics();
+    console.log('System statistics:', systemStats);
     
     res.json({
       system: systemStats,
@@ -177,6 +182,7 @@ app.get('/api/admin/stats', ensureAuthenticatedAPI, async (req, res) => {
     });
   } catch (error) {
     console.error('Error getting admin stats:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ error: error.message });
   }
 });

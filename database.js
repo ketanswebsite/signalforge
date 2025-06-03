@@ -433,7 +433,8 @@ const TradeDB = {
   // Admin functions
   async getUserStatistics() {
     try {
-      return statements.getUserStats.all();
+      const users = statements.getUserStats.all();
+      return users || [];
     } catch (error) {
       console.error('Error getting user statistics:', error);
       return [];
@@ -442,11 +443,13 @@ const TradeDB = {
 
   async getSystemStatistics() {
     try {
-      return statements.getSystemStats.get() || {
-        total_trades: 0,
-        total_users: 0,
-        active_trades: 0,
-        closed_trades: 0
+      const stats = statements.getSystemStats.get();
+      // Handle null or undefined results
+      return {
+        total_trades: stats?.total_trades || 0,
+        total_users: stats?.total_users || 0,
+        active_trades: stats?.active_trades || 0,
+        closed_trades: stats?.closed_trades || 0
       };
     } catch (error) {
       console.error('Error getting system statistics:', error);
