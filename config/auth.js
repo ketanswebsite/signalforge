@@ -54,14 +54,8 @@ passport.use(new GoogleStrategy({
             picture: profile.photos[0].value
         };
         
-        // Check if user is allowed
-        if (allowedUsers.length > 0 && !allowedUsers.includes(user.email)) {
-            console.log('Access denied for email:', user.email);
-            console.log('Allowed users:', allowedUsers);
-            return done(null, false, { message: 'Access denied. Your email is not authorized.' });
-        } else if (allowedUsers.length === 0) {
-            console.warn('WARNING: ALLOWED_USERS not configured - allowing all authenticated users');
-        }
+        // Allow all authenticated Google users
+        console.log('Allowing all authenticated users - open registration mode');
         
         console.log('User authenticated successfully:', user.email);
         return done(null, user);
