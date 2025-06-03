@@ -31,10 +31,18 @@ async function migrateToPostgres() {
     console.log(`   - Found ${backupData.alert_preferences?.length || 0} alert preferences\n`);
     
     // Initialize database schema
-    console.log('🔧 Initializing database schema...');
-    const TradeDB = require('./database-postgres');
-    await TradeDB.init();
-    console.log('✅ Database schema created\n');
+    console.log('🔧 Checking database schema...');
+    try {
+      const TradeDB = require('./database-postgres');
+      await TradeDB.init();
+      console.log('✅ Database schema created\n');
+    } catch (err) {
+      if (err.code === '23505' || err.code === '42P07') {
+        console.log('✅ Database schema already exists\n');
+      } else {
+        throw err;
+      }
+    }
     
     // Migrate trades
     if (backupData.trades && backupData.trades.length > 0) {
