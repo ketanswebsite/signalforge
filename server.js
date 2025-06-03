@@ -149,6 +149,46 @@ app.get('/api/test', (req, res) => {
   });
 });
 
+// Debug endpoint for admin
+app.get('/api/test-admin', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    console.log('Test admin endpoint - User:', req.user?.email);
+    
+    // Test if database queries work
+    const testResults = {};
+    
+    try {
+      const trades = await TradeDB.getAllTrades(req.user?.email || 'default');
+      testResults.getAllTrades = { success: true, count: trades.length };
+    } catch (e) {
+      testResults.getAllTrades = { success: false, error: e.message };
+    }
+    
+    try {
+      const userStats = await TradeDB.getUserStatistics();
+      testResults.getUserStatistics = { success: true, count: userStats.length };
+    } catch (e) {
+      testResults.getUserStatistics = { success: false, error: e.message };
+    }
+    
+    try {
+      const systemStats = await TradeDB.getSystemStatistics();
+      testResults.getSystemStatistics = { success: true, data: systemStats };
+    } catch (e) {
+      testResults.getSystemStatistics = { success: false, error: e.message };
+    }
+    
+    res.json({
+      user: req.user?.email,
+      isAdmin: req.user?.email === ADMIN_EMAIL,
+      testResults
+    });
+  } catch (error) {
+    console.error('Test admin error:', error);
+    res.status(500).json({ error: error.message, stack: error.stack });
+  }
+});
+
 // Admin routes - restricted to specific admin email
 const ADMIN_EMAIL = 'ketanjoshisahs@gmail.com';
 
