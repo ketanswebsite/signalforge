@@ -115,6 +115,19 @@ function initializeDatabase() {
       CREATE INDEX IF NOT EXISTS idx_trades_user_id ON trades(user_id);
     `);
     console.log('user_id column added successfully');
+    
+    // Auto-migrate default trades to admin email on Render
+    if (process.env.RENDER) {
+      console.log('Running automatic migration on Render...');
+      try {
+        const migrateResult = db.prepare(
+          "UPDATE trades SET user_id = 'ketanjoshisahs@gmail.com' WHERE user_id = 'default'"
+        ).run();
+        console.log(`Migrated ${migrateResult.changes} trades to admin account`);
+      } catch (migrationError) {
+        console.error('Migration error:', migrationError);
+      }
+    }
   }
 
   // Create alert_preferences table
