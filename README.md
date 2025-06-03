@@ -18,12 +18,25 @@ SignalForge is a comprehensive stock trading platform that combines technical an
   - Sentiment analysis for market trends
   - Risk assessment for individual trades
   - Pattern recognition for technical analysis
+- **DTI (Directional Trend Index) Backtesting**:
+  - High conviction trading strategy using DTI indicators
+  - 7-day DTI analysis for trend confirmation
+  - Automated scanning of all global stocks
+  - Daily Telegram alerts at 7 AM UK time
 - **Comprehensive Backtesting**:
   - Test strategies on historical data
   - Support for multiple technical indicators (EMA, RSI, MACD, Bollinger Bands)
   - Detailed performance metrics and win/loss analysis
   - Visual charts with entry/exit points
 - **Market Status Tracking**: Real-time market open/close status with holiday calendar
+
+### Automated Alerts
+
+- **Telegram Integration**:
+  - Daily DTI scan results at 7 AM UK time
+  - High conviction trade opportunities
+  - Real-time trade signals
+  - Portfolio updates and alerts
 
 ### Technical Features
 
@@ -89,6 +102,10 @@ ALLOWED_USERS=email1@gmail.com,email2@gmail.com
 # Application Configuration
 PORT=3000
 NODE_ENV=development
+
+# Telegram Bot Configuration (Optional)
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+TELEGRAM_CHAT_ID=your_telegram_chat_id
 ```
 
 ### 4. Set Up Google OAuth2
