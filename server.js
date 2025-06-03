@@ -512,6 +512,29 @@ app.post('/api/admin/import-backup', ensureAuthenticatedAPI, async (req, res) =>
           notes: trade.notes || trade.entryReason || null
         };
         
+        // Debug logging for TBCG.L trade
+        if (trade.symbol === 'TBCG.L') {
+          console.log('=== TBCG.L TRADE MAPPING DEBUG ===');
+          console.log('Original trade:', {
+            symbol: trade.symbol,
+            shares: trade.shares,
+            investmentAmount: trade.investmentAmount,
+            profit: trade.profit,
+            percentGain: trade.percentGain,
+            stockName: trade.stockName,
+            stopLossPrice: trade.stopLossPrice
+          });
+          console.log('Mapped trade:', {
+            symbol: mappedTrade.symbol,
+            quantity: mappedTrade.quantity,
+            positionSize: mappedTrade.positionSize,
+            profitLoss: mappedTrade.profitLoss,
+            profitLossPercentage: mappedTrade.profitLossPercentage,
+            name: mappedTrade.name,
+            stopLoss: mappedTrade.stopLoss
+          });
+        }
+        
         // Ensure user_id is set correctly
         const userId = trade.user_id || req.user.email;
         await TradeDB.insertTrade(mappedTrade, userId);
