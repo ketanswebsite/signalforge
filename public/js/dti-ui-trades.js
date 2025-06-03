@@ -713,7 +713,16 @@ async function sendDirectOpportunityAlerts(opportunities) {
         // Filter for opportunities from last 2 trading days only
         const recentOpportunities = highConvictionOpportunities.filter(opp => {
             const signalDate = new Date(opp.trade.signalDate || opp.trade.entryDate);
-            return isWithinTradingDays(signalDate, 2); // Changed to 2 days
+            const isRecent = isWithinTradingDays(signalDate, 2); // Changed to 2 days
+            
+            // Debug logging
+            if (!isRecent && highConvictionOpportunities.indexOf(opp) < 5) {
+                const today = new Date();
+                const daysDiff = Math.floor((today - signalDate) / (1000 * 60 * 60 * 24));
+                console.log(`📅 ${opp.stock.symbol} signal from ${signalDate.toLocaleDateString()} (${daysDiff} days ago) - excluded`);
+            }
+            
+            return isRecent;
         });
         
         // Take up to 5 recent high conviction opportunities
@@ -723,6 +732,12 @@ async function sendDirectOpportunityAlerts(opportunities) {
         console.log(`⭐ High conviction opportunities: ${highConvictionOpportunities.length}`);
         console.log(`📅 Recent high conviction opportunities: ${recentOpportunities.length}`);
         console.log(`📤 Sending alerts for: ${alertOpportunities.length}`);
+        
+        // Log which opportunities are being sent
+        alertOpportunities.forEach(opp => {
+            const signalDate = new Date(opp.trade.signalDate || opp.trade.entryDate);
+            console.log(`✅ Including ${opp.stock.symbol} - signal from ${signalDate.toLocaleDateString()}`);
+        });
         
         if (alertOpportunities.length === 0) {
             console.log('❌ No recent high conviction opportunities found - skipping alerts');
@@ -751,6 +766,11 @@ async function sendDirectOpportunityAlerts(opportunities) {
             const stopLossPrice = entryPrice * 0.95; // 5% stop loss
             const currencySymbol = getCurrencySymbol(opp.stock.symbol);
             
+            // Use actual signal date, not today
+            const signalDate = new Date(opp.trade.signalDate || opp.trade.entryDate);
+            const exitDate = new Date(signalDate);
+            exitDate.setDate(exitDate.getDate() + 30); // 30 days from signal date
+            
             const oppMessage = {
                 type: 'buy_opportunity',
                 title: 'HIGH CONVICTION BUY',
@@ -760,8 +780,8 @@ async function sendDirectOpportunityAlerts(opportunities) {
                     { label: 'Entry Price', value: `${currencySymbol}${entryPrice.toFixed(2)}` },
                     { label: 'Target Price', value: `${currencySymbol}${targetPrice.toFixed(2)}` },
                     { label: 'Stop Loss', value: `${currencySymbol}${stopLossPrice.toFixed(2)}` },
-                    { label: 'Entry Date', value: new Date().toLocaleDateString() },
-                    { label: 'Exit Date', value: new Date(Date.now() + 30*24*60*60*1000).toLocaleDateString() } // 30 days later
+                    { label: 'Entry Date', value: signalDate.toLocaleDateString() },
+                    { label: 'Exit Date', value: exitDate.toLocaleDateString() }
                 ]
             };
             
@@ -813,34 +833,33 @@ function isWithinTradingDays(signalDate, daysToCheck = 2, currentDate = new Date
     signal.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
     
-    // Calculate valid trading days based on current day
-    const validDates = [];
+    // Signal must be before or equal to today
+    if (signal > today) return false;
+    
+    // Count trading days between signal and today
+    let tradingDays = 0;
     let tempDate = new Date(today);
     
-    // Add today first
-    validDates.push(new Date(tempDate));
-    
-    // Go back N trading days
-    let tradingDaysCount = 0;
-    let daysBack = 0;
-    
-    while (tradingDaysCount < daysToCheck && daysBack < 10) { // safety limit
-        daysBack++;
-        tempDate.setDate(tempDate.getDate() - 1);
+    while (tempDate >= signal && tradingDays <= daysToCheck) {
         const dayOfWeek = tempDate.getDay();
         
-        // Skip weekends (0 = Sunday, 6 = Saturday)
+        // Count if it's a weekday
         if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-            validDates.push(new Date(tempDate));
-            tradingDaysCount++;
+            tradingDays++;
         }
+        
+        // Check if we've found the signal date
+        if (tempDate.getTime() === signal.getTime()) {
+            // Subtract 1 because we don't count today if checking "within last N days"
+            return tradingDays <= daysToCheck;
+        }
+        
+        // Go back one day
+        tempDate.setDate(tempDate.getDate() - 1);
     }
     
-    // Check if signal date matches any valid date
-    return validDates.some(validDate => {
-        validDate.setHours(0, 0, 0, 0);
-        return signal.getTime() === validDate.getTime();
-    });
+    // Signal is older than our check range
+    return false;
 }
 
 /**
