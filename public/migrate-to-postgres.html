@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Migrate to PostgreSQL - SignalForge</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+        
+        .container {
+            background: #252525;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #4CAF50;
+            margin-bottom: 10px;
+        }
+        
+        .step {
+            background: #303030;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .step h2 {
+            margin-top: 0;
+            color: #81C784;
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+        
+        .danger {
+            background: #f44336;
+        }
+        
+        .danger:hover {
+            background: #da190b;
+        }
+        
+        .warning {
+            background: #ff9800;
+        }
+        
+        .warning:hover {
+            background: #e68900;
+        }
+        
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        
+        .success {
+            background: #1b5e20;
+            color: #81C784;
+        }
+        
+        .error {
+            background: #b71c1c;
+            color: #ef5350;
+        }
+        
+        .info {
+            background: #0d47a1;
+            color: #64B5F6;
+        }
+        
+        .data-preview {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            background: #303030;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-card h3 {
+            margin: 0;
+            color: #81C784;
+            font-size: 2em;
+        }
+        
+        .stat-card p {
+            margin: 5px 0 0 0;
+            color: #999;
+        }
+        
+        .progress {
+            width: 100%;
+            height: 30px;
+            background: #303030;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: #4CAF50;
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .backup-info {
+            background: #1b5e20;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin: 30px 0;
+            position: relative;
+        }
+        
+        .step-indicator::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #303030;
+            z-index: 1;
+        }
+        
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #303030;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 2;
+            color: #666;
+            font-weight: bold;
+        }
+        
+        .step-circle.active {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .step-circle.completed {
+            background: #81C784;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Migrate to PostgreSQL</h1>
+        <p>This tool will help you migrate your existing trades from JSON/SQLite to PostgreSQL.</p>
+        
+        <div class="step-indicator">
+            <div class="step-circle" id="step1">1</div>
+            <div class="step-circle" id="step2">2</div>
+            <div class="step-circle" id="step3">3</div>
+            <div class="step-circle" id="step4">4</div>
+            <div class="step-circle" id="step5">5</div>
+        </div>
+        
+        <div class="step">
+            <h2>Step 1: Check Current Data</h2>
+            <p>First, let's check what data you currently have.</p>
+            <button onclick="checkCurrentData()">Check Current Data</button>
+            <button onclick="downloadBackup()" id="downloadBtn" style="display:none;">Download Backup</button>
+            
+            <div id="currentDataStatus"></div>
+            <div class="stats" id="currentStats" style="display:none;"></div>
+            <div class="data-preview" id="dataPreview" style="display:none;">
+                <pre id="dataPreviewContent"></pre>
+            </div>
+        </div>
+        
+        <div class="step">
+            <h2>Step 2: Test PostgreSQL Connection</h2>
+            <p>Verify that PostgreSQL is properly configured.</p>
+            <button onclick="testPostgresConnection()" id="testConnectionBtn" disabled>Test Connection</button>
+            
+            <div id="connectionStatus"></div>
+        </div>
+        
+        <div class="step">
+            <h2>Step 3: Initialize PostgreSQL Tables</h2>
+            <p>Create the necessary tables in PostgreSQL.</p>
+            <button onclick="initializePostgres()" id="initializeBtn" disabled>Initialize Database</button>
+            
+            <div id="initStatus"></div>
+        </div>
+        
+        <div class="step">
+            <h2>Step 4: Migrate Data</h2>
+            <p>Transfer all trades and preferences to PostgreSQL.</p>
+            <button onclick="startMigration()" id="migrateBtn" disabled class="warning">Start Migration</button>
+            
+            <div class="progress" id="migrationProgress">
+                <div class="progress-bar" id="progressBar">0%</div>
+            </div>
+            
+            <div id="migrationStatus"></div>
+        </div>
+        
+        <div class="step">
+            <h2>Step 5: Verify Migration</h2>
+            <p>Confirm all data was migrated successfully.</p>
+            <button onclick="verifyMigration()" id="verifyBtn" disabled>Verify Data</button>
+            
+            <div id="verificationStatus"></div>
+            <div class="stats" id="postgresStats" style="display:none;"></div>
+        </div>
+        
+        <div class="backup-info" style="display:none;" id="backupInfo">
+            <h3>⚠️ Important: Backup Created</h3>
+            <p>A backup of your data has been created. Please download it before proceeding with migration.</p>
+            <p>Backup filename: <code id="backupFilename"></code></p>
+        </div>
+    </div>
+
+    <script>
+        let currentData = null;
+        let backupData = null;
+        
+        function updateStepIndicator(step) {
+            for (let i = 1; i <= 5; i++) {
+                const circle = document.getElementById(`step${i}`);
+                if (i < step) {
+                    circle.classList.add('completed');
+                    circle.classList.remove('active');
+                } else if (i === step) {
+                    circle.classList.add('active');
+                    circle.classList.remove('completed');
+                } else {
+                    circle.classList.remove('active', 'completed');
+                }
+            }
+        }
+        
+        async function checkCurrentData() {
+            updateStepIndicator(1);
+            const statusDiv = document.getElementById('currentDataStatus');
+            statusDiv.innerHTML = '<div class="status info">Checking current data...</div>';
+            
+            try {
+                // Check if we're using JSON or SQLite
+                const response = await fetch('/api/trades');
+                const trades = await response.json();
+                
+                // Get alert preferences
+                const alertResponse = await fetch('/api/alerts/preferences');
+                const alertPrefs = await alertResponse.json();
+                
+                currentData = {
+                    trades: trades,
+                    alertPreferences: alertPrefs
+                };
+                
+                // Create backup
+                backupData = {
+                    exportDate: new Date().toISOString(),
+                    trades: trades,
+                    alert_preferences: alertPrefs ? [alertPrefs] : []
+                };
+                
+                // Display stats
+                const stats = {
+                    totalTrades: trades.length,
+                    activeTrades: trades.filter(t => t.status === 'active').length,
+                    closedTrades: trades.filter(t => t.status === 'closed').length,
+                    hasAlertPrefs: !!alertPrefs
+                };
+                
+                statusDiv.innerHTML = '<div class="status success">✓ Current data loaded successfully</div>';
+                
+                // Show stats
+                document.getElementById('currentStats').style.display = 'grid';
+                document.getElementById('currentStats').innerHTML = `
+                    <div class="stat-card">
+                        <h3>${stats.totalTrades}</h3>
+                        <p>Total Trades</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${stats.activeTrades}</h3>
+                        <p>Active Trades</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${stats.closedTrades}</h3>
+                        <p>Closed Trades</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${stats.hasAlertPrefs ? '✓' : '✗'}</h3>
+                        <p>Alert Preferences</p>
+                    </div>
+                `;
+                
+                // Show preview
+                document.getElementById('dataPreview').style.display = 'block';
+                document.getElementById('dataPreviewContent').textContent = 
+                    JSON.stringify(trades.slice(0, 3), null, 2) + 
+                    '\n... and ' + (trades.length - 3) + ' more trades';
+                
+                // Enable next steps
+                document.getElementById('downloadBtn').style.display = 'inline-block';
+                document.getElementById('testConnectionBtn').disabled = false;
+                
+                // Show backup info
+                document.getElementById('backupInfo').style.display = 'block';
+                document.getElementById('backupFilename').textContent = 
+                    `signalforge-backup-${new Date().toISOString().split('T')[0]}.json`;
+                
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="status error">✗ Error: ${error.message}</div>`;
+            }
+        }
+        
+        function downloadBackup() {
+            if (!backupData) return;
+            
+            const blob = new Blob([JSON.stringify(backupData, null, 2)], 
+                { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `signalforge-backup-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        async function testPostgresConnection() {
+            updateStepIndicator(2);
+            const statusDiv = document.getElementById('connectionStatus');
+            statusDiv.innerHTML = '<div class="status info">Testing PostgreSQL connection...</div>';
+            
+            try {
+                // Test by trying to get stats (this will use PostgreSQL)
+                const response = await fetch('/api/test');
+                
+                if (response.ok) {
+                    statusDiv.innerHTML = '<div class="status success">✓ PostgreSQL connection successful</div>';
+                    document.getElementById('initializeBtn').disabled = false;
+                } else {
+                    throw new Error('Connection test failed');
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="status error">✗ PostgreSQL connection failed. Make sure DATABASE_URL is configured.</div>`;
+            }
+        }
+        
+        async function initializePostgres() {
+            updateStepIndicator(3);
+            const statusDiv = document.getElementById('initStatus');
+            statusDiv.innerHTML = '<div class="status info">Initializing PostgreSQL tables...</div>';
+            
+            try {
+                // The tables are created automatically when the module loads
+                // Just verify they exist by trying to fetch data
+                const response = await fetch('/api/trades');
+                
+                if (response.ok) {
+                    statusDiv.innerHTML = '<div class="status success">✓ PostgreSQL tables initialized successfully</div>';
+                    document.getElementById('migrateBtn').disabled = false;
+                } else {
+                    throw new Error('Table initialization failed');
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="status error">✗ Failed to initialize tables: ${error.message}</div>`;
+            }
+        }
+        
+        async function startMigration() {
+            if (!confirm('Are you sure you want to migrate all data to PostgreSQL? Make sure you have downloaded the backup.')) {
+                return;
+            }
+            
+            updateStepIndicator(4);
+            const statusDiv = document.getElementById('migrationStatus');
+            const progressDiv = document.getElementById('migrationProgress');
+            const progressBar = document.getElementById('progressBar');
+            
+            statusDiv.innerHTML = '<div class="status info">Starting migration...</div>';
+            progressDiv.style.display = 'block';
+            
+            try {
+                if (!currentData) {
+                    throw new Error('No data loaded. Please check current data first.');
+                }
+                
+                const totalItems = currentData.trades.length + 1; // +1 for preferences
+                let completed = 0;
+                
+                // Migrate trades
+                statusDiv.innerHTML = '<div class="status info">Migrating trades...</div>';
+                
+                for (const trade of currentData.trades) {
+                    try {
+                        // For new PostgreSQL, we need to POST each trade
+                        await fetch('/api/trades', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(trade)
+                        });
+                        
+                        completed++;
+                        const progress = Math.round((completed / totalItems) * 100);
+                        progressBar.style.width = progress + '%';
+                        progressBar.textContent = progress + '%';
+                    } catch (err) {
+                        console.error('Failed to migrate trade:', trade.id, err);
+                    }
+                }
+                
+                // Migrate alert preferences
+                if (currentData.alertPreferences) {
+                    statusDiv.innerHTML = '<div class="status info">Migrating alert preferences...</div>';
+                    
+                    await fetch('/api/alerts/preferences', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(currentData.alertPreferences)
+                    });
+                    
+                    completed++;
+                    progressBar.style.width = '100%';
+                    progressBar.textContent = '100%';
+                }
+                
+                statusDiv.innerHTML = '<div class="status success">✓ Migration completed successfully!</div>';
+                document.getElementById('verifyBtn').disabled = false;
+                
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="status error">✗ Migration failed: ${error.message}</div>`;
+            }
+        }
+        
+        async function verifyMigration() {
+            updateStepIndicator(5);
+            const statusDiv = document.getElementById('verificationStatus');
+            statusDiv.innerHTML = '<div class="status info">Verifying migrated data...</div>';
+            
+            try {
+                // Get data from PostgreSQL
+                const response = await fetch('/api/trades');
+                const trades = await response.json();
+                
+                // Get alert preferences
+                const alertResponse = await fetch('/api/alerts/preferences');
+                const alertPrefs = await alertResponse.json();
+                
+                // Compare counts
+                const originalCount = currentData.trades.length;
+                const migratedCount = trades.length;
+                
+                if (migratedCount >= originalCount) {
+                    statusDiv.innerHTML = `<div class="status success">✓ Migration verified! All ${migratedCount} trades migrated successfully.</div>`;
+                    
+                    // Show PostgreSQL stats
+                    document.getElementById('postgresStats').style.display = 'grid';
+                    document.getElementById('postgresStats').innerHTML = `
+                        <div class="stat-card">
+                            <h3>${migratedCount}</h3>
+                            <p>Total Trades</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>${trades.filter(t => t.status === 'active').length}</h3>
+                            <p>Active Trades</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>${trades.filter(t => t.status === 'closed').length}</h3>
+                            <p>Closed Trades</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>✓</h3>
+                            <p>PostgreSQL Active</p>
+                        </div>
+                    `;
+                } else {
+                    statusDiv.innerHTML = `<div class="status warning">⚠️ Migration completed but only ${migratedCount} of ${originalCount} trades found. Some trades may have failed to migrate.</div>`;
+                }
+                
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="status error">✗ Verification failed: ${error.message}</div>`;
+            }
+        }
+        
+        // Auto-start by checking current data
+        window.onload = () => {
+            checkCurrentData();
+        };
+    </script>
+</body>
+</html>

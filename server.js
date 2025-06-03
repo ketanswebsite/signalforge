@@ -17,24 +17,15 @@ if (process.env.RENDER) {
   console.log('- Checking /var/data:', require('fs').existsSync('/var/data') ? 'EXISTS' : 'NOT FOUND');
 }
 
-// Load database
+// Load database - PostgreSQL only
 let TradeDB;
 try {
-  TradeDB = require('./database');
-  console.log('✓ Database loaded: better-sqlite3');
+  TradeDB = require('./database-postgres');
+  console.log('✓ Database loaded: PostgreSQL');
 } catch (err) {
-  try {
-    TradeDB = require('./database-sqlite3');
-    console.log('✓ Database loaded: sqlite3');
-  } catch (err2) {
-    try {
-      TradeDB = require('./database-json');
-      console.log('✓ Database loaded: JSON fallback');
-    } catch (err3) {
-      console.error('✗ No database module available!');
-      process.exit(1);
-    }
-  }
+  console.error('✗ PostgreSQL database module failed to load:', err.message);
+  console.error('Make sure DATABASE_URL is set in your environment variables');
+  process.exit(1);
 }
 
 // Load Telegram bot
@@ -683,34 +674,6 @@ app.get('/api/alerts/preferences', ensureAuthenticatedAPI, async (req, res) => {
 
 app.post('/api/alerts/preferences', ensureAuthenticatedAPI, async (req, res) => {
   try {
-    // First, try to create the table if it doesn't exist
-    try {
-      const db = require('better-sqlite3')('trades.db');
-      db.exec(`
-        CREATE TABLE IF NOT EXISTS alert_preferences (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          user_id TEXT UNIQUE NOT NULL,
-          telegram_enabled BOOLEAN DEFAULT 0,
-          telegram_chat_id TEXT,
-          email_enabled BOOLEAN DEFAULT 0,
-          email_address TEXT,
-          alert_on_buy BOOLEAN DEFAULT 1,
-          alert_on_sell BOOLEAN DEFAULT 1,
-          alert_on_target BOOLEAN DEFAULT 1,
-          alert_on_stoploss BOOLEAN DEFAULT 1,
-          alert_on_time_exit BOOLEAN DEFAULT 1,
-          market_open_alert BOOLEAN DEFAULT 0,
-          market_close_alert BOOLEAN DEFAULT 0,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-      db.close();
-      console.log('Alert preferences table created/verified');
-    } catch (tableError) {
-      console.error('Could not create table:', tableError.message);
-    }
-    
     const userId = req.user ? req.user.email : 'default';
     const saved = await TradeDB.saveAlertPreferences({
       user_id: userId,
