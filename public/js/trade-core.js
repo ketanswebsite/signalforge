@@ -286,33 +286,40 @@ const TradeCore = (function() {
                     console.log(`UK Stock ${trade.symbol} shares raw value:`, trade.shares, 'type:', typeof trade.shares);
                 }
                 
-                // Handle shares - could be integer or float
-                if (trade.shares !== undefined && trade.shares !== null && trade.shares !== '') {
+                // Handle shares/quantity - API returns 'quantity' field
+                if (trade.quantity !== undefined && trade.quantity !== null && trade.quantity !== '') {
+                    trade.shares = parseFloat(trade.quantity);
+                } else if (trade.shares !== undefined && trade.shares !== null && trade.shares !== '') {
                     trade.shares = parseFloat(trade.shares);
-                    if (isNaN(trade.shares)) {
-                        console.error(`Invalid shares value for ${trade.symbol}:`, trade.shares);
-                        trade.shares = 0;
-                    }
-                    
-                    // For UK stocks, check if shares need adjustment
-                    // If the calculated investment is 100x too small, adjust shares
-                    if (trade.symbol && trade.symbol.endsWith('.L') && trade.shares > 0 && trade.shares < 1) {
-                        const testInvestment = trade.entryPrice * trade.shares;
-                        if (testInvestment < 100) { // Likely in wrong units
-                            console.log(`UK Stock ${trade.symbol}: Adjusting shares from ${trade.shares} to ${trade.shares * 100}`);
-                            trade.shares = trade.shares * 100;
-                        }
-                    }
                 } else {
-                    console.warn(`Trade ${trade.symbol} has no shares value`);
+                    console.warn(`Trade ${trade.symbol} has no shares/quantity value`);
                     trade.shares = 0;
+                }
+                
+                if (isNaN(trade.shares)) {
+                    console.error(`Invalid shares value for ${trade.symbol}:`, trade.shares);
+                    trade.shares = 0;
+                }
+                
+                // For UK stocks, check if shares need adjustment
+                // If the calculated investment is 100x too small, adjust shares
+                if (trade.symbol && trade.symbol.endsWith('.L') && trade.shares > 0 && trade.shares < 1) {
+                    const testInvestment = trade.entryPrice * trade.shares;
+                    if (testInvestment < 100) { // Likely in wrong units
+                        console.log(`UK Stock ${trade.symbol}: Adjusting shares from ${trade.shares} to ${trade.shares * 100}`);
+                        trade.shares = trade.shares * 100;
+                    }
                 }
                 
                 trade.profit = parseFloat(trade.profit) || 0;
                 trade.percentGain = parseFloat(trade.percentGain) || 0;
                 
-                // Calculate missing properties
-                trade.investmentAmount = trade.entryPrice * trade.shares;
+                // Use investmentAmount from API if available, otherwise calculate
+                if (trade.investmentAmount !== undefined && trade.investmentAmount !== null) {
+                    trade.investmentAmount = parseFloat(trade.investmentAmount);
+                } else {
+                    trade.investmentAmount = trade.entryPrice * trade.shares;
+                }
                 
                 // Debug investment amount calculation for UK stocks
                 if (trade.symbol && trade.symbol.endsWith('.L')) {
@@ -1491,7 +1498,8 @@ const TradeCore = (function() {
         
         // Get all profit percentages
         const profitPercentages = closedTrades.map(trade => {
-            const investment = trade.entryPrice * trade.shares;
+            // Use investmentAmount if available, otherwise calculate
+            const investment = trade.investmentAmount || (trade.entryPrice * trade.shares);
             if (!investment || investment === 0) {
                 console.warn('Invalid investment amount for trade:', trade);
                 return 0;
