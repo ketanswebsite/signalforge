@@ -42,17 +42,13 @@ git status -uno | findstr /C:"Your branch is behind" >nul
 if not errorlevel 1 (
     echo.
     echo WARNING: Your branch is behind origin/main
-    echo.
-    choice /C YN /M "Do you want to pull the latest changes first"
-    if errorlevel 1 if not errorlevel 2 (
-        echo Pulling latest changes...
-        git pull origin main
-        if errorlevel 1 (
-            echo.
-            echo ERROR: Failed to pull changes. Please resolve conflicts manually.
-            pause
-            exit /b
-        )
+    echo Automatically pulling latest changes...
+    git pull origin main
+    if errorlevel 1 (
+        echo.
+        echo ERROR: Failed to pull changes. Please resolve conflicts manually.
+        pause
+        exit /b
     )
 )
 
@@ -90,16 +86,11 @@ if !changes! gtr 0 (
     set "HH=!dt:~8,2!"
     set "Min=!dt:~10,2!"
     
-    set default_msg=Update: !DD!-!MM!-!YYYY! !HH!:!Min!
+    set default_msg=Auto-deploy: !DD!-!MM!-!YYYY! !HH!:!Min!
     
     echo.
-    echo Enter commit message (or press Enter for: "!default_msg!")
-    set /p commit_msg=^> 
-    if "!commit_msg!"=="" set commit_msg=!default_msg!
-    
-    echo.
-    echo Committing with message: "!commit_msg!"
-    git commit -m "!commit_msg!"
+    echo Auto-committing with message: "!default_msg!"
+    git commit -m "!default_msg!"
     if errorlevel 1 (
         echo.
         echo ERROR: Failed to commit changes!
@@ -145,15 +136,13 @@ if errorlevel 1 (
 )
 echo ----------------------------------------
 
-REM Push to main branch
+REM Push to main branch with retry logic
 echo.
 echo Pushing to origin/main...
 git push origin main
 if errorlevel 1 (
     echo.
-    echo ERROR: Failed to push to remote repository!
-    echo.
-    echo Trying to pull and merge first...
+    echo WARNING: Initial push failed. Trying to pull and merge first...
     git pull origin main --no-rebase
     if errorlevel 1 (
         echo.
@@ -163,16 +152,26 @@ if errorlevel 1 (
         exit /b
     )
     echo.
-    echo Retrying push...
+    echo Retrying push after merge...
     git push origin main
     if errorlevel 1 (
         echo.
-        echo ERROR: Still unable to push. Please check:
-        echo - Your internet connection
-        echo - GitHub authentication
-        echo - Repository permissions
-        pause
-        exit /b
+        echo ERROR: Push still failed. Attempting force push...
+        echo This may overwrite remote changes!
+        git push origin main --force-with-lease
+        if errorlevel 1 (
+            echo.
+            echo ERROR: All push attempts failed! Please check:
+            echo - Your internet connection
+            echo - GitHub authentication (try: gh auth login)
+            echo - Repository permissions
+            echo.
+            echo Manual fix: Run 'git push origin main' manually
+            pause
+            exit /b
+        )
+        echo.
+        echo SUCCESS: Force push completed!
     )
 )
 
@@ -196,23 +195,14 @@ git log --oneline -5
 echo ----------------------------------------
 echo.
 
-echo What would you like to do?
-echo 1. Open Render dashboard
-echo 2. Open GitHub repository
-echo 3. View deployment logs (opens Render)
-echo 4. Exit
+echo Auto-opening Render dashboard to monitor deployment...
 echo.
-choice /C 1234 /N /M "Select option (1-4): "
-
-if errorlevel 4 goto :end
-if errorlevel 3 start https://dashboard.render.com/ && goto :end
-if errorlevel 2 (
-    for /f "tokens=2" %%i in ('git remote get-url origin ^| findstr /C:"github.com"') do (
-        start %%i
-    )
-    goto :end
-)
-if errorlevel 1 start https://dashboard.render.com/
+echo You can also check:
+echo - Render Dashboard: https://dashboard.render.com/
+echo - GitHub Repository: 
+git remote get-url origin 2>nul | findstr /C:"github.com"
+echo.
+start https://dashboard.render.com/
 
 :end
 echo.
