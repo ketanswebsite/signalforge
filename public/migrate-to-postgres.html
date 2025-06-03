@@ -500,8 +500,15 @@
                 statusDiv.innerHTML = '<div class="status info">Migrating trades...</div>';
                 
                 // Check if we're using uploaded backup data
+                console.log('Migration debug:', {
+                    hasUploadedBackupData: !!uploadedBackupData,
+                    uploadedDataLength: uploadedBackupData ? uploadedBackupData.trades?.length : 'N/A',
+                    currentDataLength: currentData ? currentData.trades?.length : 'N/A'
+                });
+                
                 if (uploadedBackupData) {
                     // Use bulk import for uploaded backup
+                    console.log('Using bulk import for uploaded backup data');
                     try {
                         const response = await fetch('/api/admin/import-backup', {
                             method: 'POST',
@@ -526,6 +533,7 @@
                     }
                 } else {
                     // Migrate trades one by one (existing system data)
+                    console.log('Using individual POST calls for system data');
                     for (const trade of currentData.trades) {
                         try {
                             // For new PostgreSQL, we need to POST each trade
