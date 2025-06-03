@@ -3,13 +3,14 @@
 # Build script for Render deployment
 echo "🚀 Starting build process for Render..."
 
-# Install dependencies
+# Install dependencies (skip optional dependencies on Render)
 echo "📦 Installing dependencies..."
-npm install
-
-# Install better-sqlite3 with proper build flags for Render
-echo "📦 Reinstalling better-sqlite3 for Render environment..."
-npm uninstall better-sqlite3
-npm install better-sqlite3 --build-from-source
+if [ "$RENDER" = "true" ]; then
+    echo "🔄 Render environment detected - installing without optional dependencies..."
+    npm install --no-optional
+else
+    echo "📦 Installing all dependencies including optional ones..."
+    npm install
+fi
 
 echo "✅ Build complete!"
