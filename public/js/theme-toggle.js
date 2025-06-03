@@ -9,12 +9,15 @@
     
     // Get current theme from localStorage or system preference
     function getCurrentTheme() {
-        const savedTheme = localStorage.getItem(THEME_KEY);
-        if (savedTheme) {
-            return savedTheme;
+        // Check if we have functional cookie consent
+        if (window.cookieConsent && window.cookieConsent.hasFunctionalConsent()) {
+            const savedTheme = localStorage.getItem(THEME_KEY);
+            if (savedTheme) {
+                return savedTheme;
+            }
         }
         
-        // Check system preference
+        // Fall back to system preference if no consent or no saved theme
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
             return DARK_THEME;
         }
@@ -43,7 +46,11 @@
         const newTheme = currentTheme === DARK_THEME ? LIGHT_THEME : DARK_THEME;
         
         applyTheme(newTheme);
-        localStorage.setItem(THEME_KEY, newTheme);
+        
+        // Only save to localStorage if we have functional cookie consent
+        if (window.cookieConsent && window.cookieConsent.hasFunctionalConsent()) {
+            localStorage.setItem(THEME_KEY, newTheme);
+        }
         
         // Dispatch custom event for other components that might need to update
         window.dispatchEvent(new CustomEvent('themechange', { detail: { theme: newTheme } }));
