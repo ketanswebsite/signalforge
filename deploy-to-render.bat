@@ -195,6 +195,26 @@ git log --oneline -5
 echo ----------------------------------------
 echo.
 
+echo ========================================
+echo   POST-DEPLOYMENT STEPS
+echo ========================================
+echo.
+echo IMPORTANT: After deployment completes on Render:
+echo.
+echo 1. Check if data is missing:
+echo    - Go to Render Shell (in your service dashboard)
+echo    - Run: node check-postgres-fields.js
+echo.
+echo 2. If fields show NULL values, restore data:
+echo    - In Render Shell, run: node migrate-to-postgres-render.js
+echo    - This will restore all trade data including investment amounts
+echo.
+echo 3. Verify Telegram alerts are working:
+echo    - Alerts should now include opportunities from last 2 days only
+echo    - Entry dates will show actual signal dates
+echo.
+echo ========================================
+echo.
 echo Auto-opening Render dashboard to monitor deployment...
 echo.
 echo You can also check:
@@ -207,4 +227,6 @@ start https://dashboard.render.com/
 :end
 echo.
 echo Deployment script completed.
+echo.
+echo Remember: Run the migration if you see missing data!
 pause
