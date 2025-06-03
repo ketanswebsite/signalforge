@@ -43,27 +43,21 @@ const AlertsUI = (function() {
         // Check if button already exists
         if (document.querySelector('.alerts-button')) return;
         
-        // Find the user menu to position relative to it
-        const userMenu = document.querySelector('.user-menu');
-        if (!userMenu) {
-            console.log('User menu not found, waiting...');
-            setTimeout(addAlertsButton, 500);
-            return;
-        }
-        
-        const alertsButton = document.createElement('button');
-        alertsButton.className = 'alerts-button';
-        alertsButton.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-            </svg>
-        `;
-        
-        // Position next to user menu
-        alertsButton.style.position = 'absolute';
-        alertsButton.style.top = '0';
-        alertsButton.style.right = '60px'; // Position to the left of user menu
+        // Wait a bit for page to load
+        setTimeout(() => {
+            const alertsButton = document.createElement('button');
+            alertsButton.className = 'alerts-button';
+            alertsButton.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+            `;
+            
+            // Use fixed positioning in top left instead
+            alertsButton.style.position = 'fixed';
+            alertsButton.style.top = '80px'; // Below the header
+            alertsButton.style.left = '20px'; // Left side of screen
         alertsButton.style.width = '40px';
         alertsButton.style.height = '40px';
         alertsButton.style.borderRadius = '50%';
@@ -89,21 +83,15 @@ const AlertsUI = (function() {
             this.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
         };
         
-        // Navigate to alerts page when clicked
-        alertsButton.onclick = function(e) {
-            e.preventDefault();
-            window.location.href = '/alerts.html';
-        };
-        
-        // Add to user menu's parent container
-        const userMenuParent = userMenu.parentElement;
-        if (userMenuParent) {
-            userMenuParent.style.position = 'relative';
-            userMenuParent.appendChild(alertsButton);
-        } else {
-            // Fallback: add to body if no parent found
+            // Navigate to alerts page when clicked
+            alertsButton.onclick = function(e) {
+                e.preventDefault();
+                window.location.href = '/alerts.html';
+            };
+            
+            // Add to body
             document.body.appendChild(alertsButton);
-        }
+        }, 1000); // Wait 1 second for page to fully load
     }
     
     // Create the alerts configuration modal
