@@ -636,6 +636,11 @@ class SynchronizedCrosshair {
     }
 
     drawCrosshairOnChart(chart, dataX, mouseY) {
+        // Check if chart has scales initialized
+        if (!chart.scales || !chart.scales.x) {
+            return;
+        }
+        
         let overlay = chart.canvas.parentElement.querySelector('.crosshair-overlay');
         
         if (!overlay) {

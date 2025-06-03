@@ -61,63 +61,80 @@ const AlertsUI = (function() {
         }
     }
     
-    // Add alerts button to trades page
+    // Add alerts button to navigation
     function addAlertsButton() {
-        // Alert button enabled
-        // return;
-        
         // Check if button already exists
         if (document.querySelector('.alerts-button')) return;
         
         // Wait a bit for page to load
         setTimeout(() => {
+            // Check which page we're on to determine where to insert the button
+            const currentPage = window.location.pathname;
+            let targetContainer = null;
+            let insertPosition = 'beforebegin';
+            
+            if (currentPage.includes('trades.html')) {
+                // On trades page, insert before "Back to Backtester" button
+                targetContainer = document.querySelector('.btn-nav[onclick*="index.html"]');
+            } else if (currentPage.includes('index.html') || currentPage === '/') {
+                // On index page, insert before "Signal Management" link
+                targetContainer = document.querySelector('.nav-link[href="trades.html"]');
+            }
+            
+            if (!targetContainer) return;
+            
             const alertsButton = document.createElement('button');
-            alertsButton.className = 'alerts-button';
+            alertsButton.className = 'alerts-button btn-nav desktop-only';
             alertsButton.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                     <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
                 </svg>
+                Alerts
             `;
             
-            // Use fixed positioning in top left instead
-            alertsButton.style.position = 'fixed';
-            alertsButton.style.top = '80px'; // Below the header
-            alertsButton.style.left = '20px'; // Left side of screen
-        alertsButton.style.width = '40px';
-        alertsButton.style.height = '40px';
-        alertsButton.style.borderRadius = '50%';
-        alertsButton.style.backgroundColor = 'var(--primary-color)';
-        alertsButton.style.color = 'white';
-        alertsButton.style.border = 'none';
-        alertsButton.style.cursor = 'pointer';
-        alertsButton.style.display = 'flex';
-        alertsButton.style.alignItems = 'center';
-        alertsButton.style.justifyContent = 'center';
-        alertsButton.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
-        alertsButton.style.transition = 'all 0.2s ease';
-        alertsButton.style.zIndex = '1000';
-        alertsButton.title = 'Alerts Settings';
-        
-        // Add hover effect
-        alertsButton.onmouseover = function() {
-            this.style.transform = 'scale(1.1)';
-            this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
-        };
-        alertsButton.onmouseout = function() {
-            this.style.transform = 'scale(1)';
-            this.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
-        };
-        
+            alertsButton.title = 'Alerts Settings';
+            
             // Navigate to alerts page when clicked
             alertsButton.onclick = function(e) {
                 e.preventDefault();
                 window.location.href = '/alerts.html';
             };
             
-            // Add to body
-            document.body.appendChild(alertsButton);
+            // Insert the button before the target container
+            targetContainer.parentNode.insertBefore(alertsButton, targetContainer);
+            
+            // Also add to mobile navigation drawer
+            addAlertsButtonToMobileNav();
         }, 1000); // Wait 1 second for page to fully load
+    }
+    
+    // Add alerts button to mobile navigation drawer
+    function addAlertsButtonToMobileNav() {
+        const mobileDrawer = document.querySelector('.mobile-nav-drawer .drawer-nav-links');
+        if (!mobileDrawer) return;
+        
+        // Check if mobile alerts button already exists
+        if (mobileDrawer.querySelector('.alerts-mobile-link')) return;
+        
+        const mobileAlertsLink = document.createElement('a');
+        mobileAlertsLink.href = '/alerts.html';
+        mobileAlertsLink.className = 'drawer-nav-link alerts-mobile-link';
+        mobileAlertsLink.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span>Alerts</span>
+        `;
+        
+        // Find the first nav link and insert before it
+        const firstNavLink = mobileDrawer.querySelector('.drawer-nav-link');
+        if (firstNavLink) {
+            mobileDrawer.insertBefore(mobileAlertsLink, firstNavLink);
+        } else {
+            mobileDrawer.appendChild(mobileAlertsLink);
+        }
     }
     
     // Create the alerts configuration modal

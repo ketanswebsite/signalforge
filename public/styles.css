@@ -1719,13 +1719,14 @@ table tr:last-child td:last-child {
     background-color: white;
     border-radius: var(--radius);
     padding: 20px;
+    padding-top: 50px; /* Space for toolbar and zoom controls */
     box-shadow: var(--shadow-sm);
     margin-bottom: 24px;
     height: 350px;
     position: relative;
     border: 1px solid var(--border-color);
     transition: all var(--transition-normal);
-    overflow: hidden; /* Prevent chart overflow */
+    overflow: visible; /* Allow toolbar and zoom controls to show */
 }
 
 .chart-container:hover {
@@ -3113,6 +3114,7 @@ button:disabled::after {
     .chart-container {
         height: 220px;
         padding: 8px;
+        padding-top: 80px; /* Extra space for mobile toolbar positioning */
     }
     
     /* Mobile export buttons */
