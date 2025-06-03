@@ -17,15 +17,29 @@ if (process.env.RENDER) {
   console.log('- Checking /var/data:', require('fs').existsSync('/var/data') ? 'EXISTS' : 'NOT FOUND');
 }
 
-// Load database - PostgreSQL only
+// Load database - PostgreSQL with JSON fallback
 let TradeDB;
 try {
   TradeDB = require('./database-postgres');
-  console.log('✓ Database loaded: PostgreSQL');
+  console.log('✓ Database module loaded: PostgreSQL');
+  
+  // Check if actually connected
+  if (!TradeDB.isConnected()) {
+    console.log('⚠️ PostgreSQL not configured - using JSON fallback');
+    console.log('📋 Visit /migrate-to-postgres.html to set up PostgreSQL database');
+    // Load JSON fallback
+    TradeDB = require('./database-json');
+    console.log('✓ Using JSON database as fallback');
+  }
 } catch (err) {
   console.error('✗ PostgreSQL database module failed to load:', err.message);
-  console.error('Make sure DATABASE_URL is set in your environment variables');
-  process.exit(1);
+  try {
+    TradeDB = require('./database-json');
+    console.log('✓ Using JSON database as fallback');
+  } catch (err2) {
+    console.error('✗ No database module available!');
+    process.exit(1);
+  }
 }
 
 // Load Telegram bot
@@ -140,6 +154,14 @@ app.get('/api/test', (req, res) => {
     message: 'API test endpoint is working!',
     server: 'app.js',
     timestamp: new Date().toISOString()
+  });
+});
+
+// User endpoint for authentication check
+app.get('/api/user', ensureAuthenticatedAPI, (req, res) => {
+  res.json({
+    authenticated: true,
+    user: req.user
   });
 });
 

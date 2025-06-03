@@ -1,13 +1,34 @@
 const { Pool } = require('pg');
 
-// Database connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+// Database connection with fallback
+let pool = null;
+let dbConnected = false;
+
+// Check if DATABASE_URL is provided
+if (!process.env.DATABASE_URL) {
+  console.error('❌ DATABASE_URL not found in environment variables');
+  console.error('📝 Please set up PostgreSQL database and add DATABASE_URL');
+  console.error('📋 Visit /migrate-to-postgres.html for setup instructions');
+} else {
+  try {
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    });
+    dbConnected = true;
+    console.log('✓ PostgreSQL connection configured');
+  } catch (error) {
+    console.error('❌ Failed to configure PostgreSQL:', error.message);
+  }
+}
 
 // Initialize database tables
 async function initializeDatabase() {
+  if (!dbConnected || !pool) {
+    console.log('⚠️ Skipping database initialization - PostgreSQL not configured');
+    return;
+  }
+  
   try {
     // Create trades table
     await pool.query(`
@@ -67,15 +88,28 @@ async function initializeDatabase() {
   }
 }
 
+// Helper function to check database connection
+function checkConnection() {
+  if (!dbConnected || !pool) {
+    throw new Error('PostgreSQL not configured. Please set DATABASE_URL environment variable and visit /migrate-to-postgres.html for setup instructions.');
+  }
+}
+
 // Database operations
 const TradeDB = {
   // Initialize database on module load
   async init() {
     await initializeDatabase();
   },
+  
+  // Check if database is connected
+  isConnected() {
+    return dbConnected && pool !== null;
+  },
 
   // Get all trades for a user
   async getAllTrades(userId = 'default') {
+    checkConnection();
     try {
       const result = await pool.query(
         'SELECT * FROM trades WHERE user_id = $1 ORDER BY entry_date DESC',
