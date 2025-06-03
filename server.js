@@ -150,11 +150,12 @@ app.get('/api/test', (req, res) => {
 });
 
 // Get all trades
-app.get('/api/trades', async (req, res) => {
+app.get('/api/trades', ensureAuthenticatedAPI, async (req, res) => {
   console.log('>>> /api/trades endpoint hit!');
   try {
-    const trades = await TradeDB.getAllTrades();
-    console.log(`>>> Returning ${trades.length} trades`);
+    const userId = req.user ? req.user.email : 'default';
+    const trades = await TradeDB.getAllTrades(userId);
+    console.log(`>>> Returning ${trades.length} trades for user ${userId}`);
     res.json(trades);
   } catch (error) {
     console.error('>>> Error:', error.message);
@@ -163,9 +164,10 @@ app.get('/api/trades', async (req, res) => {
 });
 
 // Get active trades
-app.get('/api/trades/active', async (req, res) => {
+app.get('/api/trades/active', ensureAuthenticatedAPI, async (req, res) => {
   try {
-    const trades = await TradeDB.getActiveTrades();
+    const userId = req.user ? req.user.email : 'default';
+    const trades = await TradeDB.getActiveTrades(userId);
     res.json(trades);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -173,9 +175,10 @@ app.get('/api/trades/active', async (req, res) => {
 });
 
 // Get closed trades  
-app.get('/api/trades/closed', async (req, res) => {
+app.get('/api/trades/closed', ensureAuthenticatedAPI, async (req, res) => {
   try {
-    const trades = await TradeDB.getClosedTrades();
+    const userId = req.user ? req.user.email : 'default';
+    const trades = await TradeDB.getClosedTrades(userId);
     res.json(trades);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -183,9 +186,10 @@ app.get('/api/trades/closed', async (req, res) => {
 });
 
 // Get trade by ID
-app.get('/api/trades/:id', async (req, res) => {
+app.get('/api/trades/:id', ensureAuthenticatedAPI, async (req, res) => {
   try {
-    const trade = await TradeDB.getTradeById(req.params.id);
+    const userId = req.user ? req.user.email : 'default';
+    const trade = await TradeDB.getTradeById(req.params.id, userId);
     if (!trade) {
       return res.status(404).json({ error: 'Trade not found' });
     }
@@ -196,9 +200,10 @@ app.get('/api/trades/:id', async (req, res) => {
 });
 
 // Create trade
-app.post('/api/trades', async (req, res) => {
+app.post('/api/trades', ensureAuthenticatedAPI, async (req, res) => {
   try {
-    const trade = await TradeDB.insertTrade(req.body);
+    const userId = req.user ? req.user.email : 'default';
+    const trade = await TradeDB.insertTrade(req.body, userId);
     res.status(201).json(trade);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -206,7 +211,7 @@ app.post('/api/trades', async (req, res) => {
 });
 
 // Update trade
-app.put('/api/trades/:id', async (req, res) => {
+app.put('/api/trades/:id', ensureAuthenticatedAPI, async (req, res) => {
   try {
     console.log('>>> UPDATE TRADE REQUEST:', {
       id: req.params.id,
@@ -215,7 +220,8 @@ app.put('/api/trades/:id', async (req, res) => {
       entryPrice: req.body.entryPrice
     });
     
-    const success = await TradeDB.updateTrade(req.params.id, req.body);
+    const userId = req.user ? req.user.email : 'default';
+    const success = await TradeDB.updateTrade(req.params.id, req.body, userId);
     if (!success) {
       return res.status(404).json({ error: 'Trade not found' });
     }
@@ -227,9 +233,10 @@ app.put('/api/trades/:id', async (req, res) => {
 });
 
 // Delete trade
-app.delete('/api/trades/:id', async (req, res) => {
+app.delete('/api/trades/:id', ensureAuthenticatedAPI, async (req, res) => {
   try {
-    const success = await TradeDB.deleteTrade(req.params.id);
+    const userId = req.user ? req.user.email : 'default';
+    const success = await TradeDB.deleteTrade(req.params.id, userId);
     if (!success) {
       return res.status(404).json({ error: 'Trade not found' });
     }
@@ -240,9 +247,10 @@ app.delete('/api/trades/:id', async (req, res) => {
 });
 
 // Delete all trades
-app.delete('/api/trades', async (req, res) => {
+app.delete('/api/trades', ensureAuthenticatedAPI, async (req, res) => {
   try {
-    const count = await TradeDB.deleteAllTrades();
+    const userId = req.user ? req.user.email : 'default';
+    const count = await TradeDB.deleteAllTrades(userId);
     res.json({ message: `Deleted ${count} trades` });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -250,10 +258,11 @@ app.delete('/api/trades', async (req, res) => {
 });
 
 // Bulk import
-app.post('/api/trades/bulk', async (req, res) => {
+app.post('/api/trades/bulk', ensureAuthenticatedAPI, async (req, res) => {
   try {
     const { trades } = req.body;
-    const count = await TradeDB.bulkInsertTrades(trades);
+    const userId = req.user ? req.user.email : 'default';
+    const count = await TradeDB.bulkInsertTrades(trades, userId);
     res.json({ message: `Imported ${count} trades` });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -459,9 +468,10 @@ app.post('/api/prices', async (req, res) => {
 });
 
 // Alert preferences endpoints
-app.get('/api/alerts/preferences', async (req, res) => {
+app.get('/api/alerts/preferences', ensureAuthenticatedAPI, async (req, res) => {
   try {
-    const prefs = await TradeDB.getAlertPreferences('default');
+    const userId = req.user ? req.user.email : 'default';
+    const prefs = await TradeDB.getAlertPreferences(userId);
     res.json(prefs || {
       telegram_enabled: false,
       telegram_chat_id: null,
@@ -480,7 +490,7 @@ app.get('/api/alerts/preferences', async (req, res) => {
   }
 });
 
-app.post('/api/alerts/preferences', async (req, res) => {
+app.post('/api/alerts/preferences', ensureAuthenticatedAPI, async (req, res) => {
   try {
     // First, try to create the table if it doesn't exist
     try {
@@ -510,8 +520,9 @@ app.post('/api/alerts/preferences', async (req, res) => {
       console.error('Could not create table:', tableError.message);
     }
     
+    const userId = req.user ? req.user.email : 'default';
     const saved = await TradeDB.saveAlertPreferences({
-      user_id: 'default',
+      user_id: userId,
       ...req.body
     });
     
@@ -648,11 +659,11 @@ async function checkTradeAlerts() {
     const alertUsers = await TradeDB.getAllActiveAlertUsers();
     if (alertUsers.length === 0) return;
     
-    // Get all active trades
-    const activeTrades = await TradeDB.getActiveTrades();
-    
     for (const user of alertUsers) {
       if (!user.telegram_enabled || !user.telegram_chat_id) continue;
+      
+      // Get active trades for this specific user
+      const activeTrades = await TradeDB.getActiveTrades(user.user_id);
       
       // Check each active trade for alert conditions
       for (const trade of activeTrades) {

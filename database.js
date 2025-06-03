@@ -68,6 +68,7 @@ function initializeDatabase() {
         entryReason TEXT,
         exitReason TEXT,
         stockIndex TEXT,
+        user_id TEXT NOT NULL DEFAULT 'default',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
@@ -78,6 +79,7 @@ function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_trades_status ON trades(status);
     CREATE INDEX IF NOT EXISTS idx_trades_symbol ON trades(symbol);
     CREATE INDEX IF NOT EXISTS idx_trades_entryDate ON trades(entryDate);
+    CREATE INDEX IF NOT EXISTS idx_trades_user_id ON trades(user_id);
   `);
 
   // Add missing columns if they don't exist
@@ -100,6 +102,19 @@ function initializeDatabase() {
       ALTER TABLE trades ADD COLUMN takeProfitPercent REAL;
     `);
     console.log('Missing columns added successfully');
+  }
+
+  // Add user_id column if it doesn't exist
+  try {
+    const testUserQuery = db.prepare('SELECT user_id FROM trades LIMIT 1');
+    testUserQuery.get();
+  } catch (e) {
+    console.log('Adding user_id column to trades table...');
+    db.exec(`
+      ALTER TABLE trades ADD COLUMN user_id TEXT NOT NULL DEFAULT 'default';
+      CREATE INDEX IF NOT EXISTS idx_trades_user_id ON trades(user_id);
+    `);
+    console.log('user_id column added successfully');
   }
 
   // Create alert_preferences table
@@ -142,24 +157,25 @@ initializeDatabase();
 
 // Prepared statements for better performance
 const statements = {
-  getAllTrades: db.prepare('SELECT * FROM trades ORDER BY entryDate DESC'),
-  getActiveTrades: db.prepare('SELECT * FROM trades WHERE status = ?'),
-  getTradeById: db.prepare('SELECT * FROM trades WHERE id = ?'),
-  getTradesBySymbol: db.prepare('SELECT * FROM trades WHERE symbol = ?'),
+  getAllTrades: db.prepare('SELECT * FROM trades WHERE user_id = ? ORDER BY entryDate DESC'),
+  getAllTradesNoFilter: db.prepare('SELECT * FROM trades ORDER BY entryDate DESC'),
+  getActiveTrades: db.prepare('SELECT * FROM trades WHERE status = ? AND user_id = ?'),
+  getTradeById: db.prepare('SELECT * FROM trades WHERE id = ? AND user_id = ?'),
+  getTradesBySymbol: db.prepare('SELECT * FROM trades WHERE symbol = ? AND user_id = ?'),
   insertTrade: db.prepare(`
     INSERT INTO trades (symbol, entryDate, entryPrice, exitDate, exitPrice, shares, status, profit, percentGain, 
                        entryReason, exitReason, stockIndex, stopLossPrice, targetPrice, squareOffDate, notes, 
-                       stockName, investmentAmount, currencySymbol, stopLossPercent, takeProfitPercent)
+                       stockName, investmentAmount, currencySymbol, stopLossPercent, takeProfitPercent, user_id)
     VALUES (@symbol, @entryDate, @entryPrice, @exitDate, @exitPrice, @shares, @status, @profit, @percentGain, 
             @entryReason, @exitReason, @stockIndex, @stopLossPrice, @targetPrice, @squareOffDate, @notes,
-            @stockName, @investmentAmount, @currencySymbol, @stopLossPercent, @takeProfitPercent)
+            @stockName, @investmentAmount, @currencySymbol, @stopLossPercent, @takeProfitPercent, @user_id)
   `),
   updateTrade: db.prepare(`
     UPDATE trades 
     SET exitDate = @exitDate, exitPrice = @exitPrice, status = @status, 
         profit = @profit, percentGain = @percentGain, exitReason = @exitReason,
         updated_at = CURRENT_TIMESTAMP
-    WHERE id = @id
+    WHERE id = @id AND user_id = @user_id
   `),
   updateTradeDetails: db.prepare(`
     UPDATE trades 
@@ -179,10 +195,10 @@ const statements = {
         stopLossPercent = COALESCE(@stopLossPercent, stopLossPercent),
         takeProfitPercent = COALESCE(@takeProfitPercent, takeProfitPercent),
         updated_at = CURRENT_TIMESTAMP
-    WHERE id = @id
+    WHERE id = @id AND user_id = @user_id
   `),
-  deleteTrade: db.prepare('DELETE FROM trades WHERE id = ?'),
-  deleteAllTrades: db.prepare('DELETE FROM trades'),
+  deleteTrade: db.prepare('DELETE FROM trades WHERE id = ? AND user_id = ?'),
+  deleteAllTrades: db.prepare('DELETE FROM trades WHERE user_id = ?'),
   
   // Alert preferences statements
   getAlertPrefs: db.prepare('SELECT * FROM alert_preferences WHERE user_id = ?'),
@@ -212,11 +228,11 @@ const statements = {
 
 // Database operations
 const TradeDB = {
-  // Get all trades
-  async getAllTrades() {
+  // Get all trades for a user
+  async getAllTrades(userId = 'default') {
     try {
-      const trades = statements.getAllTrades.all();
-      console.log(`Database: getAllTrades returned ${trades.length} trades`);
+      const trades = statements.getAllTrades.all(userId);
+      console.log(`Database: getAllTrades returned ${trades.length} trades for user ${userId}`);
       return trades;
     } catch (error) {
       console.error('Database: Error in getAllTrades:', error);
@@ -224,42 +240,44 @@ const TradeDB = {
     }
   },
 
-  // Get active trades
-  async getActiveTrades() {
-    return statements.getActiveTrades.all('active');
+  // Get active trades for a user
+  async getActiveTrades(userId = 'default') {
+    return statements.getActiveTrades.all('active', userId);
   },
 
-  // Get closed trades
-  async getClosedTrades() {
-    return statements.getActiveTrades.all('closed');
+  // Get closed trades for a user
+  async getClosedTrades(userId = 'default') {
+    return statements.getActiveTrades.all('closed', userId);
   },
 
-  // Get trade by ID
-  async getTradeById(id) {
-    return statements.getTradeById.get(id);
+  // Get trade by ID for a user
+  async getTradeById(id, userId = 'default') {
+    return statements.getTradeById.get(id, userId);
   },
 
-  // Get trades by symbol
-  async getTradesBySymbol(symbol) {
-    return statements.getTradesBySymbol.all(symbol);
+  // Get trades by symbol for a user
+  async getTradesBySymbol(symbol, userId = 'default') {
+    return statements.getTradesBySymbol.all(symbol, userId);
   },
 
-  // Insert a new trade
-  async insertTrade(trade) {
+  // Insert a new trade for a user
+  async insertTrade(trade, userId = 'default') {
     try {
-      const info = statements.insertTrade.run(trade);
-      return { id: info.lastInsertRowid, ...trade };
+      const tradeWithUser = { ...trade, user_id: userId };
+      const info = statements.insertTrade.run(tradeWithUser);
+      return { id: info.lastInsertRowid, ...tradeWithUser };
     } catch (error) {
       console.error('Error inserting trade:', error);
       throw error;
     }
   },
 
-  // Update a trade (usually when closing it)
-  async updateTrade(id, updates) {
+  // Update a trade for a user
+  async updateTrade(id, updates, userId = 'default') {
     try {
       console.log('>>> Database updateTrade called:', {
         id,
+        userId,
         hasEntryPrice: 'entryPrice' in updates,
         entryPrice: updates.entryPrice,
         updatesKeys: Object.keys(updates)
@@ -271,13 +289,13 @@ const TradeDB = {
           updates.squareOffDate !== undefined || updates.notes !== undefined ||
           updates.stopLossPercent !== undefined || updates.takeProfitPercent !== undefined) {
         console.log('>>> Using updateTradeDetails statement');
-        const info = statements.updateTradeDetails.run({ ...updates, id });
+        const info = statements.updateTradeDetails.run({ ...updates, id, user_id: userId });
         console.log('>>> Update result:', { changes: info.changes });
         return info.changes > 0;
       } else {
         console.log('>>> Using simple updateTrade statement');
         // Otherwise use the simpler updateTrade for closing trades
-        const info = statements.updateTrade.run({ ...updates, id });
+        const info = statements.updateTrade.run({ ...updates, id, user_id: userId });
         console.log('>>> Update result:', { changes: info.changes });
         return info.changes > 0;
       }
@@ -287,10 +305,10 @@ const TradeDB = {
     }
   },
 
-  // Delete a trade
-  async deleteTrade(id) {
+  // Delete a trade for a user
+  async deleteTrade(id, userId = 'default') {
     try {
-      const info = statements.deleteTrade.run(id);
+      const info = statements.deleteTrade.run(id, userId);
       return info.changes > 0;
     } catch (error) {
       console.error('Error deleting trade:', error);
@@ -298,10 +316,10 @@ const TradeDB = {
     }
   },
 
-  // Delete all trades
-  async deleteAllTrades() {
+  // Delete all trades for a user
+  async deleteAllTrades(userId = 'default') {
     try {
-      const info = statements.deleteAllTrades.run();
+      const info = statements.deleteAllTrades.run(userId);
       return info.changes;
     } catch (error) {
       console.error('Error deleting all trades:', error);
@@ -309,11 +327,11 @@ const TradeDB = {
     }
   },
 
-  // Bulk insert trades (for migration from localStorage)
-  async bulkInsertTrades(trades) {
+  // Bulk insert trades for a user (for migration from localStorage)
+  async bulkInsertTrades(trades, userId = 'default') {
     const insertMany = db.transaction((trades) => {
       for (const trade of trades) {
-        statements.insertTrade.run(trade);
+        statements.insertTrade.run({ ...trade, user_id: userId });
       }
     });
 
