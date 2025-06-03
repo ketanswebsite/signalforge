@@ -43,10 +43,13 @@ const AlertsUI = (function() {
         // Check if button already exists
         if (document.querySelector('.alerts-button')) return;
         
-        // Find the right place to add the button
-        const navBar = document.querySelector('.nav-bar');
-        const pageNav = document.querySelector('.page-nav');
-        const navLinks = document.querySelector('.nav-links');
+        // Find the user menu to position relative to it
+        const userMenu = document.querySelector('.user-menu');
+        if (!userMenu) {
+            console.log('User menu not found, waiting...');
+            setTimeout(addAlertsButton, 500);
+            return;
+        }
         
         const alertsButton = document.createElement('button');
         alertsButton.className = 'alerts-button';
@@ -56,9 +59,11 @@ const AlertsUI = (function() {
                 <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
             </svg>
         `;
-        alertsButton.style.position = 'fixed';
-        alertsButton.style.top = '20px';
-        alertsButton.style.right = '70px'; // Moved left to avoid user menu overlap
+        
+        // Position next to user menu
+        alertsButton.style.position = 'absolute';
+        alertsButton.style.top = '0';
+        alertsButton.style.right = '60px'; // Position to the left of user menu
         alertsButton.style.width = '40px';
         alertsButton.style.height = '40px';
         alertsButton.style.borderRadius = '50%';
@@ -90,18 +95,14 @@ const AlertsUI = (function() {
             window.location.href = '/alerts.html';
         };
         
-        // Add directly to body for fixed positioning
-        document.body.appendChild(alertsButton);
-        
-        // Add right margin to navigation containers to avoid bell icon
-        if (navBar) {
-            navBar.style.marginRight = '60px';
-        }
-        if (pageNav) {
-            pageNav.style.marginRight = '60px';
-        }
-        if (navLinks) {
-            navLinks.style.marginRight = '60px';
+        // Add to user menu's parent container
+        const userMenuParent = userMenu.parentElement;
+        if (userMenuParent) {
+            userMenuParent.style.position = 'relative';
+            userMenuParent.appendChild(alertsButton);
+        } else {
+            // Fallback: add to body if no parent found
+            document.body.appendChild(alertsButton);
         }
     }
     
