@@ -340,7 +340,50 @@ app.get('/api/trades/:id', ensureAuthenticatedAPI, async (req, res) => {
 app.post('/api/trades', ensureAuthenticatedAPI, async (req, res) => {
   try {
     const userId = req.user ? req.user.email : 'default';
-    const trade = await TradeDB.insertTrade(req.body, userId);
+    
+    // Map backup fields to PostgreSQL schema (for migration compatibility)
+    const mappedTrade = {
+      symbol: req.body.symbol,
+      name: req.body.stockName || req.body.name || null,
+      stockIndex: req.body.stockIndex || null,
+      entryDate: req.body.entryDate,
+      entryPrice: req.body.entryPrice,
+      quantity: req.body.shares || req.body.quantity || null,
+      positionSize: req.body.investmentAmount || req.body.positionSize || null,
+      stopLoss: req.body.stopLossPrice || req.body.stopLoss || null,
+      targetPrice: req.body.targetPrice || null,
+      exitDate: req.body.exitDate || req.body.squareOffDate || null,
+      exitPrice: req.body.exitPrice || null,
+      status: req.body.status || 'active',
+      profitLoss: req.body.profit || req.body.profitLoss || null,
+      profitLossPercentage: req.body.percentGain || req.body.profitLossPercentage || null,
+      notes: req.body.notes || req.body.entryReason || null
+    };
+    
+    // Debug logging for TBCG.L trade
+    if (req.body.symbol === 'TBCG.L') {
+      console.log('=== TBCG.L POST /api/trades DEBUG ===');
+      console.log('Original body:', {
+        symbol: req.body.symbol,
+        shares: req.body.shares,
+        investmentAmount: req.body.investmentAmount,
+        profit: req.body.profit,
+        percentGain: req.body.percentGain,
+        stockName: req.body.stockName,
+        stopLossPrice: req.body.stopLossPrice
+      });
+      console.log('Mapped trade:', {
+        symbol: mappedTrade.symbol,
+        quantity: mappedTrade.quantity,
+        positionSize: mappedTrade.positionSize,
+        profitLoss: mappedTrade.profitLoss,
+        profitLossPercentage: mappedTrade.profitLossPercentage,
+        name: mappedTrade.name,
+        stopLoss: mappedTrade.stopLoss
+      });
+    }
+    
+    const trade = await TradeDB.insertTrade(mappedTrade, userId);
     res.status(201).json(trade);
   } catch (error) {
     res.status(500).json({ error: error.message });
