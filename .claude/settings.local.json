@@ -27,7 +27,8 @@
       "Bash(git push:*)",
       "Bash(git branch:*)",
       "Bash(timeout:*)",
-      "Bash(true)"
+      "Bash(true)",
+      "Bash(cmd.exe /c deploy-to-render.bat)"
     ],
     "deny": []
   },
