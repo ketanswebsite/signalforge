@@ -30,11 +30,9 @@ async function initializeDatabase() {
   }
   
   try {
-    // Drop and recreate trades table with all fields
-    await pool.query(`DROP TABLE IF EXISTS trades`);
-    
+    // Create trades table if it doesn't exist (DO NOT DROP EXISTING TABLE!)
     await pool.query(`
-      CREATE TABLE trades (
+      CREATE TABLE IF NOT EXISTS trades (
         id BIGSERIAL PRIMARY KEY,
         symbol VARCHAR(50) NOT NULL,
         name VARCHAR(255),
