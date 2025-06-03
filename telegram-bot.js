@@ -6,7 +6,12 @@ const DEFAULT_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 if (!BOT_TOKEN) {
     console.warn('WARNING: TELEGRAM_BOT_TOKEN not set in environment variables. Telegram bot features disabled.');
 }
-const bot = BOT_TOKEN ? new TelegramBot(BOT_TOKEN, { polling: true }) : null;
+
+// Create bot instance - disable polling on Render to avoid conflicts
+const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER;
+const bot = BOT_TOKEN ? new TelegramBot(BOT_TOKEN, { 
+    polling: !isProduction  // Only use polling in development
+}) : null;
 
 // Store user chat IDs (in production, this should be in database)
 const userChatIds = new Map();
@@ -26,8 +31,21 @@ function initializeTelegramBot() {
   
   console.log('🤖 Initializing Telegram bot...');
   
-  // Handle /start command
-  bot.onText(/\/start/, (msg) => {
+  // Add error handling
+  if (!isProduction) {
+    bot.on('polling_error', (error) => {
+      console.error('Telegram polling error:', error.message);
+    });
+    
+    bot.on('error', (error) => {
+      console.error('Telegram bot error:', error.message);
+    });
+  }
+  
+  // Only set up command handlers if polling is enabled (development mode)
+  if (!isProduction) {
+    // Handle /start command
+    bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
     const username = msg.from.username || msg.from.first_name;
@@ -113,12 +131,19 @@ function initializeTelegramBot() {
       { parse_mode: 'Markdown' }
     );
   });
+  } // End of polling-only handlers
   
-  console.log('✅ Telegram bot initialized successfully');
+  console.log(`✅ Telegram bot initialized successfully (Production mode: ${isProduction})`);
 }
 
 // Send alert to user
 async function sendTelegramAlert(chatId, alert) {
+  // Check if bot is available
+  if (!bot) {
+    console.error('❌ Telegram bot not initialized - cannot send alert');
+    return false;
+  }
+  
   // Use default chat ID if none provided
   if (!chatId && DEFAULT_CHAT_ID) {
     chatId = DEFAULT_CHAT_ID;
@@ -219,6 +244,11 @@ async function sendBulkAlerts(alerts) {
 
 // Get bot info
 async function getBotInfo() {
+  if (!bot) {
+    console.error('❌ Telegram bot not initialized');
+    return null;
+  }
+  
   try {
     const info = await bot.getMe();
     return {
@@ -235,6 +265,11 @@ async function getBotInfo() {
 
 // Test connection
 async function testConnection(chatId) {
+  if (!bot) {
+    console.error('❌ Telegram bot not initialized');
+    return false;
+  }
+  
   try {
     await bot.sendMessage(chatId, 
       '✅ *Connection Test Successful!*\n\n' +
