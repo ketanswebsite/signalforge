@@ -201,29 +201,40 @@ echo ========================================
 echo.
 echo IMPORTANT: After deployment completes on Render:
 echo.
-echo 1. Verify the application is running:
+echo 1. Run database migrations on Render:
+echo    - Go to Render Dashboard > Your Service > Shell
+echo    - Run: node migrations/001_add_subscription_tables.js up
+echo    - This will create subscription tables and add user fields
+echo.
+echo 2. Verify the application is running:
 echo    - Check your app URL for successful deployment
 echo    - Test login and basic functionality
 echo.
-echo 2. Test the Admin Dashboard user migration:
+echo 3. Test the Admin Dashboard user migration:
 echo    - Go to /admin page after deployment
 echo    - Verify that Total Users shows correct count (not 0)
 echo    - Check that existing users appear in the users table
 echo    - Test that new user logins get saved to users table
 echo.
-echo 3. Verify PostgreSQL user tracking:
+echo 4. Verify PostgreSQL user tracking:
 echo    - Existing users should be migrated from trades table
 echo    - New Google OAuth logins should create user records
 echo    - Admin page should show all registered users
 echo.
-echo 4. Test API field standardization:
+echo 5. Test API field standardization:
 echo    - Open Developer Tools and check API responses
 echo    - Verify 'shares' and 'profitLoss' fields are present
 echo    - No more 'quantity' or 'profit' fields should appear
 echo.
-echo 5. Verify Telegram alerts are working:
+echo 6. Verify Telegram alerts are working:
 echo    - Test alert preferences in the app
 echo    - Check that notifications use correct field values
+echo.
+echo 7. Check subscription tables were created:
+echo    - subscription_plans table with IN/UK pricing
+echo    - user_subscriptions for tracking status
+echo    - payment_transactions for payment records
+echo    - payment_verification_queue for admin workflow
 echo.
 echo ========================================
 echo.
