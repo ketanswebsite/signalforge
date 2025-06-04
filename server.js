@@ -310,6 +310,39 @@ app.get('/api/user-analytics', ensureAuthenticatedAPI, async (req, res) => {
   }
 });
 
+// Debug endpoint to check users table directly
+app.get('/api/debug/users', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    // Direct query to users table
+    const { Pool } = require('pg');
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    });
+    
+    const result = await pool.query('SELECT id, email, name, first_login, last_login FROM users ORDER BY last_login DESC');
+    
+    res.json({
+      totalUsersInTable: result.rows.length,
+      users: result.rows,
+      currentUser: req.user.email,
+      debugInfo: {
+        tableExists: true,
+        queryExecuted: true
+      }
+    });
+  } catch (error) {
+    console.error('Error querying users table:', error);
+    res.status(500).json({ 
+      error: error.message,
+      debugInfo: {
+        tableExists: false,
+        queryExecuted: false
+      }
+    });
+  }
+});
+
 // Check subscription setup endpoint
 app.get('/api/check-subscription-setup', async (req, res) => {
   try {

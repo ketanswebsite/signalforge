@@ -391,6 +391,7 @@
                     <div class="test-actions">
                         <button class="btn btn-test" onclick="getUserAnalytics()">Get User Stats</button>
                         <button class="btn btn-test" onclick="refreshUserStats()">Refresh</button>
+                        <button class="btn btn-check" onclick="debugUsersTable()">Debug Users Table</button>
                     </div>
                     <div class="result-area" id="user-analytics-result"></div>
                 </div>
@@ -770,6 +771,70 @@
             `;
             
             showResult('engagement-result', engagementDetails);
+        }
+
+        // Debug function to check users table directly
+        async function debugUsersTable() {
+            try {
+                const response = await fetch('/api/debug/users');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    let debugDisplay = `
+🔍 USERS TABLE DEBUG INFORMATION
+
+📊 Direct Table Query Results:
+   └─ Total Users in Table: ${data.totalUsersInTable}
+
+👤 Users Found (ordered by last login):
+`;
+                    
+                    if (data.users && data.users.length > 0) {
+                        data.users.forEach((user, index) => {
+                            debugDisplay += `
+   ${index + 1}. ${user.email}
+      ├─ Name: ${user.name || 'N/A'}
+      ├─ First Login: ${user.first_login ? new Date(user.first_login).toLocaleString() : 'N/A'}
+      └─ Last Login: ${user.last_login ? new Date(user.last_login).toLocaleString() : 'N/A'}
+`;
+                        });
+                    } else {
+                        debugDisplay += `
+   ❌ No users found in table!
+   
+🔧 Possible Issues:
+   • Users table might not be created
+   • saveOrUpdateUser function not being called during login
+   • Database migration not completed
+   • Users logged in before users table was created
+`;
+                    }
+                    
+                    debugDisplay += `
+
+🔧 Debug Info:
+   ├─ Table Exists: ${data.debugInfo.tableExists}
+   ├─ Query Executed: ${data.debugInfo.queryExecuted}
+   └─ Current User: ${data.currentUser}
+
+💡 If you see fewer users than expected:
+   1. Users might have logged in before the users table was created
+   2. Check server logs for saveOrUpdateUser errors
+   3. The migration function might need to be triggered
+   4. Previous logins with memory sessions were lost on restart
+                    `;
+                    
+                    showResult('user-analytics-result', debugDisplay);
+                    
+                } else if (response.status === 401) {
+                    showResult('user-analytics-result', '🔒 Please log in to access debug information', true);
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                showResult('user-analytics-result', `❌ Debug failed\nError: ${error.message}\n\nThis could indicate the users table doesn't exist or there's a database connection issue.`, true);
+            }
         }
     </script>
 </body>
