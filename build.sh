@@ -21,9 +21,7 @@ else
     echo "ℹ️  No build script found in package.json, skipping..."
 fi
 
-# Create necessary directories
-echo "📁 Creating necessary directories..."
-mkdir -p /var/data
+# Note: No local directories needed - using PostgreSQL database
 
 # Check environment variables
 echo "🔧 Checking environment variables..."

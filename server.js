@@ -14,7 +14,7 @@ if (process.env.RENDER) {
   console.log('Running on Render - Diagnostic Info:');
   console.log('- Working directory:', process.cwd());
   console.log('- NODE_ENV:', process.env.NODE_ENV);
-  console.log('- Checking /var/data:', require('fs').existsSync('/var/data') ? 'EXISTS' : 'NOT FOUND');
+  console.log('- Using PostgreSQL database (no local storage needed)');
 }
 
 // Load database - PostgreSQL only

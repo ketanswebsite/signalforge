@@ -1,7 +1,6 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const session = require('express-session');
-const SQLiteStore = require('connect-sqlite3')(session);
 const fs = require('fs');
 const path = require('path');
 
@@ -13,23 +12,11 @@ let TradeDB;
 try {
   TradeDB = require('../database-postgres');
 } catch (err) {
-  TradeDB = require('../database-json');
+  console.error('Failed to load PostgreSQL database module:', err.message);
 }
 
-// Determine database directory based on environment
-let dbDir;
-if (process.env.RENDER) {
-    // Use Render's persistent disk mount point
-    dbDir = '/var/data';
-} else {
-    // Use local database directory
-    dbDir = path.join(__dirname, '..', 'database');
-    if (!fs.existsSync(dbDir)) {
-        fs.mkdirSync(dbDir, { recursive: true });
-    }
-}
-
-console.log('Session database directory:', dbDir);
+// Using memory store for sessions (PostgreSQL-based session store can be added later)
+console.log('Using memory store for sessions');
 
 // Parse allowed users from environment variable
 const allowedUsers = process.env.ALLOWED_USERS 
@@ -91,11 +78,8 @@ passport.use(new GoogleStrategy({
 
 // Session configuration
 const sessionConfig = {
-    store: new SQLiteStore({
-        db: 'sessions.db',
-        dir: dbDir,
-        concurrentDB: true
-    }),
+    // Using memory store - sessions will not persist across server restarts
+    // For production, consider using connect-pg-simple for PostgreSQL session storage
     secret: process.env.SESSION_SECRET || 'your-secret-key-change-this',
     resave: false,
     saveUninitialized: false,
