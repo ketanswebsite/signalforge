@@ -132,7 +132,7 @@ if (authEnabled) {
   }
 }
 
-// Request logging
+// Request logging with enhanced user tracking
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   if (req.url.includes('auth') || req.url === '/') {
@@ -140,8 +140,65 @@ app.use((req, res, next) => {
     console.log('Is Authenticated:', req.isAuthenticated ? req.isAuthenticated() : 'N/A');
     console.log('User:', req.user);
   }
+  
+  // Enhanced user tracking: capture authenticated users who might not be in database
+  if (req.isAuthenticated && req.isAuthenticated() && req.user && req.user.email) {
+    // Async capture user without blocking request
+    setImmediate(async () => {
+      try {
+        await ensureUserInDatabase(req.user);
+      } catch (error) {
+        console.error('Background user capture failed:', error);
+      }
+    });
+  }
+  
   next();
 });
+
+// Enhanced user capture function
+async function ensureUserInDatabase(user) {
+  try {
+    if (!user || !user.email) return;
+    
+    // Check if user exists in database
+    const { Pool } = require('pg');
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    });
+    
+    const existingUser = await pool.query('SELECT email FROM users WHERE email = $1', [user.email]);
+    
+    if (existingUser.rows.length === 0) {
+      // User not in database, add them
+      console.log(`🔄 Capturing missing user: ${user.email}`);
+      
+      await pool.query(`
+        INSERT INTO users (email, name, google_id, picture, first_login, last_login)
+        VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ON CONFLICT (email) DO UPDATE SET 
+          name = EXCLUDED.name,
+          picture = EXCLUDED.picture,
+          last_login = CURRENT_TIMESTAMP
+      `, [
+        user.email,
+        user.name || user.email.split('@')[0],
+        user.id || user.google_id || null,
+        user.picture || null
+      ]);
+      
+      console.log(`✅ Successfully captured user: ${user.email}`);
+    } else {
+      // User exists, update last_login
+      await pool.query('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE email = $1', [user.email]);
+    }
+    
+    await pool.end();
+  } catch (error) {
+    console.error('Error in ensureUserInDatabase:', error);
+  }
+}
 
 // === API ROUTES ===
 
@@ -343,7 +400,7 @@ app.get('/api/debug/users', ensureAuthenticatedAPI, async (req, res) => {
   }
 });
 
-// User recovery endpoint - finds and adds missing users
+// User recovery endpoint - comprehensive recovery for all user types
 app.get('/api/recover-users', ensureAuthenticatedAPI, async (req, res) => {
   try {
     const { Pool } = require('pg');
@@ -352,7 +409,10 @@ app.get('/api/recover-users', ensureAuthenticatedAPI, async (req, res) => {
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
     });
     
-    // Find unique user_ids from trades table that aren't in users table
+    let recoveredUsers = [];
+    let errors = [];
+    
+    // 1. Recover users from trades table
     const missingUsersQuery = `
       SELECT DISTINCT t.user_id, MIN(t.created_at) as first_trade_date, MAX(t.created_at) as last_trade_date, COUNT(*) as trade_count
       FROM trades t
@@ -364,10 +424,6 @@ app.get('/api/recover-users', ensureAuthenticatedAPI, async (req, res) => {
     
     const missingUsers = await pool.query(missingUsersQuery);
     
-    let recoveredUsers = [];
-    let errors = [];
-    
-    // Add each missing user to the users table
     for (const user of missingUsers.rows) {
       try {
         await pool.query(`
@@ -375,23 +431,81 @@ app.get('/api/recover-users', ensureAuthenticatedAPI, async (req, res) => {
           VALUES ($1, $2, $3, $4, $5, $6)
           ON CONFLICT (email) DO NOTHING
         `, [
-          user.user_id, // email
-          user.user_id.split('@')[0], // name from email prefix
-          null, // google_id (unknown for recovered users)
-          user.first_trade_date, // first_login based on first trade
-          user.last_trade_date, // last_login based on last trade
-          user.first_trade_date // created_at
+          user.user_id,
+          user.user_id.split('@')[0],
+          null,
+          user.first_trade_date,
+          user.last_trade_date,
+          user.first_trade_date
         ]);
         
         recoveredUsers.push({
           email: user.user_id,
-          firstTradeDate: user.first_trade_date,
-          lastTradeDate: user.last_trade_date,
+          source: 'trades',
+          firstActivity: user.first_trade_date,
+          lastActivity: user.last_trade_date,
           tradeCount: user.trade_count
         });
       } catch (err) {
-        errors.push({ email: user.user_id, error: err.message });
+        errors.push({ email: user.user_id, error: err.message, source: 'trades' });
       }
+    }
+    
+    // 2. Recover users from alert preferences
+    try {
+      const alertUsersQuery = `
+        SELECT DISTINCT a.user_email, COUNT(*) as alert_count
+        FROM alert_preferences a
+        LEFT JOIN users u ON a.user_email = u.email
+        WHERE u.email IS NULL AND a.user_email IS NOT NULL AND a.user_email != ''
+        GROUP BY a.user_email
+      `;
+      
+      const alertUsers = await pool.query(alertUsersQuery);
+      
+      for (const user of alertUsers.rows) {
+        try {
+          await pool.query(`
+            INSERT INTO users (email, name, google_id, first_login, last_login, created_at)
+            VALUES ($1, $2, null, CURRENT_TIMESTAMP - INTERVAL '30 days', CURRENT_TIMESTAMP - INTERVAL '7 days', CURRENT_TIMESTAMP - INTERVAL '30 days')
+            ON CONFLICT (email) DO NOTHING
+          `, [user.user_email, user.user_email.split('@')[0]]);
+          
+          recoveredUsers.push({
+            email: user.user_email,
+            source: 'alerts',
+            firstActivity: 'Estimated (30 days ago)',
+            lastActivity: 'Estimated (7 days ago)',
+            alertCount: user.alert_count
+          });
+        } catch (err) {
+          errors.push({ email: user.user_email, error: err.message, source: 'alerts' });
+        }
+      }
+    } catch (alertError) {
+      console.log('Alert preferences recovery skipped:', alertError.message);
+    }
+    
+    // 3. Ensure admin user is tracked
+    try {
+      const adminEmail = process.env.ADMIN_EMAIL;
+      if (adminEmail) {
+        await pool.query(`
+          INSERT INTO users (email, name, google_id, first_login, last_login, created_at)
+          VALUES ($1, $2, null, CURRENT_TIMESTAMP - INTERVAL '90 days', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP - INTERVAL '90 days')
+          ON CONFLICT (email) DO UPDATE SET last_login = CURRENT_TIMESTAMP
+        `, [adminEmail, adminEmail.split('@')[0]]);
+        
+        recoveredUsers.push({
+          email: adminEmail,
+          source: 'admin',
+          firstActivity: 'System admin user',
+          lastActivity: 'Current',
+          role: 'admin'
+        });
+      }
+    } catch (adminError) {
+      errors.push({ email: process.env.ADMIN_EMAIL, error: adminError.message, source: 'admin' });
     }
     
     // Get updated user count
@@ -399,16 +513,21 @@ app.get('/api/recover-users', ensureAuthenticatedAPI, async (req, res) => {
     
     res.json({
       success: true,
-      message: 'User recovery completed',
+      message: 'Comprehensive user recovery completed',
       recoveredUsers: recoveredUsers,
       totalRecovered: recoveredUsers.length,
+      breakdown: {
+        fromTrades: recoveredUsers.filter(u => u.source === 'trades').length,
+        fromAlerts: recoveredUsers.filter(u => u.source === 'alerts').length,
+        fromAdmin: recoveredUsers.filter(u => u.source === 'admin').length
+      },
       errors: errors,
       newTotalUsers: parseInt(updatedCount.rows[0].total),
       executedBy: req.user.email
     });
     
   } catch (error) {
-    console.error('Error in user recovery:', error);
+    console.error('Error in comprehensive user recovery:', error);
     res.status(500).json({ 
       success: false,
       error: error.message 
@@ -419,7 +538,7 @@ app.get('/api/recover-users', ensureAuthenticatedAPI, async (req, res) => {
 // Auto-recovery function that runs on server startup
 async function autoRecoverUsers() {
   try {
-    console.log('🔄 Running automatic user recovery...');
+    console.log('🔄 Running comprehensive automatic user recovery...');
     
     const { Pool } = require('pg');
     const pool = new Pool({
@@ -427,7 +546,9 @@ async function autoRecoverUsers() {
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
     });
     
-    // Check if we need to recover users
+    let totalRecovered = 0;
+    
+    // 1. Recover users from trades table
     const missingUsersQuery = `
       SELECT COUNT(DISTINCT t.user_id) as missing_count
       FROM trades t
@@ -441,7 +562,6 @@ async function autoRecoverUsers() {
     if (missingUserCount > 0) {
       console.log(`📊 Found ${missingUserCount} users in trades table not in users table`);
       
-      // Recover missing users
       const recoveryQuery = `
         INSERT INTO users (email, name, google_id, first_login, last_login, created_at)
         SELECT 
@@ -459,11 +579,70 @@ async function autoRecoverUsers() {
       `;
       
       const result = await pool.query(recoveryQuery);
-      console.log(`✅ Auto-recovered ${result.rowCount} users from trades table`);
+      totalRecovered += result.rowCount;
+      console.log(`✅ Recovered ${result.rowCount} users from trades table`);
+    }
+    
+    // 2. Recover users from alert preferences (users who set up alerts but might not have trades)
+    try {
+      const alertUsersQuery = `
+        SELECT COUNT(DISTINCT a.user_email) as alert_users_count
+        FROM alert_preferences a
+        LEFT JOIN users u ON a.user_email = u.email
+        WHERE u.email IS NULL AND a.user_email IS NOT NULL AND a.user_email != ''
+      `;
       
-      // Get final user count
-      const finalCount = await pool.query('SELECT COUNT(*) as total FROM users');
-      console.log(`👥 Total users in database: ${finalCount.rows[0].total}`);
+      const alertCount = await pool.query(alertUsersQuery);
+      const alertUserCount = parseInt(alertCount.rows[0].alert_users_count);
+      
+      if (alertUserCount > 0) {
+        console.log(`🔔 Found ${alertUserCount} users in alert preferences not in users table`);
+        
+        const alertRecoveryQuery = `
+          INSERT INTO users (email, name, google_id, first_login, last_login, created_at)
+          SELECT 
+            a.user_email as email,
+            SPLIT_PART(a.user_email, '@', 1) as name,
+            null as google_id,
+            CURRENT_TIMESTAMP - INTERVAL '30 days' as first_login,
+            CURRENT_TIMESTAMP - INTERVAL '7 days' as last_login,
+            CURRENT_TIMESTAMP - INTERVAL '30 days' as created_at
+          FROM alert_preferences a
+          LEFT JOIN users u ON a.user_email = u.email
+          WHERE u.email IS NULL AND a.user_email IS NOT NULL AND a.user_email != ''
+          GROUP BY a.user_email
+          ON CONFLICT (email) DO NOTHING
+        `;
+        
+        const alertResult = await pool.query(alertRecoveryQuery);
+        totalRecovered += alertResult.rowCount;
+        console.log(`✅ Recovered ${alertResult.rowCount} users from alert preferences`);
+      }
+    } catch (alertError) {
+      console.log('ℹ️ Alert preferences table not available for recovery');
+    }
+    
+    // 3. Add known admin user if not present
+    try {
+      const adminEmail = process.env.ADMIN_EMAIL;
+      if (adminEmail) {
+        await pool.query(`
+          INSERT INTO users (email, name, google_id, first_login, last_login, created_at)
+          VALUES ($1, $2, null, CURRENT_TIMESTAMP - INTERVAL '90 days', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP - INTERVAL '90 days')
+          ON CONFLICT (email) DO NOTHING
+        `, [adminEmail, adminEmail.split('@')[0]]);
+        console.log(`✅ Ensured admin user is tracked: ${adminEmail}`);
+      }
+    } catch (adminError) {
+      console.log('ℹ️ Admin user recovery skipped');
+    }
+    
+    // Get final user count
+    const finalCount = await pool.query('SELECT COUNT(*) as total FROM users');
+    console.log(`👥 Total users in database: ${finalCount.rows[0].total}`);
+    
+    if (totalRecovered > 0) {
+      console.log(`🎉 Successfully recovered ${totalRecovered} users total`);
     } else {
       console.log('✅ No missing users found - all users are properly tracked');
     }
