@@ -381,6 +381,30 @@
                 </div>
             </div>
 
+            <!-- User Analytics -->
+            <div class="test-section success">
+                <h2><span class="icon">👥</span>User Analytics</h2>
+                
+                <div class="test-item">
+                    <h3><span class="status-indicator status-unknown"></span>Google OAuth Users</h3>
+                    <p>Track how many users have signed up and logged in via Google OAuth</p>
+                    <div class="test-actions">
+                        <button class="btn btn-test" onclick="getUserAnalytics()">Get User Stats</button>
+                        <button class="btn btn-test" onclick="refreshUserStats()">Refresh</button>
+                    </div>
+                    <div class="result-area" id="user-analytics-result"></div>
+                </div>
+
+                <div class="test-item">
+                    <h3><span class="status-indicator status-unknown"></span>User Engagement</h3>
+                    <p>See breakdown of users who have taken trades vs those who just signed up</p>
+                    <div class="test-actions">
+                        <button class="btn btn-view" onclick="showEngagementDetails()">View Details</button>
+                    </div>
+                    <div class="result-area" id="engagement-result"></div>
+                </div>
+            </div>
+
             <!-- Navigation & UI Tests -->
             <div class="test-section info">
                 <h2><span class="icon">🌐</span>Application Pages</h2>
@@ -652,6 +676,7 @@
 - GET /api/trades - Get user trades
 - POST /api/trades - Add new trade
 - GET /api/user - Get user profile
+- GET /api/user-analytics - User statistics and analytics
 - GET /api/check-subscription-setup - Subscription status
 
 🤖 ML Endpoints:
@@ -667,6 +692,84 @@
 - POST /api/alerts - Create alert
             `;
             showResult('api-result', apiList);
+        }
+
+        // User Analytics Functions
+        async function getUserAnalytics() {
+            try {
+                const response = await fetch('/api/user-analytics');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    const analyticsDisplay = `
+📊 USER ANALYTICS DASHBOARD
+
+👥 Total Registered Users: ${data.totalUsers}
+   ├─ Users with Trades: ${data.usersWithTrades}
+   └─ Users without Trades: ${data.usersWithoutTrades}
+
+📈 Trading Activity:
+   ├─ Total Trades: ${data.systemInfo.totalTrades}
+   ├─ Active Trades: ${data.systemInfo.activeTrades}
+   └─ Closed Trades: ${data.systemInfo.closedTrades}
+
+📅 Last Updated: ${new Date(data.lastUpdated).toLocaleString()}
+
+💡 User Engagement Rate: ${data.totalUsers > 0 ? Math.round((data.usersWithTrades / data.totalUsers) * 100) : 0}%
+   (Percentage of users who have made at least one trade)
+                    `;
+                    
+                    showResult('user-analytics-result', analyticsDisplay);
+                    
+                    // Update engagement details automatically
+                    showEngagementDetails(data);
+                    
+                } else if (response.status === 401) {
+                    showResult('user-analytics-result', '🔒 Please log in to view user analytics', true);
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                showResult('user-analytics-result', `❌ Failed to fetch user analytics\nError: ${error.message}`, true);
+            }
+        }
+
+        async function refreshUserStats() {
+            showResult('user-analytics-result', '🔄 Refreshing user statistics...');
+            await getUserAnalytics();
+        }
+
+        function showEngagementDetails(data = null) {
+            if (!data) {
+                showResult('engagement-result', '📊 Click "Get User Stats" first to load engagement data');
+                return;
+            }
+
+            const engagementDetails = `
+📊 USER ENGAGEMENT BREAKDOWN
+
+👤 User Categories:
+   🎯 Active Traders: ${data.usersWithTrades} users
+      └─ Users who have created at least one trade
+   
+   👁️ Browsers: ${data.usersWithoutTrades} users
+      └─ Signed up but haven't made any trades yet
+
+📈 Engagement Insights:
+   • Conversion Rate: ${data.totalUsers > 0 ? Math.round((data.usersWithTrades / data.totalUsers) * 100) : 0}%
+   • Average Trades per Active User: ${data.usersWithTrades > 0 ? Math.round(data.systemInfo.totalTrades / data.usersWithTrades) : 0}
+   
+💡 Growth Opportunities:
+   ${data.usersWithoutTrades > 0 ? 
+     `• ${data.usersWithoutTrades} users could be encouraged to make their first trade
+   • Consider onboarding improvements or tutorials` : 
+     '• All registered users are actively trading! 🎉'}
+
+🔄 Live Data: All statistics reflect current database state
+            `;
+            
+            showResult('engagement-result', engagementDetails);
         }
     </script>
 </body>

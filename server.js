@@ -285,6 +285,31 @@ app.get('/api/admin/stats', ensureAuthenticatedAPI, async (req, res) => {
   }
 });
 
+// User analytics endpoint - basic user statistics (no admin required)
+app.get('/api/user-analytics', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const systemStats = await TradeDB.getSystemStatistics();
+    
+    // Return basic user statistics without sensitive details
+    const userAnalytics = {
+      totalUsers: systemStats.total_users || 0,
+      usersWithTrades: systemStats.users_with_trades || 0,
+      usersWithoutTrades: (systemStats.total_users || 0) - (systemStats.users_with_trades || 0),
+      systemInfo: {
+        totalTrades: systemStats.total_trades || 0,
+        activeTrades: systemStats.active_trades || 0,
+        closedTrades: systemStats.closed_trades || 0
+      },
+      lastUpdated: new Date().toISOString()
+    };
+    
+    res.json(userAnalytics);
+  } catch (error) {
+    console.error('Error getting user analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch user analytics' });
+  }
+});
+
 // Check subscription setup endpoint
 app.get('/api/check-subscription-setup', async (req, res) => {
   try {
