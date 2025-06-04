@@ -8,6 +8,16 @@ const router = express.Router();
 const mlIntegration = require('./ml-integration');
 const axios = require('axios');
 
+// Load subscription middleware
+let ensureSubscriptionActive;
+try {
+  const subscriptionModule = require('../middleware/subscription');
+  ensureSubscriptionActive = subscriptionModule.ensureSubscriptionActive;
+} catch (error) {
+  console.error('ML Routes: Subscription middleware not available:', error.message);
+  ensureSubscriptionActive = (req, res, next) => next();
+}
+
 // Initialize ML models on startup
 mlIntegration.initialize().catch(console.error);
 
@@ -15,7 +25,7 @@ mlIntegration.initialize().catch(console.error);
  * GET /api/ml/analysis/:symbol
  * Get comprehensive ML analysis for a stock
  */
-router.get('/analysis/:symbol', async (req, res) => {
+router.get('/analysis/:symbol', ensureSubscriptionActive, async (req, res) => {
     try {
         const { symbol } = req.params;
         const { days = 100 } = req.query;
@@ -59,7 +69,7 @@ router.get('/analysis/:symbol', async (req, res) => {
  * POST /api/ml/risk-params
  * Get optimal risk parameters for current market conditions
  */
-router.post('/risk-params', async (req, res) => {
+router.post('/risk-params', ensureSubscriptionActive, async (req, res) => {
     try {
         const { marketState } = req.body;
         
@@ -80,7 +90,7 @@ router.post('/risk-params', async (req, res) => {
  * POST /api/ml/detect-patterns
  * Detect patterns in provided price data
  */
-router.post('/detect-patterns', async (req, res) => {
+router.post('/detect-patterns', ensureSubscriptionActive, async (req, res) => {
     try {
         const { priceData } = req.body;
         
@@ -101,7 +111,7 @@ router.post('/detect-patterns', async (req, res) => {
  * GET /api/ml/sentiment/:symbol
  * Get sentiment analysis for a stock
  */
-router.get('/sentiment/:symbol', async (req, res) => {
+router.get('/sentiment/:symbol', ensureSubscriptionActive, async (req, res) => {
     try {
         const { symbol } = req.params;
         const { sources } = req.query;
@@ -122,7 +132,7 @@ router.get('/sentiment/:symbol', async (req, res) => {
  * POST /api/ml/portfolio-risk
  * Analyze portfolio risk using Monte Carlo simulation
  */
-router.post('/portfolio-risk', async (req, res) => {
+router.post('/portfolio-risk', ensureSubscriptionActive, async (req, res) => {
     try {
         const { portfolio, days = 30, iterations = 1000 } = req.body;
         
@@ -147,7 +157,7 @@ router.post('/portfolio-risk', async (req, res) => {
  * POST /api/ml/alerts
  * Get ML-based alerts for positions
  */
-router.post('/alerts', async (req, res) => {
+router.post('/alerts', ensureSubscriptionActive, async (req, res) => {
     try {
         const { positions } = req.body;
         
@@ -168,7 +178,7 @@ router.post('/alerts', async (req, res) => {
  * POST /api/ml/train
  * Train ML models with historical data
  */
-router.post('/train', async (req, res) => {
+router.post('/train', ensureSubscriptionActive, async (req, res) => {
     try {
         const { trainingData } = req.body;
         

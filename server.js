@@ -98,6 +98,23 @@ try {
   ensureAuthenticatedAPI = (req, res, next) => next();
 }
 
+// Load subscription middleware
+let ensureSubscriptionActive, ensurePremiumSubscription;
+let subscriptionEnabled = false;
+
+try {
+  const subscriptionModule = require('./middleware/subscription');
+  ensureSubscriptionActive = subscriptionModule.ensureSubscriptionActive;
+  ensurePremiumSubscription = subscriptionModule.ensurePremiumSubscription;
+  subscriptionEnabled = true;
+  console.log('✓ Subscription middleware loaded');
+} catch (error) {
+  console.error('✗ Subscription middleware failed to load:', error.message);
+  // Create dummy middleware that doesn't check subscriptions
+  ensureSubscriptionActive = (req, res, next) => next();
+  ensurePremiumSubscription = (req, res, next) => next();
+}
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -392,7 +409,7 @@ app.get('/api/check-subscription-setup', async (req, res) => {
 });
 
 // Get all trades
-app.get('/api/trades', ensureAuthenticatedAPI, async (req, res) => {
+app.get('/api/trades', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   console.log('>>> /api/trades endpoint hit!');
   try {
     const userId = req.user ? req.user.email : 'default';
@@ -406,7 +423,7 @@ app.get('/api/trades', ensureAuthenticatedAPI, async (req, res) => {
 });
 
 // Get active trades
-app.get('/api/trades/active', ensureAuthenticatedAPI, async (req, res) => {
+app.get('/api/trades/active', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
     const userId = req.user ? req.user.email : 'default';
     const trades = await TradeDB.getActiveTrades(userId);
@@ -417,7 +434,7 @@ app.get('/api/trades/active', ensureAuthenticatedAPI, async (req, res) => {
 });
 
 // Get closed trades  
-app.get('/api/trades/closed', ensureAuthenticatedAPI, async (req, res) => {
+app.get('/api/trades/closed', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
     const userId = req.user ? req.user.email : 'default';
     const trades = await TradeDB.getClosedTrades(userId);
@@ -428,7 +445,7 @@ app.get('/api/trades/closed', ensureAuthenticatedAPI, async (req, res) => {
 });
 
 // Get trade by ID
-app.get('/api/trades/:id', ensureAuthenticatedAPI, async (req, res) => {
+app.get('/api/trades/:id', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
     const userId = req.user ? req.user.email : 'default';
     const trade = await TradeDB.getTradeById(req.params.id, userId);
@@ -442,7 +459,7 @@ app.get('/api/trades/:id', ensureAuthenticatedAPI, async (req, res) => {
 });
 
 // Create trade
-app.post('/api/trades', ensureAuthenticatedAPI, async (req, res) => {
+app.post('/api/trades', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
     const userId = req.user ? req.user.email : 'default';
     
@@ -460,7 +477,7 @@ app.post('/api/trades', ensureAuthenticatedAPI, async (req, res) => {
 });
 
 // Update trade
-app.put('/api/trades/:id', ensureAuthenticatedAPI, async (req, res) => {
+app.put('/api/trades/:id', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
     console.log('>>> UPDATE TRADE REQUEST:', {
       id: req.params.id,
@@ -495,7 +512,7 @@ app.put('/api/trades/:id', ensureAuthenticatedAPI, async (req, res) => {
 });
 
 // Delete trade
-app.delete('/api/trades/:id', ensureAuthenticatedAPI, async (req, res) => {
+app.delete('/api/trades/:id', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
     const userId = req.user ? req.user.email : 'default';
     const success = await TradeDB.deleteTrade(req.params.id, userId);
@@ -509,7 +526,7 @@ app.delete('/api/trades/:id', ensureAuthenticatedAPI, async (req, res) => {
 });
 
 // Delete all trades
-app.delete('/api/trades', ensureAuthenticatedAPI, async (req, res) => {
+app.delete('/api/trades', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
     const userId = req.user ? req.user.email : 'default';
     const count = await TradeDB.deleteAllTrades(userId);
@@ -520,7 +537,7 @@ app.delete('/api/trades', ensureAuthenticatedAPI, async (req, res) => {
 });
 
 // Bulk import
-app.post('/api/trades/bulk', ensureAuthenticatedAPI, async (req, res) => {
+app.post('/api/trades/bulk', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
     const { trades } = req.body;
     const userId = req.user ? req.user.email : 'default';
@@ -770,7 +787,7 @@ function isMarketOpen(symbol) {
 }
 
 // Get real-time prices for multiple symbols
-app.post('/api/prices', async (req, res) => {
+app.post('/api/prices', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
     const { symbols } = req.body;
     
@@ -845,7 +862,7 @@ app.post('/api/prices', async (req, res) => {
 });
 
 // Alert preferences endpoints
-app.get('/api/alerts/preferences', ensureAuthenticatedAPI, async (req, res) => {
+app.get('/api/alerts/preferences', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
     const userId = req.user ? req.user.email : 'default';
     const prefs = await TradeDB.getAlertPreferences(userId);
@@ -867,7 +884,7 @@ app.get('/api/alerts/preferences', ensureAuthenticatedAPI, async (req, res) => {
   }
 });
 
-app.post('/api/alerts/preferences', ensureAuthenticatedAPI, async (req, res) => {
+app.post('/api/alerts/preferences', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
     const userId = req.user ? req.user.email : 'default';
     const saved = await TradeDB.saveAlertPreferences({
@@ -887,7 +904,7 @@ app.post('/api/alerts/preferences', ensureAuthenticatedAPI, async (req, res) => 
 });
 
 // Test Telegram connection
-app.post('/api/alerts/test-telegram', async (req, res) => {
+app.post('/api/alerts/test-telegram', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
     const { chatId } = req.body;
     
@@ -908,7 +925,7 @@ app.post('/api/alerts/test-telegram', async (req, res) => {
 });
 
 // Get bot info
-app.get('/api/alerts/bot-info', async (req, res) => {
+app.get('/api/alerts/bot-info', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
     if (!telegramBot) {
       return res.status(400).json({ error: 'Telegram bot not initialized' });
@@ -922,7 +939,7 @@ app.get('/api/alerts/bot-info', async (req, res) => {
 });
 
 // Send custom alert message
-app.post('/api/alerts/send-custom', async (req, res) => {
+app.post('/api/alerts/send-custom', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
     const { chatId, message } = req.body;
     
@@ -1089,7 +1106,7 @@ async function checkTradeAlerts() {
 setInterval(checkTradeAlerts, 5 * 60 * 1000);
 
 // Stock scanner endpoints
-app.post('/api/scanner/run', ensureAuthenticatedAPI, async (req, res) => {
+app.post('/api/scanner/run', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
     if (!stockScanner) {
       return res.status(503).json({ error: 'Stock scanner not available' });
@@ -1116,7 +1133,7 @@ app.post('/api/scanner/run', ensureAuthenticatedAPI, async (req, res) => {
   }
 });
 
-app.get('/api/scanner/status', ensureAuthenticatedAPI, (req, res) => {
+app.get('/api/scanner/status', ensureAuthenticatedAPI, ensureSubscriptionActive, (req, res) => {
   try {
     if (!stockScanner) {
       return res.status(503).json({ error: 'Stock scanner not available' });
