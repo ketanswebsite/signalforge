@@ -208,6 +208,14 @@
                     <div class="stat-value" id="totalUsers">0</div>
                 </div>
                 <div class="stat-card">
+                    <div class="stat-label">Active Subscriptions</div>
+                    <div class="stat-value" id="activeSubscriptions">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Trial Users</div>
+                    <div class="stat-value" id="trialSubscriptions">0</div>
+                </div>
+                <div class="stat-card">
                     <div class="stat-label">Total Trades</div>
                     <div class="stat-value" id="totalTrades">0</div>
                 </div>
@@ -227,6 +235,8 @@
                         <tr>
                             <th>User Email</th>
                             <th>Name</th>
+                            <th>Subscription</th>
+                            <th>Status</th>
                             <th>Total Trades</th>
                             <th>Active</th>
                             <th>Closed</th>
@@ -267,6 +277,8 @@
 
                 // Update system stats
                 document.getElementById('totalUsers').textContent = data.system.total_users || 0;
+                document.getElementById('activeSubscriptions').textContent = data.system.active_subscriptions || 0;
+                document.getElementById('trialSubscriptions').textContent = data.system.trial_subscriptions || 0;
                 document.getElementById('totalTrades').textContent = data.system.total_trades || 0;
                 document.getElementById('activeTrades').textContent = data.system.active_trades || 0;
                 document.getElementById('closedTrades').textContent = data.system.closed_trades || 0;
@@ -278,9 +290,30 @@
                 if (data.users && data.users.length > 0) {
                     data.users.forEach(user => {
                         const row = document.createElement('tr');
+                        
+                        // Subscription status badge
+                        let subscriptionBadge = `<span style="background: #6c757d; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.8rem;">Unknown</span>`;
+                        if (user.subscription_plan) {
+                            const color = user.subscription_plan === 'Premium' ? '#28a745' : 
+                                         user.subscription_plan === 'Basic' ? '#007bff' : '#ffc107';
+                            subscriptionBadge = `<span style="background: ${color}; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.8rem;">${user.subscription_plan}</span>`;
+                        }
+                        
+                        // Status badge  
+                        let statusBadge = `<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.8rem;">No Subscription</span>`;
+                        if (user.subscription_status === 'active') {
+                            statusBadge = `<span style="background: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.8rem;">Active</span>`;
+                        } else if (user.subscription_status === 'trial') {
+                            statusBadge = `<span style="background: #ffc107; color: black; padding: 2px 6px; border-radius: 3px; font-size: 0.8rem;">Trial</span>`;
+                        } else if (user.subscription_status === 'expired') {
+                            statusBadge = `<span style="background: #fd7e14; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.8rem;">Expired</span>`;
+                        }
+                        
                         row.innerHTML = `
                             <td>${user.user_id}</td>
                             <td>${user.name || 'N/A'}</td>
+                            <td>${subscriptionBadge}</td>
+                            <td>${statusBadge}</td>
                             <td>${user.total_trades}</td>
                             <td>${user.active_trades}</td>
                             <td>${user.closed_trades}</td>
@@ -290,7 +323,7 @@
                         tbody.appendChild(row);
                     });
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">No users found</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary);">No users found</td></tr>';
                 }
 
                 loadingEl.style.display = 'none';

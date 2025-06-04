@@ -683,7 +683,7 @@ const TradeDB = {
   // Admin functions
   async getUserStatistics() {
     try {
-      // Get all registered users with their trade statistics
+      // Get all registered users with their trade statistics and subscription info
       const result = await pool.query(`
         SELECT 
           u.email as user_id,
@@ -694,7 +694,13 @@ const TradeDB = {
           COALESCE(t.active_trades, 0) as active_trades,
           COALESCE(t.closed_trades, 0) as closed_trades,
           t.first_trade_date,
-          t.last_trade_date
+          t.last_trade_date,
+          s.plan_name as subscription_plan,
+          s.status as subscription_status,
+          s.trial_start_date,
+          s.trial_end_date,
+          s.start_date as subscription_start_date,
+          s.end_date as subscription_end_date
         FROM users u
         LEFT JOIN (
           SELECT 
@@ -707,6 +713,7 @@ const TradeDB = {
           FROM trades
           GROUP BY user_id
         ) t ON u.email = t.user_id
+        LEFT JOIN user_subscriptions s ON u.email = s.user_email
         ORDER BY u.last_login DESC
       `);
       
@@ -719,7 +726,13 @@ const TradeDB = {
         first_trade_date: row.first_trade_date,
         last_trade_date: row.last_trade_date,
         first_login: row.first_login,
-        last_login: row.last_login
+        last_login: row.last_login,
+        subscription_plan: row.subscription_plan,
+        subscription_status: row.subscription_status,
+        trial_start_date: row.trial_start_date,
+        trial_end_date: row.trial_end_date,
+        subscription_start_date: row.subscription_start_date,
+        subscription_end_date: row.subscription_end_date
       }));
     } catch (error) {
       console.error('Error getting user statistics:', error);
@@ -742,6 +755,33 @@ const TradeDB = {
         FROM trades
       `);
       
+      // Get subscription statistics
+      let subscriptionStats = {
+        total_subscriptions: 0,
+        active_subscriptions: 0,
+        trial_subscriptions: 0,
+        premium_subscriptions: 0
+      };
+      
+      try {
+        const subscriptionsResult = await pool.query(`
+          SELECT 
+            COUNT(*) as total_subscriptions,
+            COUNT(CASE WHEN status = 'active' THEN 1 END) as active_subscriptions,
+            COUNT(CASE WHEN status = 'trial' THEN 1 END) as trial_subscriptions,
+            COUNT(CASE WHEN plan_name = 'Premium' THEN 1 END) as premium_subscriptions
+          FROM user_subscriptions
+        `);
+        subscriptionStats = {
+          total_subscriptions: parseInt(subscriptionsResult.rows[0].total_subscriptions) || 0,
+          active_subscriptions: parseInt(subscriptionsResult.rows[0].active_subscriptions) || 0,
+          trial_subscriptions: parseInt(subscriptionsResult.rows[0].trial_subscriptions) || 0,
+          premium_subscriptions: parseInt(subscriptionsResult.rows[0].premium_subscriptions) || 0
+        };
+      } catch (e) {
+        console.log('Subscription tables not available, using defaults');
+      }
+      
       const usersRow = usersResult.rows[0];
       const tradesRow = tradesResult.rows[0];
       return {
@@ -749,7 +789,8 @@ const TradeDB = {
         total_users: parseInt(usersRow.total_users),
         active_trades: parseInt(tradesRow.active_trades),
         closed_trades: parseInt(tradesRow.closed_trades),
-        users_with_trades: parseInt(tradesRow.users_with_trades)
+        users_with_trades: parseInt(tradesRow.users_with_trades),
+        ...subscriptionStats
       };
     } catch (error) {
       console.error('Error getting system statistics:', error);
@@ -757,7 +798,11 @@ const TradeDB = {
         total_trades: 0,
         total_users: 0,
         active_trades: 0,
-        closed_trades: 0
+        closed_trades: 0,
+        total_subscriptions: 0,
+        active_subscriptions: 0,
+        trial_subscriptions: 0,
+        premium_subscriptions: 0
       };
     }
   },
