@@ -84,7 +84,7 @@
     <script>
         async function checkAuth() {
             try {
-                const response = await fetch('/api/auth/status');
+                const response = await fetch('/api/user');
                 const data = await response.json();
                 displayResult('authResult', data, response.ok ? 'info' : 'error');
             } catch (error) {
@@ -94,16 +94,8 @@
 
         async function login() {
             try {
-                const response = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        username: 'test@example.com',
-                        password: 'test123'
-                    })
-                });
-                const data = await response.json();
-                displayResult('authResult', data, response.ok ? 'success' : 'error');
+                // Redirect to Google OAuth (can't test via fetch)
+                window.location.href = '/auth/google';
             } catch (error) {
                 displayResult('authResult', { error: error.message }, 'error');
             }
@@ -111,11 +103,7 @@
 
         async function logout() {
             try {
-                const response = await fetch('/api/auth/logout', {
-                    method: 'POST'
-                });
-                const data = await response.json();
-                displayResult('authResult', data, response.ok ? 'success' : 'error');
+                window.location.href = '/logout';
             } catch (error) {
                 displayResult('authResult', { error: error.message }, 'error');
             }
