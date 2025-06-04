@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Subscription Middleware - SignalForge</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .test-container {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        .test-section {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .test-header {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .test-result {
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+        }
+        .test-success {
+            background: #D1FAE5;
+            color: #065F46;
+            border: 1px solid #6EE7B7;
+        }
+        .test-error {
+            background: #FEE2E2;
+            color: #991B1B;
+            border: 1px solid #FCA5A5;
+        }
+        .test-info {
+            background: #DBEAFE;
+            color: #1E3A8A;
+            border: 1px solid #93C5FD;
+        }
+        .test-button {
+            background: var(--primary-color);
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            opacity: 0.9;
+        }
+        .test-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-trial {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+        .status-active {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+        .status-expired {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+        .status-admin {
+            background: #E0E7FF;
+            color: #3730A3;
+        }
+        .endpoint-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .endpoint-test {
+            background: var(--hover-color);
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+        .endpoint-path {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--primary-color);
+        }
+        .loading {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-brand">🔮 SignalForge</a>
+            <div class="nav-menu">
+                <a href="/check-subscription-setup.html" class="nav-link">Check Setup</a>
+                <a href="/admin" class="nav-link">Admin</a>
+                <a href="/" class="nav-link">Home</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="test-container">
+        <h1>Subscription Middleware Test</h1>
+        <p>This page tests the subscription middleware to ensure it's working correctly.</p>
+
+        <!-- Current User Status -->
+        <div class="test-section">
+            <h2 class="test-header">
+                👤 Current User Status
+            </h2>
+            <div id="user-status" class="test-result test-info">
+                <span class="loading">Loading user information...</span>
+            </div>
+        </div>
+
+        <!-- Subscription Status -->
+        <div class="test-section">
+            <h2 class="test-header">
+                📊 Subscription Status Check
+            </h2>
+            <button class="test-button" onclick="checkSubscriptionStatus()">
+                Check My Subscription Status
+            </button>
+            <div id="subscription-status" class="test-result test-info" style="display: none;"></div>
+        </div>
+
+        <!-- Test Protected Endpoints -->
+        <div class="test-section">
+            <h2 class="test-header">
+                🔒 Test Protected Endpoints
+            </h2>
+            <p>These endpoints should be protected by the subscription middleware:</p>
+            
+            <div class="endpoint-grid">
+                <div class="endpoint-test">
+                    <div class="endpoint-path">/api/trades</div>
+                    <button class="test-button" onclick="testEndpoint('/api/trades', 'trades-result')">
+                        Test Trades API
+                    </button>
+                    <div id="trades-result"></div>
+                </div>
+
+                <div class="endpoint-test">
+                    <div class="endpoint-path">/api/trades/active</div>
+                    <button class="test-button" onclick="testEndpoint('/api/trades/active', 'active-trades-result')">
+                        Test Active Trades
+                    </button>
+                    <div id="active-trades-result"></div>
+                </div>
+
+                <div class="endpoint-test">
+                    <div class="endpoint-path">/api/ml/insights</div>
+                    <button class="test-button" onclick="testEndpoint('/api/ml/insights', 'ml-result')">
+                        Test ML Insights
+                    </button>
+                    <div id="ml-result"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Exempt Endpoints -->
+        <div class="test-section">
+            <h2 class="test-header">
+                ✅ Test Exempt Endpoints
+            </h2>
+            <p>These endpoints should work regardless of subscription status:</p>
+            
+            <div class="endpoint-grid">
+                <div class="endpoint-test">
+                    <div class="endpoint-path">/api/subscription/status</div>
+                    <button class="test-button" onclick="testEndpoint('/api/subscription/status', 'sub-status-result')">
+                        Test Status API
+                    </button>
+                    <div id="sub-status-result"></div>
+                </div>
+
+                <div class="endpoint-test">
+                    <div class="endpoint-path">/api/check-subscription-setup</div>
+                    <button class="test-button" onclick="testEndpoint('/api/check-subscription-setup', 'setup-result')">
+                        Test Setup Check
+                    </button>
+                    <div id="setup-result"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Middleware Implementation Status -->
+        <div class="test-section">
+            <h2 class="test-header">
+                ⚙️ Middleware Implementation Status
+            </h2>
+            <div id="implementation-status" class="test-result test-info">
+                <strong>Middleware File:</strong> /middleware/subscription.js
+                
+                <strong>Exported Functions:</strong>
+                • ensureSubscriptionActive - Main middleware for protecting routes
+                • ensurePremiumSubscription - For premium-only features
+                • getUserSubscriptionStatus - Helper to check user status
+
+                <strong>Features:</strong>
+                • Checks user authentication
+                • Verifies subscription status (trial/active/expired)
+                • Admin bypass (admin always has access)
+                • Exempt paths for subscription/payment pages
+                • Attaches subscription info to request object
+
+                <strong>Protected Routes Need:</strong>
+                • Add middleware to route: ensureSubscriptionActive
+                • Access subscription info: req.subscription
+                • Check if active: req.subscription.isActive
+                • Check if premium: req.subscription.isPremium
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check current user status
+        async function checkUserStatus() {
+            try {
+                const response = await fetch('/api/user');
+                const statusDiv = document.getElementById('user-status');
+                
+                if (response.ok) {
+                    const user = await response.json();
+                    statusDiv.innerHTML = `
+                        <strong>Logged in as:</strong> ${user.email || 'Unknown'}
+                        <strong>Name:</strong> ${user.name || 'Not set'}
+                        <strong>Auth Status:</strong> ✅ Authenticated
+                    `;
+                    statusDiv.className = 'test-result test-success';
+                } else {
+                    statusDiv.innerHTML = `
+                        <strong>Auth Status:</strong> ❌ Not authenticated
+                        <strong>Note:</strong> You need to be logged in to test the middleware
+                        <a href="/login" style="display: block; margin-top: 10px;">Click here to login</a>
+                    `;
+                    statusDiv.className = 'test-result test-error';
+                }
+            } catch (error) {
+                document.getElementById('user-status').innerHTML = 
+                    `<strong>Error:</strong> ${error.message}`;
+            }
+        }
+
+        // Check subscription status
+        async function checkSubscriptionStatus() {
+            const resultDiv = document.getElementById('subscription-status');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<span class="loading">Checking subscription status...</span>';
+            
+            try {
+                // This endpoint should be created in the next step
+                const response = await fetch('/api/subscription/status');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    let statusBadge = '';
+                    switch(data.status) {
+                        case 'trial':
+                            statusBadge = '<span class="status-badge status-trial">TRIAL</span>';
+                            break;
+                        case 'active':
+                            statusBadge = '<span class="status-badge status-active">ACTIVE</span>';
+                            break;
+                        case 'expired':
+                            statusBadge = '<span class="status-badge status-expired">EXPIRED</span>';
+                            break;
+                        case 'admin':
+                            statusBadge = '<span class="status-badge status-admin">ADMIN</span>';
+                            break;
+                        default:
+                            statusBadge = '<span class="status-badge status-expired">NONE</span>';
+                    }
+                    
+                    resultDiv.innerHTML = `
+                        <strong>Subscription Status:</strong> ${statusBadge}
+                        <strong>Region:</strong> ${data.region || 'Not set'}
+                        <strong>Days Remaining:</strong> ${data.daysRemaining || 0}
+                        <strong>End Date:</strong> ${data.endDate ? new Date(data.endDate).toLocaleDateString() : 'N/A'}
+                        <strong>Is Active:</strong> ${data.isActive ? '✅ Yes' : '❌ No'}
+                        <strong>Is Premium:</strong> ${data.isPremium ? '✅ Yes' : '❌ No'}
+                    `;
+                    resultDiv.className = 'test-result test-success';
+                } else {
+                    resultDiv.innerHTML = `
+                        <strong>Error:</strong> ${data.error || 'Failed to get subscription status'}
+                        <strong>Note:</strong> The /api/subscription/status endpoint needs to be implemented
+                    `;
+                    resultDiv.className = 'test-result test-error';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<strong>Error:</strong> ${error.message}`;
+                resultDiv.className = 'test-result test-error';
+            }
+        }
+
+        // Test any endpoint
+        async function testEndpoint(endpoint, resultId) {
+            const resultDiv = document.getElementById(resultId);
+            resultDiv.innerHTML = '<span class="loading">Testing...</span>';
+            
+            try {
+                const response = await fetch(endpoint);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = '✅ Success';
+                    resultDiv.style.color = '#065F46';
+                } else if (response.status === 403) {
+                    resultDiv.innerHTML = `❌ Blocked: ${data.error}`;
+                    resultDiv.style.color = '#991B1B';
+                } else if (response.status === 401) {
+                    resultDiv.innerHTML = '❌ Not authenticated';
+                    resultDiv.style.color = '#991B1B';
+                } else {
+                    resultDiv.innerHTML = `⚠️ ${response.status}: ${data.error || 'Unknown error'}`;
+                    resultDiv.style.color = '#92400E';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `❌ ${error.message}`;
+                resultDiv.style.color = '#991B1B';
+            }
+        }
+
+        // Load user status on page load
+        window.onload = () => {
+            checkUserStatus();
+        };
+    </script>
+</body>
+</html>
