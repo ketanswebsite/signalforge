@@ -17,7 +17,7 @@ if (process.env.RENDER) {
   console.log('- Checking /var/data:', require('fs').existsSync('/var/data') ? 'EXISTS' : 'NOT FOUND');
 }
 
-// Load database - PostgreSQL with JSON fallback
+// Load database - PostgreSQL only
 let TradeDB;
 try {
   TradeDB = require('./database-postgres');
@@ -25,21 +25,14 @@ try {
   
   // Check if actually connected
   if (!TradeDB.isConnected()) {
-    console.log('⚠️ PostgreSQL not configured - using JSON fallback');
+    console.error('✗ PostgreSQL not configured. Please set up your database connection.');
     console.log('📋 Visit /migrate-to-postgres.html to set up PostgreSQL database');
-    // Load JSON fallback
-    TradeDB = require('./database-json');
-    console.log('✓ Using JSON database as fallback');
+    process.exit(1);
   }
 } catch (err) {
   console.error('✗ PostgreSQL database module failed to load:', err.message);
-  try {
-    TradeDB = require('./database-json');
-    console.log('✓ Using JSON database as fallback');
-  } catch (err2) {
-    console.error('✗ No database module available!');
-    process.exit(1);
-  }
+  console.error('✗ No database available! Please configure PostgreSQL.');
+  process.exit(1);
 }
 
 // Load Telegram bot
@@ -199,27 +192,11 @@ app.get('/api/debug/all-trades', ensureAuthenticatedAPI, async (req, res) => {
         database: 'Using getAllTradesNoFilter'
       });
     } else {
-      // Fallback - try to get trades without user filter
-      const fs = require('fs');
-      const path = require('path');
-      
-      // Check if using JSON database
-      const jsonPath = path.join(__dirname, 'trades-db.json');
-      if (fs.existsSync(jsonPath)) {
-        const jsonData = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-        res.json({
-          totalTrades: jsonData.trades ? jsonData.trades.length : 0,
-          trades: jsonData.trades || [],
-          database: 'JSON file directly'
-        });
-      } else {
-        res.json({
-          totalTrades: 0,
-          trades: [],
-          database: 'No JSON file found',
-          error: 'Cannot access raw trade data'
-        });
-      }
+      res.status(500).json({
+        error: 'Database method not available',
+        totalTrades: 0,
+        trades: []
+      });
     }
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -286,16 +263,21 @@ app.get('/api/admin/stats', ensureAuthenticatedAPI, async (req, res) => {
     console.log('Fetching admin statistics for:', req.user.email);
     
     const userStats = await TradeDB.getUserStatistics();
-    console.log('User statistics:', userStats);
+    console.log('User statistics count:', userStats ? userStats.length : 'null');
+    console.log('User statistics sample:', userStats ? userStats.slice(0, 2) : 'null');
     
     const systemStats = await TradeDB.getSystemStatistics();
     console.log('System statistics:', systemStats);
     
-    res.json({
+    const response = {
       system: systemStats,
       users: userStats,
       currentUser: req.user.email
-    });
+    };
+    
+    console.log('Sending admin response - users count:', response.users ? response.users.length : 'null');
+    
+    res.json(response);
   } catch (error) {
     console.error('Error getting admin stats:', error);
     console.error('Error stack:', error.stack);
@@ -556,15 +538,12 @@ app.post('/api/admin/import', ensureAuthenticatedAPI, async (req, res) => {
   }
   
   try {
-    const fs = require('fs');
-    const path = require('path');
-    const exportPath = path.join(__dirname, 'trades-export.json');
-    
-    if (!fs.existsSync(exportPath)) {
-      return res.status(404).json({ error: 'trades-export.json not found' });
-    }
-    
-    const exportData = JSON.parse(fs.readFileSync(exportPath, 'utf8'));
+    // Import from PostgreSQL export data only
+    // Note: This endpoint now requires data to be provided in the request body
+    // rather than reading from a static JSON file
+    return res.status(400).json({ 
+      error: 'JSON file import no longer supported. Please use the database export/import functionality.' 
+    });
     console.log(`Importing ${exportData.trades.length} trades from export file`);
     
     // Import trades

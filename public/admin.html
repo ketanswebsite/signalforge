@@ -272,6 +272,11 @@
 
                 const data = await response.json();
                 
+                // Debug logging
+                console.log('Admin stats response:', data);
+                console.log('Users data:', data.users);
+                console.log('Users length:', data.users ? data.users.length : 'undefined');
+                
                 // Update current user
                 document.getElementById('currentUser').textContent = `Logged in as: ${data.currentUser}`;
 

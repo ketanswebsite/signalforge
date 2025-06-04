@@ -44,7 +44,8 @@
       "Bash(/home/keta_joshi/.nvm/versions/node/v23.11.0/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/x64-linux/rg -A 20 \"\\.chart-container\" \"/mnt/c/Users/Ketan Joshi/Downloads/stock-proxy (2)/stock-proxy/public/styles.css\")",
       "Bash(/home/keta_joshi/.nvm/versions/node/v23.11.0/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/x64-linux/rg -A 15 \"\\.chart-toolbar\" \"/mnt/c/Users/Ketan Joshi/Downloads/stock-proxy (2)/stock-proxy/public/styles.css\")",
       "Bash(/home/keta_joshi/.nvm/versions/node/v23.11.0/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/x64-linux/rg -A 15 \"\\.chart-zoom-controls\" \"/mnt/c/Users/Ketan Joshi/Downloads/stock-proxy (2)/stock-proxy/public/styles.css\")",
-      "Bash(/home/keta_joshi/.nvm/versions/node/v23.11.0/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/x64-linux/rg -B 2 -A 10 \"chart-wrapper|chart-export|export-chart\" \"/mnt/c/Users/Ketan Joshi/Downloads/stock-proxy (2)/stock-proxy/public/styles.css\")"
+      "Bash(/home/keta_joshi/.nvm/versions/node/v23.11.0/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/x64-linux/rg -B 2 -A 10 \"chart-wrapper|chart-export|export-chart\" \"/mnt/c/Users/Ketan Joshi/Downloads/stock-proxy (2)/stock-proxy/public/styles.css\")",
+      "Bash(npm start)"
     ],
     "deny": []
   },

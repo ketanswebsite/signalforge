@@ -1,7 +1,8 @@
 /**
  * Enhanced Trade Import Functionality
- * This module provides a more robust solution for importing trades from JSON files
+ * This module provides a more robust solution for importing trades from PostgreSQL database
  * with better error handling, validation, and user feedback.
+ * Note: JSON file import is no longer supported.
  */
 
 // TradeImporter object with improved functionality

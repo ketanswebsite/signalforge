@@ -1,261 +1,139 @@
 @echo off
+echo ===============================================
+echo    RENDER DEPLOYMENT SCRIPT
+echo ===============================================
+echo.
+
+:: Set error handling
 setlocal enabledelayedexpansion
-title SignalForge - Deploy to Render
 
-echo ========================================
-echo   SIGNALFORGE DEPLOYMENT TO RENDER
-echo ========================================
+:: Color codes for better output
+set "GREEN=[92m"
+set "RED=[91m"
+set "YELLOW=[93m"
+set "BLUE=[94m"
+set "NC=[0m"
+
+echo %BLUE%Step 1: Checking Git Status%NC%
+echo ===============================================
+git status
 echo.
 
-REM Change to script directory
-cd /d "%~dp0"
-
-REM Check if git is installed
-git --version >nul 2>&1
+echo %BLUE%Step 2: Checking for uncommitted changes%NC%
+echo ===============================================
+git diff --quiet
 if errorlevel 1 (
-    echo ERROR: Git is not installed or not in PATH
-    echo Please install Git from https://git-scm.com/
+    echo %YELLOW%Warning: You have uncommitted changes!%NC%
+    git status --porcelain
     echo.
-    pause
-    exit /b
-)
-
-REM Check if we're in a git repository
-git rev-parse --git-dir >nul 2>&1
-if errorlevel 1 (
-    echo ERROR: This is not a git repository!
-    echo Please initialize git first with: git init
-    echo.
-    pause
-    exit /b
-)
-
-REM Show current branch
-echo Current branch:
-git branch --show-current
-echo.
-
-REM Pull latest changes first to avoid conflicts
-echo Checking for remote updates...
-git fetch origin >nul 2>&1
-git status -uno | findstr /C:"Your branch is behind" >nul
-if not errorlevel 1 (
-    echo.
-    echo WARNING: Your branch is behind origin/main
-    echo Automatically pulling latest changes...
-    git pull origin main
-    if errorlevel 1 (
-        echo.
-        echo ERROR: Failed to pull changes. Please resolve conflicts manually.
-        pause
-        exit /b
+    set /p continue="Do you want to continue anyway? (y/N): "
+    if /i not "!continue!"=="y" (
+        echo %RED%Deployment cancelled.%NC%
+        exit /b 1
     )
 )
 
-REM Check for uncommitted changes
-echo.
-echo Checking for uncommitted changes...
-git status --porcelain >nul 2>&1
+echo %BLUE%Step 3: Adding all changes to git%NC%
+echo ===============================================
+git add .
 if errorlevel 1 (
-    echo Error checking git status
-    pause
-    exit /b
+    echo %RED%Failed to add files to git%NC%
+    exit /b 1
 )
 
-REM Count changes
-set changes=0
-for /f "tokens=*" %%i in ('git status --porcelain 2^>nul') do set /a changes+=1
-
-if !changes! gtr 0 (
-    echo.
-    echo You have !changes! uncommitted changes:
-    echo ----------------------------------------
-    git status --short
-    echo ----------------------------------------
-    echo.
-    
-    REM Auto-stage all changes
-    echo Staging all changes...
-    git add -A
-    
-    REM Generate default commit message with timestamp
-    for /f "tokens=2 delims==" %%a in ('wmic OS Get localdatetime /value') do set "dt=%%a"
-    set "YYYY=!dt:~0,4!"
-    set "MM=!dt:~4,2!"
-    set "DD=!dt:~6,2!"
-    set "HH=!dt:~8,2!"
-    set "Min=!dt:~10,2!"
-    
-    set default_msg=Auto-deploy: !DD!-!MM!-!YYYY! !HH!:!Min!
-    
-    echo.
-    echo Auto-committing with message: "!default_msg!"
-    git commit -m "!default_msg!"
-    if errorlevel 1 (
-        echo.
-        echo ERROR: Failed to commit changes!
-        pause
-        exit /b
-    )
-    echo.
-    echo Changes committed successfully!
-) else (
-    echo No uncommitted changes found.
-)
-
-echo.
-echo ========================================
-echo   PUSHING TO GITHUB
-echo ========================================
-echo.
-
-REM Check if render.yaml exists
-if not exist render.yaml (
-    echo WARNING: render.yaml not found!
-    echo Make sure you have configured your Render deployment
-    echo.
-)
-
-REM Check if remote exists
-git remote get-url origin >nul 2>&1
+echo %BLUE%Step 4: Creating commit%NC%
+echo ===============================================
+set "timestamp=%date:~10,4%-%date:~4,2%-%date:~7,2% %time:~0,2%:%time:~3,2%"
+git commit -m "Auto-deploy: %timestamp%"
 if errorlevel 1 (
-    echo ERROR: No git remote 'origin' found!
-    echo Please add your git remote first:
-    echo   git remote add origin YOUR_GIT_REPO_URL
-    echo.
-    pause
-    exit /b
+    echo %YELLOW%Nothing to commit or commit failed%NC%
+    echo Continuing with deployment...
 )
 
-REM Show what we're about to push
-echo Commits to be pushed:
-echo ----------------------------------------
-git log origin/main..HEAD --oneline
-if errorlevel 1 (
-    echo No new commits to push.
-)
-echo ----------------------------------------
-
-REM Push to main branch with retry logic
-echo.
-echo Pushing to origin/main...
+echo %BLUE%Step 5: Pushing to main branch%NC%
+echo ===============================================
 git push origin main
 if errorlevel 1 (
-    echo.
-    echo WARNING: Initial push failed. Trying to pull and merge first...
-    git pull origin main --no-rebase
+    echo %RED%Failed to push to origin main%NC%
+    echo %YELLOW%Trying to set upstream and push...%NC%
+    git push -u origin main
     if errorlevel 1 (
-        echo.
-        echo ERROR: Merge conflicts detected!
-        echo Please resolve conflicts manually and try again.
-        pause
-        exit /b
-    )
-    echo.
-    echo Retrying push after merge...
-    git push origin main
-    if errorlevel 1 (
-        echo.
-        echo ERROR: Push still failed. Attempting force push...
-        echo This may overwrite remote changes!
-        git push origin main --force-with-lease
-        if errorlevel 1 (
-            echo.
-            echo ERROR: All push attempts failed! Please check:
-            echo - Your internet connection
-            echo - GitHub authentication (try: gh auth login)
-            echo - Repository permissions
-            echo.
-            echo Manual fix: Run 'git push origin main' manually
-            pause
-            exit /b
-        )
-        echo.
-        echo SUCCESS: Force push completed!
+        echo %RED%Push failed! Please check your git configuration.%NC%
+        exit /b 1
     )
 )
 
-echo.
-echo ========================================
-echo   DEPLOYMENT SUCCESSFUL!
-echo ========================================
-echo.
-echo Your code has been pushed to GitHub.
-echo.
-echo Render auto-deployment status:
-echo 1. Go to https://dashboard.render.com/
-echo 2. Your service should auto-deploy from this commit
-echo 3. Deployment usually takes 2-5 minutes
+echo %GREEN%✓ Successfully pushed to GitHub!%NC%
 echo.
 
-REM Show recent commits
-echo Recent commits pushed:
-echo ----------------------------------------
-git log --oneline -5
-echo ----------------------------------------
+echo %BLUE%Step 6: Deployment Verification Steps%NC%
+echo ===============================================
+echo %YELLOW%Please follow these steps to verify your deployment:%NC%
+echo.
+echo 1. %BLUE%Check Render Dashboard:%NC%
+echo    - Go to https://dashboard.render.com
+echo    - Find your stock-proxy service
+echo    - Check if deployment is triggered automatically
+echo.
+echo 2. %BLUE%Monitor Build Logs:%NC%
+echo    - Click on your service in Render dashboard
+echo    - Go to "Logs" tab
+echo    - Watch for build completion and any errors
+echo.
+echo 3. %BLUE%Verify PostgreSQL Connection:%NC%
+echo    - Wait for deployment to complete
+echo    - Check logs for "✓ Database module loaded: PostgreSQL"
+echo    - Should NOT see any JSON fallback messages
+echo.
+echo 4. %BLUE%Test Application:%NC%
+echo    - Visit your Render app URL
+echo    - Try logging in
+echo    - Check if trades are loading from PostgreSQL
+echo    - Test adding a new trade
+echo.
+echo 5. %BLUE%Check Database Tables:%NC%
+echo    - Visit: https://your-app.onrender.com/check-subscription-setup.html
+echo    - Verify all PostgreSQL tables are present
+echo    - Check subscription functionality
 echo.
 
-echo ========================================
-echo   POST-DEPLOYMENT STEPS
-echo ========================================
+echo %BLUE%Step 7: Post-Deployment Health Checks%NC%
+echo ===============================================
+echo %YELLOW%Run these checks after deployment:%NC%
 echo.
-echo IMPORTANT: After deployment completes on Render:
+echo • %BLUE%Application Status:%NC% Check if app starts without errors
+echo • %BLUE%Database Connection:%NC% Verify PostgreSQL connection is successful
+echo • %BLUE%API Endpoints:%NC% Test /api/trades and other endpoints
+echo • %BLUE%Authentication:%NC% Test login/logout functionality
+echo • %BLUE%Subscription System:%NC% Verify subscription middleware works
+echo • %BLUE%ML Features:%NC% Check if ML routes are accessible
 echo.
-echo 1. Run database migrations on Render:
-echo    - Go to Render Dashboard > Your Service > Shell
-echo    - Run: node migrations/001_add_subscription_tables.js up
-echo    - This will create subscription tables and add user fields
-echo.
-echo 2. Verify the application is running:
-echo    - Check your app URL for successful deployment
-echo    - Test login and basic functionality
-echo.
-echo 3. Test the Admin Dashboard user migration:
-echo    - Go to /admin page after deployment
-echo    - Verify that Total Users shows correct count (not 0)
-echo    - Check that existing users appear in the users table
-echo    - Test that new user logins get saved to users table
-echo.
-echo 4. Verify PostgreSQL user tracking:
-echo    - Existing users should be migrated from trades table
-echo    - New Google OAuth logins should create user records
-echo    - Admin page should show all registered users
-echo.
-echo 5. Test API field standardization:
-echo    - Open Developer Tools and check API responses
-echo    - Verify 'shares' and 'profitLoss' fields are present
-echo    - No more 'quantity' or 'profit' fields should appear
-echo.
-echo 6. Verify Telegram alerts are working:
-echo    - Test alert preferences in the app
-echo    - Check that notifications use correct field values
-echo.
-echo 7. Check subscription tables were created:
-echo    - Go to: /check-subscription-setup.html
-echo    - This page shows all subscription tables status
-echo    - Verify all 5 checks show green checkmarks
-echo    - subscription_plans table with IN/UK pricing
-echo    - user_subscriptions for tracking status
-echo    - payment_transactions for payment records
-echo    - payment_verification_queue for admin workflow
-echo.
-echo ========================================
-echo.
-echo Auto-opening Render dashboard to monitor deployment...
-echo.
-echo You can also check:
-echo - Render Dashboard: https://dashboard.render.com/
-echo - GitHub Repository: 
-git remote get-url origin 2>nul | findstr /C:"github.com"
-echo.
-start https://dashboard.render.com/
 
-:end
+echo %BLUE%Step 8: Troubleshooting Commands%NC%
+echo ===============================================
+echo %YELLOW%If deployment fails, try these:%NC%
 echo.
-echo Deployment script completed.
+echo • Check Render logs for specific error messages
+echo • Verify DATABASE_URL environment variable is set
+echo • Ensure all required environment variables are configured
+echo • Check if build.sh script runs successfully
+echo • Verify package.json dependencies are correct
 echo.
-echo Remember: 
-echo 1. Test the Admin Dashboard shows users correctly
-echo 2. Verify user migration worked for existing trades
-echo 3. Test new user registration via Google OAuth
+
+echo %GREEN%===============================================%NC%
+echo %GREEN%   DEPLOYMENT INITIATED SUCCESSFULLY!%NC%
+echo %GREEN%===============================================%NC%
+echo.
+echo %YELLOW%Your code has been pushed to GitHub.%NC%
+echo %YELLOW%Render should automatically start deploying.%NC%
+echo.
+echo %BLUE%Next steps:%NC%
+echo 1. Monitor Render dashboard for deployment progress
+echo 2. Check application logs for any errors
+echo 3. Test the live application once deployment completes
+echo 4. Verify PostgreSQL database is working correctly
+echo.
+echo %GREEN%Good luck with your deployment! 🚀%NC%
+echo.
+
 pause

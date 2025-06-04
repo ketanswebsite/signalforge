@@ -1,6 +1,6 @@
 const { Pool } = require('pg');
 
-// Database connection with fallback
+// PostgreSQL database connection
 let pool = null;
 let dbConnected = false;
 
