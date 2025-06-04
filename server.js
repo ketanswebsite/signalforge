@@ -343,6 +343,137 @@ app.get('/api/debug/users', ensureAuthenticatedAPI, async (req, res) => {
   }
 });
 
+// User recovery endpoint - finds and adds missing users
+app.get('/api/recover-users', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const { Pool } = require('pg');
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    });
+    
+    // Find unique user_ids from trades table that aren't in users table
+    const missingUsersQuery = `
+      SELECT DISTINCT t.user_id, MIN(t.created_at) as first_trade_date, MAX(t.created_at) as last_trade_date, COUNT(*) as trade_count
+      FROM trades t
+      LEFT JOIN users u ON t.user_id = u.email
+      WHERE u.email IS NULL AND t.user_id IS NOT NULL AND t.user_id != '' AND t.user_id != 'default'
+      GROUP BY t.user_id
+      ORDER BY first_trade_date ASC
+    `;
+    
+    const missingUsers = await pool.query(missingUsersQuery);
+    
+    let recoveredUsers = [];
+    let errors = [];
+    
+    // Add each missing user to the users table
+    for (const user of missingUsers.rows) {
+      try {
+        await pool.query(`
+          INSERT INTO users (email, name, google_id, first_login, last_login, created_at)
+          VALUES ($1, $2, $3, $4, $5, $6)
+          ON CONFLICT (email) DO NOTHING
+        `, [
+          user.user_id, // email
+          user.user_id.split('@')[0], // name from email prefix
+          null, // google_id (unknown for recovered users)
+          user.first_trade_date, // first_login based on first trade
+          user.last_trade_date, // last_login based on last trade
+          user.first_trade_date // created_at
+        ]);
+        
+        recoveredUsers.push({
+          email: user.user_id,
+          firstTradeDate: user.first_trade_date,
+          lastTradeDate: user.last_trade_date,
+          tradeCount: user.trade_count
+        });
+      } catch (err) {
+        errors.push({ email: user.user_id, error: err.message });
+      }
+    }
+    
+    // Get updated user count
+    const updatedCount = await pool.query('SELECT COUNT(*) as total FROM users');
+    
+    res.json({
+      success: true,
+      message: 'User recovery completed',
+      recoveredUsers: recoveredUsers,
+      totalRecovered: recoveredUsers.length,
+      errors: errors,
+      newTotalUsers: parseInt(updatedCount.rows[0].total),
+      executedBy: req.user.email
+    });
+    
+  } catch (error) {
+    console.error('Error in user recovery:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+});
+
+// Auto-recovery function that runs on server startup
+async function autoRecoverUsers() {
+  try {
+    console.log('🔄 Running automatic user recovery...');
+    
+    const { Pool } = require('pg');
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    });
+    
+    // Check if we need to recover users
+    const missingUsersQuery = `
+      SELECT COUNT(DISTINCT t.user_id) as missing_count
+      FROM trades t
+      LEFT JOIN users u ON t.user_id = u.email
+      WHERE u.email IS NULL AND t.user_id IS NOT NULL AND t.user_id != '' AND t.user_id != 'default'
+    `;
+    
+    const missingCount = await pool.query(missingUsersQuery);
+    const missingUserCount = parseInt(missingCount.rows[0].missing_count);
+    
+    if (missingUserCount > 0) {
+      console.log(`📊 Found ${missingUserCount} users in trades table not in users table`);
+      
+      // Recover missing users
+      const recoveryQuery = `
+        INSERT INTO users (email, name, google_id, first_login, last_login, created_at)
+        SELECT 
+          t.user_id as email,
+          SPLIT_PART(t.user_id, '@', 1) as name,
+          null as google_id,
+          MIN(t.created_at) as first_login,
+          MAX(t.created_at) as last_login,
+          MIN(t.created_at) as created_at
+        FROM trades t
+        LEFT JOIN users u ON t.user_id = u.email
+        WHERE u.email IS NULL AND t.user_id IS NOT NULL AND t.user_id != '' AND t.user_id != 'default'
+        GROUP BY t.user_id
+        ON CONFLICT (email) DO NOTHING
+      `;
+      
+      const result = await pool.query(recoveryQuery);
+      console.log(`✅ Auto-recovered ${result.rowCount} users from trades table`);
+      
+      // Get final user count
+      const finalCount = await pool.query('SELECT COUNT(*) as total FROM users');
+      console.log(`👥 Total users in database: ${finalCount.rows[0].total}`);
+    } else {
+      console.log('✅ No missing users found - all users are properly tracked');
+    }
+    
+    await pool.end();
+  } catch (error) {
+    console.error('❌ Error in auto user recovery:', error);
+  }
+}
+
 // Check subscription setup endpoint
 app.get('/api/check-subscription-setup', async (req, res) => {
   try {
@@ -1216,6 +1347,13 @@ app.listen(PORT, async () => {
     console.log(`   Closed: ${trades.filter(t => t.status === 'closed').length}`);
   } catch (error) {
     console.error('   Database error:', error.message);
+  }
+  
+  // Run automatic user recovery on startup
+  try {
+    await autoRecoverUsers();
+  } catch (error) {
+    console.error('Error during startup user recovery:', error);
   }
   
   // Run initial alert check

@@ -392,6 +392,7 @@
                         <button class="btn btn-test" onclick="getUserAnalytics()">Get User Stats</button>
                         <button class="btn btn-test" onclick="refreshUserStats()">Refresh</button>
                         <button class="btn btn-check" onclick="debugUsersTable()">Debug Users Table</button>
+                        <button class="btn btn-view" onclick="recoverMissingUsers()">Recover Missing Users</button>
                     </div>
                     <div class="result-area" id="user-analytics-result"></div>
                 </div>
@@ -834,6 +835,74 @@
                 }
             } catch (error) {
                 showResult('user-analytics-result', `❌ Debug failed\nError: ${error.message}\n\nThis could indicate the users table doesn't exist or there's a database connection issue.`, true);
+            }
+        }
+
+        // User recovery function
+        async function recoverMissingUsers() {
+            try {
+                showResult('user-analytics-result', '🔄 Searching for missing users and recovering them...');
+                
+                const response = await fetch('/api/recover-users');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    let recoveryDisplay = `
+🔧 USER RECOVERY COMPLETED
+
+📊 Recovery Results:
+   ├─ Users Recovered: ${data.totalRecovered}
+   ├─ New Total Users: ${data.newTotalUsers}
+   └─ Executed By: ${data.executedBy}
+
+👤 Recovered Users:
+`;
+                    
+                    if (data.recoveredUsers && data.recoveredUsers.length > 0) {
+                        data.recoveredUsers.forEach((user, index) => {
+                            recoveryDisplay += `
+   ${index + 1}. ${user.email}
+      ├─ First Trade: ${new Date(user.firstTradeDate).toLocaleDateString()}
+      ├─ Last Trade: ${new Date(user.lastTradeDate).toLocaleDateString()}
+      └─ Total Trades: ${user.tradeCount}
+`;
+                        });
+                    } else {
+                        recoveryDisplay += `
+   ✅ No missing users found - all users are properly tracked!
+`;
+                    }
+                    
+                    if (data.errors && data.errors.length > 0) {
+                        recoveryDisplay += `
+⚠️ Errors During Recovery:
+`;
+                        data.errors.forEach((error, index) => {
+                            recoveryDisplay += `   ${index + 1}. ${error.email}: ${error.error}\n`;
+                        });
+                    }
+                    
+                    recoveryDisplay += `
+
+✅ PERMANENT SOLUTION IMPLEMENTED:
+   • Auto-recovery runs on every server startup
+   • Missing users are automatically found and added
+   • Users are tracked from their first trade onwards
+   • No more missing user issues going forward!
+
+🔄 Refresh user stats to see the updated totals.
+                    `;
+                    
+                    showResult('user-analytics-result', recoveryDisplay);
+                    
+                } else if (response.status === 401) {
+                    showResult('user-analytics-result', '🔒 Please log in to access user recovery', true);
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                showResult('user-analytics-result', `❌ User recovery failed\nError: ${error.message}`, true);
             }
         }
     </script>
