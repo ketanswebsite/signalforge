@@ -69,9 +69,10 @@
     <div class="test-section">
         <h2>Protected Endpoints</h2>
         <button class="test-button" onclick="testEndpoint('/api/trades')">Test /api/trades</button>
-        <button class="test-button" onclick="testEndpoint('/api/ml/analyze')">Test /api/ml/analyze</button>
-        <button class="test-button" onclick="testEndpoint('/api/alerts')">Test /api/alerts</button>
-        <button class="test-button" onclick="testEndpoint('/api/scan-stocks')">Test /api/scan-stocks</button>
+        <button class="test-button" onclick="testEndpoint('/api/ml/analysis/AAPL')">Test /api/ml/analysis/AAPL</button>
+        <button class="test-button" onclick="testEndpoint('/api/alerts/preferences')">Test /api/alerts/preferences</button>
+        <button class="test-button" onclick="testEndpoint('/api/scanner/status')">Test /api/scanner/status</button>
+        <button class="test-button" onclick="testEndpoint('/api/test')">Test /api/test</button>
         <div id="endpointResult" class="result"></div>
     </div>
 
@@ -129,7 +130,7 @@
 
         async function checkSubscription() {
             try {
-                const response = await fetch('/api/subscription/status');
+                const response = await fetch('/api/check-subscription-setup');
                 const data = await response.json();
                 displayResult('subscriptionResult', data, response.ok ? 'info' : 'error');
             } catch (error) {
