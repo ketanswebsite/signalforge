@@ -10,7 +10,5 @@ services:
         value: production
       - key: RENDER
         value: true
-    disk:
-      name: sqlite-data
-      mountPath: /var/data
-      sizeGB: 1  # 1GB persistent storage for SQLite database
+    # Note: Using PostgreSQL database (no local disk storage needed)
+    # Make sure to set DATABASE_URL environment variable in Render dashboard
