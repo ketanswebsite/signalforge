@@ -468,7 +468,7 @@
 
         async function testDatabase() {
             try {
-                const response = await fetch('/api/health');
+                const response = await fetch('/health');
                 const data = await response.json();
                 
                 if (response.ok) {
@@ -485,9 +485,9 @@
 
         async function testAPIHealth() {
             const endpoints = [
-                '/api/health',
+                '/health',
                 '/api/trades',
-                '/api/user-profile'
+                '/api/user'
             ];
             
             let results = '🔍 Testing API endpoints...\n\n';
@@ -511,7 +511,7 @@
 
         async function testAuthStatus() {
             try {
-                const response = await fetch('/api/user-profile');
+                const response = await fetch('/api/user');
                 const data = await response.json();
                 
                 if (response.ok && data.user) {
@@ -544,7 +544,7 @@
 
         async function testMLFeatures() {
             try {
-                const response = await fetch('/api/ml/models/status');
+                const response = await fetch('/api/ml/analysis/AAPL');
                 
                 if (response.ok) {
                     const data = await response.json();
@@ -562,7 +562,7 @@
 
         async function testSubscription() {
             try {
-                const response = await fetch('/api/subscription/status');
+                const response = await fetch('/api/check-subscription-setup');
                 
                 if (response.ok) {
                     const data = await response.json();
@@ -589,7 +589,7 @@
         }
 
         async function testProtectedRoutes() {
-            const protectedRoutes = ['/api/trades', '/api/add-trade', '/api/user-profile'];
+            const protectedRoutes = ['/api/trades', '/api/trades', '/api/user'];
             let results = '🔐 Testing protected routes...\n\n';
             
             for (const route of protectedRoutes) {
@@ -612,7 +612,7 @@
         async function testPerformance() {
             const startTime = performance.now();
             try {
-                await fetch('/api/health');
+                await fetch('/health');
                 const endTime = performance.now();
                 const responseTime = (endTime - startTime).toFixed(2);
                 showResult('performance-result', `✅ Performance test\nAPI response time: ${responseTime}ms\n${responseTime < 1000 ? 'Good' : responseTime < 3000 ? 'Acceptable' : 'Slow'} response time`);
@@ -627,7 +627,7 @@
 
         async function checkTables() {
             try {
-                const response = await fetch('/api/admin/check-tables');
+                const response = await fetch('/api/check-subscription-setup');
                 
                 if (response.ok) {
                     const data = await response.json();
@@ -645,14 +645,14 @@
 📋 Available API Endpoints:
 
 🔵 Public Endpoints:
-- GET /api/health - System health check
-- GET /api/test - Basic API test
+- GET /health - System health check
 
 🔐 Protected Endpoints (require authentication):
+- GET /api/test - Basic API test
 - GET /api/trades - Get user trades
-- POST /api/add-trade - Add new trade
-- GET /api/user-profile - Get user profile
-- GET /api/subscription/status - Subscription status
+- POST /api/trades - Add new trade
+- GET /api/user - Get user profile
+- GET /api/check-subscription-setup - Subscription status
 
 🤖 ML Endpoints:
 - GET /api/ml/models/status - ML models status
