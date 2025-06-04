@@ -231,6 +231,9 @@ echo    - Test alert preferences in the app
 echo    - Check that notifications use correct field values
 echo.
 echo 7. Check subscription tables were created:
+echo    - Go to: /check-subscription-setup.html
+echo    - This page shows all subscription tables status
+echo    - Verify all 5 checks show green checkmarks
 echo    - subscription_plans table with IN/UK pricing
 echo    - user_subscriptions for tracking status
 echo    - payment_transactions for payment records

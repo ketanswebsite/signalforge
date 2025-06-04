@@ -94,6 +94,9 @@ This file tracks the implementation progress of the subscription system based on
 - Migration can be run with: `node migrations/001_add_subscription_tables.js up`
 - Note: All database schema tasks (db-schema-1 to db-schema-5) are actually completed in the single migration file
 - Updated deploy-to-render.bat to include migration instructions in post-deployment steps
+- Created check-subscription-setup.html page for easy verification of subscription tables
+- Added /api/check-subscription-setup endpoint to verify database setup
+- Access the checker at: /check-subscription-setup.html
 
 ## Implementation Order
 We'll follow this order for implementation:

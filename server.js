@@ -286,6 +286,111 @@ app.get('/api/admin/stats', ensureAuthenticatedAPI, async (req, res) => {
   }
 });
 
+// Check subscription setup endpoint
+app.get('/api/check-subscription-setup', async (req, res) => {
+  try {
+    const { Pool } = require('pg');
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    });
+
+    const results = {};
+
+    // Check subscription_plans table
+    try {
+      const plansColumns = await pool.query(`
+        SELECT column_name FROM information_schema.columns 
+        WHERE table_name = 'subscription_plans'
+      `);
+      
+      const plans = await pool.query('SELECT * FROM subscription_plans ORDER BY region');
+      
+      results.subscription_plans = {
+        exists: true,
+        columns: plansColumns.rows.length,
+        count: plans.rows.length,
+        plans: plans.rows
+      };
+    } catch (e) {
+      results.subscription_plans = { exists: false };
+    }
+
+    // Check user_subscriptions table
+    try {
+      const subsColumns = await pool.query(`
+        SELECT column_name FROM information_schema.columns 
+        WHERE table_name = 'user_subscriptions'
+      `);
+      
+      const subsCount = await pool.query('SELECT COUNT(*) as count FROM user_subscriptions');
+      
+      results.user_subscriptions = {
+        exists: true,
+        columns: subsColumns.rows.length,
+        count: parseInt(subsCount.rows[0].count)
+      };
+    } catch (e) {
+      results.user_subscriptions = { exists: false };
+    }
+
+    // Check payment tables
+    try {
+      const transColumns = await pool.query(`
+        SELECT column_name FROM information_schema.columns 
+        WHERE table_name = 'payment_transactions'
+      `);
+      
+      const queueColumns = await pool.query(`
+        SELECT column_name FROM information_schema.columns 
+        WHERE table_name = 'payment_verification_queue'
+      `);
+      
+      const transCount = await pool.query('SELECT COUNT(*) as count FROM payment_transactions');
+      const pendingCount = await pool.query(`
+        SELECT COUNT(*) as count FROM payment_verification_queue 
+        WHERE verification_status = 'pending'
+      `);
+      
+      results.payment_tables = {
+        transactions_exists: true,
+        transactions_columns: transColumns.rows.length,
+        transactions_count: parseInt(transCount.rows[0].count),
+        queue_exists: true,
+        queue_columns: queueColumns.rows.length,
+        pending_verifications: parseInt(pendingCount.rows[0].count)
+      };
+    } catch (e) {
+      results.payment_tables = {
+        transactions_exists: false,
+        queue_exists: false
+      };
+    }
+
+    // Check users table modifications
+    try {
+      const usersCols = await pool.query(`
+        SELECT column_name FROM information_schema.columns 
+        WHERE table_name = 'users' 
+        AND column_name IN ('region', 'subscription_status', 'subscription_end_date', 'is_premium')
+      `);
+      
+      results.users_table = {
+        subscription_columns: usersCols.rows.map(row => row.column_name)
+      };
+    } catch (e) {
+      results.users_table = { subscription_columns: [] };
+    }
+
+    await pool.end();
+    res.json(results);
+    
+  } catch (error) {
+    console.error('Error checking subscription setup:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get all trades
 app.get('/api/trades', ensureAuthenticatedAPI, async (req, res) => {
   console.log('>>> /api/trades endpoint hit!');
