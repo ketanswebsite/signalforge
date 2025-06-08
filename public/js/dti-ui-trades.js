@@ -318,7 +318,11 @@ function displayBuyingOpportunities() {
         // Add event listeners to the "AI Insights" buttons
         const aiInsightsButtons = opportunitiesContainer.querySelectorAll('.ai-insights-btn');
         aiInsightsButtons.forEach(button => {
-            button.addEventListener('click', function() {
+            button.addEventListener('click', function(e) {
+                // Prevent default action and stop propagation to avoid page refresh on mobile
+                e.preventDefault();
+                e.stopPropagation();
+                
                 const symbol = this.getAttribute('data-symbol');
                 
                 // Check if MLInsightsUI is available
@@ -340,7 +344,11 @@ function displayBuyingOpportunities() {
         // Add event listeners to the "View Details" buttons
         const viewButtons = opportunitiesContainer.querySelectorAll('.view-details-btn');
         viewButtons.forEach(button => {
-            button.addEventListener('click', function() {
+            button.addEventListener('click', function(e) {
+                // Prevent default action and stop propagation to avoid page refresh on mobile
+                e.preventDefault();
+                e.stopPropagation();
+                
                 const symbol = this.getAttribute('data-symbol');
                 
                 // Set flag to prevent clearing opportunities
@@ -363,13 +371,60 @@ function displayBuyingOpportunities() {
                     indexSelector.dispatchEvent(event);
                     
                     // Wait for the stock selector to update before continuing
-                    setTimeout(() => {
+                    setTimeout(async () => {
                         // Now find the selected stock in the updated dropdown
                         const stockSelector = document.getElementById('stock-selector');
                         if (stockSelector) {
                             stockSelector.value = symbol;
-                            // Fetch and display data for this stock
-                            document.getElementById('fetch-data-btn').click();
+                            
+                            // Instead of clicking the button which causes full page refresh,
+                            // directly fetch and display the data
+                            try {
+                                // Show loading state
+                                DTIBacktester.utils.showNotification(`Loading data for ${symbol}...`, 'info');
+                                
+                                // Get period from selector
+                                const periodSelector = document.getElementById('period-selector');
+                                const period = periodSelector ? periodSelector.value : '5y';
+                                
+                                // Fetch stock data
+                                const data = await DTIData.fetchStockData(symbol, period);
+                                
+                                if (!data) {
+                                    throw new Error('Failed to fetch stock data');
+                                }
+                                
+                                // Convert to CSV
+                                const csvString = DTIData.arrayToCSV(data);
+                                
+                                // Create a Blob and File object
+                                const blob = new Blob([csvString], { type: 'text/csv' });
+                                const file = new File([blob], `${symbol}.csv`, { type: 'text/csv' });
+                                
+                                // Create a FileList-like object
+                                const dataTransfer = new DataTransfer();
+                                dataTransfer.items.add(file);
+                                
+                                // Set the file input's files
+                                const fileInput = document.getElementById('csv-upload');
+                                fileInput.files = dataTransfer.files;
+                                
+                                // Trigger the file change event
+                                const changeEvent = new Event('change');
+                                fileInput.dispatchEvent(changeEvent);
+                                
+                                // Run the backtest
+                                document.getElementById('process-btn').click();
+                                
+                                // Scroll to top on mobile to see the results
+                                if (window.innerWidth <= 768) {
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }
+                                
+                            } catch (error) {
+                                console.error('Error loading stock data:', error);
+                                DTIBacktester.utils.showNotification(`Error: ${error.message}`, 'error');
+                            }
                         }
                     }, 100); // Short delay to ensure the stock selector has updated
                 }
@@ -379,7 +434,11 @@ function displayBuyingOpportunities() {
         // Add event listeners to the "Take a Trade" buttons
         const takeTradeButtons = opportunitiesContainer.querySelectorAll('.take-trade-btn');
         takeTradeButtons.forEach(button => {
-            button.addEventListener('click', function() {
+            button.addEventListener('click', function(e) {
+                // Prevent default action and stop propagation to avoid page refresh on mobile
+                e.preventDefault();
+                e.stopPropagation();
+                
                 const symbol = this.getAttribute('data-symbol');
                 const opportunity = DTIBacktester.activeTradeOpportunities.find(opp => opp.stock.symbol === symbol);
                 

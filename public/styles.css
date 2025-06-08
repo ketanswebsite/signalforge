@@ -2902,10 +2902,17 @@ button:disabled::after {
     /* Opportunity card mobile adjustments */
     .opportunity-card {
         padding: 16px;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
     }
     
     .opportunity-card:hover {
-        transform: translateY(-2px);
+        transform: none;
+    }
+    
+    .opportunity-card:active {
+        transform: scale(0.98);
+        transition: transform 0.1s ease;
     }
     
     /* Text sizing in opportunities */
@@ -2929,9 +2936,20 @@ button:disabled::after {
     }
     
     .opportunity-actions button {
-        padding: 12px;
-        font-size: 13px;
+        padding: 12px 16px;
+        font-size: 14px;
         flex: none;
+        min-height: 44px;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        width: 100%;
+        border-radius: 8px;
+        font-weight: 500;
+    }
+    
+    .opportunity-actions button:active {
+        transform: scale(0.95);
+        transition: transform 0.1s ease;
     }
     
     /* Trade actions */
@@ -2947,6 +2965,76 @@ button:disabled::after {
     .modal-content,
     .dialog-content {
         width: 95%;
+        max-width: 100%;
+        margin: 10px;
+        max-height: 90vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .modal-overlay {
+        padding: 10px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .modal-body {
+        max-height: calc(90vh - 120px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Prevent body scroll when modal is open */
+    body.modal-open {
+        position: fixed;
+        width: 100%;
+        overflow: hidden;
+    }
+    
+    /* Chart improvements for mobile */
+    canvas {
+        max-width: 100%;
+        height: auto !important;
+        touch-action: pan-y pinch-zoom;
+    }
+    
+    .chart-container,
+    [id*="chart"] {
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Improve touch targets */
+    button, .btn, a.button {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* iOS Safari specific fixes */
+    @supports (-webkit-touch-callout: none) {
+        /* Fix for iOS Safari viewport issues */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            -webkit-transform: translate3d(0, 0, 0);
+        }
+        
+        /* Prevent iOS Safari bounce */
+        .modal-content {
+            position: relative;
+            -webkit-transform: translate3d(0, 0, 0);
+        }
+        
+        /* Fix button tap delay */
+        button, .btn, a {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+        }
     }
     
     /* Trade statistics on other pages */
