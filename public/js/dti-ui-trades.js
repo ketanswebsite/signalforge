@@ -265,20 +265,20 @@ function displayBuyingOpportunities() {
                             </div>
                         </div>
                         <div class="opportunity-actions">
-                            <button class="ai-insights-btn" data-symbol="${stock.symbol}" title="Get AI/ML analysis for ${stock.symbol}">
+                            <button type="button" class="ai-insights-btn" data-symbol="${stock.symbol}" title="Get AI/ML analysis for ${stock.symbol}">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                                 </svg>
                                 AI Insights
                             </button>
-                            <button class="view-details-btn" data-symbol="${stock.symbol}">
+                            <button type="button" class="view-details-btn" data-symbol="${stock.symbol}">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <circle cx="11" cy="11" r="8"></circle>
                                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                 </svg>
                                 View Details
                             </button>
-                            <button class="take-trade-btn" data-symbol="${stock.symbol}">
+                            <button type="button" class="take-trade-btn" data-symbol="${stock.symbol}">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                                 </svg>
@@ -318,7 +318,11 @@ function displayBuyingOpportunities() {
         // Add event listeners to the "AI Insights" buttons
         const aiInsightsButtons = opportunitiesContainer.querySelectorAll('.ai-insights-btn');
         aiInsightsButtons.forEach(button => {
-            button.addEventListener('click', function(e) {
+            // iOS Safari fix: Use touchend instead of click for iOS devices
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            const eventType = isIOS ? 'touchend' : 'click';
+            
+            button.addEventListener(eventType, function(e) {
                 // Prevent default action and stop propagation to avoid page refresh on mobile
                 e.preventDefault();
                 e.stopPropagation();
@@ -344,10 +348,20 @@ function displayBuyingOpportunities() {
         // Add event listeners to the "View Details" buttons
         const viewButtons = opportunitiesContainer.querySelectorAll('.view-details-btn');
         viewButtons.forEach(button => {
-            button.addEventListener('click', function(e) {
+            // iOS Safari fix: Use touchend instead of click for iOS devices
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            const eventType = isIOS ? 'touchend' : 'click';
+            
+            button.addEventListener(eventType, function(e) {
                 // Prevent default action and stop propagation to avoid page refresh on mobile
                 e.preventDefault();
                 e.stopPropagation();
+                e.stopImmediatePropagation(); // Extra prevention for iOS Safari
+                
+                // Additional iOS Safari fix
+                if (e.target && e.target.closest('a')) {
+                    return false;
+                }
                 
                 const symbol = this.getAttribute('data-symbol');
                 
@@ -413,8 +427,17 @@ function displayBuyingOpportunities() {
                                 const changeEvent = new Event('change');
                                 fileInput.dispatchEvent(changeEvent);
                                 
-                                // Run the backtest
-                                document.getElementById('process-btn').click();
+                                // Run the backtest directly without clicking button
+                                // This avoids iOS Safari navigation issues
+                                if (typeof DTIBacktester !== 'undefined' && DTIBacktester.handleProcessButtonClick) {
+                                    DTIBacktester.handleProcessButtonClick();
+                                } else {
+                                    // Fallback to button click if direct method not available
+                                    const processBtn = document.getElementById('process-btn');
+                                    if (processBtn) {
+                                        processBtn.click();
+                                    }
+                                }
                                 
                                 // Scroll to top on mobile to see the results
                                 if (window.innerWidth <= 768) {
@@ -434,7 +457,11 @@ function displayBuyingOpportunities() {
         // Add event listeners to the "Take a Trade" buttons
         const takeTradeButtons = opportunitiesContainer.querySelectorAll('.take-trade-btn');
         takeTradeButtons.forEach(button => {
-            button.addEventListener('click', function(e) {
+            // iOS Safari fix: Use touchend instead of click for iOS devices
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            const eventType = isIOS ? 'touchend' : 'click';
+            
+            button.addEventListener(eventType, function(e) {
                 // Prevent default action and stop propagation to avoid page refresh on mobile
                 e.preventDefault();
                 e.stopPropagation();

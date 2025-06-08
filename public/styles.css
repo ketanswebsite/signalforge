@@ -3035,6 +3035,19 @@ button:disabled::after {
             -webkit-touch-callout: none;
             -webkit-user-select: none;
         }
+        
+        /* Prevent any accidental form submissions on iOS */
+        .opportunity-actions button {
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        
+        /* Ensure buttons are not treated as links */
+        .opportunity-actions {
+            -webkit-user-drag: none;
+            user-drag: none;
+        }
     }
     
     /* Trade statistics on other pages */
