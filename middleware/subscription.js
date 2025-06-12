@@ -86,6 +86,17 @@ async function getUserSubscriptionStatus(userEmail) {
 
 // Main middleware function
 function ensureSubscriptionActive(req, res, next) {
+  // TEMPORARY: Disable subscription checks
+  const DISABLE_SUBSCRIPTION_CHECK = process.env.DISABLE_SUBSCRIPTION_CHECK === 'true';
+  if (DISABLE_SUBSCRIPTION_CHECK) {
+    req.subscription = {
+      status: 'bypassed',
+      isActive: true,
+      isPremium: true
+    };
+    return next();
+  }
+
   // Skip subscription check for certain paths
   const exemptPaths = [
     '/api/check-subscription-setup',
