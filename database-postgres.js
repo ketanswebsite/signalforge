@@ -270,17 +270,28 @@ const TradeDB = {
         stockIndex: row.stock_index,
         entryDate: row.entry_date,
         entryPrice: parseFloat(row.entry_price),
-        shares: row.quantity ? parseFloat(row.quantity) : (row.shares ? parseFloat(row.shares) : null),
-        positionSize: parseFloat(row.position_size),
-        stopLoss: row.stop_loss ? parseFloat(row.stop_loss) : null,
-        targetPrice: row.target_price ? parseFloat(row.target_price) : null,
         exitDate: row.exit_date,
         exitPrice: row.exit_price ? parseFloat(row.exit_price) : null,
+        shares: row.quantity ? parseFloat(row.quantity) : (row.shares ? parseFloat(row.shares) : null),
         status: row.status,
+        // Fix: Use consistent field names matching getAllTrades
         profitLoss: row.profit_loss ? parseFloat(row.profit_loss) : null,
+        percentGain: row.percent_gain ? parseFloat(row.percent_gain) : null,
+        // Fix: Add missing fields
+        exitReason: row.exit_reason,
+        investmentAmount: row.investment_amount ? parseFloat(row.investment_amount) : null,
+        currencySymbol: row.currency_symbol,
+        stockName: row.stock_name,
+        // Keep these for backward compatibility
+        positionSize: row.position_size ? parseFloat(row.position_size) : null,
+        stopLoss: row.stop_loss ? parseFloat(row.stop_loss) : null,
+        stopLossPrice: row.stop_loss_price ? parseFloat(row.stop_loss_price) : null,
+        targetPrice: row.target_price ? parseFloat(row.target_price) : null,
         profitLossPercentage: row.profit_loss_percentage ? parseFloat(row.profit_loss_percentage) : null,
         notes: row.notes,
-        user_id: row.user_id
+        user_id: row.user_id,
+        created_at: row.created_at,
+        updated_at: row.updated_at
       }));
     } catch (error) {
       console.error('Error getting closed trades:', error);
