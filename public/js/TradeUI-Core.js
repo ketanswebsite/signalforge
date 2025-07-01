@@ -48,6 +48,9 @@ window.TradeUI = (function() {
         // Add page load animations
         addPageLoadAnimations();
         
+        // Check if we need to show the fix exit reasons button
+        checkMissingExitReasons();
+        
         // Update market status every minute (60000ms) for accurate time display
         setInterval(updateMarketStatus, 60000);
         
@@ -1016,6 +1019,71 @@ window.TradeUI = (function() {
             setTimeout(() => {
                 badge.style.opacity = '0';
             }, 3000);
+        }
+    }
+    
+    /**
+     * Check if there are closed trades with missing exit reasons
+     */
+    function checkMissingExitReasons() {
+        const closedTrades = TradeCore.getTrades('closed');
+        const missingCount = closedTrades.filter(trade => !trade.exitReason || trade.exitReason === '').length;
+        
+        if (missingCount > 0) {
+            // Show the fix button
+            const fixButton = document.getElementById('btn-fix-exit-reasons');
+            if (fixButton) {
+                fixButton.style.display = 'inline-flex';
+                fixButton.addEventListener('click', async function() {
+                    // Disable button and show loading state
+                    this.disabled = true;
+                    const originalHTML = this.innerHTML;
+                    this.innerHTML = `
+                        <svg class="spinner" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="2" x2="12" y2="6"></line>
+                            <line x1="12" y1="18" x2="12" y2="22"></line>
+                            <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                            <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                            <line x1="2" y1="12" x2="6" y2="12"></line>
+                            <line x1="18" y1="12" x2="22" y2="12"></line>
+                            <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+                            <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+                        </svg>
+                        Fixing...
+                    `;
+                    
+                    try {
+                        // Call the API to fix exit reasons
+                        const response = await fetch('/api/fix-exit-reasons', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            TradeCore.showNotification(`Fixed exit reasons for ${result.updatedCount} trades`, 'success');
+                            
+                            // Reload trades to show the updated data
+                            await TradeCore.init();
+                            
+                            // Hide the button since it's no longer needed
+                            this.style.display = 'none';
+                        } else {
+                            throw new Error(result.error || 'Failed to fix exit reasons');
+                        }
+                    } catch (error) {
+                        console.error('Error fixing exit reasons:', error);
+                        TradeCore.showNotification('Error fixing exit reasons: ' + error.message, 'error');
+                        
+                        // Reset button
+                        this.disabled = false;
+                        this.innerHTML = originalHTML;
+                    }
+                });
+            }
         }
     }
 

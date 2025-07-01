@@ -400,6 +400,49 @@ app.get('/api/debug/users', ensureAuthenticatedAPI, async (req, res) => {
   }
 });
 
+// Fix exit reasons for existing closed trades
+app.post('/api/fix-exit-reasons', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const { Pool } = require('pg');
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    });
+    
+    // Update trades with missing exit reasons for the current user
+    const userId = req.user ? req.user.email : 'default';
+    
+    const updateResult = await pool.query(`
+      UPDATE trades 
+      SET exit_reason = CASE
+        WHEN notes LIKE '%stop%loss%' THEN 'Stop Loss Hit'
+        WHEN notes LIKE '%target%' THEN 'Target Reached'
+        WHEN notes LIKE '%time%' THEN 'Time Exit'
+        WHEN notes LIKE '%manual%' THEN 'Manual Exit'
+        ELSE 'Manual Exit'
+      END
+      WHERE user_id = $1
+      AND status = 'closed' 
+      AND (exit_reason IS NULL OR exit_reason = '')
+    `, [userId]);
+    
+    await pool.end();
+    
+    res.json({
+      success: true,
+      message: `Updated ${updateResult.rowCount} trades with exit reasons`,
+      updatedCount: updateResult.rowCount
+    });
+    
+  } catch (error) {
+    console.error('Error fixing exit reasons:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+});
+
 // User recovery endpoint - comprehensive recovery for all user types
 app.get('/api/recover-users', ensureAuthenticatedAPI, async (req, res) => {
   try {
