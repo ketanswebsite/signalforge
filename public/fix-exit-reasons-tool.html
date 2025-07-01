@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Exit Reasons Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .info-box {
+            background-color: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        
+        .success-box {
+            background-color: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .error-box {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        
+        .btn-primary:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .stats {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 5px 0;
+        }
+        
+        .stat-label {
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .stat-value {
+            color: #007bff;
+            font-weight: 500;
+        }
+        
+        .updated-trades {
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .trade-item {
+            padding: 10px;
+            margin-bottom: 5px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .trade-symbol {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .exit-reason-tag {
+            background-color: #007bff;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .center {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fix Exit Reasons for Closed Trades</h1>
+        
+        <div class="info-box">
+            <strong>What this does:</strong> This tool will update all your closed trades that have missing exit reasons. 
+            Trades will be assigned "Manual Exit" as the default exit reason, or a more specific reason if it can be determined from the trade notes.
+        </div>
+        
+        <div class="success-box" id="successBox">
+            <strong>Success!</strong> <span id="successMessage"></span>
+        </div>
+        
+        <div class="error-box" id="errorBox">
+            <strong>Error:</strong> <span id="errorMessage"></span>
+        </div>
+        
+        <div class="stats" id="stats" style="display: none;">
+            <h3>Current Status</h3>
+            <div class="stat-row">
+                <span class="stat-label">Total Closed Trades:</span>
+                <span class="stat-value" id="totalClosed">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Trades Missing Exit Reason:</span>
+                <span class="stat-value" id="missingReasons">0</span>
+            </div>
+        </div>
+        
+        <div class="center">
+            <button type="button" class="btn btn-primary" id="checkBtn" onclick="checkTrades()">
+                Check Trades Status
+            </button>
+            
+            <button type="button" class="btn btn-primary" id="fixBtn" onclick="fixExitReasons()" style="display: none;">
+                Fix Exit Reasons
+            </button>
+        </div>
+        
+        <div class="updated-trades" id="updatedTrades" style="display: none;">
+            <h3>Updated Trades</h3>
+            <div id="tradesList"></div>
+        </div>
+    </div>
+    
+    <script>
+        async function checkTrades() {
+            const checkBtn = document.getElementById('checkBtn');
+            checkBtn.disabled = true;
+            checkBtn.innerHTML = '<span class="spinner"></span> Checking...';
+            
+            hideMessages();
+            
+            try {
+                // Get all trades from the API
+                const response = await fetch('/api/trades');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch trades. Please make sure you are logged in.');
+                }
+                
+                const trades = await response.json();
+                
+                // Filter closed trades
+                const closedTrades = trades.filter(trade => trade.status === 'closed');
+                const missingExitReason = closedTrades.filter(trade => !trade.exitReason || trade.exitReason === '');
+                
+                // Update stats
+                document.getElementById('totalClosed').textContent = closedTrades.length;
+                document.getElementById('missingReasons').textContent = missingExitReason.length;
+                document.getElementById('stats').style.display = 'block';
+                
+                if (missingExitReason.length > 0) {
+                    document.getElementById('fixBtn').style.display = 'inline-flex';
+                    showInfo(`Found ${missingExitReason.length} trades that need exit reasons.`);
+                } else {
+                    showSuccess('All closed trades already have exit reasons!');
+                }
+                
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                checkBtn.disabled = false;
+                checkBtn.innerHTML = 'Check Trades Status';
+            }
+        }
+        
+        async function fixExitReasons() {
+            const fixBtn = document.getElementById('fixBtn');
+            fixBtn.disabled = true;
+            fixBtn.innerHTML = '<span class="spinner"></span> Fixing...';
+            
+            hideMessages();
+            
+            try {
+                // Get all trades
+                const response = await fetch('/api/trades');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch trades');
+                }
+                
+                const trades = await response.json();
+                const tradesToUpdate = trades.filter(trade => 
+                    trade.status === 'closed' && (!trade.exitReason || trade.exitReason === '')
+                );
+                
+                let updatedCount = 0;
+                const updatedTrades = [];
+                
+                // Update each trade
+                for (const trade of tradesToUpdate) {
+                    try {
+                        // Determine exit reason based on notes
+                        let exitReason = 'Manual Exit';
+                        if (trade.notes) {
+                            const notesLower = trade.notes.toLowerCase();
+                            if (notesLower.includes('stop') && notesLower.includes('loss')) {
+                                exitReason = 'Stop Loss Hit';
+                            } else if (notesLower.includes('target')) {
+                                exitReason = 'Target Reached';
+                            } else if (notesLower.includes('time')) {
+                                exitReason = 'Time Exit';
+                            }
+                        }
+                        
+                        // Update the trade
+                        const updateResponse = await fetch(`/api/trades/${trade.id}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                ...trade,
+                                exitReason: exitReason
+                            })
+                        });
+                        
+                        if (updateResponse.ok) {
+                            updatedCount++;
+                            updatedTrades.push({
+                                symbol: trade.symbol,
+                                exitReason: exitReason
+                            });
+                        }
+                    } catch (err) {
+                        console.error(`Failed to update trade ${trade.symbol}:`, err);
+                    }
+                }
+                
+                // Show results
+                if (updatedCount > 0) {
+                    showSuccess(`Successfully updated ${updatedCount} trades with exit reasons!`);
+                    
+                    // Update stats
+                    document.getElementById('missingReasons').textContent = '0';
+                    fixBtn.style.display = 'none';
+                    
+                    // Show updated trades
+                    displayUpdatedTrades(updatedTrades);
+                } else {
+                    showError('No trades were updated.');
+                }
+                
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                fixBtn.disabled = false;
+                fixBtn.innerHTML = 'Fix Exit Reasons';
+            }
+        }
+        
+        function displayUpdatedTrades(trades) {
+            const container = document.getElementById('updatedTrades');
+            const list = document.getElementById('tradesList');
+            
+            list.innerHTML = '';
+            trades.forEach(trade => {
+                const item = document.createElement('div');
+                item.className = 'trade-item';
+                item.innerHTML = `
+                    <span class="trade-symbol">${trade.symbol}</span>
+                    <span class="exit-reason-tag">${trade.exitReason}</span>
+                `;
+                list.appendChild(item);
+            });
+            
+            container.style.display = 'block';
+        }
+        
+        function showSuccess(message) {
+            document.getElementById('successMessage').textContent = message;
+            document.getElementById('successBox').style.display = 'block';
+            document.getElementById('errorBox').style.display = 'none';
+        }
+        
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorBox').style.display = 'block';
+            document.getElementById('successBox').style.display = 'none';
+        }
+        
+        function showInfo(message) {
+            // Using success box for info messages
+            showSuccess(message);
+        }
+        
+        function hideMessages() {
+            document.getElementById('successBox').style.display = 'none';
+            document.getElementById('errorBox').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
