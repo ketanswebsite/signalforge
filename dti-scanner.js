@@ -723,8 +723,12 @@ async function scanAllStocks(params = {}) {
 // Format opportunities for Telegram message
 function formatOpportunitiesMessage(opportunities) {
     // Filter for opportunities from last 2 trading days only
-    const today = new Date();
+    // Use UK timezone to match the cron job schedule
+    const ukNow = new Date(new Date().toLocaleString("en-US", {timeZone: "Europe/London"}));
+    const today = new Date(ukNow);
     today.setHours(0, 0, 0, 0);
+    
+    console.log(`[DTI Scanner] Filtering opportunities - UK Time: ${ukNow.toISOString()}, Today (midnight): ${today.toISOString()}, Total opportunities: ${opportunities.length}`);
     
     const recentOpportunities = opportunities.filter(opp => {
         if (!opp.activeTrade || !opp.activeTrade.entryDate) return false;
@@ -748,6 +752,8 @@ function formatOpportunitiesMessage(opportunities) {
         
         return tradingDays <= 2; // Only last 2 trading days
     });
+    
+    console.log(`[DTI Scanner] Filtered opportunities: ${recentOpportunities.length} out of ${opportunities.length} total opportunities meet the 2-day criteria`);
     
     if (!recentOpportunities || recentOpportunities.length === 0) {
         return `📊 *Daily Scan Complete*\n\nNo high conviction opportunities from last 2 days.\n\nNext scan: Tomorrow at 7 AM UK time`;
