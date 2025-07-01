@@ -199,6 +199,11 @@
                         <p>Closed trades will appear here</p>
                     </div>
                     
+                    <!-- P&L Summary Cards -->
+                    <div class="pl-summary-container" style="display: none;" id="pl-summary-all">
+                        <!-- P&L summary cards will be inserted here by JavaScript -->
+                    </div>
+                    
                     <!-- Trade history table will be inserted here by JavaScript -->
                     <div class="trades-table-container" style="display: none;" id="trades-history-table">
                         <table id="history-table">
@@ -230,6 +235,11 @@
                         <div class="empty-state-message">No winning trades yet</div>
                     </div>
                     
+                    <!-- P&L Summary Cards for Winning Trades -->
+                    <div class="pl-summary-container" style="display: none;" id="pl-summary-winning">
+                        <!-- P&L summary cards will be inserted here by JavaScript -->
+                    </div>
+                    
                     <div class="trades-table-container" style="display: none;" id="winning-trades-table">
                         <table>
                             <thead>
@@ -258,6 +268,11 @@
                     <div class="empty-state" id="no-losing-trades">
                         <div class="empty-state-icon">📉</div>
                         <div class="empty-state-message">No losing trades yet</div>
+                    </div>
+                    
+                    <!-- P&L Summary Cards for Losing Trades -->
+                    <div class="pl-summary-container" style="display: none;" id="pl-summary-losing">
+                        <!-- P&L summary cards will be inserted here by JavaScript -->
                     </div>
                     
                     <div class="trades-table-container" style="display: none;" id="losing-trades-table">
@@ -1180,6 +1195,104 @@ document.addEventListener('DOMContentLoaded', function() {
         .trades-table-container {
             scrollbar-width: thin;
             scrollbar-color: var(--border-color) var(--background-color);
+        }
+        
+        /* P&L Summary Cards */
+        .pl-summary-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 0;
+        }
+        
+        .pl-summary-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .pl-summary-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary-color);
+        }
+        
+        .pl-summary-card.profit::before {
+            background: linear-gradient(90deg, #28a745, #20c997);
+        }
+        
+        .pl-summary-card.loss::before {
+            background: linear-gradient(90deg, #dc3545, #fd7e14);
+        }
+        
+        .pl-summary-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .pl-summary-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        
+        .pl-summary-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin: 0;
+        }
+        
+        .pl-summary-icon {
+            font-size: 24px;
+            opacity: 0.7;
+        }
+        
+        .pl-summary-amount {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .pl-summary-amount.profit {
+            color: #28a745;
+        }
+        
+        .pl-summary-amount.loss {
+            color: #dc3545;
+        }
+        
+        .pl-summary-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .pl-summary-trades {
+            font-weight: 500;
+        }
+        
+        .pl-summary-avg {
+            font-style: italic;
+        }
+        
+        @media (max-width: 768px) {
+            .pl-summary-container {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
     

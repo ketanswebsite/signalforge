@@ -356,6 +356,9 @@ function renderActiveTrades() {
         noTradeHistory.style.display = 'none';
         tradesHistoryTable.style.display = 'block';
         
+        // Show P&L summary for all trades
+        renderPLSummary(closedTrades, 'pl-summary-all');
+        
         const allTableBody = document.getElementById('history-table-body');
         if (allTableBody) {
             allTableBody.innerHTML = '';
@@ -385,6 +388,9 @@ function renderActiveTrades() {
             } else {
                 noWinningTrades.style.display = 'none';
                 winningTradesTable.style.display = 'block';
+                
+                // Show P&L summary for winning trades
+                renderPLSummary(winningTrades, 'pl-summary-winning');
                 
                 const winningTableBody = document.getElementById('winning-table-body');
                 if (winningTableBody) {
@@ -418,6 +424,9 @@ function renderActiveTrades() {
                 noLosingTrades.style.display = 'none';
                 losingTradesTable.style.display = 'block';
                 
+                // Show P&L summary for losing trades
+                renderPLSummary(losingTrades, 'pl-summary-losing');
+                
                 const losingTableBody = document.getElementById('losing-table-body');
                 if (losingTableBody) {
                     losingTableBody.innerHTML = '';
@@ -438,6 +447,101 @@ function renderActiveTrades() {
                 }
             }
         }
+    }
+    
+    /**
+     * Render P&L summary cards by currency
+     * @param {Array} trades - Array of trades to analyze
+     * @param {string} containerId - ID of container to render summary in
+     */
+    function renderPLSummary(trades, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container || trades.length === 0) {
+            if (container) container.style.display = 'none';
+            return;
+        }
+        
+        // Calculate P&L by currency
+        const currencyStats = {};
+        
+        trades.forEach(trade => {
+            const symbol = trade.symbol || '';
+            const isUKStock = symbol.endsWith('.L');
+            const currencySymbol = trade.currencySymbol || (isUKStock ? '£' : '$');
+            
+            if (!currencyStats[currencySymbol]) {
+                currencyStats[currencySymbol] = {
+                    totalPL: 0,
+                    totalProfit: 0,
+                    totalLoss: 0,
+                    tradeCount: 0,
+                    profitTrades: 0,
+                    lossTrades: 0
+                };
+            }
+            
+            const plValue = Number(trade.profitLoss || trade.plValue || trade.profit) || 0;
+            // For UK stocks, convert from pence to pounds for display
+            const displayPLValue = isUKStock ? plValue / 100 : plValue;
+            
+            currencyStats[currencySymbol].totalPL += displayPLValue;
+            currencyStats[currencySymbol].tradeCount++;
+            
+            if (displayPLValue > 0) {
+                currencyStats[currencySymbol].totalProfit += displayPLValue;
+                currencyStats[currencySymbol].profitTrades++;
+            } else if (displayPLValue < 0) {
+                currencyStats[currencySymbol].totalLoss += Math.abs(displayPLValue);
+                currencyStats[currencySymbol].lossTrades++;
+            }
+        });
+        
+        // Clear container and render cards
+        container.innerHTML = '';
+        
+        Object.entries(currencyStats).forEach(([currency, stats]) => {
+            const netPL = stats.totalPL;
+            const isProfit = netPL > 0;
+            const avgPL = stats.tradeCount > 0 ? netPL / stats.tradeCount : 0;
+            
+            const card = document.createElement('div');
+            card.className = `pl-summary-card ${isProfit ? 'profit' : (netPL < 0 ? 'loss' : '')}`;
+            card.innerHTML = `
+                <div class="pl-summary-header">
+                    <h4 class="pl-summary-title">${currency} Market P&L</h4>
+                    <div class="pl-summary-icon">${isProfit ? '📈' : (netPL < 0 ? '📉' : '📊')}</div>
+                </div>
+                <div class="pl-summary-amount ${isProfit ? 'profit' : (netPL < 0 ? 'loss' : '')}">${currency}${Math.abs(netPL).toFixed(2)}</div>
+                <div class="pl-summary-details">
+                    <span class="pl-summary-trades">${stats.tradeCount} trades</span>
+                    <span class="pl-summary-avg">Avg: ${currency}${avgPL.toFixed(2)}</span>
+                </div>
+                ${stats.totalProfit > 0 && stats.totalLoss > 0 ? `
+                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-color); font-size: 12px; color: var(--text-secondary);">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Profits: ${currency}${stats.totalProfit.toFixed(2)} (${stats.profitTrades})</span>
+                        <span>Losses: ${currency}${stats.totalLoss.toFixed(2)} (${stats.lossTrades})</span>
+                    </div>
+                </div>
+                ` : ''}
+            `;
+            
+            container.appendChild(card);
+        });
+        
+        container.style.display = 'grid';
+        
+        // Add animations to cards
+        const cards = container.querySelectorAll('.pl-summary-card');
+        cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, 100 + (index * 100));
+        });
     }
     
     /**
