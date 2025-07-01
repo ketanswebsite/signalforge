@@ -317,8 +317,12 @@ function renderActiveTrades() {
     });
 }
 
+    // Pagination state for trade history
+    let currentPage = { all: 1, winning: 1, losing: 1 };
+    const recordsPerPage = 10;
+
     /**
-     * Render trade history tables with enhanced UI
+     * Render trade history tables with enhanced UI and pagination
      */
     function renderTradeHistory() {
         // Check if we have trade history elements
@@ -352,28 +356,10 @@ function renderActiveTrades() {
             return;
         }
         
-        // Populate all trades table
+        // Populate all trades table with pagination
         noTradeHistory.style.display = 'none';
         tradesHistoryTable.style.display = 'block';
-        
-        const allTableBody = document.getElementById('history-table-body');
-        if (allTableBody) {
-            allTableBody.innerHTML = '';
-            
-            closedTrades.forEach((trade, index) => {
-                const row = createTradeHistoryRow(trade);
-                
-                // Add animation for each row
-                row.style.opacity = '0';
-                allTableBody.appendChild(row);
-                
-                // Trigger animation after a short delay (staggered)
-                setTimeout(() => {
-                    row.style.transition = 'opacity 0.3s ease';
-                    row.style.opacity = '1';
-                }, 30 * index); // Stagger the animations
-            });
-        }
+        renderTradeTable('all', closedTrades, 'history-table-body');
         
         // Populate winning trades table
         if (noWinningTrades && winningTradesTable) {
@@ -385,25 +371,7 @@ function renderActiveTrades() {
             } else {
                 noWinningTrades.style.display = 'none';
                 winningTradesTable.style.display = 'block';
-                
-                const winningTableBody = document.getElementById('winning-table-body');
-                if (winningTableBody) {
-                    winningTableBody.innerHTML = '';
-                    
-                    winningTrades.forEach((trade, index) => {
-                        const row = createTradeHistoryRow(trade);
-                        
-                        // Add animation for each row
-                        row.style.opacity = '0';
-                        winningTableBody.appendChild(row);
-                        
-                        // Trigger animation after a short delay (staggered)
-                        setTimeout(() => {
-                            row.style.transition = 'opacity 0.3s ease';
-                            row.style.opacity = '1';
-                        }, 30 * index); // Stagger the animations
-                    });
-                }
+                renderTradeTable('winning', winningTrades, 'winning-table-body');
             }
         }
         
@@ -417,28 +385,98 @@ function renderActiveTrades() {
             } else {
                 noLosingTrades.style.display = 'none';
                 losingTradesTable.style.display = 'block';
-                
-                const losingTableBody = document.getElementById('losing-table-body');
-                if (losingTableBody) {
-                    losingTableBody.innerHTML = '';
-                    
-                    losingTrades.forEach((trade, index) => {
-                        const row = createTradeHistoryRow(trade);
-                        
-                        // Add animation for each row
-                        row.style.opacity = '0';
-                        losingTableBody.appendChild(row);
-                        
-                        // Trigger animation after a short delay (staggered)
-                        setTimeout(() => {
-                            row.style.transition = 'opacity 0.3s ease';
-                            row.style.opacity = '1';
-                        }, 30 * index); // Stagger the animations
-                    });
-                }
+                renderTradeTable('losing', losingTrades, 'losing-table-body');
             }
         }
     }
+
+    /**
+     * Render a paginated trade table
+     */
+    function renderTradeTable(tableType, trades, tableBodyId) {
+        const tableBody = document.getElementById(tableBodyId);
+        if (!tableBody) return;
+
+        const page = currentPage[tableType] || 1;
+        const startIndex = (page - 1) * recordsPerPage;
+        const endIndex = Math.min(startIndex + recordsPerPage, trades.length);
+        const paginatedTrades = trades.slice(startIndex, endIndex);
+        
+        tableBody.innerHTML = '';
+        
+        paginatedTrades.forEach((trade, index) => {
+            const row = createTradeHistoryRow(trade);
+            
+            // Add animation for each row
+            row.style.opacity = '0';
+            tableBody.appendChild(row);
+            
+            // Trigger animation after a short delay (staggered)
+            setTimeout(() => {
+                row.style.transition = 'opacity 0.3s ease';
+                row.style.opacity = '1';
+            }, 30 * index); // Stagger the animations
+        });
+
+        // Add or update pagination controls
+        addPaginationControls(tableType, trades.length, tableBodyId);
+    }
+
+    /**
+     * Add pagination controls to trade history tables
+     */
+    function addPaginationControls(tableType, totalRecords, tableBodyId) {
+        const tableContainer = document.getElementById(tableBodyId).closest('.trades-table-container');
+        if (!tableContainer) return;
+
+        const totalPages = Math.ceil(totalRecords / recordsPerPage);
+        const page = currentPage[tableType] || 1;
+
+        // Remove existing pagination
+        const existingPagination = tableContainer.querySelector('.trade-pagination');
+        if (existingPagination) {
+            existingPagination.remove();
+        }
+
+        // Don't show pagination if only one page
+        if (totalPages <= 1) return;
+
+        const paginationDiv = document.createElement('div');
+        paginationDiv.className = 'trade-pagination';
+        paginationDiv.innerHTML = `
+            <div class="pagination-info">
+                Showing ${((page - 1) * recordsPerPage) + 1}-${Math.min(page * recordsPerPage, totalRecords)} of ${totalRecords} trades
+            </div>
+            <div class="pagination-controls">
+                <button class="pagination-btn" ${page === 1 ? 'disabled' : ''} onclick="changePage('${tableType}', ${page - 1})">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                    Previous
+                </button>
+                <span class="page-info">Page ${page} of ${totalPages}</span>
+                <button class="pagination-btn" ${page === totalPages ? 'disabled' : ''} onclick="changePage('${tableType}', ${page + 1})">
+                    Next
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </button>
+            </div>
+        `;
+
+        tableContainer.appendChild(paginationDiv);
+    }
+
+    /**
+     * Change page for trade history pagination
+     */
+    function changePage(tableType, newPage) {
+        currentPage[tableType] = newPage;
+        renderTradeHistory();
+    }
+
+    // Make changePage available globally for onclick handlers
+    window.changePage = changePage;
     
     /**
      * Create a table row for a closed trade with enhanced UI

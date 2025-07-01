@@ -171,6 +171,12 @@
             background-color: #f8f9fa;
             border-radius: 4px;
             border-left: 4px solid #007bff;
+            position: relative;
+        }
+        
+        .trade-row.editable:hover {
+            background-color: #e9ecef;
+            cursor: pointer;
         }
         
         .trade-info {
@@ -220,6 +226,78 @@
         .loss-trade {
             border-left-color: #dc3545;
         }
+        
+        .edit-existing-section {
+            display: none;
+            margin-top: 30px;
+            border-top: 2px solid #007bff;
+            padding-top: 20px;
+        }
+        
+        .existing-trade-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        
+        .existing-trade-row:hover {
+            background-color: #f8f9fa;
+            border-color: #007bff;
+        }
+        
+        .existing-trade-info {
+            flex: 1;
+        }
+        
+        .existing-trade-symbol {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 2px;
+        }
+        
+        .existing-trade-details {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .existing-exit-reason {
+            background-color: #e9ecef;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            color: #495057;
+            margin-right: 10px;
+        }
+        
+        .edit-trade-btn {
+            padding: 6px 12px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .edit-trade-btn:hover {
+            background-color: #218838;
+        }
+        
+        .section-toggle {
+            background-color: #6c757d;
+            margin-left: 10px;
+        }
+        
+        .section-toggle:hover {
+            background-color: #5a6268;
+        }
     </style>
 </head>
 <body>
@@ -259,6 +337,10 @@
             <button type="button" class="btn btn-primary" id="fixBtn" onclick="fixExitReasons()" style="display: none;">
                 Fix Exit Reasons
             </button>
+            
+            <button type="button" class="btn btn-primary section-toggle" id="editExistingBtn" onclick="toggleEditExisting()">
+                Edit Existing Exit Reasons
+            </button>
         </div>
         
         <div class="trade-selection" id="tradeSelection">
@@ -278,6 +360,15 @@
             <div class="center" style="margin-top: 20px;">
                 <button class="btn btn-primary" onclick="applyExitReasons()">Apply Exit Reasons</button>
                 <button class="btn btn-primary" onclick="cancelSelection()" style="background-color: #6c757d;">Cancel</button>
+            </div>
+        </div>
+        
+        <div class="edit-existing-section" id="editExistingSection">
+            <h3>Edit Existing Exit Reasons</h3>
+            <p>Click on any trade below to edit its exit reason:</p>
+            
+            <div id="existingTradesContainer">
+                <!-- Existing trades will be loaded here -->
             </div>
         </div>
         
@@ -529,6 +620,120 @@
         function hideMessages() {
             document.getElementById('successBox').style.display = 'none';
             document.getElementById('errorBox').style.display = 'none';
+        }
+        
+        async function toggleEditExisting() {
+            const section = document.getElementById('editExistingSection');
+            const btn = document.getElementById('editExistingBtn');
+            
+            if (section.style.display === 'none' || section.style.display === '') {
+                // Load existing trades
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span> Loading...';
+                
+                try {
+                    await loadExistingTrades();
+                    section.style.display = 'block';
+                    btn.textContent = 'Hide Edit Section';
+                } catch (error) {
+                    showError('Failed to load existing trades: ' + error.message);
+                } finally {
+                    btn.disabled = false;
+                }
+            } else {
+                section.style.display = 'none';
+                btn.textContent = 'Edit Existing Exit Reasons';
+            }
+        }
+        
+        async function loadExistingTrades() {
+            const response = await fetch('/api/trades');
+            if (!response.ok) {
+                throw new Error('Failed to fetch trades');
+            }
+            
+            const trades = await response.json();
+            const closedTrades = trades.filter(trade => trade.status === 'closed' && trade.exitReason);
+            
+            const container = document.getElementById('existingTradesContainer');
+            container.innerHTML = '';
+            
+            if (closedTrades.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666;">No closed trades with exit reasons found.</p>';
+                return;
+            }
+            
+            closedTrades.forEach(trade => {
+                const isProfit = trade.profitLoss > 0 || trade.percentGain > 0;
+                const plValue = trade.profitLoss || 0;
+                const plPercent = trade.percentGain || 0;
+                
+                const tradeRow = document.createElement('div');
+                tradeRow.className = 'existing-trade-row';
+                tradeRow.innerHTML = `
+                    <div class="existing-trade-info">
+                        <div class="existing-trade-symbol">${trade.symbol}</div>
+                        <div class="existing-trade-details">
+                            Exit Date: ${new Date(trade.exitDate).toLocaleDateString()} | 
+                            P/L: ${plPercent.toFixed(2)}% (${trade.currencySymbol || '$'}${Math.abs(plValue).toFixed(2)} ${isProfit ? 'profit' : 'loss'})
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <span class="existing-exit-reason">${trade.exitReason}</span>
+                        <button class="edit-trade-btn" onclick="editTradeExitReason('${trade.id}', '${trade.symbol}', '${trade.exitReason}')">
+                            Edit
+                        </button>
+                    </div>
+                `;
+                container.appendChild(tradeRow);
+            });
+        }
+        
+        async function editTradeExitReason(tradeId, symbol, currentReason) {
+            const newReason = prompt(`Edit exit reason for ${symbol}:\n\nCurrent: ${currentReason}\n\nAvailable options:\n- Target Reached\n- Stop Loss Hit\n- Manual Exit\n- Time Exit\n- Strategy Change\n\nEnter new exit reason:`, currentReason);
+            
+            if (!newReason || newReason === currentReason) {
+                return; // User cancelled or no change
+            }
+            
+            const validReasons = ['Target Reached', 'Stop Loss Hit', 'Manual Exit', 'Time Exit', 'Strategy Change'];
+            if (!validReasons.includes(newReason)) {
+                showError('Invalid exit reason. Please use one of: ' + validReasons.join(', '));
+                return;
+            }
+            
+            try {
+                // First get the trade data
+                const getResponse = await fetch(`/api/trades/${tradeId}`);
+                if (!getResponse.ok) {
+                    throw new Error('Failed to fetch trade data');
+                }
+                
+                const trade = await getResponse.json();
+                
+                // Update the trade with new exit reason
+                const updateResponse = await fetch(`/api/trades/${tradeId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ...trade,
+                        exitReason: newReason
+                    })
+                });
+                
+                if (!updateResponse.ok) {
+                    throw new Error('Failed to update trade');
+                }
+                
+                showSuccess(`Successfully updated exit reason for ${symbol} to "${newReason}"`);
+                // Reload the existing trades list
+                await loadExistingTrades();
+                
+            } catch (error) {
+                showError('Failed to update trade: ' + error.message);
+            }
         }
     </script>
 </body>
