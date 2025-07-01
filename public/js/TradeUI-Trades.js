@@ -467,7 +467,10 @@ function renderActiveTrades() {
         trades.forEach(trade => {
             const symbol = trade.symbol || '';
             const isUKStock = symbol.endsWith('.L');
-            const currencySymbol = trade.currencySymbol || (isUKStock ? '£' : '$');
+            const isIndianStock = symbol.endsWith('.NS');
+            const currencySymbol = trade.currencySymbol || 
+                (isUKStock ? '£' : 
+                 isIndianStock ? '₹' : '$');
             
             if (!currencyStats[currencySymbol]) {
                 currencyStats[currencySymbol] = {
@@ -482,6 +485,7 @@ function renderActiveTrades() {
             
             const plValue = Number(trade.profitLoss || trade.plValue || trade.profit) || 0;
             // For UK stocks, convert from pence to pounds for display
+            // Indian (₹) and US ($) stocks are already in their base currency units
             const displayPLValue = isUKStock ? plValue / 100 : plValue;
             
             currencyStats[currencySymbol].totalPL += displayPLValue;
@@ -613,8 +617,10 @@ function renderActiveTrades() {
             }
             
             // For UK stocks, convert investment amount from pence to pounds for display
-            const displayInvestment = trade.symbol.endsWith('.L') ? investmentAmount / 100 : investmentAmount;
-            const displayPLValue = trade.symbol.endsWith('.L') ? plValue / 100 : plValue;
+            // Indian and US stocks are already in their base currency units
+            const isUKStock = trade.symbol && trade.symbol.endsWith('.L');
+            const displayInvestment = isUKStock ? investmentAmount / 100 : investmentAmount;
+            const displayPLValue = isUKStock ? plValue / 100 : plValue;
             
             // Get company name from mapping
             const displayName = window.CompanyNames ? 
