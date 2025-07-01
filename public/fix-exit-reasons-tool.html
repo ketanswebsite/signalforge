@@ -156,6 +156,70 @@
         .center {
             text-align: center;
         }
+        
+        .trade-selection {
+            display: none;
+            margin-top: 20px;
+        }
+        
+        .trade-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            margin-bottom: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .trade-info {
+            flex: 1;
+        }
+        
+        .trade-symbol-main {
+            font-weight: bold;
+            font-size: 16px;
+            color: #333;
+        }
+        
+        .trade-details {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .exit-reason-select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            min-width: 150px;
+        }
+        
+        .bulk-actions {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+        
+        .profit-trade {
+            border-left-color: #28a745;
+        }
+        
+        .loss-trade {
+            border-left-color: #dc3545;
+        }
     </style>
 </head>
 <body>
@@ -195,6 +259,26 @@
             <button type="button" class="btn btn-primary" id="fixBtn" onclick="fixExitReasons()" style="display: none;">
                 Fix Exit Reasons
             </button>
+        </div>
+        
+        <div class="trade-selection" id="tradeSelection">
+            <h3>Assign Exit Reasons</h3>
+            <p>Please select the appropriate exit reason for each trade:</p>
+            
+            <div class="bulk-actions">
+                <strong>Bulk Actions:</strong>
+                <button class="btn btn-primary btn-small" onclick="setAllExitReasons('Target Reached')">All → Target Reached</button>
+                <button class="btn btn-primary btn-small" onclick="setAllExitReasons('Stop Loss Hit')">All → Stop Loss</button>
+                <button class="btn btn-primary btn-small" onclick="setAllExitReasons('Manual Exit')">All → Manual Exit</button>
+                <button class="btn btn-primary btn-small" onclick="setAllExitReasons('Time Exit')">All → Time Exit</button>
+            </div>
+            
+            <div id="tradesContainer"></div>
+            
+            <div class="center" style="margin-top: 20px;">
+                <button class="btn btn-primary" onclick="applyExitReasons()">Apply Exit Reasons</button>
+                <button class="btn btn-primary" onclick="cancelSelection()" style="background-color: #6c757d;">Cancel</button>
+            </div>
         </div>
         
         <div class="updated-trades" id="updatedTrades" style="display: none;">
@@ -247,12 +331,12 @@
         async function fixExitReasons() {
             const fixBtn = document.getElementById('fixBtn');
             fixBtn.disabled = true;
-            fixBtn.innerHTML = '<span class="spinner"></span> Fixing...';
+            fixBtn.innerHTML = '<span class="spinner"></span> Loading trades...';
             
             hideMessages();
             
             try {
-                // Get all trades
+                // Get all trades that need fixing
                 const response = await fetch('/api/trades');
                 if (!response.ok) {
                     throw new Error('Failed to fetch trades');
@@ -263,68 +347,139 @@
                     trade.status === 'closed' && (!trade.exitReason || trade.exitReason === '')
                 );
                 
-                let updatedCount = 0;
-                const updatedTrades = [];
-                
-                // Update each trade
-                for (const trade of tradesToUpdate) {
-                    try {
-                        // Determine exit reason based on notes
-                        let exitReason = 'Manual Exit';
-                        if (trade.notes) {
-                            const notesLower = trade.notes.toLowerCase();
-                            if (notesLower.includes('stop') && notesLower.includes('loss')) {
-                                exitReason = 'Stop Loss Hit';
-                            } else if (notesLower.includes('target')) {
-                                exitReason = 'Target Reached';
-                            } else if (notesLower.includes('time')) {
-                                exitReason = 'Time Exit';
-                            }
-                        }
-                        
-                        // Update the trade
-                        const updateResponse = await fetch(`/api/trades/${trade.id}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                ...trade,
-                                exitReason: exitReason
-                            })
-                        });
-                        
-                        if (updateResponse.ok) {
-                            updatedCount++;
-                            updatedTrades.push({
-                                symbol: trade.symbol,
-                                exitReason: exitReason
-                            });
-                        }
-                    } catch (err) {
-                        console.error(`Failed to update trade ${trade.symbol}:`, err);
-                    }
-                }
-                
-                // Show results
-                if (updatedCount > 0) {
-                    showSuccess(`Successfully updated ${updatedCount} trades with exit reasons!`);
-                    
-                    // Update stats
-                    document.getElementById('missingReasons').textContent = '0';
-                    fixBtn.style.display = 'none';
-                    
-                    // Show updated trades
-                    displayUpdatedTrades(updatedTrades);
-                } else {
-                    showError('No trades were updated.');
-                }
+                // Show individual trade selection UI
+                showTradeSelectionUI(tradesToUpdate);
                 
             } catch (error) {
                 showError(error.message);
             } finally {
                 fixBtn.disabled = false;
                 fixBtn.innerHTML = 'Fix Exit Reasons';
+            }
+        }
+        
+        let tradesNeedingUpdate = [];
+        
+        function showTradeSelectionUI(trades) {
+            tradesNeedingUpdate = trades;
+            const container = document.getElementById('tradesContainer');
+            const selectionDiv = document.getElementById('tradeSelection');
+            
+            container.innerHTML = '';
+            
+            trades.forEach((trade, index) => {
+                const isProfit = trade.profitLoss > 0 || trade.percentGain > 0;
+                const plValue = trade.profitLoss || 0;
+                const plPercent = trade.percentGain || 0;
+                
+                const tradeRow = document.createElement('div');
+                tradeRow.className = `trade-row ${isProfit ? 'profit-trade' : 'loss-trade'}`;
+                tradeRow.innerHTML = `
+                    <div class="trade-info">
+                        <div class="trade-symbol-main">${trade.symbol}</div>
+                        <div class="trade-details">
+                            Exit Date: ${new Date(trade.exitDate).toLocaleDateString()} | 
+                            P/L: ${plPercent.toFixed(2)}% (${trade.currencySymbol || '$'}${Math.abs(plValue).toFixed(2)} ${isProfit ? 'profit' : 'loss'})
+                            ${trade.notes ? ` | Notes: ${trade.notes.substring(0, 50)}${trade.notes.length > 50 ? '...' : ''}` : ''}
+                        </div>
+                    </div>
+                    <select class="exit-reason-select" data-trade-index="${index}">
+                        <option value="">Select reason...</option>
+                        <option value="Target Reached" ${isProfit ? 'selected' : ''}>Target Reached</option>
+                        <option value="Stop Loss Hit" ${!isProfit ? 'selected' : ''}>Stop Loss Hit</option>
+                        <option value="Manual Exit">Manual Exit</option>
+                        <option value="Time Exit">Time Exit</option>
+                        <option value="Strategy Change">Strategy Change</option>
+                    </select>
+                `;
+                container.appendChild(tradeRow);
+            });
+            
+            // Hide other sections and show selection UI
+            document.getElementById('stats').style.display = 'none';
+            document.getElementById('checkBtn').style.display = 'none';
+            document.getElementById('fixBtn').style.display = 'none';
+            selectionDiv.style.display = 'block';
+        }
+        
+        function setAllExitReasons(reason) {
+            const selects = document.querySelectorAll('.exit-reason-select');
+            selects.forEach(select => {
+                select.value = reason;
+            });
+        }
+        
+        function cancelSelection() {
+            document.getElementById('tradeSelection').style.display = 'none';
+            document.getElementById('stats').style.display = 'block';
+            document.getElementById('checkBtn').style.display = 'inline-flex';
+            document.getElementById('fixBtn').style.display = 'inline-flex';
+        }
+        
+        async function applyExitReasons() {
+            const selects = document.querySelectorAll('.exit-reason-select');
+            const updates = [];
+            
+            // Validate all selections
+            for (let i = 0; i < selects.length; i++) {
+                const select = selects[i];
+                if (!select.value) {
+                    showError(`Please select an exit reason for ${tradesNeedingUpdate[i].symbol}`);
+                    return;
+                }
+                updates.push({
+                    trade: tradesNeedingUpdate[i],
+                    exitReason: select.value
+                });
+            }
+            
+            // Apply updates
+            const applyBtn = document.querySelector('button[onclick="applyExitReasons()"]');
+            applyBtn.disabled = true;
+            applyBtn.innerHTML = '<span class="spinner"></span> Updating...';
+            
+            let successCount = 0;
+            const updatedTrades = [];
+            
+            for (const update of updates) {
+                try {
+                    const response = await fetch(`/api/trades/${update.trade.id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            ...update.trade,
+                            exitReason: update.exitReason
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        successCount++;
+                        updatedTrades.push({
+                            symbol: update.trade.symbol,
+                            exitReason: update.exitReason
+                        });
+                    }
+                } catch (err) {
+                    console.error(`Failed to update ${update.trade.symbol}:`, err);
+                }
+            }
+            
+            // Show results
+            applyBtn.disabled = false;
+            applyBtn.innerHTML = 'Apply Exit Reasons';
+            
+            if (successCount > 0) {
+                showSuccess(`Successfully updated ${successCount} trades with proper exit reasons!`);
+                document.getElementById('tradeSelection').style.display = 'none';
+                displayUpdatedTrades(updatedTrades);
+                
+                // Update stats
+                document.getElementById('missingReasons').textContent = '0';
+                document.getElementById('stats').style.display = 'block';
+            } else {
+                showError('No trades were updated successfully.');
             }
         }
         
