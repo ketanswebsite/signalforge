@@ -227,8 +227,8 @@
         <h1>Fix Exit Reasons for Closed Trades</h1>
         
         <div class="info-box">
-            <strong>What this does:</strong> This tool will update all your closed trades that have missing exit reasons. 
-            Trades will be assigned "Manual Exit" as the default exit reason, or a more specific reason if it can be determined from the trade notes.
+            <strong>What this does:</strong> This tool will help you assign proper exit reasons to your closed trades. 
+            It will find trades that have missing exit reasons OR trades marked as "Manual Exit" and let you choose the correct exit reason for each trade.
         </div>
         
         <div class="success-box" id="successBox">
@@ -246,7 +246,7 @@
                 <span class="stat-value" id="totalClosed">0</span>
             </div>
             <div class="stat-row">
-                <span class="stat-label">Trades Missing Exit Reason:</span>
+                <span class="stat-label">Trades Needing Exit Reason Fix:</span>
                 <span class="stat-value" id="missingReasons">0</span>
             </div>
         </div>
@@ -306,7 +306,11 @@
                 
                 // Filter closed trades
                 const closedTrades = trades.filter(trade => trade.status === 'closed');
-                const missingExitReason = closedTrades.filter(trade => !trade.exitReason || trade.exitReason === '');
+                const missingExitReason = closedTrades.filter(trade => 
+                    !trade.exitReason || 
+                    trade.exitReason === '' || 
+                    trade.exitReason === 'Manual Exit'
+                );
                 
                 // Update stats
                 document.getElementById('totalClosed').textContent = closedTrades.length;
@@ -315,9 +319,9 @@
                 
                 if (missingExitReason.length > 0) {
                     document.getElementById('fixBtn').style.display = 'inline-flex';
-                    showInfo(`Found ${missingExitReason.length} trades that need exit reasons.`);
+                    showInfo(`Found ${missingExitReason.length} trades that need proper exit reasons.`);
                 } else {
-                    showSuccess('All closed trades already have exit reasons!');
+                    showSuccess('All closed trades already have proper exit reasons!');
                 }
                 
             } catch (error) {
@@ -344,7 +348,11 @@
                 
                 const trades = await response.json();
                 const tradesToUpdate = trades.filter(trade => 
-                    trade.status === 'closed' && (!trade.exitReason || trade.exitReason === '')
+                    trade.status === 'closed' && (
+                        !trade.exitReason || 
+                        trade.exitReason === '' || 
+                        trade.exitReason === 'Manual Exit'
+                    )
                 );
                 
                 // Show individual trade selection UI
