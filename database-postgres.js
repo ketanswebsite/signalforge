@@ -437,8 +437,11 @@ const TradeDB = {
         exit_date: updates.exitDate,
         exit_price: updates.exitPrice,
         status: updates.status,
-        profit_loss: updates.profitLoss,
-        profit_loss_percentage: updates.profitLossPercentage,
+        profit: updates.profit,
+        profit_loss: updates.profitLoss || updates.profit,
+        percent_gain: updates.percentGain,
+        profit_loss_percentage: updates.profitLossPercentage || updates.percentGain,
+        exit_reason: updates.exitReason,
         notes: updates.notes
       };
 
