@@ -492,8 +492,9 @@ function renderActiveTrades() {
             // Ensure all numeric values are valid - API now always provides investmentAmount
             const investmentAmount = Number(trade.investmentAmount) || 0;
             // API now provides consistent profitLoss and percentGain fields for all trade statuses
-            const plPercent = Number(trade.percentGain) || 0;
-            const plValue = Number(trade.profitLoss) || 0;
+            // But trade-core.js also maps them to plPercent and plValue for backward compatibility
+            const plPercent = Number(trade.percentGain || trade.plPercent) || 0;
+            const plValue = Number(trade.profitLoss || trade.plValue || trade.profit) || 0;
             
             // Debug logging for TW.L calculations
             if (trade.symbol === 'TW.L' && trade.status === 'closed') {
