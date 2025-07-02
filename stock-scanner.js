@@ -21,14 +21,38 @@ class StockScanner {
         console.log('📊 Initializing Stock Scanner...');
         
         // Schedule daily scan at 7 AM UK time (BST/GMT)
-        const dailyScanJob = cron.schedule('0 7 * * *', () => {
+        const dailyScanJob = cron.schedule('0 7 * * *', async () => {
             console.log('⏰ Running scheduled global stock scan at 7 AM UK time');
-            this.runGlobalScan();
+            console.log(`[CRON] Scheduled scan triggered at: ${new Date().toISOString()}`);
+            console.log(`[CRON] UK time: ${new Date().toLocaleString("en-GB", {timeZone: "Europe/London"})}`);
+            console.log(`[CRON] Using chat ID: ${process.env.TELEGRAM_CHAT_ID || 'NOT SET'}`);
+            
+            try {
+                // Run scan without specific chatId to use default from environment
+                await this.runGlobalScan();
+                console.log('[CRON] Scheduled scan completed successfully');
+            } catch (error) {
+                console.error('[CRON] Error in scheduled scan:', error);
+                console.error('[CRON] Stack trace:', error.stack);
+            }
         }, {
             timezone: "Europe/London"
         });
         
         this.scheduledJobs.push(dailyScanJob);
+        
+        // Add a test cron job that runs every minute for debugging
+        if (process.env.DEBUG_CRON === 'true') {
+            const testJob = cron.schedule('* * * * *', () => {
+                console.log(`[CRON TEST] Cron is working! Time: ${new Date().toISOString()}`);
+                console.log(`[CRON TEST] UK time: ${new Date().toLocaleString("en-GB", {timeZone: "Europe/London"})}`);
+            }, {
+                timezone: "Europe/London"
+            });
+            this.scheduledJobs.push(testJob);
+            console.log('🔍 Debug cron job added (runs every minute)');
+        }
+        
         console.log('✅ Stock Scanner initialized with daily scan at 7 AM UK time');
     }
 
@@ -36,6 +60,10 @@ class StockScanner {
      * Run a global scan of all configured stocks using DTI Backtest logic
      */
     async runGlobalScan(chatId = null) {
+        console.log(`[runGlobalScan] Called with chatId: ${chatId || 'null (will use default)'}`);
+        console.log(`[runGlobalScan] Current time: ${new Date().toISOString()}`);
+        console.log(`[runGlobalScan] Environment TELEGRAM_CHAT_ID: ${process.env.TELEGRAM_CHAT_ID || 'NOT SET'}`);
+        
         if (this.isScanning) {
             console.log('⚠️ Scan already in progress');
             return;
