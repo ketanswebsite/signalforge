@@ -558,6 +558,10 @@ function backtestWithActiveDetection(dates, prices, dti, sevenDayDTIData, params
 
 // Fetch stock data from Yahoo Finance with retry logic
 async function fetchStockData(symbol, period = '6mo', retries = 2) {
+    // Check if we're running on server (has access to localhost proxy)
+    const isServer = typeof window === 'undefined';
+    const baseUrl = isServer ? 'http://localhost:10000' : '';
+    
     for (let attempt = 0; attempt <= retries; attempt++) {
         try {
             // Calculate timestamps
@@ -581,18 +585,54 @@ async function fetchStockData(symbol, period = '6mo', retries = 2) {
                     startDate = endDate - (182 * 24 * 60 * 60); // Default to 6 months
             }
             
-            // Try the chart API first as it's more reliable
-            const chartUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?period1=${startDate}&period2=${endDate}&interval=1d&includePrePost=false`;
-            
-            // Fallback to download API
-            const downloadUrl = `https://query1.finance.yahoo.com/v7/finance/download/${symbol}?period1=${startDate}&period2=${endDate}&interval=1d&events=history`;
-            
             // Add delay before retry attempts
             if (attempt > 0) {
                 await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
             }
             
+            // Use local proxy endpoint if available
+            if (isServer) {
+                const proxyUrl = `${baseUrl}/yahoo/history?symbol=${symbol}&period1=${startDate}&period2=${endDate}&interval=1d`;
+                
+                try {
+                    const response = await axios.get(proxyUrl, {
+                        timeout: 15000
+                    });
+                    
+                    // Parse CSV data from proxy
+                    const lines = response.data.trim().split('\n');
+                    const headers = lines[0].split(',');
+                    const data = [];
+                    
+                    for (let i = 1; i < lines.length; i++) {
+                        const values = lines[i].split(',');
+                        if (values.length === headers.length) {
+                            data.push({
+                                date: values[0],
+                                open: parseFloat(values[1]),
+                                high: parseFloat(values[2]),
+                                low: parseFloat(values[3]),
+                                close: parseFloat(values[4]),
+                                volume: parseInt(values[6])
+                            });
+                        }
+                    }
+                    
+                    return data;
+                } catch (proxyError) {
+                    console.log(`Proxy failed for ${symbol}, falling back to direct API...`);
+                    // Continue to try direct API below
+                }
+            }
+            
+            // Direct API approach (fallback or when not on server)
             let data = [];
+            
+            // Try the chart API first as it's more reliable
+            const chartUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?period1=${startDate}&period2=${endDate}&interval=1d&includePrePost=false`;
+            
+            // Fallback to download API
+            const downloadUrl = `https://query1.finance.yahoo.com/v7/finance/download/${symbol}?period1=${startDate}&period2=${endDate}&interval=1d&events=history`;
             
             try {
                 // Try chart API first
@@ -744,12 +784,17 @@ async function scanAllStocks(params = {}) {
     console.log(`Scanning ${uniqueStocks.length} stocks for DTI opportunities...`);
     
     // Process in smaller batches with delays to avoid rate limiting
-    const batchSize = 5; // Reduced batch size
+    const batchSize = 3; // Further reduced batch size to avoid overwhelming the proxy
     let successCount = 0;
     let errorCount = 0;
     
-    for (let i = 0; i < uniqueStocks.length; i += batchSize) {
-        const batch = uniqueStocks.slice(i, i + batchSize);
+    // Limit total stocks for testing (remove this line once working)
+    const stocksToProcess = uniqueStocks.slice(0, 30); // Test with first 30 stocks
+    
+    console.log(`Processing ${stocksToProcess.length} stocks (limited for testing)...`);
+    
+    for (let i = 0; i < stocksToProcess.length; i += batchSize) {
+        const batch = stocksToProcess.slice(i, i + batchSize);
         const batchPromises = batch.map(stock => processStock(stock, scanParams));
         
         const results = await Promise.allSettled(batchPromises);
@@ -762,16 +807,20 @@ async function scanAllStocks(params = {}) {
                 errorCount++;
                 // Log specific stock that failed for debugging
                 const failedStock = batch[index];
-                console.log(`Failed to process ${failedStock.symbol}: ${failedStock.name}`);
+                if (result.reason) {
+                    console.log(`Failed: ${failedStock.symbol} - ${result.reason.message || 'Unknown error'}`);
+                } else {
+                    console.log(`Failed: ${failedStock.symbol} - No active opportunity found`);
+                }
             }
         });
         
         // Progress update
-        console.log(`Processed ${Math.min(i + batchSize, uniqueStocks.length)} of ${uniqueStocks.length} stocks (Success: ${successCount}, Errors: ${errorCount})`);
+        console.log(`Processed ${Math.min(i + batchSize, stocksToProcess.length)} of ${stocksToProcess.length} stocks (Success: ${successCount}, Errors: ${errorCount})`);
         
         // Longer delay between batches to avoid rate limiting
-        if (i + batchSize < uniqueStocks.length) {
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Increased to 2 seconds
+        if (i + batchSize < stocksToProcess.length) {
+            await new Promise(resolve => setTimeout(resolve, 3000)); // Increased to 3 seconds
         }
     }
     
