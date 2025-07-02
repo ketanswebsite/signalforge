@@ -1488,10 +1488,45 @@ app.get('/api/scanner/status', ensureAuthenticatedAPI, ensureSubscriptionActive,
     }
     
     const status = stockScanner.getStatus();
+    status.telegramConfigured = !!process.env.TELEGRAM_CHAT_ID;
     res.json(status);
   } catch (error) {
     console.error('Error getting scanner status:', error);
     res.status(500).json({ error: 'Failed to get scanner status' });
+  }
+});
+
+// Test endpoint for 7 AM scan - simulates the exact cron job behavior
+app.post('/api/test-7am-scan', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
+  try {
+    if (!stockScanner) {
+      return res.status(503).json({ error: 'Stock scanner not available' });
+    }
+    
+    if (!process.env.TELEGRAM_CHAT_ID) {
+      return res.status(400).json({ error: 'TELEGRAM_CHAT_ID not configured in environment variables' });
+    }
+    
+    console.log('📧 Test 7 AM scan triggered by user:', req.user.email);
+    console.log('[TEST 7AM] Simulating scheduled scan at:', new Date().toISOString());
+    console.log('[TEST 7AM] UK time:', new Date().toLocaleString("en-GB", {timeZone: "Europe/London"}));
+    console.log('[TEST 7AM] Using default TELEGRAM_CHAT_ID:', process.env.TELEGRAM_CHAT_ID);
+    
+    // Run scan exactly as the cron job would - without passing a specific chatId
+    // This simulates the 7 AM scheduled behavior
+    stockScanner.runGlobalScan();
+    
+    res.json({ 
+      success: true, 
+      message: '7 AM scan test initiated. This simulates the exact behavior of the scheduled scan. Check your Telegram for results.',
+      details: {
+        ukTime: new Date().toLocaleString("en-GB", {timeZone: "Europe/London"}),
+        telegramChatId: process.env.TELEGRAM_CHAT_ID ? 'Configured' : 'Not configured'
+      }
+    });
+  } catch (error) {
+    console.error('Error in 7 AM scan test:', error);
+    res.status(500).json({ error: 'Failed to start 7 AM scan test' });
   }
 });
 

@@ -379,6 +379,16 @@
                     </div>
                     <div class="result-area" id="alert-result"></div>
                 </div>
+
+                <div class="test-item">
+                    <h3><span class="status-indicator status-unknown"></span>7 AM Scan Test</h3>
+                    <p>Test the scheduled 7 AM UK time stock scan (simulates cron job execution)</p>
+                    <div class="test-actions">
+                        <button class="btn btn-test" onclick="test7AMScan()">Test 7 AM Scan</button>
+                        <button class="btn btn-check" onclick="checkScannerStatus()">Check Scanner Status</button>
+                    </div>
+                    <div class="result-area" id="scan-test-result"></div>
+                </div>
             </div>
 
             <!-- User Analytics -->
@@ -603,6 +613,67 @@
 
         async function testAlerts() {
             showResult('alert-result', `ℹ️ Alert system test\nTelegram bot should be configured and running based on deployment logs.\nCheck server logs for bot status.`);
+        }
+
+        async function test7AMScan() {
+            try {
+                showResult('scan-test-result', '🔄 Triggering 7 AM scan test...\n\nThis will simulate the exact same logic that runs at 7 AM UK time daily.');
+                
+                const response = await fetch('/api/test-7am-scan', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult('scan-test-result', `✅ 7 AM Scan Test Triggered!\n\n${data.message}\n\nCheck your Telegram for the scan results.\n\nNote: This uses the same logic as the automated 7 AM scan.`);
+                } else if (response.status === 401) {
+                    showResult('scan-test-result', '🔒 Please log in to test the 7 AM scan', true);
+                } else {
+                    const error = await response.json();
+                    showResult('scan-test-result', `❌ Scan test failed\nError: ${error.error || 'Unknown error'}`, true);
+                }
+            } catch (error) {
+                showResult('scan-test-result', `❌ Failed to trigger scan test\nError: ${error.message}`, true);
+            }
+        }
+
+        async function checkScannerStatus() {
+            try {
+                const response = await fetch('/api/scanner/status');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const statusDisplay = `
+📊 SCANNER STATUS
+
+🔍 Scanner State:
+   ├─ Is Scanning: ${data.isScanning ? '✅ Yes' : '❌ No'}
+   ├─ Scheduled Jobs: ${data.scheduledJobs}
+   └─ Last Results: ${data.lastResults ? data.lastResults.length + ' opportunities found' : 'No results yet'}
+
+⏰ Schedule:
+   └─ Daily scan at 7 AM UK time (Europe/London timezone)
+
+🔧 Configuration:
+   └─ TELEGRAM_CHAT_ID: ${data.telegramConfigured ? '✅ Configured' : '❌ Not configured'}
+
+💡 Tips:
+   • Use "Test 7 AM Scan" to simulate the daily scan
+   • Check server logs for detailed scan information
+   • Ensure TELEGRAM_CHAT_ID is set in environment variables
+                    `;
+                    showResult('scan-test-result', statusDisplay);
+                } else if (response.status === 401) {
+                    showResult('scan-test-result', '🔒 Please log in to check scanner status', true);
+                } else {
+                    showResult('scan-test-result', `❌ Failed to get scanner status\nStatus: ${response.status}`, true);
+                }
+            } catch (error) {
+                showResult('scan-test-result', `❌ Error checking scanner status\nError: ${error.message}`, true);
+            }
         }
 
         async function testSessions() {
