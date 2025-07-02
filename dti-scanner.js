@@ -4,8 +4,66 @@
  */
 
 const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
 
-// Stock lists
+// Function to load comprehensive stock lists from the web interface
+function loadComprehensiveStockLists() {
+    try {
+        // Read the comprehensive stock data from the web interface
+        const dtiDataPath = path.join(__dirname, 'public', 'js', 'dti-data.js');
+        const dtiDataContent = fs.readFileSync(dtiDataPath, 'utf8');
+        
+        // Extract stock arrays using regex (simpler than parsing JS)
+        const extractStockArray = (arrayName) => {
+            const regex = new RegExp(`const ${arrayName} = \\[(.*?)\\];`, 's');
+            const match = dtiDataContent.match(regex);
+            if (match) {
+                try {
+                    // Convert the JS array string to actual array
+                    const arrayStr = '[' + match[1] + ']';
+                    return eval(arrayStr);
+                } catch (e) {
+                    console.warn(`Failed to parse ${arrayName}, using fallback`);
+                    return null;
+                }
+            }
+            return null;
+        };
+        
+        const comprehensive = {
+            nifty50: extractStockArray('nifty50Stocks'),
+            niftyNext50: extractStockArray('niftyNext50Stocks'),
+            niftyMidcap150: extractStockArray('niftyMidcap150Stocks'),
+            ftse100: extractStockArray('ftse100Stocks'),
+            ftse250: extractStockArray('ftse250Stocks'),
+            usStocks: extractStockArray('usStocks')
+        };
+        
+        // If extraction was successful, return comprehensive lists
+        if (comprehensive.nifty50 && comprehensive.usStocks) {
+            console.log(`✅ Loaded comprehensive stock lists: ${
+                (comprehensive.nifty50?.length || 0) +
+                (comprehensive.niftyNext50?.length || 0) +
+                (comprehensive.niftyMidcap150?.length || 0) +
+                (comprehensive.ftse100?.length || 0) +
+                (comprehensive.ftse250?.length || 0) +
+                (comprehensive.usStocks?.length || 0)
+            } total stocks`);
+            return comprehensive;
+        }
+    } catch (error) {
+        console.warn('Failed to load comprehensive stock lists, using fallback:', error.message);
+    }
+    
+    // Return null to use fallback lists
+    return null;
+}
+
+// Try to load comprehensive stock lists, fallback to limited lists if needed
+const COMPREHENSIVE_STOCK_LISTS = loadComprehensiveStockLists();
+
+// Stock lists (fallback for when comprehensive loading fails)
 const STOCK_LISTS = {
     nifty50: [
         { name: "Reliance Industries", symbol: "RELIANCE.NS" },
@@ -742,20 +800,29 @@ async function scanAllStocks(params = {}) {
     const scanParams = { ...defaultParams, ...params };
     const opportunities = [];
     
+    // Use comprehensive stock lists if available, otherwise fallback to limited lists
+    const stockLists = COMPREHENSIVE_STOCK_LISTS || STOCK_LISTS;
+    
     // Combine all stock lists
     const allStocks = [
-        ...STOCK_LISTS.nifty50,
-        ...STOCK_LISTS.niftyNext50,
-        ...STOCK_LISTS.niftyMidcap150,
-        ...STOCK_LISTS.ftse100,
-        ...STOCK_LISTS.ftse250,
-        ...STOCK_LISTS.usStocks
+        ...(stockLists.nifty50 || []),
+        ...(stockLists.niftyNext50 || []),
+        ...(stockLists.niftyMidcap150 || []),
+        ...(stockLists.ftse100 || []),
+        ...(stockLists.ftse250 || []),
+        ...(stockLists.usStocks || [])
     ];
     
     // Remove duplicates
     const uniqueStocks = Array.from(new Map(allStocks.map(s => [s.symbol, s])).values());
     
     console.log(`Scanning ${uniqueStocks.length} stocks for DTI opportunities...`);
+    
+    if (COMPREHENSIVE_STOCK_LISTS) {
+        console.log(`✅ Using comprehensive stock lists (up from 298 limited stocks)`);
+    } else {
+        console.log(`⚠️  Using fallback limited stock lists (298 stocks)`);
+    }
     
     // Process all stocks concurrently for faster scanning
     let successCount = 0;
