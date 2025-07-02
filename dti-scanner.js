@@ -556,63 +556,119 @@ function backtestWithActiveDetection(dates, prices, dti, sevenDayDTIData, params
     return { completedTrades, activeTrade };
 }
 
-// Fetch stock data from Yahoo Finance
-async function fetchStockData(symbol, period = '6mo') {
-    try {
-        // Calculate timestamps
-        const endDate = Math.floor(Date.now() / 1000);
-        let startDate;
-        
-        switch(period) {
-            case '1mo':
-                startDate = endDate - (30 * 24 * 60 * 60);
-                break;
-            case '3mo':
-                startDate = endDate - (91 * 24 * 60 * 60);
-                break;
-            case '6mo':
-                startDate = endDate - (182 * 24 * 60 * 60);
-                break;
-            case '1y':
-                startDate = endDate - (365 * 24 * 60 * 60);
-                break;
-            default:
-                startDate = endDate - (182 * 24 * 60 * 60); // Default to 6 months
-        }
-        
-        const url = `https://query1.finance.yahoo.com/v7/finance/download/${symbol}?period1=${startDate}&period2=${endDate}&interval=1d&events=history`;
-        
-        const response = await axios.get(url, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            },
-            timeout: 10000
-        });
-        
-        // Parse CSV data
-        const lines = response.data.trim().split('\n');
-        const headers = lines[0].split(',');
-        const data = [];
-        
-        for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].split(',');
-            if (values.length === headers.length) {
-                data.push({
-                    date: values[0],
-                    open: parseFloat(values[1]),
-                    high: parseFloat(values[2]),
-                    low: parseFloat(values[3]),
-                    close: parseFloat(values[4]),
-                    volume: parseInt(values[6])
+// Fetch stock data from Yahoo Finance with retry logic
+async function fetchStockData(symbol, period = '6mo', retries = 2) {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+            // Calculate timestamps
+            const endDate = Math.floor(Date.now() / 1000);
+            let startDate;
+            
+            switch(period) {
+                case '1mo':
+                    startDate = endDate - (30 * 24 * 60 * 60);
+                    break;
+                case '3mo':
+                    startDate = endDate - (91 * 24 * 60 * 60);
+                    break;
+                case '6mo':
+                    startDate = endDate - (182 * 24 * 60 * 60);
+                    break;
+                case '1y':
+                    startDate = endDate - (365 * 24 * 60 * 60);
+                    break;
+                default:
+                    startDate = endDate - (182 * 24 * 60 * 60); // Default to 6 months
+            }
+            
+            // Try the chart API first as it's more reliable
+            const chartUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?period1=${startDate}&period2=${endDate}&interval=1d&includePrePost=false`;
+            
+            // Fallback to download API
+            const downloadUrl = `https://query1.finance.yahoo.com/v7/finance/download/${symbol}?period1=${startDate}&period2=${endDate}&interval=1d&events=history`;
+            
+            // Add delay before retry attempts
+            if (attempt > 0) {
+                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            }
+            
+            let data = [];
+            
+            try {
+                // Try chart API first
+                const response = await axios.get(chartUrl, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                        'Accept': 'application/json',
+                        'Accept-Language': 'en-US,en;q=0.9',
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    },
+                    timeout: 15000
                 });
+                
+                // Parse chart API response
+                const result = response.data.chart.result[0];
+                const timestamps = result.timestamp;
+                const quotes = result.indicators.quote[0];
+                
+                for (let i = 0; i < timestamps.length; i++) {
+                    data.push({
+                        date: new Date(timestamps[i] * 1000).toISOString().split('T')[0],
+                        open: quotes.open[i],
+                        high: quotes.high[i],
+                        low: quotes.low[i],
+                        close: quotes.close[i],
+                        volume: quotes.volume[i]
+                    });
+                }
+            } catch (chartError) {
+                // Fallback to download API
+                console.log(`Chart API failed for ${symbol}, trying download API...`);
+                
+                const response = await axios.get(downloadUrl, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                        'Accept-Language': 'en-US,en;q=0.5',
+                        'Accept-Encoding': 'gzip, deflate, br',
+                        'Connection': 'keep-alive',
+                        'Upgrade-Insecure-Requests': '1',
+                        'Cache-Control': 'max-age=0'
+                    },
+                    timeout: 15000,
+                    maxRedirects: 5
+                });
+                
+                // Parse CSV data
+                const lines = response.data.trim().split('\n');
+                const headers = lines[0].split(',');
+                
+                for (let i = 1; i < lines.length; i++) {
+                    const values = lines[i].split(',');
+                    if (values.length === headers.length) {
+                        data.push({
+                            date: values[0],
+                            open: parseFloat(values[1]),
+                            high: parseFloat(values[2]),
+                            low: parseFloat(values[3]),
+                            close: parseFloat(values[4]),
+                            volume: parseInt(values[6])
+                        });
+                    }
+                }
+            }
+            
+            return data;
+        } catch (error) {
+            if (attempt < retries) {
+                console.log(`Retry ${attempt + 1}/${retries} for ${symbol} after error: ${error.message}`);
+            } else {
+                console.error(`Error fetching data for ${symbol} after ${retries + 1} attempts:`, error.message);
             }
         }
-        
-        return data;
-    } catch (error) {
-        console.error(`Error fetching data for ${symbol}:`, error.message);
-        return null;
     }
+    return null;
 }
 
 // Process a single stock and check for active trades
@@ -687,26 +743,35 @@ async function scanAllStocks(params = {}) {
     
     console.log(`Scanning ${uniqueStocks.length} stocks for DTI opportunities...`);
     
-    // Process in batches to avoid overwhelming the API
-    const batchSize = 10;
+    // Process in smaller batches with delays to avoid rate limiting
+    const batchSize = 5; // Reduced batch size
+    let successCount = 0;
+    let errorCount = 0;
+    
     for (let i = 0; i < uniqueStocks.length; i += batchSize) {
         const batch = uniqueStocks.slice(i, i + batchSize);
         const batchPromises = batch.map(stock => processStock(stock, scanParams));
         
         const results = await Promise.allSettled(batchPromises);
         
-        results.forEach((result) => {
+        results.forEach((result, index) => {
             if (result.status === 'fulfilled' && result.value) {
                 opportunities.push(result.value);
+                successCount++;
+            } else {
+                errorCount++;
+                // Log specific stock that failed for debugging
+                const failedStock = batch[index];
+                console.log(`Failed to process ${failedStock.symbol}: ${failedStock.name}`);
             }
         });
         
         // Progress update
-        console.log(`Processed ${Math.min(i + batchSize, uniqueStocks.length)} of ${uniqueStocks.length} stocks`);
+        console.log(`Processed ${Math.min(i + batchSize, uniqueStocks.length)} of ${uniqueStocks.length} stocks (Success: ${successCount}, Errors: ${errorCount})`);
         
-        // Small delay between batches
+        // Longer delay between batches to avoid rate limiting
         if (i + batchSize < uniqueStocks.length) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Increased to 2 seconds
         }
     }
     
