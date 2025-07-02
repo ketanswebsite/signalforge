@@ -558,9 +558,9 @@ function backtestWithActiveDetection(dates, prices, dti, sevenDayDTIData, params
 
 // Fetch stock data from Yahoo Finance with retry logic
 async function fetchStockData(symbol, period = '6mo', retries = 2) {
-    // Check if we're running on server (has access to localhost proxy)
+    // Skip localhost proxy - use direct Yahoo Finance API consistently
+    // This ensures both manual and 7 AM scans work the same way on Render
     const isServer = typeof window === 'undefined';
-    const baseUrl = isServer ? 'http://localhost:10000' : '';
     
     for (let attempt = 0; attempt <= retries; attempt++) {
         try {
@@ -590,40 +590,8 @@ async function fetchStockData(symbol, period = '6mo', retries = 2) {
                 await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
             }
             
-            // Use local proxy endpoint if available
-            if (isServer) {
-                const proxyUrl = `${baseUrl}/yahoo/history?symbol=${symbol}&period1=${startDate}&period2=${endDate}&interval=1d`;
-                
-                try {
-                    const response = await axios.get(proxyUrl, {
-                        timeout: 15000
-                    });
-                    
-                    // Parse CSV data from proxy
-                    const lines = response.data.trim().split('\n');
-                    const headers = lines[0].split(',');
-                    const data = [];
-                    
-                    for (let i = 1; i < lines.length; i++) {
-                        const values = lines[i].split(',');
-                        if (values.length === headers.length) {
-                            data.push({
-                                date: values[0],
-                                open: parseFloat(values[1]),
-                                high: parseFloat(values[2]),
-                                low: parseFloat(values[3]),
-                                close: parseFloat(values[4]),
-                                volume: parseInt(values[6])
-                            });
-                        }
-                    }
-                    
-                    return data;
-                } catch (proxyError) {
-                    console.log(`Proxy failed for ${symbol}, falling back to direct API...`);
-                    // Continue to try direct API below
-                }
-            }
+            // Use direct Yahoo Finance API consistently for both manual and 7 AM scans
+            // This avoids localhost proxy issues on Render
             
             // Direct API approach (fallback or when not on server)
             let data = [];
@@ -699,15 +667,17 @@ async function fetchStockData(symbol, period = '6mo', retries = 2) {
                 }
             }
             
+            console.log(`✅ Successfully fetched ${data.length} data points for ${symbol}`);
             return data;
         } catch (error) {
             if (attempt < retries) {
-                console.log(`Retry ${attempt + 1}/${retries} for ${symbol} after error: ${error.message}`);
+                console.log(`🔄 Retry ${attempt + 1}/${retries} for ${symbol}: ${error.message}`);
             } else {
-                console.error(`Error fetching data for ${symbol} after ${retries + 1} attempts:`, error.message);
+                console.error(`❌ Failed to fetch ${symbol} after ${retries + 1} attempts: ${error.message}`);
             }
         }
     }
+    console.log(`❌ No data available for ${symbol}`);
     return null;
 }
 
@@ -784,14 +754,14 @@ async function scanAllStocks(params = {}) {
     console.log(`Scanning ${uniqueStocks.length} stocks for DTI opportunities...`);
     
     // Process in smaller batches with delays to avoid rate limiting
-    const batchSize = 3; // Further reduced batch size to avoid overwhelming the proxy
+    const batchSize = 2; // Very small batch size to avoid rate limiting on direct API calls
     let successCount = 0;
     let errorCount = 0;
     
-    // Limit total stocks for testing (remove this line once working)
-    const stocksToProcess = uniqueStocks.slice(0, 30); // Test with first 30 stocks
+    // Process all stocks for production scanning
+    const stocksToProcess = uniqueStocks;
     
-    console.log(`Processing ${stocksToProcess.length} stocks (limited for testing)...`);
+    console.log(`Processing ${stocksToProcess.length} stocks for DTI opportunities...`);
     
     for (let i = 0; i < stocksToProcess.length; i += batchSize) {
         const batch = stocksToProcess.slice(i, i + batchSize);
@@ -800,17 +770,17 @@ async function scanAllStocks(params = {}) {
         const results = await Promise.allSettled(batchPromises);
         
         results.forEach((result, index) => {
+            const stock = batch[index];
             if (result.status === 'fulfilled' && result.value) {
                 opportunities.push(result.value);
                 successCount++;
+                console.log(`✅ ${stock.symbol}: Found active opportunity`);
             } else {
                 errorCount++;
-                // Log specific stock that failed for debugging
-                const failedStock = batch[index];
                 if (result.reason) {
-                    console.log(`Failed: ${failedStock.symbol} - ${result.reason.message || 'Unknown error'}`);
+                    console.log(`❌ ${stock.symbol}: ${result.reason.message || 'Data fetch failed'}`);
                 } else {
-                    console.log(`Failed: ${failedStock.symbol} - No active opportunity found`);
+                    console.log(`⚪ ${stock.symbol}: No active opportunity found`);
                 }
             }
         });
@@ -818,9 +788,9 @@ async function scanAllStocks(params = {}) {
         // Progress update
         console.log(`Processed ${Math.min(i + batchSize, stocksToProcess.length)} of ${stocksToProcess.length} stocks (Success: ${successCount}, Errors: ${errorCount})`);
         
-        // Longer delay between batches to avoid rate limiting
+        // Longer delay between batches to avoid rate limiting on direct API calls
         if (i + batchSize < stocksToProcess.length) {
-            await new Promise(resolve => setTimeout(resolve, 3000)); // Increased to 3 seconds
+            await new Promise(resolve => setTimeout(resolve, 5000)); // Increased to 5 seconds for stability
         }
     }
     
