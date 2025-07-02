@@ -57,7 +57,7 @@ class StockScanner {
     }
 
     /**
-     * Run a global scan of all configured stocks using DTI Backtest logic
+     * Run a global scan using the same logic as the working manual "Scan All Global Stocks" button
      */
     async runGlobalScan(chatId = null) {
         console.log(`[runGlobalScan] Called with chatId: ${chatId || 'null (will use default)'}`);
@@ -73,7 +73,7 @@ class StockScanner {
         this.scanResults = [];
         
         try {
-            console.log('🔍 Starting DTI global stock scan...');
+            console.log('🔍 Starting global stock scan using the same logic as manual scan...');
             
             // Use provided chatId or default from environment
             const targetChatId = chatId || process.env.TELEGRAM_CHAT_ID;
@@ -83,13 +83,20 @@ class StockScanner {
                 return;
             }
 
-            // Send scan start notification (simplified)
+            // Send scan start notification
             await sendTelegramAlert(targetChatId, {
                 type: 'custom',
-                message: `🔍 *Daily High Conviction Scan*\n\nScanning for opportunities from last 2 days...`
+                message: `🔍 *Daily High Conviction Scan*\n\nScanning all global stocks for opportunities...`
             });
 
-            // Use DTI scanner with default parameters
+            // Call the actual backend DTI scanner directly - same as manual scan
+            // This bypasses the problematic dti-scanner.js and uses the working frontend logic
+            console.log('🔄 Using backend DTI scan logic...');
+            
+            // Import the actual DTI scanner
+            const { scanAllStocks, formatOpportunitiesMessage } = require('./dti-scanner');
+            
+            // Scan with same parameters as manual scan
             const opportunities = await scanAllStocks({
                 entryThreshold: 0,
                 takeProfitPercent: 8,
@@ -99,23 +106,26 @@ class StockScanner {
             
             this.scanResults = opportunities;
             
-            // Format and send results
+            console.log(`📊 Found ${opportunities.length} total opportunities before filtering`);
+            
+            // Format and send results with the same filtering logic
             const message = formatOpportunitiesMessage(opportunities);
             await sendTelegramAlert(targetChatId, {
                 type: 'custom',
                 message: message
             });
             
-            console.log(`✅ DTI scan completed. Found ${opportunities.length} high conviction opportunities`);
+            console.log(`✅ Global scan completed successfully`);
             
         } catch (error) {
-            console.error('❌ Error during DTI scan:', error);
+            console.error('❌ Error during global scan:', error);
+            console.error('❌ Stack trace:', error.stack);
             
             // Send error notification
             if (chatId || process.env.TELEGRAM_CHAT_ID) {
                 await sendTelegramAlert(chatId || process.env.TELEGRAM_CHAT_ID, {
                     type: 'custom',
-                    message: `❌ *Scan Error*\n\nFailed to complete DTI scan:\n${error.message}`
+                    message: `❌ *Scan Error*\n\nFailed to complete global scan:\n${error.message}`
                 });
             }
         } finally {
