@@ -557,7 +557,7 @@ function backtestWithActiveDetection(dates, prices, dti, sevenDayDTIData, params
 }
 
 // Fetch stock data from Yahoo Finance with retry logic
-async function fetchStockData(symbol, period = '6mo', retries = 2) {
+async function fetchStockData(symbol, period = '5y', retries = 2) {
     const isServer = typeof window === 'undefined';
     
     for (let attempt = 0; attempt <= retries; attempt++) {
@@ -579,8 +579,17 @@ async function fetchStockData(symbol, period = '6mo', retries = 2) {
                 case '1y':
                     startDate = endDate - (365 * 24 * 60 * 60);
                     break;
+                case '2y':
+                    startDate = endDate - (730 * 24 * 60 * 60);
+                    break;
+                case '5y':
+                    startDate = endDate - (1825 * 24 * 60 * 60);
+                    break;
+                case 'max':
+                    startDate = endDate - (3650 * 24 * 60 * 60); // 10 years
+                    break;
                 default:
-                    startDate = endDate - (182 * 24 * 60 * 60); // Default to 6 months
+                    startDate = endDate - (1825 * 24 * 60 * 60); // Default to 5 years
             }
             
             // Add progressive delay to avoid rate limiting
@@ -679,7 +688,7 @@ async function fetchStockData(symbol, period = '6mo', retries = 2) {
 // Process a single stock and check for active trades
 async function processStock(stock, params) {
     try {
-        const data = await fetchStockData(stock.symbol);
+        const data = await fetchStockData(stock.symbol, '5y');
         
         if (!data || data.length < 30) {
             return null;
