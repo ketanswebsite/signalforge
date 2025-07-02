@@ -585,9 +585,9 @@ async function fetchStockData(symbol, period = '6mo', retries = 2) {
                     startDate = endDate - (182 * 24 * 60 * 60); // Default to 6 months
             }
             
-            // Add delay before retry attempts
+            // Add minimal delay before retry attempts
             if (attempt > 0) {
-                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+                await new Promise(resolve => setTimeout(resolve, 500)); // Reduced delay for faster testing
             }
             
             // Use direct Yahoo Finance API consistently for both manual and 7 AM scans
@@ -753,46 +753,36 @@ async function scanAllStocks(params = {}) {
     
     console.log(`Scanning ${uniqueStocks.length} stocks for DTI opportunities...`);
     
-    // Process in smaller batches with delays to avoid rate limiting
-    const batchSize = 2; // Very small batch size to avoid rate limiting on direct API calls
+    // Process all stocks concurrently for faster scanning
     let successCount = 0;
     let errorCount = 0;
     
     // Process all stocks for production scanning
     const stocksToProcess = uniqueStocks;
     
-    console.log(`Processing ${stocksToProcess.length} stocks for DTI opportunities...`);
+    console.log(`Processing ${stocksToProcess.length} stocks concurrently for DTI opportunities...`);
     
-    for (let i = 0; i < stocksToProcess.length; i += batchSize) {
-        const batch = stocksToProcess.slice(i, i + batchSize);
-        const batchPromises = batch.map(stock => processStock(stock, scanParams));
-        
-        const results = await Promise.allSettled(batchPromises);
-        
-        results.forEach((result, index) => {
-            const stock = batch[index];
-            if (result.status === 'fulfilled' && result.value) {
-                opportunities.push(result.value);
-                successCount++;
-                console.log(`✅ ${stock.symbol}: Found active opportunity`);
+    // Process all stocks in parallel
+    const promises = stocksToProcess.map(stock => processStock(stock, scanParams));
+    const results = await Promise.allSettled(promises);
+    
+    results.forEach((result, index) => {
+        const stock = stocksToProcess[index];
+        if (result.status === 'fulfilled' && result.value) {
+            opportunities.push(result.value);
+            successCount++;
+            console.log(`✅ ${stock.symbol}: Found active opportunity`);
+        } else {
+            errorCount++;
+            if (result.reason) {
+                console.log(`❌ ${stock.symbol}: ${result.reason.message || 'Data fetch failed'}`);
             } else {
-                errorCount++;
-                if (result.reason) {
-                    console.log(`❌ ${stock.symbol}: ${result.reason.message || 'Data fetch failed'}`);
-                } else {
-                    console.log(`⚪ ${stock.symbol}: No active opportunity found`);
-                }
+                console.log(`⚪ ${stock.symbol}: No active opportunity found`);
             }
-        });
-        
-        // Progress update
-        console.log(`Processed ${Math.min(i + batchSize, stocksToProcess.length)} of ${stocksToProcess.length} stocks (Success: ${successCount}, Errors: ${errorCount})`);
-        
-        // Longer delay between batches to avoid rate limiting on direct API calls
-        if (i + batchSize < stocksToProcess.length) {
-            await new Promise(resolve => setTimeout(resolve, 5000)); // Increased to 5 seconds for stability
         }
-    }
+    });
+    
+    console.log(`Scan complete: ${successCount} opportunities found, ${errorCount} errors/no opportunities`);
     
     // Sort opportunities by potential (current P/L %)
     opportunities.sort((a, b) => {
