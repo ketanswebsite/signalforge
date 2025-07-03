@@ -412,60 +412,95 @@ function calculateATR(high, low, close, period = 14) {
     return atr;
 }
 
+// Calculate Exponential Moving Average (EMA) - matches browser-side implementation
+function calculateEMA(data, period) {
+    if (!data || !data.length || period <= 0) {
+        console.error('Invalid inputs for EMA calculation');
+        return [];
+    }
+    
+    const k = 2 / (period + 1);
+    let emaData = [data[0]]; // Initialize with first value
+    
+    for (let i = 1; i < data.length; i++) {
+        // EMA formula: Current EMA = (Price - Previous EMA) * K + Previous EMA
+        emaData.push(data[i] * k + emaData[i-1] * (1-k));
+    }
+    
+    return emaData;
+}
+
 function calculateDTI(high, low, r = 14, s = 10, u = 5) {
-    const dtiResult = [];
-    
-    if (!high || !low || high.length < r + s + u) {
-        return dtiResult;
+    // Use same algorithm as browser-side DTI calculation
+    // Validate inputs
+    if (!high || !low || high.length !== low.length || high.length === 0) {
+        console.error('Invalid price data for DTI calculation');
+        return [];
     }
     
-    const atr = calculateATR(high, low, high, r);
+    if (r <= 0 || s <= 0 || u <= 0) {
+        console.error('Invalid EMA periods for DTI calculation');
+        return []; 
+    }
     
-    for (let i = 0; i < high.length; i++) {
-        if (i < r + s - 1 || atr[i - s + 1] === null) {
-            dtiResult.push(null);
-            continue;
-        }
-        
-        let sumDirection = 0;
-        let sumVolatility = 0;
-        
-        for (let j = 0; j < s; j++) {
-            const idx = i - j;
-            if (idx >= 1) {
-                const direction = high[idx] - high[idx - 1] >= 0 ? 1 : -1;
-                const volatility = atr[idx - s + 1] || 0;
-                
-                sumDirection += direction * volatility;
-                sumVolatility += volatility;
-            }
-        }
-        
-        if (sumVolatility > 0) {
-            const rawDTI = (sumDirection / sumVolatility) * 100;
-            
-            if (i < r + s + u - 1) {
-                dtiResult.push(rawDTI);
-            } else {
-                let sumDTI = 0;
-                let count = 0;
-                for (let k = 0; k < u; k++) {
-                    const dtiIdx = i - k;
-                    if (dtiIdx >= r + s - 1 && dtiResult[dtiIdx] !== null) {
-                        sumDTI += dtiResult[dtiIdx];
-                        count++;
-                    }
-                }
-                
-                const smoothedDTI = count > 0 ? sumDTI / count : rawDTI;
-                dtiResult.push(smoothedDTI);
-            }
+    const xHMU = [];  // Higher momentum up
+    const xLMD = [];  // Lower momentum down
+    const xPrice = []; // Price momentum = xHMU - xLMD
+    const xPriceAbs = []; // Absolute value of xPrice
+    
+    // First point has no previous value, so we'll set it to 0
+    xHMU.push(0);
+    xLMD.push(0);
+    xPrice.push(0);
+    xPriceAbs.push(0);
+    
+    // Calculate xHMU, xLMD, xPrice, and xPriceAbs for each data point
+    for (let i = 1; i < high.length; i++) {
+        // Calculate xHMU: if high is greater than previous high, take the difference, otherwise 0
+        if (high[i] - high[i-1] > 0) {
+            xHMU.push(high[i] - high[i-1]);
         } else {
-            dtiResult.push(0);
+            xHMU.push(0);
+        }
+        
+        // Calculate xLMD: if low is less than previous low, take the negative of the difference, otherwise 0
+        if (low[i] - low[i-1] < 0) {
+            xLMD.push(-(low[i] - low[i-1]));
+        } else {
+            xLMD.push(0);
+        }
+        
+        // Calculate xPrice: xHMU - xLMD
+        xPrice.push(xHMU[i] - xLMD[i]);
+        
+        // Calculate xPriceAbs: absolute value of xPrice
+        xPriceAbs.push(Math.abs(xPrice[i]));
+    }
+    
+    // Apply triple EMA to xPrice with periods r, s, and u
+    const ema1 = calculateEMA(xPrice, r);
+    const ema2 = calculateEMA(ema1, s);
+    const xuXA = calculateEMA(ema2, u);
+    
+    // Apply triple EMA to xPriceAbs with periods r, s, and u
+    const emaAbs1 = calculateEMA(xPriceAbs, r);
+    const emaAbs2 = calculateEMA(emaAbs1, s);
+    const xuXAAbs = calculateEMA(emaAbs2, u);
+    
+    // Calculate DTI: if xuXAAbs is not 0, then 100 * xuXA / xuXAAbs, otherwise 0
+    const dti = [];
+    for (let i = 0; i < xuXA.length; i++) {
+        const val1 = 100 * xuXA[i];
+        const val2 = xuXAAbs[i];
+        
+        if (val2 !== 0) {
+            dti.push(val1 / val2);
+        } else {
+            dti.push(0);
         }
     }
     
-    return dtiResult;
+    return dti;
 }
 
 function calculate7DayDTI(dates, high, low, r = 14, s = 10, u = 5) {
