@@ -831,32 +831,53 @@ async function scanAllStocks(params = {}) {
     // Process all stocks for production scanning
     const stocksToProcess = uniqueStocks;
     
-    console.log(`Processing ${stocksToProcess.length} stocks sequentially to avoid rate limiting...`);
+    console.log(`Processing ${stocksToProcess.length} stocks in optimized batches for faster scanning...`);
     
-    // Process stocks sequentially with delays to avoid Yahoo Finance 401 errors
-    for (let i = 0; i < stocksToProcess.length; i++) {
-        const stock = stocksToProcess[i];
+    // Optimized batch processing for 5-10 minute completion
+    const BATCH_SIZE = 75; // Process 75 stocks simultaneously (increased from 50)
+    const BATCH_DELAY = 1500; // 1.5 second delay between batches (reduced from 2s)
+    
+    // Process stocks in batches with controlled concurrency
+    for (let i = 0; i < stocksToProcess.length; i += BATCH_SIZE) {
+        const batch = stocksToProcess.slice(i, i + BATCH_SIZE);
+        const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
+        const totalBatches = Math.ceil(stocksToProcess.length / BATCH_SIZE);
         
-        try {
-            // Add delay between requests to mimic human behavior (except for first stock)
-            if (i > 0) {
-                await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5 second delay
-            }
-            
-            console.log(`[${i + 1}/${stocksToProcess.length}] Processing ${stock.symbol}...`);
-            const result = await processStock(stock, scanParams);
-            
+        console.log(`📦 Processing batch ${batchNumber}/${totalBatches} (${batch.length} stocks)...`);
+        
+        // Add delay between batches (not individual stocks) 
+        if (i > 0) {
+            console.log(`⏳ Waiting ${BATCH_DELAY / 1000}s before next batch to avoid rate limiting...`);
+            await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
+        }
+        
+        // Process entire batch in parallel
+        const batchPromises = batch.map(stock => 
+            processStock(stock, scanParams).catch(error => {
+                console.log(`❌ ${stock.symbol}: ${error.message || 'Data fetch failed'}`);
+                return null;
+            })
+        );
+        
+        // Wait for all stocks in batch to complete
+        const batchResults = await Promise.all(batchPromises);
+        
+        // Count results
+        batchResults.forEach((result, index) => {
+            const stock = batch[index];
             if (result) {
                 opportunities.push(result);
                 successCount++;
                 console.log(`✅ ${stock.symbol}: Found active opportunity`);
             } else {
-                console.log(`⚪ ${stock.symbol}: No active opportunity found`);
+                errorCount++;
+                // Error already logged in catch above
             }
-        } catch (error) {
-            errorCount++;
-            console.log(`❌ ${stock.symbol}: ${error.message || 'Data fetch failed'}`);
-        }
+        });
+        
+        const processed = Math.min((batchNumber * BATCH_SIZE), stocksToProcess.length);
+        const progressPercent = Math.round((processed / stocksToProcess.length) * 100);
+        console.log(`🚀 Progress: ${processed}/${stocksToProcess.length} stocks (${progressPercent}%) - ${successCount} opportunities found`);
     }
     
     console.log(`Scan complete: ${successCount} opportunities found, ${errorCount} errors/no opportunities`);
