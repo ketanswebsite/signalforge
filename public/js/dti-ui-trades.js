@@ -782,8 +782,40 @@ async function sendDirectOpportunityAlerts(opportunities) {
         }
         
         const prefs = await prefsResponse.json();
-        if (!prefs.telegram_enabled || !prefs.telegram_chat_id) {
-            console.log('❌ Telegram alerts not configured');
+        
+        // Check if user has configured Telegram alerts
+        let telegramChatId = null;
+        if (prefs.telegram_enabled && prefs.telegram_chat_id) {
+            telegramChatId = prefs.telegram_chat_id;
+            console.log('📱 Using user configured Telegram chat ID');
+        } else {
+            // Fallback to backend environment Telegram chat ID (same as 7AM scan)
+            console.log('📱 User Telegram not configured, using backend default chat ID');
+            // Send alerts via backend API instead of user preferences
+            try {
+                const backendResponse = await fetch('/api/send-backend-alerts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ opportunities }),
+                    credentials: 'include'
+                });
+                
+                if (backendResponse.ok) {
+                    console.log('✅ Alerts sent via backend system');
+                } else {
+                    console.log('❌ Failed to send alerts via backend system');
+                }
+                return;
+            } catch (error) {
+                console.error('❌ Error sending backend alerts:', error);
+                return;
+            }
+        }
+        
+        if (!telegramChatId) {
+            console.log('❌ No Telegram configuration available');
             return;
         }
         

@@ -1530,6 +1530,95 @@ app.post('/api/test-7am-scan', ensureAuthenticatedAPI, ensureSubscriptionActive,
   }
 });
 
+// Backend alerts endpoint - sends alerts using same system as 7AM scan
+app.post('/api/send-backend-alerts', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
+  try {
+    const { opportunities } = req.body;
+    
+    if (!opportunities || !Array.isArray(opportunities)) {
+      return res.status(400).json({ error: 'Invalid opportunities data' });
+    }
+    
+    if (!process.env.TELEGRAM_CHAT_ID) {
+      return res.status(400).json({ error: 'TELEGRAM_CHAT_ID not configured in environment variables' });
+    }
+    
+    console.log(`📤 Backend alerts triggered by user: ${req.user.email} for ${opportunities.length} opportunities`);
+    
+    // Import the same formatOpportunitiesMessage function used by 7AM scan
+    const { formatOpportunitiesMessage } = require('./dti-scanner');
+    const { sendTelegramAlert } = require('./telegram-bot');
+    
+    // Filter for opportunities from last 2 trading days (same as 7AM scan)
+    const ukNow = new Date(new Date().toLocaleString("en-US", {timeZone: "Europe/London"}));
+    const today = new Date(ukNow);
+    today.setHours(0, 0, 0, 0);
+    
+    const recentOpportunities = opportunities.filter(opp => {
+        if (!opp.trade || !opp.trade.entryDate) return false;
+        
+        const entryDate = new Date(opp.trade.entryDate);
+        entryDate.setHours(0, 0, 0, 0);
+        
+        // Calculate days difference (excluding weekends)
+        let tradingDays = 0;
+        let tempDate = new Date(today);
+        
+        while (tempDate >= entryDate && tradingDays < 3) {
+            const dayOfWeek = tempDate.getDay();
+            if (dayOfWeek !== 0 && dayOfWeek !== 6) { // Not weekend
+                tradingDays++;
+            }
+            tempDate.setDate(tempDate.getDate() - 1);
+            
+            if (tempDate < entryDate) break;
+        }
+        
+        return tradingDays <= 2; // Only last 2 trading days
+    });
+    
+    console.log(`📊 Filtered to ${recentOpportunities.length} opportunities from last 2 trading days`);
+    
+    if (recentOpportunities.length === 0) {
+      // Send "no opportunities" message
+      await sendTelegramAlert(process.env.TELEGRAM_CHAT_ID, {
+        type: 'custom',
+        message: `📊 *Manual Scan Complete*\n\nNo high conviction opportunities from last 2 days found.\n\nScan completed at: ${ukNow.toLocaleString("en-GB", {timeZone: "Europe/London"})}`
+      });
+    } else {
+      // Convert format to match dti-scanner expectations
+      const formattedOpportunities = recentOpportunities.map(opp => ({
+        stock: opp.stock,
+        activeTrade: opp.trade,
+        currentPrice: opp.data?.currentPrice || opp.trade.entryPrice
+      }));
+      
+      // Use same message formatting as 7AM scan
+      const message = formatOpportunitiesMessage(formattedOpportunities);
+      
+      // Send via same Telegram system as 7AM scan
+      await sendTelegramAlert(process.env.TELEGRAM_CHAT_ID, {
+        type: 'custom',
+        message: message
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: `Alerts sent for ${recentOpportunities.length} opportunities`,
+      details: {
+        totalOpportunities: opportunities.length,
+        filteredOpportunities: recentOpportunities.length,
+        telegramChatId: process.env.TELEGRAM_CHAT_ID ? 'Configured' : 'Not configured'
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error sending backend alerts:', error);
+    res.status(500).json({ error: 'Failed to send backend alerts', details: error.message });
+  }
+});
+
 // Global error handler
 app.use((err, req, res, next) => {
   console.error('Global error handler:', err.stack);
