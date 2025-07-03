@@ -614,13 +614,13 @@ function backtestWithActiveDetection(dates, prices, dti, sevenDayDTIData, params
     return { completedTrades, activeTrade };
 }
 
-// Fetch stock data from Yahoo Finance with enhanced retry logic and error handling
+// Fetch stock data using the SAME proxy endpoint as manual scan to avoid rate limiting
 async function fetchStockData(symbol, period = '5y', retries = 3) {
     const isServer = typeof window === 'undefined';
     
     for (let attempt = 0; attempt <= retries; attempt++) {
         try {
-            // Calculate timestamps
+            // Calculate timestamps (same as manual scan)
             const endDate = Math.floor(Date.now() / 1000);
             let startDate;
             
@@ -650,7 +650,7 @@ async function fetchStockData(symbol, period = '5y', retries = 3) {
                     startDate = endDate - (1825 * 24 * 60 * 60); // Default to 5 years
             }
             
-            // Add progressive delay to avoid rate limiting with exponential backoff
+            // Add progressive delay to avoid rate limiting
             if (attempt > 0) {
                 const delay = Math.min(1000 * Math.pow(2, attempt), 5000); // Exponential backoff, max 5s
                 await new Promise(resolve => setTimeout(resolve, delay));
@@ -658,69 +658,30 @@ async function fetchStockData(symbol, period = '5y', retries = 3) {
             
             let data = [];
             
-            // Try chart API first (same as manual scan approach)
-            const chartUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?period1=${startDate}&period2=${endDate}&interval=1d&includePrePost=false`;
+            // CRITICAL FIX: Use the SAME proxy endpoint as manual scan
+            // This is the key difference - manual scan uses local proxy, 7AM scan was using direct API
+            // For Render deployment, use the app's own URL
+            const baseUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${process.env.PORT || 3000}`;
+            const proxyUrl = `${baseUrl}/yahoo/history?symbol=${symbol}&period1=${startDate}&period2=${endDate}&interval=1d`;
             
             try {
-                // Use same headers as working manual proxy endpoint with enhanced browser simulation
-                const response = await axios.get(chartUrl, {
+                console.log(`📡 Using proxy endpoint for ${symbol}: ${proxyUrl}`);
+                
+                // Use local proxy endpoint (same as manual scan)
+                const response = await axios.get(proxyUrl, {
                     headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                        'Accept': 'application/json, text/plain, */*',
-                        'Accept-Language': 'en-US,en;q=0.9',
-                        'Accept-Encoding': 'gzip, deflate, br',
-                        'Referer': 'https://finance.yahoo.com/',
-                        'Origin': 'https://finance.yahoo.com',
-                        'Connection': 'keep-alive',
-                        'Sec-Fetch-Dest': 'empty',
-                        'Sec-Fetch-Mode': 'cors',
-                        'Sec-Fetch-Site': 'same-site'
-                    },
-                    timeout: 20000  // Increased timeout
-                });
-                
-                // Parse chart API response with better error handling
-                if (response.data && response.data.chart && response.data.chart.result && response.data.chart.result[0]) {
-                    const result = response.data.chart.result[0];
-                    const timestamps = result.timestamp;
-                    const quotes = result.indicators.quote[0];
-                    
-                    for (let i = 0; i < timestamps.length; i++) {
-                        // Only add valid data points (filter out null values)
-                        if (quotes.close[i] !== null && quotes.high[i] !== null && quotes.low[i] !== null) {
-                            data.push({
-                                date: new Date(timestamps[i] * 1000).toISOString().split('T')[0],
-                                open: quotes.open[i] || quotes.close[i],
-                                high: quotes.high[i],
-                                low: quotes.low[i],
-                                close: quotes.close[i],
-                                volume: quotes.volume[i] || 0
-                            });
-                        }
-                    }
-                } else {
-                    throw new Error('Invalid chart API response structure');
-                }
-            } catch (chartError) {
-                console.log(`Chart API failed for ${symbol}, trying download API...`);
-                
-                // Fallback to download API with enhanced headers
-                const downloadUrl = `https://query1.finance.yahoo.com/v7/finance/download/${symbol}?period1=${startDate}&period2=${endDate}&interval=1d&events=history`;
-                
-                const response = await axios.get(downloadUrl, {
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                        'Accept': 'text/csv,application/csv,*/*',
-                        'Accept-Language': 'en-US,en;q=0.9',
-                        'Referer': 'https://finance.yahoo.com/',
-                        'Origin': 'https://finance.yahoo.com'
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                        'Accept': 'text/csv,application/csv',
                     },
                     timeout: 20000
                 });
                 
-                // Parse CSV data with better validation
-                const lines = response.data.trim().split('\n');
+                // Parse CSV response from proxy (same format as manual scan)
+                const csvText = response.data;
+                const lines = csvText.trim().split('\n');
+                
                 if (lines.length > 1) {
+                    // Skip header row
                     for (let i = 1; i < lines.length; i++) {
                         const values = lines[i].split(',');
                         // Validate that we have all required fields and valid numeric data
@@ -736,7 +697,83 @@ async function fetchStockData(symbol, period = '5y', retries = 3) {
                         }
                     }
                 } else {
-                    throw new Error('No valid data received from download API');
+                    throw new Error('No valid data received from proxy');
+                }
+                
+            } catch (proxyError) {
+                console.log(`Proxy failed for ${symbol}, trying direct API fallback...`);
+                
+                // Fallback to direct API only if proxy fails (same as before)
+                const chartUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?period1=${startDate}&period2=${endDate}&interval=1d&includePrePost=false`;
+                
+                try {
+                    const response = await axios.get(chartUrl, {
+                        headers: {
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                            'Accept': 'application/json, text/plain, */*',
+                            'Accept-Language': 'en-US,en;q=0.9',
+                            'Accept-Encoding': 'gzip, deflate, br',
+                            'Referer': 'https://finance.yahoo.com/',
+                            'Origin': 'https://finance.yahoo.com',
+                            'Connection': 'keep-alive',
+                            'Sec-Fetch-Dest': 'empty',
+                            'Sec-Fetch-Mode': 'cors',
+                            'Sec-Fetch-Site': 'same-site'
+                        },
+                        timeout: 20000
+                    });
+                    
+                    // Parse chart API response
+                    if (response.data && response.data.chart && response.data.chart.result && response.data.chart.result[0]) {
+                        const result = response.data.chart.result[0];
+                        const timestamps = result.timestamp;
+                        const quotes = result.indicators.quote[0];
+                        
+                        for (let i = 0; i < timestamps.length; i++) {
+                            if (quotes.close[i] !== null && quotes.high[i] !== null && quotes.low[i] !== null) {
+                                data.push({
+                                    date: new Date(timestamps[i] * 1000).toISOString().split('T')[0],
+                                    open: quotes.open[i] || quotes.close[i],
+                                    high: quotes.high[i],
+                                    low: quotes.low[i],
+                                    close: quotes.close[i],
+                                    volume: quotes.volume[i] || 0
+                                });
+                            }
+                        }
+                    } else {
+                        throw new Error('Invalid chart API response');
+                    }
+                } catch (chartError) {
+                    // Final fallback to download API
+                    const downloadUrl = `https://query1.finance.yahoo.com/v7/finance/download/${symbol}?period1=${startDate}&period2=${endDate}&interval=1d&events=history`;
+                    
+                    const response = await axios.get(downloadUrl, {
+                        headers: {
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                            'Accept': 'text/csv,application/csv',
+                            'Referer': 'https://finance.yahoo.com/',
+                            'Origin': 'https://finance.yahoo.com'
+                        },
+                        timeout: 20000
+                    });
+                    
+                    const lines = response.data.trim().split('\n');
+                    if (lines.length > 1) {
+                        for (let i = 1; i < lines.length; i++) {
+                            const values = lines[i].split(',');
+                            if (values.length >= 6 && values[4] !== 'null' && !isNaN(parseFloat(values[4]))) {
+                                data.push({
+                                    date: values[0],
+                                    open: parseFloat(values[1]) || parseFloat(values[4]),
+                                    high: parseFloat(values[2]),
+                                    low: parseFloat(values[3]),
+                                    close: parseFloat(values[4]),
+                                    volume: parseInt(values[6]) || 0
+                                });
+                            }
+                        }
+                    }
                 }
             }
             
