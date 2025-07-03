@@ -597,9 +597,16 @@ function backtestWithActiveDetection(dates, prices, dti, sevenDayDTIData, params
                 sevenDayConditionMet = current7DayDTI > previous7DayDTI;
             }
             
+            // Log entry condition details every 100 days for debugging
+            if (i % 100 === 0) {
+                console.log(`📈 Entry check (day ${i}): DTI=${currentDTI?.toFixed(2)}, prevDTI=${previousDTI?.toFixed(2)}, threshold=${entryThreshold}, 7dayOK=${sevenDayConditionMet}`);
+            }
+            
             if (currentDTI < entryThreshold && 
                 currentDTI > previousDTI && 
                 sevenDayConditionMet) {
+                
+                console.log(`🚀 ENTRY SIGNAL: Date=${currentDate}, Price=${currentPrice}, DTI=${currentDTI?.toFixed(2)}, 7dayDTI=${current7DayDTI?.toFixed(2)}`);
                 
                 activeTrade = {
                     entryDate: currentDate,
@@ -802,20 +809,36 @@ async function processStock(stock, params) {
         const data = await fetchStockData(stock.symbol, '5y');
         
         if (!data || data.length < 30) {
+            console.log(`⚠️ ${stock.symbol}: Insufficient data (${data?.length || 0} points, need 30+)`);
             return null;
         }
         
-        // Extract arrays
+        // Extract arrays and validate data
         const dates = data.map(d => d.date);
         const prices = data.map(d => d.close);
         const high = data.map(d => d.high);
         const low = data.map(d => d.low);
         
+        // Validate data quality
+        const validPrices = prices.filter(p => p && !isNaN(p) && p > 0);
+        const validHighs = high.filter(h => h && !isNaN(h) && h > 0);
+        const validLows = low.filter(l => l && !isNaN(l) && l > 0);
+        
+        console.log(`🔍 ${stock.symbol}: Processing ${data.length} data points, date range: ${dates[0]} to ${dates[dates.length - 1]}`);
+        console.log(`📊 ${stock.symbol}: Data quality - Valid prices: ${validPrices.length}/${prices.length}, Valid highs: ${validHighs.length}/${high.length}, Valid lows: ${validLows.length}/${low.length}`);
+        
+        if (validPrices.length < data.length * 0.8) {
+            console.log(`⚠️ ${stock.symbol}: Poor data quality, skipping (${validPrices.length}/${data.length} valid prices)`);
+            return null;
+        }
+        
         // Calculate DTI
         const dti = calculateDTI(high, low, 14, 10, 5);
         const sevenDayDTIData = calculate7DayDTI(dates, high, low, 14, 10, 5);
         
-        // Run backtest
+        console.log(`📊 ${stock.symbol}: DTI calculated, last 5 values: [${dti.slice(-5).map(v => v?.toFixed(2) || 'null').join(', ')}]`);
+        
+        // Run backtest with detailed logging
         const { completedTrades, activeTrade } = backtestWithActiveDetection(
             dates, 
             prices, 
@@ -824,7 +847,16 @@ async function processStock(stock, params) {
             params
         );
         
+        console.log(`🎯 ${stock.symbol}: Backtest complete - ${completedTrades.length} completed trades, activeTrade: ${activeTrade ? 'YES' : 'NO'}`);
+        
         if (activeTrade) {
+            console.log(`✅ ${stock.symbol}: ACTIVE OPPORTUNITY FOUND!`, {
+                entryDate: activeTrade.entryDate,
+                entryPrice: activeTrade.entryPrice,
+                entryDTI: activeTrade.entryDTI,
+                currentPrice: prices[prices.length - 1]
+            });
+            
             return {
                 stock: stock,
                 activeTrade: activeTrade,
@@ -836,7 +868,7 @@ async function processStock(stock, params) {
         
         return null;
     } catch (error) {
-        console.error(`Error processing ${stock.symbol}:`, error.message);
+        console.error(`❌ Error processing ${stock.symbol}:`, error.message);
         return null;
     }
 }
@@ -869,26 +901,41 @@ async function scanAllStocks(params = {}) {
     // Remove duplicates
     const uniqueStocks = Array.from(new Map(allStocks.map(s => [s.symbol, s])).values());
     
-    console.log(`Scanning ${uniqueStocks.length} stocks for DTI opportunities...`);
+    console.log(`📋 Stock list breakdown:`);
+    console.log(`   Nifty 50: ${stockLists.nifty50?.length || 0} stocks`);
+    console.log(`   Nifty Next 50: ${stockLists.niftyNext50?.length || 0} stocks`);
+    console.log(`   Nifty Midcap 150: ${stockLists.niftyMidcap150?.length || 0} stocks`);
+    console.log(`   FTSE 100: ${stockLists.ftse100?.length || 0} stocks`);
+    console.log(`   FTSE 250: ${stockLists.ftse250?.length || 0} stocks`);
+    console.log(`   US Stocks: ${stockLists.usStocks?.length || 0} stocks`);
+    console.log(`   Total unique: ${uniqueStocks.length} stocks`);
     
     if (COMPREHENSIVE_STOCK_LISTS) {
-        console.log(`✅ Using comprehensive stock lists (up from 298 limited stocks)`);
+        console.log(`✅ Using comprehensive stock lists loaded from dti-data.js`);
     } else {
-        console.log(`⚠️  Using fallback limited stock lists (298 stocks)`);
+        console.log(`⚠️  Using fallback limited stock lists - comprehensive loading failed`);
     }
+    
+    // Log sample of first few stocks to verify structure
+    console.log(`📋 Sample stocks:`, uniqueStocks.slice(0, 3).map(s => `${s.symbol} (${s.name})`));
     
     // Process all stocks concurrently for faster scanning
     let successCount = 0;
     let errorCount = 0;
     
-    // Process all stocks for production scanning
-    const stocksToProcess = uniqueStocks;
+    // For debugging: process only first 10 stocks to test DTI calculation
+    const DEBUG_MODE = process.env.DTI_DEBUG === 'true';
+    const stocksToProcess = DEBUG_MODE ? uniqueStocks.slice(0, 10) : uniqueStocks;
     
-    console.log(`Processing ${stocksToProcess.length} stocks in optimized batches for faster scanning...`);
+    if (DEBUG_MODE) {
+        console.log(`🔍 DEBUG MODE: Processing only ${stocksToProcess.length} stocks for testing`);
+    } else {
+        console.log(`Processing ${stocksToProcess.length} stocks in optimized batches for faster scanning...`);
+    }
     
     // Optimized batch processing for 5-10 minute completion
-    const BATCH_SIZE = 75; // Process 75 stocks simultaneously (increased from 50)
-    const BATCH_DELAY = 1500; // 1.5 second delay between batches (reduced from 2s)
+    const BATCH_SIZE = DEBUG_MODE ? 3 : 75; // Smaller batches in debug mode for easier tracking
+    const BATCH_DELAY = DEBUG_MODE ? 500 : 1500; // Faster in debug mode
     
     // Process stocks in batches with controlled concurrency
     for (let i = 0; i < stocksToProcess.length; i += BATCH_SIZE) {
@@ -924,7 +971,7 @@ async function scanAllStocks(params = {}) {
                 console.log(`✅ ${stock.symbol}: Found active opportunity`);
             } else {
                 errorCount++;
-                // Error already logged in catch above
+                // Note: Individual stock processing details already logged in processStock
             }
         });
         

@@ -1530,6 +1530,55 @@ app.post('/api/test-7am-scan', ensureAuthenticatedAPI, ensureSubscriptionActive,
   }
 });
 
+// Debug DTI scan endpoint - for testing with detailed logging
+app.post('/api/debug-dti-scan', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
+  try {
+    console.log('🔍 Debug DTI scan triggered by user:', req.user.email);
+    
+    // Set debug mode environment variable
+    process.env.DTI_DEBUG = 'true';
+    
+    const { scanAllStocks } = require('./dti-scanner');
+    
+    console.log('🚀 Starting debug DTI scan with detailed logging...');
+    
+    const opportunities = await scanAllStocks({
+      entryThreshold: 0,
+      takeProfitPercent: 8,
+      stopLossPercent: 5,
+      maxHoldingDays: 30
+    });
+    
+    // Reset debug mode
+    delete process.env.DTI_DEBUG;
+    
+    console.log(`✅ Debug scan complete: ${opportunities.length} opportunities found`);
+    
+    res.json({ 
+      success: true, 
+      message: `Debug DTI scan completed. Found ${opportunities.length} opportunities.`,
+      opportunities: opportunities.map(opp => ({
+        symbol: opp.stock.symbol,
+        name: opp.stock.name,
+        entryDate: opp.activeTrade.entryDate,
+        entryPrice: opp.activeTrade.entryPrice,
+        entryDTI: opp.activeTrade.entryDTI,
+        currentPrice: opp.currentPrice,
+        currentDTI: opp.currentDTI
+      })),
+      details: {
+        totalOpportunities: opportunities.length,
+        debugMode: true,
+        stocksProcessed: 'First 10 stocks only'
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error in debug DTI scan:', error);
+    res.status(500).json({ error: 'Failed to run debug DTI scan', details: error.message });
+  }
+});
+
 // Backend alerts endpoint - sends alerts using same system as 7AM scan
 app.post('/api/send-backend-alerts', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
