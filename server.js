@@ -1684,9 +1684,9 @@ app.post('/api/scan/global', async (req, res) => {
     // Execute with exact same parameters as browser manual scan
     const opportunities = await scanAllStocks({
       entryThreshold: 0,           // Same as browser (DTI < 0)
-      takeProfitPercent: 10,       // Same as browser defaults
-      stopLossPercent: 7,          // Same as browser defaults
-      maxHoldingDays: 21           // Same as browser defaults
+      takeProfitPercent: 8,        // Same as browser defaults
+      stopLossPercent: 5,          // Same as browser defaults
+      maxHoldingDays: 30           // Same as browser defaults
     });
     
     console.log(`📊 Server-side DTI scan complete: ${opportunities.length} total opportunities found`);
