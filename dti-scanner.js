@@ -614,8 +614,8 @@ function backtestWithActiveDetection(dates, prices, dti, sevenDayDTIData, params
     return { completedTrades, activeTrade };
 }
 
-// Fetch stock data from Yahoo Finance with retry logic
-async function fetchStockData(symbol, period = '5y', retries = 2) {
+// Fetch stock data from Yahoo Finance with enhanced retry logic and error handling
+async function fetchStockData(symbol, period = '5y', retries = 3) {
     const isServer = typeof window === 'undefined';
     
     for (let attempt = 0; attempt <= retries; attempt++) {
@@ -650,87 +650,103 @@ async function fetchStockData(symbol, period = '5y', retries = 2) {
                     startDate = endDate - (1825 * 24 * 60 * 60); // Default to 5 years
             }
             
-            // Add progressive delay to avoid rate limiting
+            // Add progressive delay to avoid rate limiting with exponential backoff
             if (attempt > 0) {
-                await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Increasing delay
+                const delay = Math.min(1000 * Math.pow(2, attempt), 5000); // Exponential backoff, max 5s
+                await new Promise(resolve => setTimeout(resolve, delay));
             }
             
             let data = [];
             
-            // Use more reliable approach with better anti-bot detection avoidance
-            // Try direct Yahoo Finance API with enhanced headers that mimic manual proxy
+            // Try chart API first (same as manual scan approach)
             const chartUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?period1=${startDate}&period2=${endDate}&interval=1d&includePrePost=false`;
             
             try {
-                // Use same headers as the working manual proxy endpoint
+                // Use same headers as working manual proxy endpoint with enhanced browser simulation
                 const response = await axios.get(chartUrl, {
                     headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                        'Accept': 'application/json',
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Accept': 'application/json, text/plain, */*',
+                        'Accept-Language': 'en-US,en;q=0.9',
+                        'Accept-Encoding': 'gzip, deflate, br',
                         'Referer': 'https://finance.yahoo.com/',
-                        'Origin': 'https://finance.yahoo.com'
+                        'Origin': 'https://finance.yahoo.com',
+                        'Connection': 'keep-alive',
+                        'Sec-Fetch-Dest': 'empty',
+                        'Sec-Fetch-Mode': 'cors',
+                        'Sec-Fetch-Site': 'same-site'
                     },
-                    timeout: 15000
+                    timeout: 20000  // Increased timeout
                 });
                 
-                // Parse chart API response
+                // Parse chart API response with better error handling
                 if (response.data && response.data.chart && response.data.chart.result && response.data.chart.result[0]) {
                     const result = response.data.chart.result[0];
                     const timestamps = result.timestamp;
                     const quotes = result.indicators.quote[0];
                     
                     for (let i = 0; i < timestamps.length; i++) {
-                        data.push({
-                            date: new Date(timestamps[i] * 1000).toISOString().split('T')[0],
-                            open: quotes.open[i],
-                            high: quotes.high[i],
-                            low: quotes.low[i],
-                            close: quotes.close[i],
-                            volume: quotes.volume[i]
-                        });
-                    }
-                } else {
-                    throw new Error('Invalid response structure');
-                }
-            } catch (chartError) {
-                // Fallback to download API with enhanced headers
-                console.log(`Chart API failed for ${symbol}, trying download API...`);
-                
-                const downloadUrl = `https://query1.finance.yahoo.com/v7/finance/download/${symbol}?period1=${startDate}&period2=${endDate}&interval=1d&events=history`;
-                
-                const response = await axios.get(downloadUrl, {
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                        'Accept': 'text/csv,application/csv',
-                        'Referer': 'https://finance.yahoo.com/',
-                        'Origin': 'https://finance.yahoo.com'
-                    },
-                    timeout: 15000
-                });
-                
-                // Parse CSV data
-                const lines = response.data.trim().split('\n');
-                if (lines.length > 1) {
-                    for (let i = 1; i < lines.length; i++) {
-                        const values = lines[i].split(',');
-                        if (values.length >= 6) {
+                        // Only add valid data points (filter out null values)
+                        if (quotes.close[i] !== null && quotes.high[i] !== null && quotes.low[i] !== null) {
                             data.push({
-                                date: values[0],
-                                open: parseFloat(values[1]),
-                                high: parseFloat(values[2]),
-                                low: parseFloat(values[3]),
-                                close: parseFloat(values[4]),
-                                volume: parseInt(values[6])
+                                date: new Date(timestamps[i] * 1000).toISOString().split('T')[0],
+                                open: quotes.open[i] || quotes.close[i],
+                                high: quotes.high[i],
+                                low: quotes.low[i],
+                                close: quotes.close[i],
+                                volume: quotes.volume[i] || 0
                             });
                         }
                     }
                 } else {
-                    throw new Error('No data received from download API');
+                    throw new Error('Invalid chart API response structure');
+                }
+            } catch (chartError) {
+                console.log(`Chart API failed for ${symbol}, trying download API...`);
+                
+                // Fallback to download API with enhanced headers
+                const downloadUrl = `https://query1.finance.yahoo.com/v7/finance/download/${symbol}?period1=${startDate}&period2=${endDate}&interval=1d&events=history`;
+                
+                const response = await axios.get(downloadUrl, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Accept': 'text/csv,application/csv,*/*',
+                        'Accept-Language': 'en-US,en;q=0.9',
+                        'Referer': 'https://finance.yahoo.com/',
+                        'Origin': 'https://finance.yahoo.com'
+                    },
+                    timeout: 20000
+                });
+                
+                // Parse CSV data with better validation
+                const lines = response.data.trim().split('\n');
+                if (lines.length > 1) {
+                    for (let i = 1; i < lines.length; i++) {
+                        const values = lines[i].split(',');
+                        // Validate that we have all required fields and valid numeric data
+                        if (values.length >= 6 && values[4] !== 'null' && !isNaN(parseFloat(values[4]))) {
+                            data.push({
+                                date: values[0],
+                                open: parseFloat(values[1]) || parseFloat(values[4]),
+                                high: parseFloat(values[2]),
+                                low: parseFloat(values[3]),
+                                close: parseFloat(values[4]),
+                                volume: parseInt(values[6]) || 0
+                            });
+                        }
+                    }
+                } else {
+                    throw new Error('No valid data received from download API');
                 }
             }
             
-            console.log(`✅ Successfully fetched ${data.length} data points for ${symbol}`);
-            return data;
+            if (data.length > 0) {
+                console.log(`✅ Successfully fetched ${data.length} data points for ${symbol}`);
+                return data;
+            } else {
+                throw new Error('No valid data points found');
+            }
+            
         } catch (error) {
             if (attempt < retries) {
                 console.log(`🔄 Retry ${attempt + 1}/${retries} for ${symbol}: ${error.message}`);

@@ -57,7 +57,7 @@ class StockScanner {
     }
 
     /**
-     * Run a global scan using the same logic as the working manual "Scan All Global Stocks" button
+     * Run a global scan using the exact same logic as the working manual "Scan All Global Stocks" button
      */
     async runGlobalScan(chatId = null) {
         console.log(`[runGlobalScan] Called with chatId: ${chatId || 'null (will use default)'}`);
@@ -73,7 +73,7 @@ class StockScanner {
         this.scanResults = [];
         
         try {
-            console.log('🔍 Starting global stock scan using the same logic as manual scan...');
+            console.log('🔍 Starting global stock scan using exact manual scan logic...');
             
             // Use provided chatId or default from environment
             const targetChatId = chatId || process.env.TELEGRAM_CHAT_ID;
@@ -89,26 +89,25 @@ class StockScanner {
                 message: `🔍 *Daily High Conviction Scan*\n\nScanning all global stocks for opportunities...`
             });
 
-            // Call the actual backend DTI scanner directly - same as manual scan
-            // This bypasses the problematic dti-scanner.js and uses the working frontend logic
-            console.log('🔄 Using backend DTI scan logic...');
+            // CRITICAL: Use exact same DTI scanning logic as manual scan
+            console.log('🔄 Using exact manual scan DTI logic from dti-scanner.js...');
             
-            // Import the actual DTI scanner
+            // Import the DTI scanner with exact same comprehensive stock lists
             const { scanAllStocks, formatOpportunitiesMessage } = require('./dti-scanner');
             
-            // Scan with same parameters as manual scan
+            // Execute with exact same parameters as manual scan button
             const opportunities = await scanAllStocks({
-                entryThreshold: 0,
-                takeProfitPercent: 8,
-                stopLossPercent: 5,
-                maxHoldingDays: 30
+                entryThreshold: 0,           // Same as manual
+                takeProfitPercent: 8,        // Same as manual  
+                stopLossPercent: 5,          // Same as manual
+                maxHoldingDays: 30           // Same as manual
             });
             
             this.scanResults = opportunities;
             
             console.log(`📊 Found ${opportunities.length} total opportunities before filtering`);
             
-            // Format and send results with the same filtering logic
+            // Use same filtering and formatting as dti-scanner.js (keeps 2-day logic)
             const message = formatOpportunitiesMessage(opportunities);
             await sendTelegramAlert(targetChatId, {
                 type: 'custom',
