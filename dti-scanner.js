@@ -20,11 +20,19 @@ function loadComprehensiveStockLists() {
             const match = dtiDataContent.match(regex);
             if (match) {
                 try {
-                    // Convert the JS array string to actual array
-                    const arrayStr = '[' + match[1] + ']';
-                    return eval(arrayStr);
+                    // Safely parse the JS array string without eval()
+                    let arrayStr = '[' + match[1].trim() + ']';
+                    
+                    // Clean up the string to make it valid JSON
+                    arrayStr = arrayStr
+                        .replace(/(\w+):/g, '"$1":')  // Quote property names
+                        .replace(/,\s*}/g, '}')       // Remove trailing commas before closing braces
+                        .replace(/,\s*]/g, ']')       // Remove trailing commas before closing brackets
+                        .replace(/,(\s*[\]}])/g, '$1'); // Remove any other trailing commas
+                    
+                    return JSON.parse(arrayStr);
                 } catch (e) {
-                    console.warn(`Failed to parse ${arrayName}, using fallback`);
+                    console.warn(`Failed to parse ${arrayName} safely, error: ${e.message}`);
                     return null;
                 }
             }

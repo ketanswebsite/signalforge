@@ -48,7 +48,8 @@
       "Bash(npm start)",
       "Bash(npm run lint)",
       "Bash(TZ=Europe/London date)",
-      "Bash(dos2unix:*)"
+      "Bash(dos2unix:*)",
+      "Bash(npm audit:*)"
     ],
     "deny": []
   },
