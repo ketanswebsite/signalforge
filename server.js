@@ -1516,6 +1516,12 @@ app.post('/api/debug-dti-scan', ensureAuthenticatedAPI, ensureSubscriptionActive
 
 // Backend alerts endpoint - sends alerts using same system as 7AM scan
 app.post('/api/send-backend-alerts', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
+  console.log('🚨 /api/send-backend-alerts endpoint hit!');
+  console.log('  Request user:', req.user?.email || 'NO USER');
+  console.log('  Request body keys:', Object.keys(req.body || {}));
+  console.log('  Auth enabled:', authEnabled);
+  console.log('  Subscription enabled:', subscriptionEnabled);
+  
   try {
     const { opportunities } = req.body;
     
