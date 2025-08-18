@@ -3,7 +3,7 @@ services:
   - type: web
     name: stock-proxy
     runtime: node
-    buildCommand: chmod +x build.sh && ./build.sh
+    buildCommand: npm install
     startCommand: npm start
     envVars:
       - key: NODE_ENV

@@ -1,139 +1,150 @@
 @echo off
-echo ===============================================
-echo    RENDER DEPLOYMENT SCRIPT
-echo ===============================================
+echo ==========================================
+echo    Stock Proxy - Deploy to Render
+echo ==========================================
 echo.
 
-:: Set error handling
-setlocal enabledelayedexpansion
-
-:: Color codes for better output
-set "GREEN=[92m"
-set "RED=[91m"
-set "YELLOW=[93m"
-set "BLUE=[94m"
-set "NC=[0m"
-
-echo %BLUE%Step 1: Checking Git Status%NC%
-echo ===============================================
-git status
-echo.
-
-echo %BLUE%Step 2: Checking for uncommitted changes%NC%
-echo ===============================================
-git diff --quiet
+:: Check if git is available
+git --version >nul 2>&1
 if errorlevel 1 (
-    echo %YELLOW%Warning: You have uncommitted changes!%NC%
-    git status --porcelain
-    echo.
-    set /p continue="Do you want to continue anyway? (y/N): "
-    if /i not "!continue!"=="y" (
-        echo %RED%Deployment cancelled.%NC%
-        exit /b 1
-    )
-)
-
-echo %BLUE%Step 3: Adding all changes to git%NC%
-echo ===============================================
-git add .
-if errorlevel 1 (
-    echo %RED%Failed to add files to git%NC%
+    echo ERROR: Git is not installed or not in PATH
+    echo Please install Git and try again
+    pause
     exit /b 1
 )
 
-echo %BLUE%Step 4: Creating commit%NC%
-echo ===============================================
-set "timestamp=%date:~10,4%-%date:~4,2%-%date:~7,2% %time:~0,2%:%time:~3,2%"
-git commit -m "Auto-deploy: %timestamp%"
-if errorlevel 1 (
-    echo %YELLOW%Nothing to commit or commit failed%NC%
-    echo Continuing with deployment...
+:: Check if we're in a git repository
+if not exist ".git" (
+    echo ERROR: Not in a git repository
+    echo Please run this script from the project root directory
+    pause
+    exit /b 1
 )
 
-echo %BLUE%Step 5: Pushing to main branch%NC%
-echo ===============================================
-git push origin main
+echo 1. Checking current directory...
+echo Current directory: %cd%
+echo.
+
+:: Check for required files
+echo 2. Checking required files...
+if not exist "package.json" (
+    echo ERROR: package.json not found
+    pause
+    exit /b 1
+)
+if not exist "server.js" (
+    echo ERROR: server.js not found
+    pause
+    exit /b 1
+)
+if not exist "render.yaml" (
+    echo ERROR: render.yaml not found
+    pause
+    exit /b 1
+)
+echo ✓ All required files found
+echo.
+
+:: Show current git status
+echo 3. Current git status:
+git status --porcelain
+echo.
+
+:: Check for uncommitted changes
+git diff-index --quiet HEAD -- >nul 2>&1
 if errorlevel 1 (
-    echo %RED%Failed to push to origin main%NC%
-    echo %YELLOW%Trying to set upstream and push...%NC%
-    git push -u origin main
+    echo 4. Found uncommitted changes. Staging and committing...
+    
+    :: Add all changes
+    echo   - Adding all changes...
+    git add .
+    
+    :: Create commit with timestamp
+    for /f "tokens=1-4 delims=/ " %%i in ('date /t') do set mydate=%%k-%%j-%%i
+    for /f "tokens=1-2 delims=: " %%i in ('time /t') do set mytime=%%i:%%j
+    set datetime=%mydate% %mytime%
+    
+    echo   - Creating commit...
+    git commit -m "Auto-deploy: %datetime%"
+    
     if errorlevel 1 (
-        echo %RED%Push failed! Please check your git configuration.%NC%
+        echo ERROR: Failed to commit changes
+        pause
         exit /b 1
     )
+    echo ✓ Changes committed successfully
+) else (
+    echo 4. No uncommitted changes found
+)
+echo.
+
+:: Check if origin remote exists
+git remote get-url origin >nul 2>&1
+if errorlevel 1 (
+    echo ERROR: No 'origin' remote found
+    echo Please add your GitHub repository as origin:
+    echo   git remote add origin https://github.com/yourusername/your-repo.git
+    pause
+    exit /b 1
 )
 
-echo %GREEN%✓ Successfully pushed to GitHub!%NC%
+:: Get current branch
+for /f "tokens=*" %%i in ('git rev-parse --abbrev-ref HEAD') do set current_branch=%%i
+echo 5. Current branch: %current_branch%
 echo.
 
-echo %BLUE%Step 6: Deployment Verification Steps%NC%
-echo ===============================================
-echo %YELLOW%Please follow these steps to verify your deployment:%NC%
-echo.
-echo 1. %BLUE%Check Render Dashboard:%NC%
-echo    - Go to https://dashboard.render.com
-echo    - Find your stock-proxy service
-echo    - Check if deployment is triggered automatically
-echo.
-echo 2. %BLUE%Monitor Build Logs:%NC%
-echo    - Click on your service in Render dashboard
-echo    - Go to "Logs" tab
-echo    - Watch for build completion and any errors
-echo.
-echo 3. %BLUE%Verify PostgreSQL Connection:%NC%
-echo    - Wait for deployment to complete
-echo    - Check logs for "✓ Database module loaded: PostgreSQL"
-echo    - Should NOT see any JSON fallback messages
-echo.
-echo 4. %BLUE%Test Application:%NC%
-echo    - Visit your Render app URL
-echo    - Try logging in
-echo    - Check if trades are loading from PostgreSQL
-echo    - Test adding a new trade
-echo.
-echo 5. %BLUE%Check Database Tables:%NC%
-echo    - Visit: https://your-app.onrender.com/check-subscription-setup.html
-echo    - Verify all PostgreSQL tables are present
-echo    - Check subscription functionality
+:: Push to GitHub
+echo 6. Pushing to GitHub...
+git push origin %current_branch%
+if errorlevel 1 (
+    echo ERROR: Failed to push to GitHub
+    echo Please check your GitHub credentials and repository access
+    pause
+    exit /b 1
+)
+echo ✓ Successfully pushed to GitHub
 echo.
 
-echo %BLUE%Step 7: Post-Deployment Health Checks%NC%
-echo ===============================================
-echo %YELLOW%Run these checks after deployment:%NC%
+:: Display deployment information
+echo ==========================================
+echo    DEPLOYMENT COMPLETE
+echo ==========================================
 echo.
-echo • %BLUE%Application Status:%NC% Check if app starts without errors
-echo • %BLUE%Database Connection:%NC% Verify PostgreSQL connection is successful
-echo • %BLUE%API Endpoints:%NC% Test /api/trades and other endpoints
-echo • %BLUE%Authentication:%NC% Test login/logout functionality
-echo • %BLUE%Subscription System:%NC% Verify subscription middleware works
-echo • %BLUE%ML Features:%NC% Check if ML routes are accessible
+echo Your code has been pushed to GitHub.
 echo.
-
-echo %BLUE%Step 8: Troubleshooting Commands%NC%
-echo ===============================================
-echo %YELLOW%If deployment fails, try these:%NC%
+echo NEXT STEPS:
+echo 1. Go to https://render.com
+echo 2. Connect your GitHub repository
+echo 3. Create a new Web Service
+echo 4. Configure the following settings:
 echo.
-echo • Check Render logs for specific error messages
-echo • Verify DATABASE_URL environment variable is set
-echo • Ensure all required environment variables are configured
-echo • Check if build.sh script runs successfully
-echo • Verify package.json dependencies are correct
+echo    Build Command: npm install
+echo    Start Command: npm start
+echo    Node Version: 18 or higher
 echo.
-
-echo %GREEN%===============================================%NC%
-echo %GREEN%   DEPLOYMENT INITIATED SUCCESSFULLY!%NC%
-echo %GREEN%===============================================%NC%
+echo REQUIRED ENVIRONMENT VARIABLES:
+echo ================================
+echo Set these in your Render dashboard:
 echo.
-echo %YELLOW%Your code has been pushed to GitHub.%NC%
-echo %YELLOW%Render should automatically start deploying.%NC%
+echo DATABASE_URL=your_postgresql_connection_string
+echo SESSION_SECRET=your_secure_session_secret
+echo GOOGLE_CLIENT_ID=your_google_oauth_client_id
+echo GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
+echo TELEGRAM_BOT_TOKEN=your_telegram_bot_token (optional)
+echo TELEGRAM_CHAT_ID=your_telegram_chat_id (optional)
+echo NODE_ENV=production
 echo.
-echo %BLUE%Next steps:%NC%
-echo 1. Monitor Render dashboard for deployment progress
-echo 2. Check application logs for any errors
-echo 3. Test the live application once deployment completes
-echo 4. Verify PostgreSQL database is working correctly
+echo OPTIONAL VARIABLES:
+echo ==================
+echo DEBUG_CRON=true (for testing cron jobs)
+echo DTI_DEBUG=true (for debugging DTI scans)
 echo.
-echo %GREEN%Good luck with your deployment! 🚀%NC%
+echo DATABASE SETUP:
+echo ==============
+echo 1. Create a PostgreSQL database on Render
+echo 2. Copy the connection string to DATABASE_URL
+echo 3. The app will automatically create tables on first run
 echo.
-
+echo Your GitHub repository is ready for Render deployment!
+echo.
 pause

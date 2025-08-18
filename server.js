@@ -50,20 +50,22 @@ try {
   console.log('ℹ Telegram bot module not available:', err.message);
 }
 
-// Load Stock Scanner V2 (uses exact manual scan logic)
+// Load Stock Scanner Service
 let stockScanner;
 try {
-  stockScanner = require('./stock-scanner-v2');
+  const StockScanner = require('./lib/scanner/scanner');
+  stockScanner = new StockScanner();
+  
   // Initialize scanner if Telegram bot is available
   if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) {
     stockScanner.initialize();
-    console.log('✓ Stock scanner V2 initialized with daily scans at 7 AM UK time');
-    console.log('✓ Scanner will use exact same logic as manual "Scan All Global Stocks" button');
+    console.log('✓ Stock Scanner Service initialized with daily scans at 7 AM UK time');
+    console.log('✓ Scanner uses clean, unified DTI logic from shared modules');
   } else {
-    console.log('ℹ Stock scanner disabled - Telegram not configured');
+    console.log('ℹ Stock Scanner Service disabled - Telegram not configured');
   }
 } catch (err) {
-  console.log('ℹ Stock scanner V2 module not available:', err.message);
+  console.log('ℹ Stock Scanner Service not available:', err.message);
 }
 
 const app = express();
@@ -900,117 +902,7 @@ app.post('/api/trades/bulk', ensureAuthenticatedAPI, ensureSubscriptionActive, a
   }
 });
 
-// Import from export file (admin only)
-app.post('/api/admin/import', ensureAuthenticatedAPI, async (req, res) => {
-  // Check if user is admin
-  if (req.user.email !== ADMIN_EMAIL) {
-    return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
-  }
-  
-  try {
-    // Import from PostgreSQL export data only
-    // Note: This endpoint now requires data to be provided in the request body
-    // rather than reading from a static JSON file
-    return res.status(400).json({ 
-      error: 'JSON file import no longer supported. Please use the database export/import functionality.' 
-    });
-    console.log(`Importing ${exportData.trades.length} trades from export file`);
-    
-    // Import trades
-    let importedCount = 0;
-    for (const trade of exportData.trades) {
-      try {
-        // Ensure user_id is set correctly
-        const userId = trade.user_id || 'default';
-        await TradeDB.insertTrade(trade, userId);
-        importedCount++;
-      } catch (err) {
-        console.error(`Failed to import trade ${trade.id}:`, err.message);
-      }
-    }
-    
-    // Import alert preferences
-    if (exportData.alert_preferences) {
-      for (const pref of exportData.alert_preferences) {
-        try {
-          await TradeDB.saveAlertPreferences(pref);
-        } catch (err) {
-          console.error('Failed to import alert preference:', err.message);
-        }
-      }
-    }
-    
-    res.json({ 
-      message: `Import complete! Imported ${importedCount} of ${exportData.trades.length} trades`,
-      totalTrades: importedCount,
-      exportDate: exportData.exportDate
-    });
-  } catch (error) {
-    console.error('Import error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
 
-// Import from uploaded backup data (admin only)
-app.post('/api/admin/import-backup', ensureAuthenticatedAPI, async (req, res) => {
-  // Check if user is admin
-  if (req.user.email !== ADMIN_EMAIL) {
-    return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
-  }
-  
-  try {
-    const { trades, alert_preferences } = req.body;
-    
-    if (!trades || !Array.isArray(trades)) {
-      return res.status(400).json({ error: 'Invalid backup data: trades array required' });
-    }
-    
-    console.log(`Importing ${trades.length} trades from uploaded backup`);
-    
-    // Import trades
-    let importedCount = 0;
-    for (const trade of trades) {
-      try {
-        // Debug logging for TBCG.L trade
-        if (trade.symbol === 'TBCG.L') {
-          console.log('=== TBCG.L BULK IMPORT DEBUG ===');
-          console.log('Original trade data:', trade);
-        }
-        
-        // Ensure user_id is set correctly
-        const userId = trade.user_id || req.user.email;
-        await TradeDB.insertTrade(trade, userId);
-        importedCount++;
-      } catch (err) {
-        console.error(`Failed to import trade ${trade.id}:`, err.message);
-        console.error('Trade data:', trade);
-      }
-    }
-    
-    // Import alert preferences
-    if (alert_preferences && Array.isArray(alert_preferences)) {
-      for (const pref of alert_preferences) {
-        try {
-          await TradeDB.saveAlertPreferences({
-            ...pref,
-            user_id: pref.user_id || req.user.email
-          });
-        } catch (err) {
-          console.error('Failed to import alert preference:', err.message);
-        }
-      }
-    }
-    
-    res.json({ 
-      message: `Import complete! Imported ${importedCount} of ${trades.length} trades`,
-      totalTrades: importedCount,
-      userId: req.user.email
-    });
-  } catch (error) {
-    console.error('Import backup error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
 
 // Yahoo Finance proxy - Historical data
 app.get('/yahoo/history', async (req, res) => {
@@ -1539,16 +1431,22 @@ app.post('/api/debug-dti-scan', ensureAuthenticatedAPI, ensureSubscriptionActive
     // Set debug mode environment variable
     process.env.DTI_DEBUG = 'true';
     
-    const { scanAllStocks } = require('./dti-scanner');
+    // Use new scanner service for debug scan
     
     console.log('🚀 Starting debug DTI scan with detailed logging...');
     
-    const opportunities = await scanAllStocks({
+    if (!stockScanner) {
+      throw new Error('Stock Scanner Service not available');
+    }
+    
+    const result = await stockScanner.runGlobalScan(null, {
       entryThreshold: 0,
       takeProfitPercent: 8,
       stopLossPercent: 5,
       maxHoldingDays: 30
     });
+    
+    const opportunities = result.opportunities || [];
     
     // Reset debug mode
     delete process.env.DTI_DEBUG;
@@ -1595,9 +1493,8 @@ app.post('/api/send-backend-alerts', ensureAuthenticatedAPI, ensureSubscriptionA
     
     console.log(`📤 Backend alerts triggered by user: ${req.user.email} for ${opportunities.length} opportunities`);
     
-    // Import the same formatOpportunitiesMessage function used by 7AM scan
-    const { formatOpportunitiesMessage } = require('./dti-scanner');
-    const { sendTelegramAlert } = require('./telegram-bot');
+    // Use scanner service for formatting opportunities message
+    const { sendTelegramAlert } = require('./lib/telegram/telegram-bot');
     
     // Filter for opportunities from last 2 trading days (same as 7AM scan)
     const ukNow = new Date(new Date().toLocaleString("en-US", {timeZone: "Europe/London"}));
@@ -1676,18 +1573,22 @@ app.post('/api/scan/global', async (req, res) => {
     
     const { scanType, period, source } = req.body;
     
-    // Use the same DTI scanner logic as the working manual scan
-    console.log('🔄 Using server-side DTI scanner for global scan...');
+    // Use the new scanner service for global scan
+    console.log('🔄 Using Stock Scanner Service for global scan...');
     
-    const { scanAllStocks, formatOpportunitiesMessage } = require('./dti-scanner');
+    if (!stockScanner) {
+      throw new Error('Stock Scanner Service not available');
+    }
     
     // Execute with exact same parameters as browser manual scan
-    const opportunities = await scanAllStocks({
+    const result = await stockScanner.runGlobalScan(null, {
       entryThreshold: 0,           // Same as browser (DTI < 0)
       takeProfitPercent: 8,        // Same as browser defaults
       stopLossPercent: 5,          // Same as browser defaults
       maxHoldingDays: 30           // Same as browser defaults
     });
+    
+    const opportunities = result.opportunities || [];
     
     console.log(`📊 Server-side DTI scan complete: ${opportunities.length} total opportunities found`);
     

@@ -24,8 +24,6 @@ window.TradeUIModules.dialogs = (function() {
         setupDeleteTradeDialog();
         setupClearHistoryDialog();
         
-        // Setup import dialog
-        setupImportDialog();
     }
     
     /**
@@ -1485,7 +1483,6 @@ window.TradeUIModules.dialogs = (function() {
         setupAllDialogs,
         openCloseTradeDialog,
         openEditTradeDialog,
-        openDeleteTradeDialog,
-        openImportDialog
+        openDeleteTradeDialog
     };
 })();

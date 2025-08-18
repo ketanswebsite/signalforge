@@ -49,7 +49,10 @@
       "Bash(npm run lint)",
       "Bash(TZ=Europe/London date)",
       "Bash(dos2unix:*)",
-      "Bash(npm audit:*)"
+      "Bash(npm audit:*)",
+      "Bash(SESSION_SECRET=\"weak\" node -e \"\ntry {\n  require(''./config/auth.js'');\n  console.log(''❌ FAILED: Should have rejected weak secret'');\n} catch (err) {\n  console.log(''✅ PASSED: Correctly rejected weak SESSION_SECRET'');\n  console.log(''Error:'', err.message);\n}\n\")",
+      "Bash(cp:*)",
+      "Bash(mv:*)"
     ],
     "deny": []
   },

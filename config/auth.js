@@ -76,11 +76,48 @@ passport.use(new GoogleStrategy({
     }
 }));
 
+// Validate SESSION_SECRET - CRITICAL SECURITY REQUIREMENT
+if (!process.env.SESSION_SECRET) {
+    console.error('❌ CRITICAL ERROR: SESSION_SECRET environment variable is required but not set');
+    console.error('   Please set a strong SESSION_SECRET in your environment variables');
+    console.error('   Example: SESSION_SECRET=your-very-long-random-string-min-32-chars');
+    process.exit(1);
+}
+
+// Validate SESSION_SECRET strength
+const sessionSecret = process.env.SESSION_SECRET;
+if (sessionSecret.length < 32) {
+    console.error('❌ CRITICAL ERROR: SESSION_SECRET must be at least 32 characters long');
+    console.error(`   Current length: ${sessionSecret.length} characters`);
+    console.error('   Please use a cryptographically secure random string');
+    process.exit(1);
+}
+
+// Check for weak/default secrets
+const weakSecrets = [
+    'your-secret-key-change-this',
+    'default-secret',
+    'secret',
+    'password',
+    '123456',
+    'change-me',
+    'session-secret'
+];
+
+if (weakSecrets.includes(sessionSecret.toLowerCase())) {
+    console.error('❌ CRITICAL ERROR: SESSION_SECRET uses a weak/default value');
+    console.error(`   Detected weak secret: ${sessionSecret}`);
+    console.error('   Please use a cryptographically secure random string');
+    process.exit(1);
+}
+
+console.log('✅ SESSION_SECRET validation passed - secure session secret configured');
+
 // Session configuration
 const sessionConfig = {
     // Using memory store - sessions will not persist across server restarts
     // For production, consider using connect-pg-simple for PostgreSQL session storage
-    secret: process.env.SESSION_SECRET || 'your-secret-key-change-this',
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     cookie: {
