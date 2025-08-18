@@ -1527,10 +1527,17 @@ app.post('/api/send-backend-alerts', ensureAuthenticatedAPI, ensureSubscriptionA
       return res.status(400).json({ error: 'TELEGRAM_CHAT_ID not configured in environment variables' });
     }
     
-    console.log(`📤 Backend alerts triggered by user: ${req.user.email} for ${opportunities.length} opportunities`);
+    // Check if scanner service is available (contains message formatting)
+    if (!stockScanner) {
+      return res.status(503).json({ error: 'Stock scanner service not available' });
+    }
     
-    // Use scanner service for formatting opportunities message
-    const { sendTelegramAlert } = require('./lib/telegram/telegram-bot');
+    // Check if telegram bot is available
+    if (!telegramBot || typeof telegramBot.sendTelegramAlert !== 'function') {
+      return res.status(503).json({ error: 'Telegram bot service not available' });
+    }
+    
+    console.log(`📤 Backend alerts triggered by user: ${req.user.email} for ${opportunities.length} opportunities`);
     
     // Filter for opportunities from last 2 trading days (same as 7AM scan)
     const ukNow = new Date(new Date().toLocaleString("en-US", {timeZone: "Europe/London"}));
@@ -1564,23 +1571,23 @@ app.post('/api/send-backend-alerts', ensureAuthenticatedAPI, ensureSubscriptionA
     
     if (recentOpportunities.length === 0) {
       // Send "no opportunities" message
-      await sendTelegramAlert(process.env.TELEGRAM_CHAT_ID, {
+      await telegramBot.sendTelegramAlert(process.env.TELEGRAM_CHAT_ID, {
         type: 'custom',
         message: `📊 *Manual Scan Complete*\n\nNo high conviction opportunities from last 2 days found.\n\nScan completed at: ${ukNow.toLocaleString("en-GB", {timeZone: "Europe/London"})}`
       });
     } else {
-      // Convert format to match dti-scanner expectations
+      // Convert format to match scanner service expectations
       const formattedOpportunities = recentOpportunities.map(opp => ({
         stock: opp.stock,
         activeTrade: opp.trade,
         currentPrice: opp.data?.currentPrice || opp.trade.entryPrice
       }));
       
-      // Use same message formatting as 7AM scan
-      const message = formatOpportunitiesMessage(formattedOpportunities);
+      // Use scanner service's message formatting method (following project structure)
+      const message = stockScanner.formatOpportunitiesMessage(formattedOpportunities);
       
-      // Send via same Telegram system as 7AM scan
-      await sendTelegramAlert(process.env.TELEGRAM_CHAT_ID, {
+      // Send via telegram bot service
+      await telegramBot.sendTelegramAlert(process.env.TELEGRAM_CHAT_ID, {
         type: 'custom',
         message: message
       });
