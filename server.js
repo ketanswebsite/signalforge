@@ -1397,13 +1397,8 @@ app.post('/api/scanner/run', ensureAuthenticatedAPI, ensureSubscriptionActive, a
       return res.status(400).json({ error: 'No Telegram chat ID configured' });
     }
     
-    // Run scan asynchronously using unified scanner service (same as 7 AM scan)
-    stockScanner.runGlobalScan(chatId, {
-      entryThreshold: 0,           // Same as manual frontend scan
-      takeProfitPercent: 8,        // Same defaults
-      stopLossPercent: 5,          // Same defaults
-      maxHoldingDays: 30           // Same defaults
-    });
+    // Run high conviction scan (same as successful manual scan logic)
+    stockScanner.runHighConvictionScan(chatId);
     
     res.json({ 
       success: true, 
@@ -1446,13 +1441,8 @@ app.post('/api/test-7am-scan', ensureAuthenticatedAPI, ensureSubscriptionActive,
     console.log('[TEST 7AM] UK time:', new Date().toLocaleString("en-GB", {timeZone: "Europe/London"}));
     console.log('[TEST 7AM] Using default TELEGRAM_CHAT_ID:', process.env.TELEGRAM_CHAT_ID);
     
-    // Run scan exactly as the cron job would - same method and parameters as 7 AM scan
-    stockScanner.runGlobalScan(process.env.TELEGRAM_CHAT_ID, {
-      entryThreshold: 0,           // Same as manual frontend scan
-      takeProfitPercent: 8,        // Same defaults
-      stopLossPercent: 5,          // Same defaults  
-      maxHoldingDays: 30           // Same defaults
-    });
+    // Run high conviction scan exactly as the 7 AM cron job would
+    stockScanner.runHighConvictionScan(process.env.TELEGRAM_CHAT_ID);
     
     res.json({ 
       success: true, 
@@ -1484,12 +1474,7 @@ app.post('/api/debug-dti-scan', ensureAuthenticatedAPI, ensureSubscriptionActive
       throw new Error('Stock Scanner Service not available');
     }
     
-    const result = await stockScanner.runGlobalScan(null, {
-      entryThreshold: 0,
-      takeProfitPercent: 8,
-      stopLossPercent: 5,
-      maxHoldingDays: 30
-    });
+    const result = await stockScanner.runHighConvictionScan();
     
     const opportunities = result.opportunities || [];
     
@@ -1638,13 +1623,8 @@ app.post('/api/scan/global', async (req, res) => {
       throw new Error('Stock Scanner Service not available');
     }
     
-    // Execute with exact same parameters as browser manual scan
-    const result = await stockScanner.runGlobalScan(null, {
-      entryThreshold: 0,           // Same as browser (DTI < 0)
-      takeProfitPercent: 8,        // Same as browser defaults
-      stopLossPercent: 5,          // Same as browser defaults
-      maxHoldingDays: 30           // Same as browser defaults
-    });
+    // Execute high conviction scan with same logic as successful manual scan
+    const result = await stockScanner.runHighConvictionScan();
     
     const opportunities = result.opportunities || [];
     
