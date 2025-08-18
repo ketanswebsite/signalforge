@@ -1397,8 +1397,13 @@ app.post('/api/scanner/run', ensureAuthenticatedAPI, ensureSubscriptionActive, a
       return res.status(400).json({ error: 'No Telegram chat ID configured' });
     }
     
-    // Run scan asynchronously using V2 scanner (mimics exact manual button behavior)
-    stockScanner.runManualScanSimulation(chatId);
+    // Run scan asynchronously using unified scanner service (same as 7 AM scan)
+    stockScanner.runGlobalScan(chatId, {
+      entryThreshold: 0,           // Same as manual frontend scan
+      takeProfitPercent: 8,        // Same defaults
+      stopLossPercent: 5,          // Same defaults
+      maxHoldingDays: 30           // Same defaults
+    });
     
     res.json({ 
       success: true, 
@@ -1441,9 +1446,13 @@ app.post('/api/test-7am-scan', ensureAuthenticatedAPI, ensureSubscriptionActive,
     console.log('[TEST 7AM] UK time:', new Date().toLocaleString("en-GB", {timeZone: "Europe/London"}));
     console.log('[TEST 7AM] Using default TELEGRAM_CHAT_ID:', process.env.TELEGRAM_CHAT_ID);
     
-    // Run scan exactly as the cron job would - without passing a specific chatId
-    // This simulates the 7 AM scheduled behavior using new V2 scanner
-    stockScanner.runManualScanSimulation();
+    // Run scan exactly as the cron job would - same method and parameters as 7 AM scan
+    stockScanner.runGlobalScan(process.env.TELEGRAM_CHAT_ID, {
+      entryThreshold: 0,           // Same as manual frontend scan
+      takeProfitPercent: 8,        // Same defaults
+      stopLossPercent: 5,          // Same defaults  
+      maxHoldingDays: 30           // Same defaults
+    });
     
     res.json({ 
       success: true, 
