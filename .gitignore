@@ -34,3 +34,31 @@ temp/
 # Package Lock Files (optional - uncomment if you want to exclude)
 # package-lock.json
 # yarn.lock
+
+# Database files (SQLite - no longer used)
+*.db
+*.db-journal
+database/
+
+# Backup and temporary files
+*.bak
+*.backup
+*.old
+nul
+temp.*
+
+# Screenshots and test files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.pdf
+ss.*
+screenshot.*
+
+# Build artifacts
+build/
+dist/
+
+# Claude settings (keep local only)
+.claude/settings.local.json

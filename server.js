@@ -38,16 +38,29 @@ try {
 // Load Telegram bot
 let telegramBot;
 try {
-  telegramBot = require('./telegram-bot');
+  console.log('🔍 Loading Telegram bot module...');
+  console.log('  TELEGRAM_BOT_TOKEN exists:', !!process.env.TELEGRAM_BOT_TOKEN);
+  console.log('  TELEGRAM_CHAT_ID exists:', !!process.env.TELEGRAM_CHAT_ID);
+  
+  telegramBot = require('./lib/telegram/telegram-bot');
+  console.log('✓ Telegram bot module loaded successfully');
+  console.log('  Module exports:', Object.keys(telegramBot));
+  
   // Initialize bot if token is provided
   if (process.env.TELEGRAM_BOT_TOKEN) {
+    console.log('🚀 Initializing telegram bot...');
     telegramBot.initializeTelegramBot();
     console.log('✓ Telegram bot initialized');
+    console.log('  telegramBot variable type:', typeof telegramBot);
+    console.log('  sendTelegramAlert available:', typeof telegramBot.sendTelegramAlert);
   } else {
     console.log('ℹ Telegram bot token not found, alerts disabled');
+    telegramBot = null; // Explicitly set to null if no token
   }
 } catch (err) {
   console.log('ℹ Telegram bot module not available:', err.message);
+  console.log('ℹ Setting telegramBot to null');
+  telegramBot = null;
 }
 
 // Load Stock Scanner Service
@@ -1184,8 +1197,22 @@ app.post('/api/alerts/send-custom', ensureAuthenticatedAPI, ensureSubscriptionAc
   try {
     const { chatId, message } = req.body;
     
+    // Enhanced debugging for telegram bot initialization
+    console.log('🔍 /api/alerts/send-custom - Debug info:');
+    console.log('  telegramBot exists:', !!telegramBot);
+    console.log('  telegramBot type:', typeof telegramBot);
+    console.log('  telegramBot methods:', telegramBot ? Object.keys(telegramBot) : 'N/A');
+    console.log('  TELEGRAM_BOT_TOKEN set:', !!process.env.TELEGRAM_BOT_TOKEN);
+    console.log('  TELEGRAM_CHAT_ID set:', !!process.env.TELEGRAM_CHAT_ID);
+    
     if (!telegramBot) {
+      console.error('❌ telegramBot is falsy:', telegramBot);
       return res.status(400).json({ error: 'Telegram bot not initialized' });
+    }
+    
+    if (typeof telegramBot.sendTelegramAlert !== 'function') {
+      console.error('❌ sendTelegramAlert method not available');
+      return res.status(400).json({ error: 'Telegram bot sendTelegramAlert method not available' });
     }
     
     if (!chatId || !message) {
@@ -1211,10 +1238,19 @@ app.post('/api/alerts/send-custom', ensureAuthenticatedAPI, ensureSubscriptionAc
       }
     }
     
-    await telegramBot.sendTelegramAlert(chatId, {
+    console.log('📤 Attempting to send telegram alert to:', chatId);
+    console.log('📝 Message preview:', formattedMessage.substring(0, 100) + '...');
+    
+    const result = await telegramBot.sendTelegramAlert(chatId, {
       type: 'custom',
       message: formattedMessage
     });
+    
+    console.log('📤 Telegram alert result:', result);
+    
+    if (result === false) {
+      return res.status(400).json({ error: 'Failed to send telegram alert - check bot configuration' });
+    }
     
     res.json({ success: true });
   } catch (error) {

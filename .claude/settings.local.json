@@ -52,7 +52,10 @@
       "Bash(npm audit:*)",
       "Bash(SESSION_SECRET=\"weak\" node -e \"\ntry {\n  require(''./config/auth.js'');\n  console.log(''❌ FAILED: Should have rejected weak secret'');\n} catch (err) {\n  console.log(''✅ PASSED: Correctly rejected weak SESSION_SECRET'');\n  console.log(''Error:'', err.message);\n}\n\")",
       "Bash(cp:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(DATABASE_URL=\"postgresql://test:test@localhost:5432/test\" TELEGRAM_BOT_TOKEN=\"test_token\" node -e \"\ntry {\n  const telegramBot = require(''./lib/telegram/telegram-bot'');\n  console.log(''✅ SUCCESS: Telegram bot module loaded successfully'');\n  console.log(''Available methods:'', Object.keys(telegramBot));\n} catch (err) {\n  console.log(''❌ FAILED: Could not load telegram bot:'', err.message);\n}\n\")",
+      "Bash(env)",
+      "Bash(echo:*)"
     ],
     "deny": []
   },
