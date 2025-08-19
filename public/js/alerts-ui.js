@@ -14,11 +14,8 @@ const AlertsUI = (function() {
         // Load current preferences
         await loadPreferences();
         
-        // Create the alerts modal first
-        createAlertsModal();
-        
-        // Add alerts button to the page
-        addAlertsButton();
+        // Add Telegram subscription button to the page
+        addTelegramButton();
         
         console.log('AlertsUI: Initialized');
     }
@@ -61,10 +58,10 @@ const AlertsUI = (function() {
         }
     }
     
-    // Add alerts button to navigation
-    function addAlertsButton() {
+    // Add telegram subscription button to navigation
+    function addTelegramButton() {
         // Check if button already exists
-        if (document.querySelector('.alerts-button')) return;
+        if (document.querySelector('.telegram-button')) return;
         
         // Wait a bit for page to load
         setTimeout(() => {
@@ -83,57 +80,77 @@ const AlertsUI = (function() {
             
             if (!targetContainer) return;
             
-            const alertsButton = document.createElement('button');
-            alertsButton.className = 'alerts-button btn-nav desktop-only';
-            alertsButton.innerHTML = `
+            const telegramButton = document.createElement('a');
+            telegramButton.href = 'https://t.me/MySignalForgeBot?start=all';
+            telegramButton.target = '_blank';
+            telegramButton.className = 'telegram-button btn-nav desktop-only';
+            telegramButton.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    <path d="M21.198 2.433a1.3 1.3 0 0 0-1.394-.12L2.304 9.585a1.4 1.4 0 0 0 .096 2.64l3.93 1.434 1.47 4.722c.22.704 1.177.85 1.654.252l2.13-2.67 4.263 3.155a1.3 1.3 0 0 0 2.092-.934L21.334 3.684a1.3 1.3 0 0 0-.136-1.25Z"></path>
+                    <path d="M11.44 14.435 9.9 15.98"></path>
                 </svg>
-                Alerts
+                📈 Subscribe to Telegram
             `;
             
-            alertsButton.title = 'Alerts Settings';
+            telegramButton.title = 'Get daily conviction trades & scan results on Telegram';
             
-            // Navigate to alerts page when clicked
-            alertsButton.onclick = function(e) {
-                e.preventDefault();
-                window.location.href = '/alerts.html';
+            // Add click tracking
+            telegramButton.onclick = function(e) {
+                // Track the click for analytics
+                if (window.gtag) {
+                    window.gtag('event', 'telegram_subscribe_click', {
+                        'event_category': 'engagement',
+                        'event_label': 'homepage_button'
+                    });
+                }
+                console.log('🎯 User clicked Telegram subscription button');
             };
             
             // Insert the button before the target container
-            targetContainer.parentNode.insertBefore(alertsButton, targetContainer);
+            targetContainer.parentNode.insertBefore(telegramButton, targetContainer);
             
             // Also add to mobile navigation drawer
-            addAlertsButtonToMobileNav();
+            addTelegramButtonToMobileNav();
         }, 1000); // Wait 1 second for page to fully load
     }
     
-    // Add alerts button to mobile navigation drawer
-    function addAlertsButtonToMobileNav() {
+    // Add telegram subscription button to mobile navigation drawer
+    function addTelegramButtonToMobileNav() {
         const mobileDrawer = document.querySelector('.mobile-nav-drawer .drawer-nav-links');
         if (!mobileDrawer) return;
         
-        // Check if mobile alerts button already exists
-        if (mobileDrawer.querySelector('.alerts-mobile-link')) return;
+        // Check if mobile telegram button already exists
+        if (mobileDrawer.querySelector('.telegram-mobile-link')) return;
         
-        const mobileAlertsLink = document.createElement('a');
-        mobileAlertsLink.href = '/alerts.html';
-        mobileAlertsLink.className = 'drawer-nav-link alerts-mobile-link';
-        mobileAlertsLink.innerHTML = `
+        const mobileTelegramLink = document.createElement('a');
+        mobileTelegramLink.href = 'https://t.me/MySignalForgeBot?start=all';
+        mobileTelegramLink.target = '_blank';
+        mobileTelegramLink.className = 'drawer-nav-link telegram-mobile-link';
+        mobileTelegramLink.innerHTML = `
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                <path d="M21.198 2.433a1.3 1.3 0 0 0-1.394-.12L2.304 9.585a1.4 1.4 0 0 0 .096 2.64l3.93 1.434 1.47 4.722c.22.704 1.177.85 1.654.252l2.13-2.67 4.263 3.155a1.3 1.3 0 0 0 2.092-.934L21.334 3.684a1.3 1.3 0 0 0-.136-1.25Z"></path>
+                <path d="M11.44 14.435 9.9 15.98"></path>
             </svg>
-            <span>Alerts</span>
+            <span>📈 Subscribe to Telegram</span>
         `;
+        
+        // Add click tracking for mobile
+        mobileTelegramLink.onclick = function(e) {
+            if (window.gtag) {
+                window.gtag('event', 'telegram_subscribe_click', {
+                    'event_category': 'engagement',
+                    'event_label': 'mobile_menu_button'
+                });
+            }
+            console.log('🎯 User clicked mobile Telegram subscription button');
+        };
         
         // Find the first nav link and insert before it
         const firstNavLink = mobileDrawer.querySelector('.drawer-nav-link');
         if (firstNavLink) {
-            mobileDrawer.insertBefore(mobileAlertsLink, firstNavLink);
+            mobileDrawer.insertBefore(mobileTelegramLink, firstNavLink);
         } else {
-            mobileDrawer.appendChild(mobileAlertsLink);
+            mobileDrawer.appendChild(mobileTelegramLink);
         }
     }
     
@@ -274,10 +291,25 @@ const AlertsUI = (function() {
         // Add styles
         const style = document.createElement('style');
         style.textContent = `
-            .alerts-button {
+            .telegram-button {
                 display: inline-flex;
                 align-items: center;
                 gap: 6px;
+                background: linear-gradient(135deg, #0088cc 0%, #24A1DE 100%);
+                color: white !important;
+                border: none;
+                text-decoration: none !important;
+                font-weight: 500;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 8px rgba(0, 136, 204, 0.2);
+            }
+            
+            .telegram-button:hover {
+                background: linear-gradient(135deg, #0077b5 0%, #1f8bc7 100%);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0, 136, 204, 0.3);
+                color: white !important;
+                text-decoration: none !important;
             }
             
             .alert-section {
