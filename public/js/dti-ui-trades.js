@@ -843,8 +843,8 @@ async function sendDirectOpportunityAlerts(opportunities) {
             return isRecent;
         });
         
-        // Take up to 5 recent high conviction opportunities
-        const alertOpportunities = recentOpportunities.slice(0, 5);
+        // Send ALL recent high conviction opportunities (no limit)
+        const alertOpportunities = recentOpportunities;
         
         console.log(`📊 Total opportunities: ${opportunities.length}`);
         console.log(`⭐ High conviction opportunities: ${highConvictionOpportunities.length}`);
@@ -862,50 +862,58 @@ async function sendDirectOpportunityAlerts(opportunities) {
             return;
         }
         
-        // Send summary
-        const summaryMessage = {
-            type: 'opportunity_scan',
-            title: '🎯 TECHNICAL PATTERNS FOUND',
-            text: `Found ${alertOpportunities.length} Strong Technical Patterns`,
-            fields: [
-                { label: 'Total Opportunities Scanned', value: opportunities.length },
-                { label: 'Top Patterns Selected', value: alertOpportunities.length },
-                { label: 'Scan Date', value: new Date().toLocaleDateString() }
-            ]
+        // Create a single comprehensive message with all opportunities
+        let message = `📊 *🎯 HIGH CONVICTION TRADING OPPORTUNITIES*\n`;
+        message += `Found ${alertOpportunities.length} Active Trades\n`;
+        message += `Scan Date: *${new Date().toLocaleDateString('en-GB')}*\n\n`;
+        
+        // Add individual opportunities with complete details
+        for (let i = 0; i < alertOpportunities.length; i++) {
+            const opp = alertOpportunities[i];
+            const stockName = opp.stock?.name || 'Unknown';
+            const stockCode = opp.stock.symbol;
+            const market = getMarketFromSymbol(stockCode);
+            
+            const currentPrice = opp.trade?.currentPrice || opp.trade?.entryPrice || 0;
+            const targetPrice = (currentPrice * 1.08).toFixed(2); // 8% profit target
+            const stopLossPrice = (currentPrice * 0.95).toFixed(2); // 5% stop loss
+            
+            // Currency symbol based on market
+            const currencySymbol = market === 'India' ? '₹' : market === 'UK' ? '£' : '$';
+            
+            const entryDate = opp.trade.signalDate || opp.trade.entryDate;
+            const squareOffDate = calculateSquareOffDate(entryDate);
+            
+            // Calculate win rate from stock win rates
+            const stockWinRates = DTIUI.calculateStockWinRates();
+            const winRate = stockWinRates[stockCode] || 0;
+            
+            // Get total trades from the data
+            const stockData = DTIBacktester.allStocksData?.find(s => s.stock.symbol === stockCode);
+            const totalTrades = stockData?.trades?.filter(t => !t.isOpen)?.length || 0;
+            
+            message += `🎯 *${stockName}*\n`;
+            message += `Code: ${stockCode}\n`;
+            message += `Market: ${market}\n`;
+            message += `Current Price: ${currencySymbol}${currentPrice.toFixed(2)}\n`;
+            message += `Target Price: ${currencySymbol}${targetPrice}\n`;
+            message += `Stop Loss: ${currencySymbol}${stopLossPrice}\n`;
+            message += `Square Off Date: ${squareOffDate}\n`;
+            message += `Win Ratio: ${winRate.toFixed(1)}%\n`;
+            message += `Backtested Trades: ${totalTrades} (5 years)\n`;
+            
+            if (i < alertOpportunities.length - 1) message += `\n`;
+        }
+        
+        message += `\n📈 Total Scanned: ${opportunities.length} stocks`;
+        
+        // Send single comprehensive message
+        const comprehensiveMessage = {
+            type: 'custom',
+            message: message
         };
         
-        await sendTelegramMessage(prefs.telegram_chat_id, summaryMessage);
-        
-        // Send individual opportunities with simplified format
-        for (const opp of alertOpportunities) {
-            // Calculate target and stop loss based on entry price
-            const entryPrice = opp.trade?.currentPrice || opp.trade?.entryPrice || 0;
-            const targetPrice = entryPrice * 1.08; // 8% profit target
-            const stopLossPrice = entryPrice * 0.95; // 5% stop loss
-            const currencySymbol = getCurrencySymbol(opp.stock.symbol);
-            
-            // Use actual signal date, not today
-            const signalDate = new Date(opp.trade.signalDate || opp.trade.entryDate);
-            const exitDate = new Date(signalDate);
-            exitDate.setDate(exitDate.getDate() + 30); // 30 days from signal date
-            
-            const oppMessage = {
-                type: 'buy_opportunity',
-                title: 'HIGH CONFIDENCE PATTERN',
-                stock: opp.stock.symbol,
-                fields: [
-                    { label: 'Stock', value: opp.stock.name || opp.stock.symbol },
-                    { label: 'Entry Price', value: `${currencySymbol}${entryPrice.toFixed(2)}` },
-                    { label: 'Target Price', value: `${currencySymbol}${targetPrice.toFixed(2)}` },
-                    { label: 'Stop Loss', value: `${currencySymbol}${stopLossPrice.toFixed(2)}` },
-                    { label: 'Entry Date', value: signalDate.toLocaleDateString() },
-                    { label: 'Exit Date', value: exitDate.toLocaleDateString() }
-                ]
-            };
-            
-            await sendTelegramMessage(prefs.telegram_chat_id, oppMessage);
-            await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
-        }
+        await sendTelegramMessage(prefs.telegram_chat_id, comprehensiveMessage);
         
         console.log('✅ All opportunity alerts sent successfully');
         
@@ -938,6 +946,26 @@ async function sendTelegramMessage(chatId, messageData) {
     
     const result = await response.json();
     console.log('✅ Telegram response:', result);
+}
+
+/**
+ * Determine market from stock symbol
+ */
+function getMarketFromSymbol(symbol) {
+    if (symbol.includes('.NS')) return 'India';
+    if (symbol.includes('.L')) return 'UK';
+    if (!symbol.includes('.')) return 'US';
+    return 'International';
+}
+
+/**
+ * Calculate square off date (30 days from entry for max holding period)
+ */
+function calculateSquareOffDate(entryDate) {
+    const entry = new Date(entryDate);
+    const squareOff = new Date(entry);
+    squareOff.setDate(entry.getDate() + 30); // Max holding period
+    return squareOff.toLocaleDateString('en-GB');
 }
 
 /**
