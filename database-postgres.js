@@ -102,10 +102,29 @@ async function initializeDatabase() {
       )
     `);
 
+    // Create telegram_subscribers table for broadcast functionality
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS telegram_subscribers (
+        id SERIAL PRIMARY KEY,
+        chat_id VARCHAR(100) UNIQUE NOT NULL,
+        user_id VARCHAR(100),
+        username VARCHAR(100),
+        first_name VARCHAR(100),
+        last_name VARCHAR(100),
+        subscription_type VARCHAR(50) DEFAULT 'all',
+        is_active BOOLEAN DEFAULT true,
+        subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        referral_source VARCHAR(100)
+      )
+    `);
+
     // Create index on user_id for better performance
     await pool.query('CREATE INDEX IF NOT EXISTS idx_trades_user_id ON trades(user_id)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_trades_status ON trades(status)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_trades_symbol ON trades(symbol)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_telegram_subscribers_chat_id ON telegram_subscribers(chat_id)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_telegram_subscribers_active ON telegram_subscribers(is_active)');
 
     // Migrate existing users from trades table
     await migrateExistingUsers();
@@ -858,6 +877,117 @@ const TradeDB = {
       }
     } catch (error) {
       console.error('Error in ensureUserExists:', error);
+    }
+  },
+
+  // Telegram Subscribers Management
+  async addTelegramSubscriber(chatId, userData = {}, subscriptionType = 'all', referralSource = null) {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        INSERT INTO telegram_subscribers 
+          (chat_id, user_id, username, first_name, last_name, subscription_type, referral_source)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        ON CONFLICT (chat_id) 
+        DO UPDATE SET 
+          user_id = EXCLUDED.user_id,
+          username = EXCLUDED.username,
+          first_name = EXCLUDED.first_name,
+          last_name = EXCLUDED.last_name,
+          subscription_type = EXCLUDED.subscription_type,
+          is_active = true,
+          last_activity = CURRENT_TIMESTAMP,
+          referral_source = EXCLUDED.referral_source
+        RETURNING *
+      `, [
+        chatId.toString(),
+        userData.id?.toString() || null,
+        userData.username || null,
+        userData.first_name || null,
+        userData.last_name || null,
+        subscriptionType,
+        referralSource
+      ]);
+      
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error adding/updating Telegram subscriber:', error);
+      throw error;
+    }
+  },
+
+  async removeTelegramSubscriber(chatId) {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        UPDATE telegram_subscribers 
+        SET is_active = false, last_activity = CURRENT_TIMESTAMP
+        WHERE chat_id = $1
+        RETURNING *
+      `, [chatId.toString()]);
+      
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error removing Telegram subscriber:', error);
+      throw error;
+    }
+  },
+
+  async getAllActiveSubscribers(subscriptionType = null) {
+    checkConnection();
+    try {
+      let query = `
+        SELECT chat_id, username, first_name, subscription_type, subscribed_at
+        FROM telegram_subscribers 
+        WHERE is_active = true
+      `;
+      let params = [];
+      
+      if (subscriptionType) {
+        query += ` AND (subscription_type = $1 OR subscription_type = 'all')`;
+        params.push(subscriptionType);
+      }
+      
+      query += ` ORDER BY subscribed_at DESC`;
+      
+      const result = await pool.query(query, params);
+      return result.rows;
+    } catch (error) {
+      console.error('Error getting active subscribers:', error);
+      throw error;
+    }
+  },
+
+  async getSubscriberStats() {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        SELECT 
+          COUNT(*) as total_subscribers,
+          COUNT(CASE WHEN is_active = true THEN 1 END) as active_subscribers,
+          COUNT(CASE WHEN subscription_type = 'all' THEN 1 END) as all_subscription,
+          COUNT(CASE WHEN subscription_type = 'conviction' THEN 1 END) as conviction_subscription,
+          COUNT(CASE WHEN subscription_type = 'scans' THEN 1 END) as scans_subscription
+        FROM telegram_subscribers
+      `);
+      
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error getting subscriber stats:', error);
+      throw error;
+    }
+  },
+
+  async updateSubscriberActivity(chatId) {
+    checkConnection();
+    try {
+      await pool.query(`
+        UPDATE telegram_subscribers 
+        SET last_activity = CURRENT_TIMESTAMP
+        WHERE chat_id = $1 AND is_active = true
+      `, [chatId.toString()]);
+    } catch (error) {
+      console.error('Error updating subscriber activity:', error);
     }
   },
 
