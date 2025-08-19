@@ -172,45 +172,14 @@ app.use((req, res, next) => {
   next();
 });
 
-// Enhanced user capture function
+// Enhanced user capture function - using shared database connection
 async function ensureUserInDatabase(user) {
   try {
     if (!user || !user.email) return;
     
-    // Check if user exists in database
-    const { Pool } = require('pg');
-    const pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-    });
+    // Use the shared database module instead of creating new connections
+    await TradeDB.ensureUserExists(user);
     
-    const existingUser = await pool.query('SELECT email FROM users WHERE email = $1', [user.email]);
-    
-    if (existingUser.rows.length === 0) {
-      // User not in database, add them
-      console.log(`🔄 Capturing missing user: ${user.email}`);
-      
-      await pool.query(`
-        INSERT INTO users (email, name, google_id, picture, first_login, last_login)
-        VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        ON CONFLICT (email) DO UPDATE SET 
-          name = EXCLUDED.name,
-          picture = EXCLUDED.picture,
-          last_login = CURRENT_TIMESTAMP
-      `, [
-        user.email,
-        user.name || user.email.split('@')[0],
-        user.id || user.google_id || null,
-        user.picture || null
-      ]);
-      
-      console.log(`✅ Successfully captured user: ${user.email}`);
-    } else {
-      // User exists, update last_login
-      await pool.query('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE email = $1', [user.email]);
-    }
-    
-    await pool.end();
   } catch (error) {
     console.error('Error in ensureUserInDatabase:', error);
   }

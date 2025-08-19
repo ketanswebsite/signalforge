@@ -821,6 +821,46 @@ const TradeDB = {
     }
   },
 
+  // Ensure user exists in database (prevents connection pool exhaustion)
+  async ensureUserExists(user) {
+    if (!dbConnected || !pool || !user || !user.email) return;
+    
+    try {
+      const client = await pool.connect();
+      try {
+        const existingUser = await client.query('SELECT email FROM users WHERE email = $1', [user.email]);
+        
+        if (existingUser.rows.length === 0) {
+          // User not in database, add them
+          console.log(`🔄 Capturing missing user: ${user.email}`);
+          
+          await client.query(`
+            INSERT INTO users (email, name, google_id, picture, first_login, last_login)
+            VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT (email) DO UPDATE SET 
+              name = EXCLUDED.name,
+              picture = EXCLUDED.picture,
+              last_login = CURRENT_TIMESTAMP
+          `, [
+            user.email,
+            user.name || user.email.split('@')[0],
+            user.id || user.google_id || null,
+            user.picture || null
+          ]);
+          
+          console.log(`✅ Successfully captured user: ${user.email}`);
+        } else {
+          // User exists, update last_login
+          await client.query('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE email = $1', [user.email]);
+        }
+      } finally {
+        client.release(); // Important: release connection back to pool
+      }
+    } catch (error) {
+      console.error('Error in ensureUserExists:', error);
+    }
+  },
+
   // Close connection
   async close() {
     await pool.end();
