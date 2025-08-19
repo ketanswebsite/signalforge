@@ -92,9 +92,9 @@ const AlertsUI = (function() {
                 📈 Subscribe to Telegram
             `;
             
-            telegramButton.title = 'Get daily conviction trades & scan results on Telegram';
+            telegramButton.title = 'Click to subscribe to daily 7 AM conviction trades on Telegram (requires Telegram app)';
             
-            // Add click tracking
+            // Add click tracking and fallback handling
             telegramButton.onclick = function(e) {
                 // Track the click for analytics
                 if (window.gtag) {
@@ -104,6 +104,14 @@ const AlertsUI = (function() {
                     });
                 }
                 console.log('🎯 User clicked Telegram subscription button');
+                
+                // Show user-friendly message for better UX
+                setTimeout(() => {
+                    if (!document.hidden) {
+                        // If page is still visible after 1 second, Telegram might not be installed
+                        showTelegramInstructions();
+                    }
+                }, 1000);
             };
             
             // Insert the button before the target container
@@ -143,6 +151,13 @@ const AlertsUI = (function() {
                 });
             }
             console.log('🎯 User clicked mobile Telegram subscription button');
+            
+            // Show user-friendly message for mobile too
+            setTimeout(() => {
+                if (!document.hidden) {
+                    showTelegramInstructions();
+                }
+            }, 1000);
         };
         
         // Find the first nav link and insert before it
@@ -152,6 +167,65 @@ const AlertsUI = (function() {
         } else {
             mobileDrawer.appendChild(mobileTelegramLink);
         }
+    }
+    
+    // Show instructions if Telegram isn't installed
+    function showTelegramInstructions() {
+        // Check if instruction modal already exists
+        if (document.getElementById('telegram-instructions-modal')) return;
+        
+        const modal = document.createElement('div');
+        modal.id = 'telegram-instructions-modal';
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 10000; display: flex;
+            align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;
+        `;
+        
+        modal.innerHTML = `
+            <div style="background: white; border-radius: 12px; padding: 30px; max-width: 500px; 
+                        text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+                <div style="font-size: 48px; margin-bottom: 20px;">📱</div>
+                <h3 style="margin: 0 0 15px 0; color: #2c3e50;">Join My Telegram for Trading Signals!</h3>
+                <p style="color: #666; margin-bottom: 25px; line-height: 1.5;">
+                    Get my daily 7 AM conviction trades and high conviction scan results delivered directly to your phone.
+                </p>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+                    <p style="margin: 0 0 10px 0; font-weight: 500;">📲 How to subscribe:</p>
+                    <p style="margin: 0; color: #666; font-size: 14px;">
+                        1. Install Telegram app on your phone<br>
+                        2. Search for <strong>@MySignalForgeBot</strong><br>
+                        3. Send <strong>/start</strong> to subscribe
+                    </p>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <a href="https://telegram.org/apps" target="_blank" 
+                       style="background: #0088cc; color: white; padding: 12px 24px; border-radius: 6px; 
+                              text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 8px;">
+                        📱 Install Telegram
+                    </a>
+                    <a href="https://t.me/MySignalForgeBot" target="_blank"
+                       style="background: #24A1DE; color: white; padding: 12px 24px; border-radius: 6px; 
+                              text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 8px;">
+                        🚀 Open Bot
+                    </a>
+                </div>
+                <button onclick="document.getElementById('telegram-instructions-modal').remove()" 
+                        style="background: none; border: none; color: #999; margin-top: 20px; 
+                               cursor: pointer; text-decoration: underline;">
+                    Close
+                </button>
+            </div>
+        `;
+        
+        // Close on background click
+        modal.onclick = function(e) {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        };
+        
+        document.body.appendChild(modal);
     }
     
     // Create the alerts configuration modal

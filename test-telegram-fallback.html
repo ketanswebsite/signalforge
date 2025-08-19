@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Button Fallback Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .test-container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 500px;
+        }
+        
+        .telegram-test-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #0088cc 0%, #24A1DE 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 136, 204, 0.3);
+            margin: 20px 0;
+        }
+        
+        .telegram-test-button:hover {
+            background: linear-gradient(135deg, #0077b5 0%, #1f8bc7 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 136, 204, 0.4);
+        }
+        
+        .info-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .emoji {
+            font-size: 48px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="emoji">🧪</div>
+        <h1>Telegram Button Test</h1>
+        <p>Click the button below to test the Telegram subscription flow with fallback instructions.</p>
+        
+        <a href="https://t.me/MySignalForgeBot?start=all" 
+           target="_blank" 
+           class="telegram-test-button"
+           id="telegram-button">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M21.198 2.433a1.3 1.3 0 0 0-1.394-.12L2.304 9.585a1.4 1.4 0 0 0 .096 2.64l3.93 1.434 1.47 4.722c.22.704 1.177.85 1.654.252l2.13-2.67 4.263 3.155a1.3 1.3 0 0 0 2.092-.934L21.334 3.684a1.3 1.3 0 0 0-.136-1.25Z"/>
+                <path d="M11.44 14.435 9.9 15.98"/>
+            </svg>
+            📈 Subscribe to Telegram
+        </a>
+        
+        <div class="info-box">
+            <h4>Expected Behavior:</h4>
+            <ul>
+                <li>✅ <strong>With Telegram installed:</strong> Opens bot directly</li>
+                <li>📱 <strong>Without Telegram:</strong> Shows helpful instruction modal after 1 second</li>
+                <li>📲 <strong>On mobile:</strong> Opens Telegram app or app store</li>
+            </ul>
+        </div>
+        
+        <div class="info-box">
+            <h4>What the modal includes:</h4>
+            <ul>
+                <li>📖 Clear instructions for subscribing</li>
+                <li>🔗 Direct links to install Telegram</li>
+                <li>🤖 Link to open the bot directly</li>
+                <li>❌ Easy close option</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('telegram-button').onclick = function(e) {
+            console.log('🎯 Telegram button clicked');
+            
+            // Show fallback instructions if Telegram doesn't open
+            setTimeout(() => {
+                if (!document.hidden) {
+                    showTelegramInstructions();
+                }
+            }, 1000);
+        };
+        
+        // Inline version of the showTelegramInstructions function
+        function showTelegramInstructions() {
+            if (document.getElementById('telegram-instructions-modal')) return;
+            
+            const modal = document.createElement('div');
+            modal.id = 'telegram-instructions-modal';
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.5); z-index: 10000; display: flex;
+                align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: white; border-radius: 12px; padding: 30px; max-width: 500px; 
+                            text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+                    <div style="font-size: 48px; margin-bottom: 20px;">📱</div>
+                    <h3 style="margin: 0 0 15px 0; color: #2c3e50;">Join My Telegram for Trading Signals!</h3>
+                    <p style="color: #666; margin-bottom: 25px; line-height: 1.5;">
+                        Get my daily 7 AM conviction trades and high conviction scan results delivered directly to your phone.
+                    </p>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+                        <p style="margin: 0 0 10px 0; font-weight: 500;">📲 How to subscribe:</p>
+                        <p style="margin: 0; color: #666; font-size: 14px;">
+                            1. Install Telegram app on your phone<br>
+                            2. Search for <strong>@MySignalForgeBot</strong><br>
+                            3. Send <strong>/start</strong> to subscribe
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                        <a href="https://telegram.org/apps" target="_blank" 
+                           style="background: #0088cc; color: white; padding: 12px 24px; border-radius: 6px; 
+                                  text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 8px;">
+                            📱 Install Telegram
+                        </a>
+                        <a href="https://t.me/MySignalForgeBot" target="_blank"
+                           style="background: #24A1DE; color: white; padding: 12px 24px; border-radius: 6px; 
+                                  text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 8px;">
+                            🚀 Open Bot
+                        </a>
+                    </div>
+                    <button onclick="document.getElementById('telegram-instructions-modal').remove()" 
+                            style="background: none; border: none; color: #999; margin-top: 20px; 
+                                   cursor: pointer; text-decoration: underline;">
+                        Close
+                    </button>
+                </div>
+            `;
+            
+            modal.onclick = function(e) {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            };
+            
+            document.body.appendChild(modal);
+        }
+    </script>
+</body>
+</html>
