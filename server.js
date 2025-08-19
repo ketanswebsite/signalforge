@@ -1278,12 +1278,16 @@ app.get('/favicon.ico', (req, res) => {
   res.sendStatus(204);
 });
 
-// Protect static files except login page
+// Serve lib directory for frontend shared modules (BEFORE auth middleware)
+app.use('/lib', express.static(path.join(__dirname, 'lib')));
+
+// Protect static files except login page and lib directory
 app.use((req, res, next) => {
-  // Allow access to login page and its assets without authentication
+  // Allow access to login page, lib directory, and specific assets without authentication
   if (req.path === '/login.html' || 
       req.path === '/styles.css' || 
-      req.path.startsWith('/js/theme-toggle.js')) {
+      req.path.startsWith('/js/theme-toggle.js') ||
+      req.path.startsWith('/lib/')) {
     return next();
   }
   // All other static files require authentication
