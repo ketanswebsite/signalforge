@@ -908,12 +908,8 @@ async function sendDirectOpportunityAlerts(opportunities) {
         message += `\n📈 Total Scanned: ${opportunities.length} stocks`;
         
         // Send single comprehensive message
-        const comprehensiveMessage = {
-            type: 'custom',
-            message: message
-        };
-        
-        await sendTelegramMessage(prefs.telegram_chat_id, comprehensiveMessage);
+        // Send just the message string for custom messages
+        await sendTelegramMessage(prefs.telegram_chat_id, message);
         
         console.log('✅ All opportunity alerts sent successfully');
         
@@ -928,13 +924,18 @@ async function sendDirectOpportunityAlerts(opportunities) {
 async function sendTelegramMessage(chatId, messageData) {
     console.log(`📤 Sending to Telegram (${chatId}):`, messageData);
     
+    // Handle both string and object messages
+    const messagePayload = typeof messageData === 'string' 
+        ? { type: 'custom', message: messageData }
+        : messageData;
+    
     const response = await fetch('/api/alerts/send-custom', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Include cookies for authentication
         body: JSON.stringify({
             chatId: chatId,
-            message: messageData
+            message: messagePayload
         })
     });
     

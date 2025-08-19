@@ -1226,6 +1226,12 @@ app.post('/api/alerts/send-custom', ensureAuthenticatedAPI, ensureSubscriptionAc
       if (message.action) {
         formattedMessage += `\n💡 *Action:* ${message.action}`;
       }
+    } else if (message.type === 'custom') {
+      // Handle custom messages - just use the message string directly
+      formattedMessage = message.message || '';
+    } else {
+      // Fallback for unknown message types
+      formattedMessage = typeof message === 'string' ? message : JSON.stringify(message);
     }
     
     console.log('📤 Attempting to send telegram alert to:', chatId);
