@@ -209,6 +209,27 @@ app.get('/api/test', (req, res) => {
   });
 });
 
+// Telegram webhook endpoint for production
+app.post('/api/telegram/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+  console.log('📨 Telegram webhook received');
+  
+  try {
+    const update = JSON.parse(req.body);
+    console.log('📝 Update:', JSON.stringify(update, null, 2));
+    
+    if (telegramBot && typeof telegramBot.processUpdate === 'function') {
+      telegramBot.processUpdate(update);
+    } else {
+      console.warn('⚠️ Telegram bot not available or processUpdate method missing');
+    }
+    
+    res.status(200).send('OK');
+  } catch (error) {
+    console.error('❌ Error processing Telegram webhook:', error);
+    res.status(500).send('Error processing webhook');
+  }
+});
+
 // User endpoint for authentication check
 app.get('/api/user', ensureAuthenticatedAPI, (req, res) => {
   res.json({

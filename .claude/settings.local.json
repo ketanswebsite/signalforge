@@ -57,7 +57,9 @@
       "Bash(env)",
       "Bash(echo:*)",
       "Bash(git checkout:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(pkill:*)",
+      "Bash(TELEGRAM_WEBHOOK_MODE=true npm start)"
     ],
     "deny": []
   },
