@@ -20,7 +20,6 @@ window.TradeUIModules.charts = (function() {
      * Initialize the charts module
      */
     function init() {
-        console.log("TradeUI Charts module initializing...");
         // No specific initialization needed yet
     }
     
@@ -49,7 +48,6 @@ window.TradeUIModules.charts = (function() {
         }
         
         const data = TradeCore.getEquityCurveData();
-        console.log('Equity curve data:', data);
         
         if (data.length === 0) {
             container.innerHTML = '<div class="no-data-message">No trade data available for equity curve</div>';
@@ -531,7 +529,6 @@ window.TradeUIModules.charts = (function() {
         if (!container) return;
         
         const data = TradeCore.getMonthlyPerformanceData();
-        console.log('Monthly performance data:', data);
         
         if (data.length === 0) {
             container.innerHTML = '<div class="no-data-message">No closed trades available for monthly performance</div>';
@@ -996,7 +993,6 @@ window.TradeUIModules.charts = (function() {
         if (!container) return;
         
         const data = TradeCore.getTradeSizeVsReturnData();
-        console.log('Trade size vs return data:', data);
         
         if (data.length === 0) {
             container.innerHTML = '<div class="no-data-message">No closed trades available for size vs return analysis</div>';

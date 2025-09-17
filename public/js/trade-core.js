@@ -169,7 +169,6 @@ const TradeCore = (function() {
      * Initialize the trade management system
      */
     async function init() {
-        console.log("TradeCore initializing with API backend...");
         
         try {
             // First, attempt to migrate any existing localStorage data
@@ -192,7 +191,6 @@ const TradeCore = (function() {
                 });
             }
             
-            console.log(`Initialized with ${allTrades.length} trades (${activeTrades.length} active, ${closedTrades.length} closed)`);
         } catch (error) {
             console.error('Error initializing TradeCore:', error);
             showNotification('Error initializing trade system: ' + error.message, 'error');
@@ -216,13 +214,10 @@ const TradeCore = (function() {
             
             // Debug: Log sample trade from SQLite
             if (allTrades.length > 0) {
-                console.log('Sample trade from SQLite:', allTrades[0]);
-                console.log('Trade keys:', Object.keys(allTrades[0]));
                 
                 // Check for UK trades specifically
                 const ukTrades = allTrades.filter(t => t.symbol && t.symbol.endsWith('.L'));
                 if (ukTrades.length > 0) {
-                    console.log('UK Trade raw data:', ukTrades[0]);
                 }
             }
             
@@ -246,7 +241,6 @@ const TradeCore = (function() {
                         trade.squareOffDate.setDate(trade.squareOffDate.getDate() + 30);
                         
                         if (trade.status === 'active') {
-                            console.log(`Trade ${trade.symbol}: No square off date, set to:`, trade.squareOffDate);
                         }
                     }
                     
@@ -283,7 +277,6 @@ const TradeCore = (function() {
                 
                 // Debug shares parsing for UK stocks
                 if (trade.symbol && trade.symbol.endsWith('.L')) {
-                    console.log(`UK Stock ${trade.symbol} shares raw value:`, trade.shares, 'type:', typeof trade.shares);
                 }
                 
                 // API now always returns standardized 'shares' field
@@ -294,7 +287,6 @@ const TradeCore = (function() {
                 if (trade.symbol && trade.symbol.endsWith('.L') && trade.shares > 0 && trade.shares < 1) {
                     const testInvestment = trade.entryPrice * trade.shares;
                     if (testInvestment < 100) { // Likely in wrong units
-                        console.log(`UK Stock ${trade.symbol}: Adjusting shares from ${trade.shares} to ${trade.shares * 100}`);
                         trade.shares = trade.shares * 100;
                     }
                 }
@@ -308,7 +300,6 @@ const TradeCore = (function() {
                 
                 // Debug investment amount calculation for UK stocks
                 if (trade.symbol && trade.symbol.endsWith('.L')) {
-                    console.log(`UK Stock ${trade.symbol} investment calc:`, {
                         entryPrice: trade.entryPrice,
                         shares: trade.shares,
                         calculatedInvestment: trade.investmentAmount,
@@ -328,7 +319,6 @@ const TradeCore = (function() {
                     
                     // Debug logging for closed UK trades
                     if (trade.symbol && trade.symbol.endsWith('.L')) {
-                        console.log(`Loading closed UK trade ${trade.symbol}:`, {
                             profit: trade.profit,
                             percentGain: trade.percentGain,
                             shares: trade.shares,
@@ -371,7 +361,6 @@ const TradeCore = (function() {
                     
                     // Debug logging for UK stocks during load
                     if (trade.symbol && trade.symbol.endsWith('.L')) {
-                        console.log(`Loading UK Stock ${trade.symbol}:`, {
                             entryPrice: trade.entryPrice,
                             currentPrice: trade.currentPrice,
                             shares: trade.shares,
@@ -438,11 +427,9 @@ const TradeCore = (function() {
             activeTrades = allTrades.filter(trade => trade.status === 'active');
             closedTrades = allTrades.filter(trade => trade.status !== 'active');
             
-            console.log(`Loaded ${allTrades.length} trades (${activeTrades.length} active, ${closedTrades.length} closed)`);
             
             // Update prices for active trades immediately after loading
             if (activeTrades.length > 0 && typeof updatePrices === 'function') {
-                console.log('Updating prices for', activeTrades.length, 'active trades');
                 try {
                     await updatePrices();
                 } catch (error) {
@@ -556,7 +543,6 @@ const TradeCore = (function() {
             // Debug logging for UK stock updates
             const trade = allTrades.find(t => t.id === tradeId);
             if (trade && trade.symbol && trade.symbol.endsWith('.L') && updates.status === 'closed') {
-                console.log('Updating UK trade in database:', {
                     tradeId,
                     symbol: trade.symbol,
                     updates,
@@ -612,7 +598,6 @@ const TradeCore = (function() {
             
             // Debug logging for UK stocks
             if (trade.symbol && trade.symbol.endsWith('.L')) {
-                console.log('Closing UK trade calculation:', {
                     symbol: trade.symbol,
                     exitPrice,
                     entryPrice,
@@ -627,7 +612,6 @@ const TradeCore = (function() {
             
             // Debug logging for calculation results
             if (trade.symbol && trade.symbol.endsWith('.L')) {
-                console.log('UK trade profit calculation result:', {
                     profit,
                     percentGain,
                     calculation: `(${exitPrice} - ${entryPrice}) * ${shares} = ${profit}`
@@ -732,7 +716,6 @@ const TradeCore = (function() {
                 }
             }
             
-            console.log('UI refreshed after data change');
         } catch (error) {
             console.warn('Error refreshing UI:', error);
         }
@@ -787,7 +770,6 @@ const TradeCore = (function() {
         
         // Always fetch prices once on startup to get current values
         if (activeTrades && activeTrades.length > 0) {
-            console.log("Fetching initial prices for all active trades...");
             updatePricesOnce().then(() => {
                 // After initial fetch, check if we should continue monitoring
                 const hasOpenMarkets = activeTrades.some(trade => {
@@ -798,9 +780,7 @@ const TradeCore = (function() {
                 if (hasOpenMarkets) {
                     // Set up regular price updates every second for open markets
                     priceUpdateInterval = setInterval(updatePrices, PRICE_UPDATE_INTERVAL);
-                    console.log("Market monitoring started - updating prices every second");
                 } else {
-                    console.log("All markets closed - will check again in 1 minute");
                 }
             });
         }
@@ -810,7 +790,6 @@ const TradeCore = (function() {
             checkMarketStatusAndAdjustUpdates();
         }, 60 * 1000); // Check every minute
         
-        console.log("Market monitoring initialized");
     }
     
     /**
@@ -850,21 +829,18 @@ const TradeCore = (function() {
         updateTimeouts.forEach(timeout => clearTimeout(timeout));
         updateTimeouts.clear();
         
-        console.log("Market monitoring stopped");
     }
     
     /**
      * Check market status and adjust update frequency
      */
     function checkMarketStatusAndAdjustUpdates() {
-        console.log("Checking market status...");
         
         if (!activeTrades || activeTrades.length === 0) {
             // No trades to monitor, stop price updates
             if (priceUpdateInterval) {
                 clearInterval(priceUpdateInterval);
                 priceUpdateInterval = null;
-                console.log("No active trades - stopped price updates");
             }
             return;
         }
@@ -876,13 +852,11 @@ const TradeCore = (function() {
         
         if (hasOpenMarkets && !priceUpdateInterval) {
             // Markets just opened - fetch latest prices and start regular updates
-            console.log("Markets opened - fetching latest prices and starting updates");
             updatePricesOnce().then(() => {
                 priceUpdateInterval = setInterval(updatePrices, PRICE_UPDATE_INTERVAL);
             });
         } else if (!hasOpenMarkets && priceUpdateInterval) {
             // Markets just closed - stop price updates
-            console.log("All markets closed - stopping price updates");
             clearInterval(priceUpdateInterval);
             priceUpdateInterval = null;
         }
@@ -1102,7 +1076,6 @@ const TradeCore = (function() {
     async function updatePricesOnce() {
         if (!activeTrades || activeTrades.length === 0) return;
         
-        console.log(`Fetching prices for ${activeTrades.length} active trades...`);
         
         try {
             // Process all trades in batches
@@ -1123,7 +1096,6 @@ const TradeCore = (function() {
                 }
             }
             
-            console.log("Initial price fetch completed");
             
             // Trigger UI update
             const event = new CustomEvent('tradesUpdated', { detail: { silent: true } });
@@ -1150,7 +1122,6 @@ const TradeCore = (function() {
         });
         
         if (tradesToUpdate.length === 0) {
-            console.log("All markets closed - skipping price update");
             // Even though we're not updating prices, ensure P&L is calculated with last known prices
             activeTrades.forEach(trade => {
                 if (trade.currentPrice && trade.currentPrice !== trade.entryPrice) {
@@ -1167,19 +1138,16 @@ const TradeCore = (function() {
         // Prevent overlapping updates
         const now = Date.now();
         if (now - lastUpdateTime < PRICE_UPDATE_INTERVAL / 2) {
-            console.log("Skipping update - too soon");
             return;
         }
         
         if (isUpdating) {
-            console.log("Update already in progress, skipping");
             return;
         }
         
         isUpdating = true;
         lastUpdateTime = now;
         
-        console.log(`Updating prices for ${tradesToUpdate.length} trades in open/pre-market`);
         
         try {
             // Process trades in smaller batches to avoid overwhelming the API
@@ -1247,7 +1215,6 @@ const TradeCore = (function() {
             }
         } catch (error) {
             if (retryCount < MAX_RETRIES) {
-                console.log(`Retrying ${trade.symbol} (attempt ${retryCount + 1})`);
                 await new Promise(resolve => setTimeout(resolve, 500 * (retryCount + 1)));
                 return updateSingleTradePrice(trade, retryCount + 1);
             } else {

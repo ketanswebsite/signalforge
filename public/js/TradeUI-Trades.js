@@ -10,7 +10,6 @@ window.TradeUIModules.trades = (function() {
      * Initialize the trades module
      */
     function init() {
-        console.log("TradeUI Trades module initializing...");
         // No specific initialization needed yet
     }
     
@@ -24,18 +23,15 @@ window.TradeUIModules.trades = (function() {
  * Modified to work with the filtering system
  */
 function renderActiveTrades() {
-    console.log('renderActiveTrades called');
     const container = document.getElementById('active-trades-container');
     const noActiveTradesMsg = document.getElementById('no-active-trades');
     
     if (!container || !noActiveTradesMsg) {
-        console.log("Active trades container elements not found - likely not on trades page");
         return;
     }
     
     // Check if the filter module is available
     if (window.TradeUIModules.filters && window.TradeUIModules.filters.applyFiltersAndSort) {
-        console.log('Using filter module to render trades');
         // Let the filter module handle rendering
         window.TradeUIModules.filters.applyFiltersAndSort();
         return;
@@ -208,7 +204,6 @@ function renderActiveTrades() {
                         
                         // Debug log for first trade
                         if (index === 0) {
-                            console.log(`Trade ${trade.symbol} holding days calc:`, {
                                 entryDate: entryDate,
                                 currentDate: currentDate,
                                 holdingDays: holdingDays,
@@ -236,7 +231,6 @@ function renderActiveTrades() {
                 holdingDaysElement.textContent = holdingDaysText;
                 // Debug - make sure element was found and updated
                 if (index === 0) {
-                    console.log('Holding days element found and updated:', {
                         element: holdingDaysElement,
                         textContent: holdingDaysElement.textContent,
                         innerHTML: holdingDaysElement.innerHTML,
@@ -330,7 +324,6 @@ function renderActiveTrades() {
         const losingTradesTable = document.getElementById('losing-trades-table');
         
         if (!noTradeHistory || !tradesHistoryTable) {
-            console.log("Trade history elements not found - likely not on trades page");
             return;
         }
         
@@ -584,7 +577,6 @@ function renderActiveTrades() {
         try {
             // Debug logging for TW.L trade specifically
             if (trade.symbol === 'TW.L' && trade.status === 'closed') {
-                console.log('TW.L closed trade data for display:', {
                     symbol: trade.symbol,
                     status: trade.status,
                     entryPrice: trade.entryPrice,
@@ -606,7 +598,6 @@ function renderActiveTrades() {
             
             // Debug logging for TW.L calculations
             if (trade.symbol === 'TW.L' && trade.status === 'closed') {
-                console.log('TW.L values from API:', {
                     investmentAmount,
                     plPercent,
                     plValue,
@@ -658,7 +649,6 @@ function renderActiveTrades() {
         
         // Debug UK stats
         if (currencySymbol === '£') {
-            console.log('Creating UK stat card with stats:', stats);
         }
         
         statCard.innerHTML = `
@@ -706,7 +696,6 @@ function renderActiveTrades() {
         // Get the trading statistics container
         const statsContainer = document.getElementById('trading-statistics');
         if (!statsContainer) {
-            console.log("Trading statistics container not found - likely not on trades page");
             return;
         }
         

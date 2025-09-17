@@ -10,7 +10,6 @@ window.TradeUIModules.dialogs = (function() {
      * Initialize the dialogs module
      */
     function init() {
-        console.log("TradeUI Dialogs module initializing...");
         // Initialization will happen in setupAllDialogs
     }
     
@@ -78,7 +77,6 @@ window.TradeUIModules.dialogs = (function() {
     function setupEditTradeDialog() {
         const dialog = document.getElementById('edit-trade-dialog');
         if (!dialog) {
-            console.log("Edit trade dialog not found, will be created dynamically");
             createEditTradeDialog();
             return;
         }
@@ -213,7 +211,6 @@ window.TradeUIModules.dialogs = (function() {
     function setupDeleteTradeDialog() {
         const dialog = document.getElementById('delete-trade-dialog');
         if (!dialog) {
-            console.log("Delete trade dialog not found, will be created dynamically");
             createDeleteTradeDialog();
             return;
         }

@@ -42,14 +42,12 @@ class RealTimePriceService {
         try {
             // For now, we'll use polling since we need a real WebSocket endpoint
             // In production, replace with actual WebSocket URL
-            console.log('Starting price update service...');
             this.startPolling();
             
             /* WebSocket implementation for future use:
             this.ws = new WebSocket('wss://stream.marketdata.com/v1/stocks');
             
             this.ws.onopen = () => {
-                console.log('WebSocket connected');
                 this.isConnected = true;
                 this.reconnectAttempts = 0;
                 this.resubscribeAll();

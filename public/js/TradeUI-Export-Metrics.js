@@ -10,7 +10,6 @@ window.TradeUIModules.export = (function() {
      * Initialize the export module
      */
     function init() {
-        console.log("TradeUI Export module initializing...");
         
         // Add import/export UI components
         initializeImportExportUI();
@@ -1411,7 +1410,6 @@ window.TradeUIModules.metrics = (function() {
      * Initialize the metrics module
      */
     function init() {
-        console.log("TradeUI Metrics module initializing...");
         // No specific initialization needed yet
     }
     
@@ -1438,7 +1436,6 @@ window.TradeUIModules.metrics = (function() {
                 longestLossStreak: 0
             };
             
-            console.log("Rendering advanced metrics with data:", metrics);
             
             // Clear previous content
             advancedMetricsContainer.innerHTML = '';
@@ -1541,7 +1538,6 @@ window.TradeUIModules.metrics = (function() {
             advancedMetricsContainer.appendChild(row2);
             advancedMetricsContainer.appendChild(row3);
             
-            console.log("Advanced metrics rendering complete");
         } catch (error) {
             console.error("Error rendering advanced metrics:", error);
             advancedMetricsContainer.innerHTML = `<div class="error-message">Error loading metrics: ${error.message}</div>`;

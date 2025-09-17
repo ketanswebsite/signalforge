@@ -15,7 +15,6 @@ window.TradeUIModules.filters = (function() {
      * Initialize the module
      */
     function init() {
-        console.log("TradeUI Filters module initializing...");
         // Add filter UI to the DOM if not already present
         createFilterUI();
     }
