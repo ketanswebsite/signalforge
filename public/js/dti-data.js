@@ -23,18 +23,10 @@ const DTIData = (function() {
     const MAX_RETRIES = 1;
     const CONCURRENT_REQUESTS_LIMIT = 1000; // Very high limit to effectively disable batching
 
-    // Blocklist for known problematic stocks (delisted, renamed, or data unavailable)
+    // Blocklist for known problematic stocks (now empty - all problematic stocks removed from source data)
     const STOCK_BLOCKLIST = new Set([
-        // Delisted stocks (removed from stock data files)
-        'DLG.L', 'TIFS.L', 'WISH', 'JNPR', 'SWI', 'NSTG', 'ENFN',
-        'ESGR', 'JWN', 'NOVA', 'SRCL', 'BERY', 'X', 'EQC', 'IVAC', 'ME', 'BTTR',
-
-        // Legacy symbols that have changed (old symbols blocked to prevent confusion)
-        'ZI', 'LANC', 'NVRO',
-
-        // Indian stocks with Yahoo Finance data feed issues (both NSE and BSE blocked)
-        'ZOMATO.NS', 'TV18BRDCST.NS', 'ATFL.NS',
-        'ZOMATO.BO', 'TV18BRDCST.BO', 'ATFL.BO'
+        // All problematic stocks have been completely removed from the stock data files
+        // This blocklist is maintained for future use if new problematic stocks are discovered
     ]);
 
     // Track failed stocks for better reporting
@@ -1044,34 +1036,11 @@ async function fetchCurrentQuote(symbol) {
 
         // Known symbol mappings for common renamings/mergers
         const symbolMappings = {
-            // Indian stocks (trying BSE alternatives for NSE data issues)
-            'zomato': ['ZOMATO.BO'], // Alternative exchange (BSE)
-            'eternal limited': ['ZOMATO.BO'], // New company name
-            'tv18 broadcast': ['TV18BRDCST.BO'], // Alternative exchange (BSE)
-            'agro tech foods': ['ATFL.BO'], // Alternative exchange (BSE)
-            'sundrop brands limited': ['ATFL.BO'], // New company name
+            // All problematic stocks have been removed from source data
+            // This mapping system is maintained for future symbol changes or alternatives
 
-            // US stocks - known mergers/acquisitions
-            'wish': [], // Delisted
-            'juniper networks': [], // Still trading as JNPR but may have data issues
-            'solarwinds': [], // Still trading but may have issues
-            'nanostring technologies': [], // Acquired/delisted
-            'enfusion': [], // May have been acquired
-            'zoominfo': ['ZI'], // May just be a temporary issue
-            'nevro': [], // May have issues
-            'enstar group': [], // May have issues
-            'nordstrom': [], // Still trading but may have data issues
-            'lancaster colony': [], // May have been acquired
-            'sunnova energy': [], // Still trading as NOVA
-            'stericycle': [], // May have been acquired
-            'berry global group': [], // May have been renamed
-            'equity commonwealth': [], // May have issues
-            'intevac': [], // May have issues
-            'betternet': [], // Likely delisted/penny stock
-
-            // UK stocks
-            'direct line insurance group': ['DLG.L'], // Check if still valid
-            'ti fluid systems': [] // May have been acquired
+            // Example format for future use:
+            // 'old company name': ['NEW.SYMBOL'], // Alternative or updated symbol
         };
 
         const mapping = symbolMappings[baseName];
