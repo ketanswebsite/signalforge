@@ -300,11 +300,6 @@ const TradeCore = (function() {
                 
                 // Debug investment amount calculation for UK stocks
                 if (trade.symbol && trade.symbol.endsWith('.L')) {
-                        entryPrice: trade.entryPrice,
-                        shares: trade.shares,
-                        calculatedInvestment: trade.investmentAmount,
-                        expectedInvestmentPounds: 66.97
-                    });
                 }
                 trade.currentPrice = trade.currentPrice || trade.entryPrice; // Default to entry price
                 trade.currentValue = trade.currentValue || (trade.currentPrice * trade.shares);
@@ -319,14 +314,6 @@ const TradeCore = (function() {
                     
                     // Debug logging for closed UK trades
                     if (trade.symbol && trade.symbol.endsWith('.L')) {
-                            profit: trade.profit,
-                            percentGain: trade.percentGain,
-                            shares: trade.shares,
-                            entryPrice: trade.entryPrice,
-                            exitPrice: trade.exitPrice,
-                            plValue: trade.plValue,
-                            plPercent: trade.plPercent
-                        });
                     }
                     
                     // If percentGain is missing but we have prices, calculate it
@@ -361,13 +348,6 @@ const TradeCore = (function() {
                     
                     // Debug logging for UK stocks during load
                     if (trade.symbol && trade.symbol.endsWith('.L')) {
-                            entryPrice: trade.entryPrice,
-                            currentPrice: trade.currentPrice,
-                            shares: trade.shares,
-                            currentValue: trade.currentValue,
-                            unrealizedPL: trade.unrealizedPL,
-                            percentChange: trade.percentChange
-                        });
                     }
                 }
                 
@@ -543,11 +523,6 @@ const TradeCore = (function() {
             // Debug logging for UK stock updates
             const trade = allTrades.find(t => t.id === tradeId);
             if (trade && trade.symbol && trade.symbol.endsWith('.L') && updates.status === 'closed') {
-                    tradeId,
-                    symbol: trade.symbol,
-                    updates,
-                    originalTrade: trade
-                });
             }
             
             await TradeAPI.updateTrade(tradeId, updates);
@@ -598,13 +573,6 @@ const TradeCore = (function() {
             
             // Debug logging for UK stocks
             if (trade.symbol && trade.symbol.endsWith('.L')) {
-                    symbol: trade.symbol,
-                    exitPrice,
-                    entryPrice,
-                    shares,
-                    tradeShares: trade.shares,
-                    originalCloseData: closeData
-                });
             }
             
             const profit = (exitPrice - entryPrice) * shares;
@@ -612,10 +580,6 @@ const TradeCore = (function() {
             
             // Debug logging for calculation results
             if (trade.symbol && trade.symbol.endsWith('.L')) {
-                    profit,
-                    percentGain,
-                    calculation: `(${exitPrice} - ${entryPrice}) * ${shares} = ${profit}`
-                });
             }
             
             // Prepare update data

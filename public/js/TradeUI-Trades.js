@@ -204,11 +204,6 @@ function renderActiveTrades() {
                         
                         // Debug log for first trade
                         if (index === 0) {
-                                entryDate: entryDate,
-                                currentDate: currentDate,
-                                holdingDays: holdingDays,
-                                holdingDaysText: holdingDaysText
-                            });
                         }
                     } else {
                         console.error(`Invalid entry date for trade ${trade.symbol}:`, trade.entryDate);
@@ -231,12 +226,6 @@ function renderActiveTrades() {
                 holdingDaysElement.textContent = holdingDaysText;
                 // Debug - make sure element was found and updated
                 if (index === 0) {
-                        element: holdingDaysElement,
-                        textContent: holdingDaysElement.textContent,
-                        innerHTML: holdingDaysElement.innerHTML,
-                        holdingDays: holdingDays,
-                        holdingDaysText: holdingDaysText
-                    });
                 }
             } else {
                 console.error('Could not find holding-days element in card for trade:', trade.symbol);
@@ -577,16 +566,6 @@ function renderActiveTrades() {
         try {
             // Debug logging for TW.L trade specifically
             if (trade.symbol === 'TW.L' && trade.status === 'closed') {
-                    symbol: trade.symbol,
-                    status: trade.status,
-                    entryPrice: trade.entryPrice,
-                    exitPrice: trade.exitPrice,
-                    shares: trade.shares,
-                    profit: trade.profit,
-                    percentGain: trade.percentGain,
-                    investmentAmount: trade.investmentAmount,
-                    rawTrade: trade
-                });
             }
             
             // Ensure all numeric values are valid - API now always provides investmentAmount
@@ -598,13 +577,6 @@ function renderActiveTrades() {
             
             // Debug logging for TW.L calculations
             if (trade.symbol === 'TW.L' && trade.status === 'closed') {
-                    investmentAmount,
-                    plPercent,
-                    plValue,
-                    entryPrice: trade.entryPrice,
-                    exitPrice: trade.exitPrice,
-                    shares: trade.shares
-                });
             }
             
             // For UK stocks, convert investment amount from pence to pounds for display
