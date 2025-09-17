@@ -611,7 +611,6 @@ DTIUI.Controls = (function() {
      */
     function updateChartDateRange(range) {
         if (!DTIBacktester.priceChart || !DTIBacktester.dtiChart || !DTIBacktester.sevenDayDTIChart) {
-            console.log("Charts not available");
             return;
         }
         
@@ -624,7 +623,6 @@ DTIUI.Controls = (function() {
         // Get all data points
         const allDates = DTIBacktester.priceChart.data.labels;
         if (!allDates || allDates.length === 0) {
-            console.log("No date data available");
             return;
         }
         
@@ -674,7 +672,6 @@ DTIUI.Controls = (function() {
                 startDate.setFullYear(lastDate.getFullYear() - 1);
                 break;
             default:
-                console.log("Invalid range:", range);
                 return;
         }
         
@@ -696,7 +693,6 @@ DTIUI.Controls = (function() {
         charts.forEach(chart => {
             // Get chart options
             if (!chart.options) {
-                console.log("Chart options not available");
                 return;
             }
             

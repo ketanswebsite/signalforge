@@ -1196,7 +1196,6 @@ DTIUI.Charts = (function() {
     // Create stub functions for displayStatistics and displayTrades that dynamically look for implementations
     if (!DTIUI.displayStatistics) {
         DTIUI.displayStatistics = function(trades) {
-            console.log("Display statistics called with", trades.length, "trades");
             // Check if TradeDisplay module is available at call time
             if (DTIUI.TradeDisplay && typeof DTIUI.TradeDisplay.displayStatistics === 'function') {
                 return DTIUI.TradeDisplay.displayStatistics(trades);
@@ -1234,7 +1233,6 @@ DTIUI.Charts = (function() {
 
 if (!DTIUI.displayTrades) {
     DTIUI.displayTrades = function(trades) {
-        console.log("Display trades called with", trades.length, "trades");
         // Check if TradeDisplay module is available at call time
         if (DTIUI.TradeDisplay && typeof DTIUI.TradeDisplay.displayTrades === 'function') {
             return DTIUI.TradeDisplay.displayTrades(trades);

@@ -58,37 +58,28 @@ const BacktestAlerts = (function() {
         
         // For opportunity scans (no completed trades), use existing opportunities as-is
         if (allTrades.length === 0) {
-            console.log('🔍 Using existing buying opportunities from scan...');
-            console.log(`🔍 Total opportunities: ${opportunities.length}`);
             
             // Debug: Show what stocks are actually in the opportunities
             if (opportunities.length > 0) {
-                console.log('🔍 First 10 opportunity symbols:', opportunities.slice(0, 10).map(opp => opp.stock?.symbol));
                 
                 // Show sample of different stock types
                 const indianStocks = opportunities.filter(opp => opp.stock?.symbol?.includes('.NS')).slice(0, 3);
                 const usStocks = opportunities.filter(opp => opp.stock?.symbol && !opp.stock.symbol.includes('.NS') && !opp.stock.symbol.includes('.L')).slice(0, 3);
                 const ukStocks = opportunities.filter(opp => opp.stock?.symbol?.includes('.L')).slice(0, 3);
                 
-                console.log('🔍 Sample Indian stocks:', indianStocks.map(opp => opp.stock?.symbol));
-                console.log('🔍 Sample US stocks:', usStocks.map(opp => opp.stock?.symbol));
-                console.log('🔍 Sample UK stocks:', ukStocks.map(opp => opp.stock?.symbol));
                 
                 // Check the correct scan type selector
                 const scanTypeSelector = document.getElementById('scan-type-selector');
                 const currentScanType = scanTypeSelector ? scanTypeSelector.value : 'current';
-                console.log('🔍 Current scan type selector value:', currentScanType);
                 
                 // Check if opportunities match current scan type
                 const hasIndianStocks = opportunities.some(opp => opp.stock?.symbol?.includes('.NS'));
                 const hasUSStocks = opportunities.some(opp => opp.stock?.symbol && !opp.stock.symbol.includes('.NS') && !opp.stock.symbol.includes('.L'));
                 const hasUKStocks = opportunities.some(opp => opp.stock?.symbol?.includes('.L'));
                 
-                console.log('🔍 Opportunity mix - Indian:', hasIndianStocks, 'US:', hasUSStocks, 'UK:', hasUKStocks);
                 
                 // If user selected "all" but opportunities are only Indian stocks, it's stale data
                 if (currentScanType === 'all' && hasIndianStocks && !hasUSStocks && !hasUKStocks) {
-                    console.log('❌ MISMATCH: User selected global scan but opportunities contain only Indian stocks - skipping alerts');
                     return [];
                 }
             }
@@ -142,29 +133,23 @@ const BacktestAlerts = (function() {
      */
     async function sendBacktestAlerts(opportunities, backtestResults) {
         try {
-            console.log('🔄 Fetching alert preferences...');
             
             // Get alert preferences
             const prefsResponse = await fetch('/api/alerts/preferences');
             if (!prefsResponse.ok) {
-                console.log('❌ Failed to fetch alert preferences:', prefsResponse.status);
                 return;
             }
             
             const prefs = await prefsResponse.json();
-            console.log('⚙️ Alert preferences:', prefs);
             
             if (!prefs.telegram_enabled) {
-                console.log('❌ Telegram alerts are disabled in preferences');
                 return;
             }
             
             if (!prefs.telegram_chat_id) {
-                console.log('❌ No Telegram chat ID configured');
                 return;
             }
             
-            console.log(`✅ Telegram enabled, Chat ID: ${prefs.telegram_chat_id}`);
             
             // Send summary if any opportunities found
             if (opportunities.length > 0) {
@@ -259,7 +244,6 @@ const BacktestAlerts = (function() {
      */
     async function sendTelegramMessage(chatId, messageData) {
         try {
-            console.log(`📤 Sending message to ${chatId}:`, messageData);
             
             const response = await fetch('/api/alerts/send-custom', {
                 method: 'POST',
@@ -271,7 +255,6 @@ const BacktestAlerts = (function() {
             });
             
             if (response.ok) {
-                console.log('✅ Message sent successfully');
             } else {
                 console.error('❌ Failed to send telegram message:', response.status);
                 const errorText = await response.text();
@@ -286,37 +269,27 @@ const BacktestAlerts = (function() {
      * Process backtest results and send alerts
      */
     function processBacktestResults(backtestData) {
-        console.log('🔍 Processing backtest results for alerts...');
-        console.log('📊 Backtest data:', backtestData);
         
         // Get all trades and opportunities
         const allTrades = backtestData.trades || [];
         const opportunities = DTIBacktester.activeTradeOpportunities || [];
         
-        console.log(`📈 Total trades: ${allTrades.length}`);
-        console.log(`🎯 Total opportunities: ${opportunities.length}`);
         
         // Check scan type selector to see what user actually selected
         const scanTypeSelector = document.getElementById('scan-type-selector');
         const currentScanType = scanTypeSelector ? scanTypeSelector.value : 'current';
-        console.log('🔍 User selected scan type:', currentScanType);
         
         // Filter for high conviction opportunities
         const highConvictionOpps = getHighConvictionOpportunities(opportunities, allTrades);
         
-        console.log(`⭐ High-conviction opportunities: ${highConvictionOpps.length}`);
         
         if (highConvictionOpps.length > 0) {
-            console.log('📤 Sending backtest alerts...');
             sendBacktestAlerts(highConvictionOpps, backtestData);
         } else {
-            console.log('❌ No high-conviction opportunities found to alert about');
             
             // Debug why no opportunities
             if (opportunities.length === 0) {
-                console.log('🔍 No opportunities found at all');
             } else {
-                console.log('🔍 Opportunities failed high-conviction filter:');
                 opportunities.forEach((opp, i) => {
                     const stats = {};
                     allTrades.forEach(trade => {
@@ -330,7 +303,6 @@ const BacktestAlerts = (function() {
                     const winRate = oppStats ? (oppStats.wins / oppStats.total) * 100 : 0;
                     const isRecent = isWithinTradingDays(opp.date);
                     
-                    console.log(`  ${i+1}. ${opp.stock.symbol}: ${winRate.toFixed(1)}% win rate, Recent: ${isRecent}, Date: ${opp.date}`);
                 });
             }
         }
