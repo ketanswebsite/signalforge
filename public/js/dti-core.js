@@ -147,7 +147,6 @@ const DTIBacktester = {
     
     // Application initialization
     init: function() {
-        console.log("DTI Backtester initializing...");
         
         // Add page load animations
         this.addPageLoadAnimations();
@@ -179,7 +178,6 @@ const DTIBacktester = {
         // Set up periodic updates of active trades count
         setInterval(this.updateActiveTradesCount.bind(this), 30000); // Update every 30 seconds
         
-        console.log("DTI Backtester initialized successfully");
     },
     
     // Add page load animations
@@ -315,14 +313,12 @@ const DTIBacktester = {
     initStockSelector: function() {
         // This will be fully implemented in dti-ui.js
         // Just a placeholder for now - will be overridden by the UI module
-        console.log("Stock selector initialization will be handled by UI module");
     },
     
     // Create buying opportunities section if it doesn't exist
     createBuyingOpportunitiesSection: function() {
         // This will be fully implemented in dti-ui.js
         // Just a placeholder for now - will be overridden by the UI module
-        console.log("Buying opportunities section will be handled by UI module");
     },
     
     // Update app description with warm-up period info

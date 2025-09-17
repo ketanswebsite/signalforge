@@ -13,7 +13,6 @@ const TradeAPI = {
     async request(endpoint, options = {}) {
         try {
             const url = `${this.baseURL}/api${endpoint}`;
-            console.log('API: Making request to:', url);
             
             const response = await fetch(url, {
                 headers: {
@@ -23,7 +22,6 @@ const TradeAPI = {
                 ...options
             });
 
-            console.log('API: Response status:', response.status);
             
             if (!response.ok) {
                 const error = await response.json();
@@ -31,7 +29,6 @@ const TradeAPI = {
             }
 
             const data = await response.json();
-            console.log('API: Response data:', data);
             return data;
         } catch (error) {
             console.error('API request failed:', error);
@@ -43,9 +40,7 @@ const TradeAPI = {
      * Get all trades
      */
     async getAllTrades() {
-        console.log('API: Fetching all trades from /api/trades');
         const result = await this.request('/trades');
-        console.log('API: Received response:', result);
         return result;
     },
 
@@ -84,7 +79,6 @@ const TradeAPI = {
      * Update an existing trade
      */
     async updateTrade(id, updates) {
-        console.log('>>> API Client updateTrade:', {
             id,
             updates,
             hasEntryPrice: 'entryPrice' in updates,
@@ -134,14 +128,12 @@ const TradeAPI = {
             const storedData = localStorage.getItem(localStorageKey);
             
             if (!storedData) {
-                console.log('No data to migrate from localStorage');
                 return { migrated: false, count: 0 };
             }
 
             const trades = JSON.parse(storedData);
             
             if (!Array.isArray(trades) || trades.length === 0) {
-                console.log('No valid trades to migrate');
                 return { migrated: false, count: 0 };
             }
 
@@ -167,7 +159,6 @@ const TradeAPI = {
             // If successful, remove from localStorage
             if (result.success) {
                 localStorage.removeItem(localStorageKey);
-                console.log(`Successfully migrated ${result.imported} trades to database`);
                 return { migrated: true, count: result.imported };
             }
             

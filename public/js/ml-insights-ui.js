@@ -17,7 +17,6 @@ const MLInsightsUI = (function() {
         // Create ML insights modal
         createMLModal();
         
-        console.log('ML Insights UI initialized');
     }
     
     /**

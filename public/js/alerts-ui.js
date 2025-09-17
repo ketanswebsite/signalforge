@@ -9,7 +9,6 @@ const AlertsUI = (function() {
     
     // Initialize the alerts UI
     async function init() {
-        console.log('AlertsUI: Initializing...');
         
         // Load current preferences
         await loadPreferences();
@@ -17,7 +16,6 @@ const AlertsUI = (function() {
         // Add Telegram subscription button to the page
         addTelegramButton();
         
-        console.log('AlertsUI: Initialized');
     }
     
     // Load alert preferences from server
@@ -26,7 +24,6 @@ const AlertsUI = (function() {
             const response = await fetch('/api/alerts/preferences');
             if (response.ok) {
                 alertPreferences = await response.json();
-                console.log('Loaded alert preferences:', alertPreferences);
             } else {
                 console.warn('No alert preferences found, using defaults');
                 alertPreferences = {
@@ -103,7 +100,6 @@ const AlertsUI = (function() {
                         'event_label': 'homepage_button'
                     });
                 }
-                console.log('🎯 User clicked Telegram subscription button');
                 
                 // Show user-friendly message for better UX
                 setTimeout(() => {
@@ -150,7 +146,6 @@ const AlertsUI = (function() {
                     'event_label': 'mobile_menu_button'
                 });
             }
-            console.log('🎯 User clicked mobile Telegram subscription button');
             
             // Show user-friendly message for mobile too
             setTimeout(() => {
@@ -232,11 +227,9 @@ const AlertsUI = (function() {
     function createAlertsModal() {
         // Check if modal already exists
         if (document.getElementById('alerts-modal')) {
-            console.log('AlertsUI: Modal already exists');
             return;
         }
         
-        console.log('AlertsUI: Creating modal...');
         const modal = document.createElement('div');
         modal.className = 'dialog-overlay';
         modal.id = 'alerts-modal';
@@ -490,12 +483,10 @@ const AlertsUI = (function() {
     
     // Show the alerts modal
     function showAlertsModal() {
-        console.log('AlertsUI: Showing modal...');
         const modal = document.getElementById('alerts-modal');
         if (modal) {
             modal.style.display = 'flex';
             loadPreferences(); // Reload preferences when opening
-            console.log('AlertsUI: Modal displayed');
         } else {
             console.error('AlertsUI: Modal not found! Creating it now...');
             createAlertsModal();

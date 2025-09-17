@@ -18,11 +18,9 @@ window.TradeUI = (function() {
      * Initialize the trade UI
      */
     function init() {
-        console.log("TradeUI initializing...");
         
         // Only initialize if we're on the trades page
         if (!isTradesPage()) {
-            console.log("Not on trades page - skipping UI initialization");
             return;
         }
         
@@ -54,7 +52,6 @@ window.TradeUI = (function() {
         // Start real-time price and statistics updates every second
         startRealTimeUpdates();
         
-        console.log("TradeUI initialized successfully");
     }
     
     /**
@@ -206,7 +203,6 @@ window.TradeUI = (function() {
     function setupTradeEventListeners() {
         // Listen for trade events from TradeCore
         document.addEventListener('tradeAdded', function(e) {
-            console.log("Trade added event received:", e.detail);
             renderTrades();
             updateStatistics();
             refreshAllCharts();
@@ -218,7 +214,6 @@ window.TradeUI = (function() {
         });
         
         document.addEventListener('tradeClosed', function(e) {
-            console.log("Trade closed event received:", e.detail);
             renderTrades();
             updateStatistics();
             refreshAllCharts();
@@ -230,14 +225,12 @@ window.TradeUI = (function() {
         });
         
         document.addEventListener('tradeEdited', function(e) {
-            console.log("Trade edited event received:", e.detail);
             renderTrades();
             updateStatistics();
             refreshAllCharts();
         });
         
         document.addEventListener('tradeDeleted', function(e) {
-            console.log("Trade deleted event received:", e.detail);
             renderTrades();
             updateStatistics();
             refreshAllCharts();
@@ -249,7 +242,6 @@ window.TradeUI = (function() {
         });
         
         document.addEventListener('historyCleared', function() {
-            console.log("History cleared event received");
             renderTrades();
             updateStatistics();
             refreshAllCharts();
@@ -260,7 +252,6 @@ window.TradeUI = (function() {
         let lastFullUpdate = 0;
         
         document.addEventListener('tradesUpdated', function(e) {
-            console.log("Trades updated event received");
             
             const now = Date.now();
             const isSilent = e.detail && e.detail.silent;
@@ -285,7 +276,6 @@ window.TradeUI = (function() {
         
         // Listen for import event 
         document.addEventListener('tradesImported', function(e) {
-            console.log("Trades imported event received:", e.detail);
             renderTrades();
             updateStatistics();
             refreshAllCharts();
@@ -293,7 +283,6 @@ window.TradeUI = (function() {
         
         // Listen for market status changes
         document.addEventListener('marketStatusChanged', function() {
-            console.log("Market status changed - updating UI");
             updateMarketStatus();
         });
     }
@@ -697,10 +686,8 @@ window.TradeUI = (function() {
     function updateMarketStatus() {
         const container = document.getElementById('market-status-container');
         if (!container) {
-            console.log('Market status container not found');
             return;
         }
-        console.log('Updating market status...');
         
         // Get unique markets from active trades
         const activeTrades = TradeCore.getTrades('active');
@@ -757,7 +744,6 @@ window.TradeUI = (function() {
                 status = TradeCore.getMarketStatus(symbol);
             }
             
-            console.log(`Market status for ${marketKey}:`, status);
             
             // Use the new badge creator if available
             let badge;
