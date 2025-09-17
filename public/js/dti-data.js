@@ -32,8 +32,9 @@ const DTIData = (function() {
         // Legacy symbols that have changed (old symbols blocked to prevent confusion)
         'ZI', 'LANC', 'NVRO',
 
-        // Indian NSE stocks with Yahoo Finance data feed issues (temporarily blocked)
-        'ZOMATO.NS', 'TV18BRDCST.NS', 'ATFL.NS'
+        // Indian stocks with Yahoo Finance data feed issues (both NSE and BSE blocked)
+        'ZOMATO.NS', 'TV18BRDCST.NS', 'ATFL.NS',
+        'ZOMATO.BO', 'TV18BRDCST.BO', 'ATFL.BO'
     ]);
 
     // Track failed stocks for better reporting
