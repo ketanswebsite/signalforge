@@ -68,14 +68,19 @@ let stockScanner;
 try {
   const StockScanner = require('./lib/scanner/scanner');
   stockScanner = new StockScanner();
-  
-  // Initialize scanner if Telegram bot is available
+
+  // Always initialize scanner - it will check for Telegram at runtime
+  stockScanner.initialize();
+
   if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) {
-    stockScanner.initialize();
-    console.log('✓ Stock Scanner Service initialized with daily scans at 7 AM UK time');
+    console.log('✓ Stock Scanner Service initialized with Telegram alerts enabled');
     console.log('✓ Scanner uses clean, unified DTI logic from shared modules');
   } else {
-    console.log('ℹ Stock Scanner Service disabled - Telegram not configured');
+    console.log('⚠️ Stock Scanner Service initialized but Telegram not configured');
+    console.log('⚠️ The 7 AM cron job will run but cannot send alerts without:');
+    console.log('   - TELEGRAM_BOT_TOKEN');
+    console.log('   - TELEGRAM_CHAT_ID');
+    console.log('💡 Set these environment variables and restart the server to enable alerts');
   }
 } catch (err) {
   console.log('ℹ Stock Scanner Service not available:', err.message);
