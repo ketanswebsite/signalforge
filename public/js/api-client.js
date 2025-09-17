@@ -79,11 +79,6 @@ const TradeAPI = {
      * Update an existing trade
      */
     async updateTrade(id, updates) {
-            id,
-            updates,
-            hasEntryPrice: 'entryPrice' in updates,
-            entryPrice: updates.entryPrice
-        });
         return this.request(`/trades/${id}`, {
             method: 'PUT',
             body: JSON.stringify(updates)
