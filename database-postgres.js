@@ -6,9 +6,6 @@ let dbConnected = false;
 
 // Check if DATABASE_URL is provided
 if (!process.env.DATABASE_URL) {
-  console.error('❌ DATABASE_URL not found in environment variables');
-  console.error('📝 Please set up PostgreSQL database and add DATABASE_URL');
-  console.error('📋 Visit /migrate-to-postgres.html for setup instructions');
 } else {
   try {
     pool = new Pool({
@@ -16,16 +13,13 @@ if (!process.env.DATABASE_URL) {
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
     });
     dbConnected = true;
-    console.log('✓ PostgreSQL connection configured');
   } catch (error) {
-    console.error('❌ Failed to configure PostgreSQL:', error.message);
   }
 }
 
 // Initialize database tables
 async function initializeDatabase() {
   if (!dbConnected || !pool) {
-    console.log('⚠️ Skipping database initialization - PostgreSQL not configured');
     return;
   }
   
@@ -129,9 +123,7 @@ async function initializeDatabase() {
     // Migrate existing users from trades table
     await migrateExistingUsers();
 
-    console.log('✅ PostgreSQL database initialized successfully');
   } catch (error) {
-    console.error('Error initializing database:', error);
     throw error;
   }
 }
@@ -168,11 +160,9 @@ async function migrateExistingUsers() {
           ON CONFLICT (email) DO NOTHING
         `, [userId, null, row.first_trade, row.first_trade]);
         
-        console.log('Migrated user from trades:', userId);
       }
     }
   } catch (error) {
-    console.error('Error migrating existing users:', error);
   }
 }
 
@@ -228,7 +218,6 @@ const TradeDB = {
         updated_at: row.updated_at
       }));
     } catch (error) {
-      console.error('Error getting all trades:', error);
       return [];
     }
   },
@@ -270,7 +259,6 @@ const TradeDB = {
         user_id: row.user_id
       }));
     } catch (error) {
-      console.error('Error getting active trades:', error);
       return [];
     }
   },
@@ -313,7 +301,6 @@ const TradeDB = {
         updated_at: row.updated_at
       }));
     } catch (error) {
-      console.error('Error getting closed trades:', error);
       return [];
     }
   },
@@ -348,7 +335,6 @@ const TradeDB = {
         user_id: row.user_id
       };
     } catch (error) {
-      console.error('Error getting trade by ID:', error);
       return null;
     }
   },
@@ -430,7 +416,6 @@ const TradeDB = {
         updated_at: row.updated_at
       };
     } catch (error) {
-      console.error('Error inserting trade:', error);
       throw error;
     }
   },
@@ -489,7 +474,6 @@ const TradeDB = {
       const result = await pool.query(query, values);
       return result.rowCount > 0;
     } catch (error) {
-      console.error('Error updating trade:', error);
       throw error;
     }
   },
@@ -503,7 +487,6 @@ const TradeDB = {
       );
       return result.rowCount > 0;
     } catch (error) {
-      console.error('Error deleting trade:', error);
       throw error;
     }
   },
@@ -517,7 +500,6 @@ const TradeDB = {
       );
       return result.rowCount;
     } catch (error) {
-      console.error('Error deleting all trades:', error);
       throw error;
     }
   },
@@ -582,7 +564,6 @@ const TradeDB = {
       return insertedCount;
     } catch (error) {
       await client.query('ROLLBACK');
-      console.error('Error in bulk insert:', error);
       throw error;
     } finally {
       client.release();
@@ -614,7 +595,6 @@ const TradeDB = {
         market_close_alert: row.market_close_alert
       };
     } catch (error) {
-      console.error('Error getting alert preferences:', error);
       return null;
     }
   },
@@ -658,7 +638,6 @@ const TradeDB = {
       );
       return result.rowCount > 0;
     } catch (error) {
-      console.error('Error saving alert preferences:', error);
       throw error;
     }
   },
@@ -670,7 +649,6 @@ const TradeDB = {
       );
       return result.rows;
     } catch (error) {
-      console.error('Error getting active alert users:', error);
       return [];
     }
   },
@@ -683,7 +661,6 @@ const TradeDB = {
       );
       return result.rows.length > 0 ? result.rows[0] : null;
     } catch (error) {
-      console.error('Error getting user by email:', error);
       return null;
     }
   },
@@ -708,7 +685,6 @@ const TradeDB = {
       
       return result.rows[0];
     } catch (error) {
-      console.error('Error saving/updating user:', error);
       throw error;
     }
   },
@@ -768,7 +744,6 @@ const TradeDB = {
         subscription_end_date: row.subscription_end_date
       }));
     } catch (error) {
-      console.error('Error getting user statistics:', error);
       return [];
     }
   },
@@ -812,7 +787,6 @@ const TradeDB = {
           premium_subscriptions: parseInt(subscriptionsResult.rows[0].premium_subscriptions) || 0
         };
       } catch (e) {
-        console.log('Subscription tables not available, using defaults');
       }
       
       const usersRow = usersResult.rows[0];
@@ -826,7 +800,6 @@ const TradeDB = {
         ...subscriptionStats
       };
     } catch (error) {
-      console.error('Error getting system statistics:', error);
       return {
         total_trades: 0,
         total_users: 0,
@@ -851,7 +824,6 @@ const TradeDB = {
         
         if (existingUser.rows.length === 0) {
           // User not in database, add them
-          console.log(`🔄 Capturing missing user: ${user.email}`);
           
           await client.query(`
             INSERT INTO users (email, name, google_id, picture, first_login, last_login)
@@ -867,7 +839,6 @@ const TradeDB = {
             user.picture || null
           ]);
           
-          console.log(`✅ Successfully captured user: ${user.email}`);
         } else {
           // User exists, update last_login
           await client.query('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE email = $1', [user.email]);
@@ -876,7 +847,6 @@ const TradeDB = {
         client.release(); // Important: release connection back to pool
       }
     } catch (error) {
-      console.error('Error in ensureUserExists:', error);
     }
   },
 
@@ -911,7 +881,6 @@ const TradeDB = {
       
       return result.rows[0];
     } catch (error) {
-      console.error('Error adding/updating Telegram subscriber:', error);
       throw error;
     }
   },
@@ -928,7 +897,6 @@ const TradeDB = {
       
       return result.rows[0];
     } catch (error) {
-      console.error('Error removing Telegram subscriber:', error);
       throw error;
     }
   },
@@ -953,7 +921,6 @@ const TradeDB = {
       const result = await pool.query(query, params);
       return result.rows;
     } catch (error) {
-      console.error('Error getting active subscribers:', error);
       throw error;
     }
   },
@@ -973,7 +940,6 @@ const TradeDB = {
       
       return result.rows[0];
     } catch (error) {
-      console.error('Error getting subscriber stats:', error);
       throw error;
     }
   },
@@ -987,18 +953,16 @@ const TradeDB = {
         WHERE chat_id = $1 AND is_active = true
       `, [chatId.toString()]);
     } catch (error) {
-      console.error('Error updating subscriber activity:', error);
     }
   },
 
   // Close connection
   async close() {
     await pool.end();
-    console.log('PostgreSQL connection closed');
   }
 };
 
 // Initialize database on module load
-TradeDB.init().catch(console.error);
+TradeDB.init().catch(() => {});
 
 module.exports = TradeDB;

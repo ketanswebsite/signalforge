@@ -7,59 +7,34 @@ const session = require('express-session');
 // Load environment variables
 require('dotenv').config();
 
-console.log('\n=== STARTING NEW APP.JS SERVER - UPDATED SCHEMA ===\n');
 
-// Run diagnostic info on Render
-if (process.env.RENDER) {
-  console.log('Running on Render - Diagnostic Info:');
-  console.log('- Working directory:', process.cwd());
-  console.log('- NODE_ENV:', process.env.NODE_ENV);
-  console.log('- Using PostgreSQL database (no local storage needed)');
-}
 
 // Load database - PostgreSQL only
 let TradeDB;
 try {
   TradeDB = require('./database-postgres');
-  console.log('✓ Database module loaded: PostgreSQL');
   
   // Check if actually connected
   if (!TradeDB.isConnected()) {
-    console.error('✗ PostgreSQL not configured. Please set up your database connection.');
-    console.log('📋 Visit /migrate-to-postgres.html to set up PostgreSQL database');
     process.exit(1);
   }
 } catch (err) {
-  console.error('✗ PostgreSQL database module failed to load:', err.message);
-  console.error('✗ No database available! Please configure PostgreSQL.');
   process.exit(1);
 }
 
 // Load Telegram bot
 let telegramBot;
 try {
-  console.log('🔍 Loading Telegram bot module...');
-  console.log('  TELEGRAM_BOT_TOKEN exists:', !!process.env.TELEGRAM_BOT_TOKEN);
-  console.log('  TELEGRAM_CHAT_ID exists:', !!process.env.TELEGRAM_CHAT_ID);
   
   telegramBot = require('./lib/telegram/telegram-bot');
-  console.log('✓ Telegram bot module loaded successfully');
-  console.log('  Module exports:', Object.keys(telegramBot));
   
   // Initialize bot if token is provided
   if (process.env.TELEGRAM_BOT_TOKEN) {
-    console.log('🚀 Initializing telegram bot...');
     telegramBot.initializeTelegramBot();
-    console.log('✓ Telegram bot initialized');
-    console.log('  telegramBot variable type:', typeof telegramBot);
-    console.log('  sendTelegramAlert available:', typeof telegramBot.sendTelegramAlert);
   } else {
-    console.log('ℹ Telegram bot token not found, alerts disabled');
     telegramBot = null; // Explicitly set to null if no token
   }
 } catch (err) {
-  console.log('ℹ Telegram bot module not available:', err.message);
-  console.log('ℹ Setting telegramBot to null');
   telegramBot = null;
 }
 
@@ -73,17 +48,9 @@ try {
   stockScanner.initialize();
 
   if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) {
-    console.log('✓ Stock Scanner Service initialized with Telegram alerts enabled');
-    console.log('✓ Scanner uses clean, unified DTI logic from shared modules');
   } else {
-    console.log('⚠️ Stock Scanner Service initialized but Telegram not configured');
-    console.log('⚠️ The 7 AM cron job will run but cannot send alerts without:');
-    console.log('   - TELEGRAM_BOT_TOKEN');
-    console.log('   - TELEGRAM_CHAT_ID');
-    console.log('💡 Set these environment variables and restart the server to enable alerts');
   }
 } catch (err) {
-  console.log('ℹ Stock Scanner Service not available:', err.message);
 }
 
 const app = express();
@@ -104,9 +71,7 @@ try {
   ensureAuthenticatedAPI = authModule.ensureAuthenticatedAPI;
   authRoutes = require('./routes/auth');
   authEnabled = true;
-  console.log('✓ Authentication module loaded');
 } catch (error) {
-  console.error('✗ Authentication module failed to load:', error.message);
   // Create dummy middleware that doesn't require auth
   ensureAuthenticated = (req, res, next) => next();
   ensureAuthenticatedAPI = (req, res, next) => next();
@@ -121,9 +86,7 @@ try {
   ensureSubscriptionActive = subscriptionModule.ensureSubscriptionActive;
   ensurePremiumSubscription = subscriptionModule.ensurePremiumSubscription;
   subscriptionEnabled = true;
-  console.log('✓ Subscription middleware loaded');
 } catch (error) {
-  console.error('✗ Subscription middleware failed to load:', error.message);
   // Create dummy middleware that doesn't check subscriptions
   ensureSubscriptionActive = (req, res, next) => next();
   ensurePremiumSubscription = (req, res, next) => next();
@@ -146,21 +109,13 @@ if (authEnabled) {
     // Authentication routes (no auth required for these)
     app.use('/', authRoutes);
     
-    console.log('✓ Auth middleware configured');
   } catch (error) {
-    console.error('✗ Failed to configure auth middleware:', error);
     authEnabled = false;
   }
 }
 
 // Request logging with enhanced user tracking
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  if (req.url.includes('auth') || req.url === '/') {
-    console.log('Session ID:', req.sessionID);
-    console.log('Is Authenticated:', req.isAuthenticated ? req.isAuthenticated() : 'N/A');
-    console.log('User:', req.user);
-  }
   
   // Enhanced user tracking: capture authenticated users who might not be in database
   if (req.isAuthenticated && req.isAuthenticated() && req.user && req.user.email) {
@@ -169,7 +124,6 @@ app.use((req, res, next) => {
       try {
         await ensureUserInDatabase(req.user);
       } catch (error) {
-        console.error('Background user capture failed:', error);
       }
     });
   }
@@ -186,7 +140,6 @@ async function ensureUserInDatabase(user) {
     await TradeDB.ensureUserExists(user);
     
   } catch (error) {
-    console.error('Error in ensureUserInDatabase:', error);
   }
 }
 
@@ -199,15 +152,12 @@ app.use('/api', ensureAuthenticatedAPI);
 try {
   const mlRoutes = require('./ml/ml-routes');
   app.use('/api/ml', mlRoutes);
-  console.log('✓ ML routes loaded');
 } catch (error) {
-  console.log('ℹ ML module not available:', error.message);
 }
 
 // Test endpoint
 app.get('/api/test', (req, res) => {
-  console.log('>>> /api/test endpoint hit!');
-  res.json({ 
+  res.json({
     message: 'API test endpoint is working!',
     server: 'app.js',
     timestamp: new Date().toISOString()
@@ -216,21 +166,17 @@ app.get('/api/test', (req, res) => {
 
 // Telegram webhook endpoint for production
 app.post('/api/telegram/webhook', express.raw({ type: 'application/json' }), (req, res) => {
-  console.log('📨 Telegram webhook received');
-  
+
   try {
     const update = JSON.parse(req.body);
-    console.log('📝 Update:', JSON.stringify(update, null, 2));
     
     if (telegramBot && typeof telegramBot.processUpdate === 'function') {
       telegramBot.processUpdate(update);
     } else {
-      console.warn('⚠️ Telegram bot not available or processUpdate method missing');
-    }
+      }
     
     res.status(200).send('OK');
   } catch (error) {
-    console.error('❌ Error processing Telegram webhook:', error);
     res.status(500).send('Error processing webhook');
   }
 });
@@ -274,7 +220,6 @@ app.get('/api/debug/all-trades', ensureAuthenticatedAPI, async (req, res) => {
 // Debug endpoint for admin
 app.get('/api/test-admin', ensureAuthenticatedAPI, async (req, res) => {
   try {
-    console.log('Test admin endpoint - User:', req.user?.email);
     
     // Test if database queries work
     const testResults = {};
@@ -306,7 +251,6 @@ app.get('/api/test-admin', ensureAuthenticatedAPI, async (req, res) => {
       testResults
     });
   } catch (error) {
-    console.error('Test admin error:', error);
     res.status(500).json({ error: error.message, stack: error.stack });
   }
 });
@@ -328,14 +272,10 @@ app.get('/api/admin/stats', ensureAuthenticatedAPI, async (req, res) => {
   }
   
   try {
-    console.log('Fetching admin statistics for:', req.user.email);
-    
+
     const userStats = await TradeDB.getUserStatistics();
-    console.log('User statistics count:', userStats ? userStats.length : 'null');
-    console.log('User statistics sample:', userStats ? userStats.slice(0, 2) : 'null');
-    
+
     const systemStats = await TradeDB.getSystemStatistics();
-    console.log('System statistics:', systemStats);
     
     const response = {
       system: systemStats,
@@ -343,12 +283,9 @@ app.get('/api/admin/stats', ensureAuthenticatedAPI, async (req, res) => {
       currentUser: req.user.email
     };
     
-    console.log('Sending admin response - users count:', response.users ? response.users.length : 'null');
     
     res.json(response);
   } catch (error) {
-    console.error('Error getting admin stats:', error);
-    console.error('Error stack:', error.stack);
     res.status(500).json({ error: error.message });
   }
 });
@@ -373,7 +310,6 @@ app.get('/api/user-analytics', ensureAuthenticatedAPI, async (req, res) => {
     
     res.json(userAnalytics);
   } catch (error) {
-    console.error('Error getting user analytics:', error);
     res.status(500).json({ error: 'Failed to fetch user analytics' });
   }
 });
@@ -400,7 +336,6 @@ app.get('/api/debug/users', ensureAuthenticatedAPI, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error querying users table:', error);
     res.status(500).json({ 
       error: error.message,
       debugInfo: {
@@ -495,7 +430,6 @@ app.get('/api/recover-users', ensureAuthenticatedAPI, async (req, res) => {
         }
       }
     } catch (alertError) {
-      console.log('Alert preferences recovery skipped:', alertError.message);
     }
     
     // 3. Ensure admin user is tracked
@@ -539,7 +473,6 @@ app.get('/api/recover-users', ensureAuthenticatedAPI, async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Error in comprehensive user recovery:', error);
     res.status(500).json({ 
       success: false,
       error: error.message 
@@ -550,7 +483,6 @@ app.get('/api/recover-users', ensureAuthenticatedAPI, async (req, res) => {
 // Auto-recovery function that runs on server startup
 async function autoRecoverUsers() {
   try {
-    console.log('🔄 Running comprehensive automatic user recovery...');
     
     const { Pool } = require('pg');
     const pool = new Pool({
@@ -572,7 +504,6 @@ async function autoRecoverUsers() {
     const missingUserCount = parseInt(missingCount.rows[0].missing_count);
     
     if (missingUserCount > 0) {
-      console.log(`📊 Found ${missingUserCount} users in trades table not in users table`);
       
       const recoveryQuery = `
         INSERT INTO users (email, name, google_id, first_login, last_login, created_at)
@@ -592,7 +523,6 @@ async function autoRecoverUsers() {
       
       const result = await pool.query(recoveryQuery);
       totalRecovered += result.rowCount;
-      console.log(`✅ Recovered ${result.rowCount} users from trades table`);
     }
     
     // 2. Recover users from alert preferences (users who set up alerts but might not have trades)
@@ -608,7 +538,6 @@ async function autoRecoverUsers() {
       const alertUserCount = parseInt(alertCount.rows[0].alert_users_count);
       
       if (alertUserCount > 0) {
-        console.log(`🔔 Found ${alertUserCount} users in alert preferences not in users table`);
         
         const alertRecoveryQuery = `
           INSERT INTO users (email, name, google_id, first_login, last_login, created_at)
@@ -628,10 +557,8 @@ async function autoRecoverUsers() {
         
         const alertResult = await pool.query(alertRecoveryQuery);
         totalRecovered += alertResult.rowCount;
-        console.log(`✅ Recovered ${alertResult.rowCount} users from alert preferences`);
       }
     } catch (alertError) {
-      console.log('ℹ️ Alert preferences table not available for recovery');
     }
     
     // 3. Add known admin user if not present
@@ -643,25 +570,21 @@ async function autoRecoverUsers() {
           VALUES ($1, $2, null, CURRENT_TIMESTAMP - INTERVAL '90 days', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP - INTERVAL '90 days')
           ON CONFLICT (email) DO NOTHING
         `, [adminEmail, adminEmail.split('@')[0]]);
-        console.log(`✅ Ensured admin user is tracked: ${adminEmail}`);
       }
     } catch (adminError) {
-      console.log('ℹ️ Admin user recovery skipped');
     }
     
     // Get final user count
     const finalCount = await pool.query('SELECT COUNT(*) as total FROM users');
-    console.log(`👥 Total users in database: ${finalCount.rows[0].total}`);
-    
+
     if (totalRecovered > 0) {
-      console.log(`🎉 Successfully recovered ${totalRecovered} users total`);
+
     } else {
-      console.log('✅ No missing users found - all users are properly tracked');
+
     }
     
     await pool.end();
   } catch (error) {
-    console.error('❌ Error in auto user recovery:', error);
   }
 }
 
@@ -765,21 +688,17 @@ app.get('/api/check-subscription-setup', async (req, res) => {
     res.json(results);
     
   } catch (error) {
-    console.error('Error checking subscription setup:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
 // Get all trades
 app.get('/api/trades', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
-  console.log('>>> /api/trades endpoint hit!');
   try {
     const userId = req.user ? req.user.email : 'default';
     const trades = await TradeDB.getAllTrades(userId);
-    console.log(`>>> Returning ${trades.length} trades for user ${userId}`);
     res.json(trades);
   } catch (error) {
-    console.error('>>> Error:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -827,8 +746,6 @@ app.post('/api/trades', ensureAuthenticatedAPI, ensureSubscriptionActive, async 
     
     // Debug logging for TBCG.L trade
     if (req.body.symbol === 'TBCG.L') {
-      console.log('=== TBCG.L POST /api/trades DEBUG ===');
-      console.log('Raw trade data:', req.body);
     }
     
     const trade = await TradeDB.insertTrade(req.body, userId);
@@ -841,24 +758,12 @@ app.post('/api/trades', ensureAuthenticatedAPI, ensureSubscriptionActive, async 
 // Update trade
 app.put('/api/trades/:id', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
-    console.log('>>> UPDATE TRADE REQUEST:', {
-      id: req.params.id,
-      idType: typeof req.params.id,
-      user: req.user?.email,
-      body: req.body,
-      hasEntryPrice: 'entryPrice' in req.body,
-      entryPrice: req.body.entryPrice
-    });
     
     const userId = req.user ? req.user.email : 'default';
     
     // First check if trade exists
     const existingTrade = await TradeDB.getTradeById(req.params.id, userId);
     if (!existingTrade) {
-      console.log('>>> Trade not found:', {
-        requestedId: req.params.id,
-        userId: userId
-      });
       return res.status(404).json({ error: 'Trade not found' });
     }
     
@@ -868,7 +773,6 @@ app.put('/api/trades/:id', ensureAuthenticatedAPI, ensureSubscriptionActive, asy
     }
     res.json({ message: 'Trade updated successfully' });
   } catch (error) {
-    console.error('>>> UPDATE TRADE ERROR:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -966,7 +870,6 @@ app.get('/yahoo/history', async (req, res) => {
     res.set('Content-Type', 'text/csv');
     res.send(csvData);
   } catch (error) {
-    console.error('Yahoo proxy error:', error.message);
     res.status(500).send(`Proxy error: ${error.message}`);
   }
 });
@@ -992,7 +895,6 @@ app.get('/yahoo/quote', async (req, res) => {
     
     res.json(response.data);
   } catch (error) {
-    console.error('Yahoo proxy error:', error.message);
     res.status(500).send(`Proxy error: ${error.message}`);
   }
 });
@@ -1085,7 +987,6 @@ app.post('/api/prices', ensureAuthenticatedAPI, ensureSubscriptionActive, async 
           };
         }
       } catch (error) {
-        console.error(`Error fetching price for ${symbol}:`, error.message);
         // Return null price data for failed symbols
         priceData[symbol] = {
           symbol: symbol,
@@ -1105,7 +1006,6 @@ app.post('/api/prices', ensureAuthenticatedAPI, ensureSubscriptionActive, async 
     
     res.json(priceData);
   } catch (error) {
-    console.error('Price fetch error:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -1147,7 +1047,6 @@ app.post('/api/alerts/preferences', ensureAuthenticatedAPI, ensureSubscriptionAc
       res.status(500).json({ error: 'Failed to save preferences' });
     }
   } catch (error) {
-    console.error('Alert preferences save error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -1193,20 +1092,12 @@ app.post('/api/alerts/send-custom', ensureAuthenticatedAPI, ensureSubscriptionAc
     const { chatId, message } = req.body;
     
     // Enhanced debugging for telegram bot initialization
-    console.log('🔍 /api/alerts/send-custom - Debug info:');
-    console.log('  telegramBot exists:', !!telegramBot);
-    console.log('  telegramBot type:', typeof telegramBot);
-    console.log('  telegramBot methods:', telegramBot ? Object.keys(telegramBot) : 'N/A');
-    console.log('  TELEGRAM_BOT_TOKEN set:', !!process.env.TELEGRAM_BOT_TOKEN);
-    console.log('  TELEGRAM_CHAT_ID set:', !!process.env.TELEGRAM_CHAT_ID);
     
     if (!telegramBot) {
-      console.error('❌ telegramBot is falsy:', telegramBot);
       return res.status(400).json({ error: 'Telegram bot not initialized' });
     }
     
     if (typeof telegramBot.sendTelegramAlert !== 'function') {
-      console.error('❌ sendTelegramAlert method not available');
       return res.status(400).json({ error: 'Telegram bot sendTelegramAlert method not available' });
     }
     
@@ -1239,15 +1130,12 @@ app.post('/api/alerts/send-custom', ensureAuthenticatedAPI, ensureSubscriptionAc
       formattedMessage = typeof message === 'string' ? message : JSON.stringify(message);
     }
     
-    console.log('📤 Attempting to send telegram alert to:', chatId);
-    console.log('📝 Message preview:', formattedMessage.substring(0, 100) + '...');
     
     const result = await telegramBot.sendTelegramAlert(chatId, {
       type: 'custom',
       message: formattedMessage
     });
     
-    console.log('📤 Telegram alert result:', result);
     
     if (result === false) {
       return res.status(400).json({ error: 'Failed to send telegram alert - check bot configuration' });
@@ -1255,7 +1143,6 @@ app.post('/api/alerts/send-custom', ensureAuthenticatedAPI, ensureSubscriptionAc
     
     res.json({ success: true });
   } catch (error) {
-    console.error('Error sending custom alert:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -1375,12 +1262,10 @@ async function checkTradeAlerts() {
             }
           }
         } catch (error) {
-          console.error(`Failed to check alerts for ${trade.symbol}:`, error.message);
         }
       }
     }
   } catch (error) {
-    console.error('Error in checkTradeAlerts:', error);
   }
 }
 
@@ -1410,7 +1295,6 @@ app.post('/api/scanner/run', ensureAuthenticatedAPI, ensureSubscriptionActive, a
       message: 'Global scan started. Results will be sent to your Telegram.' 
     });
   } catch (error) {
-    console.error('Error starting scan:', error);
     res.status(500).json({ error: 'Failed to start scan' });
   }
 });
@@ -1425,7 +1309,6 @@ app.get('/api/scanner/status', ensureAuthenticatedAPI, ensureSubscriptionActive,
     status.telegramConfigured = !!process.env.TELEGRAM_CHAT_ID;
     res.json(status);
   } catch (error) {
-    console.error('Error getting scanner status:', error);
     res.status(500).json({ error: 'Failed to get scanner status' });
   }
 });
@@ -1441,10 +1324,6 @@ app.post('/api/test-7am-scan', ensureAuthenticatedAPI, ensureSubscriptionActive,
       return res.status(400).json({ error: 'TELEGRAM_CHAT_ID not configured in environment variables' });
     }
     
-    console.log('📧 Test 7 AM scan triggered by user:', req.user.email);
-    console.log('[TEST 7AM] Simulating scheduled scan at:', new Date().toISOString());
-    console.log('[TEST 7AM] UK time:', new Date().toLocaleString("en-GB", {timeZone: "Europe/London"}));
-    console.log('[TEST 7AM] Using default TELEGRAM_CHAT_ID:', process.env.TELEGRAM_CHAT_ID);
     
     // Run high conviction scan exactly as the 7 AM cron job would
     stockScanner.runHighConvictionScan(process.env.TELEGRAM_CHAT_ID);
@@ -1458,7 +1337,6 @@ app.post('/api/test-7am-scan', ensureAuthenticatedAPI, ensureSubscriptionActive,
       }
     });
   } catch (error) {
-    console.error('Error in 7 AM scan test:', error);
     res.status(500).json({ error: 'Failed to start 7 AM scan test' });
   }
 });
@@ -1466,14 +1344,11 @@ app.post('/api/test-7am-scan', ensureAuthenticatedAPI, ensureSubscriptionActive,
 // Debug DTI scan endpoint - for testing with detailed logging
 app.post('/api/debug-dti-scan', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
-    console.log('🔍 Debug DTI scan triggered by user:', req.user.email);
-    
+
     // Set debug mode environment variable
     process.env.DTI_DEBUG = 'true';
-    
+
     // Use new scanner service for debug scan
-    
-    console.log('🚀 Starting debug DTI scan with detailed logging...');
     
     if (!stockScanner) {
       throw new Error('Stock Scanner Service not available');
@@ -1486,7 +1361,6 @@ app.post('/api/debug-dti-scan', ensureAuthenticatedAPI, ensureSubscriptionActive
     // Reset debug mode
     delete process.env.DTI_DEBUG;
     
-    console.log(`✅ Debug scan complete: ${opportunities.length} opportunities found`);
     
     res.json({ 
       success: true, 
@@ -1508,18 +1382,12 @@ app.post('/api/debug-dti-scan', ensureAuthenticatedAPI, ensureSubscriptionActive
     });
     
   } catch (error) {
-    console.error('Error in debug DTI scan:', error);
     res.status(500).json({ error: 'Failed to run debug DTI scan', details: error.message });
   }
 });
 
 // Backend alerts endpoint - sends alerts using same system as 7AM scan
 app.post('/api/send-backend-alerts', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
-  console.log('🚨 /api/send-backend-alerts endpoint hit!');
-  console.log('  Request user:', req.user?.email || 'NO USER');
-  console.log('  Request body keys:', Object.keys(req.body || {}));
-  console.log('  Auth enabled:', authEnabled);
-  console.log('  Subscription enabled:', subscriptionEnabled);
   
   try {
     const { opportunities } = req.body;
@@ -1542,7 +1410,6 @@ app.post('/api/send-backend-alerts', ensureAuthenticatedAPI, ensureSubscriptionA
       return res.status(503).json({ error: 'Telegram bot service not available' });
     }
     
-    console.log(`📤 Backend alerts triggered by user: ${req.user.email} for ${opportunities.length} opportunities`);
     
     // Filter for opportunities from last 2 trading days (same as 7AM scan)
     const ukNow = new Date(new Date().toLocaleString("en-US", {timeZone: "Europe/London"}));
@@ -1572,7 +1439,6 @@ app.post('/api/send-backend-alerts', ensureAuthenticatedAPI, ensureSubscriptionA
         return tradingDays <= 2; // Only last 2 trading days
     });
     
-    console.log(`📊 Filtered to ${recentOpportunities.length} opportunities from last 2 trading days`);
     
     if (recentOpportunities.length === 0) {
       // Send "no opportunities" message
@@ -1609,7 +1475,6 @@ app.post('/api/send-backend-alerts', ensureAuthenticatedAPI, ensureSubscriptionA
     });
     
   } catch (error) {
-    console.error('Error sending backend alerts:', error);
     res.status(500).json({ error: 'Failed to send backend alerts', details: error.message });
   }
 });
@@ -1617,12 +1482,10 @@ app.post('/api/send-backend-alerts', ensureAuthenticatedAPI, ensureSubscriptionA
 // Global scan endpoint for scheduled scanner
 app.post('/api/scan/global', async (req, res) => {
   try {
-    console.log('🌐 Global scan API called:', req.body);
     
     const { scanType, period, source } = req.body;
     
     // Use the new scanner service for global scan
-    console.log('🔄 Using Stock Scanner Service for global scan...');
     
     if (!stockScanner) {
       throw new Error('Stock Scanner Service not available');
@@ -1633,7 +1496,6 @@ app.post('/api/scan/global', async (req, res) => {
     
     const opportunities = result.opportunities || [];
     
-    console.log(`📊 Server-side DTI scan complete: ${opportunities.length} total opportunities found`);
     
     // Filter for recent opportunities (last 2 trading days like browser does)
     const ukNow = new Date(new Date().toLocaleString("en-US", {timeZone: "Europe/London"}));
@@ -1663,7 +1525,6 @@ app.post('/api/scan/global', async (req, res) => {
       return tradingDays <= 2; // Only last 2 trading days
     });
     
-    console.log(`📊 Filtered to ${recentOpportunities.length} recent opportunities (last 2 trading days)`);
     
     // Convert to format expected by the V2 scanner
     const formattedOpportunities = recentOpportunities.slice(0, 5).map(opp => ({
@@ -1691,14 +1552,12 @@ app.post('/api/scan/global', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Error in global scan:', error);
     res.status(500).json({ error: 'Failed to complete scan', details: error.message });
   }
 });
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error('Global error handler:', err.stack);
   res.status(500).json({ 
     error: 'Internal Server Error',
     message: process.env.NODE_ENV === 'development' ? err.message : 'An error occurred',
@@ -1716,32 +1575,23 @@ app.use((req, res) => {
 
 // Start server
 app.listen(PORT, async () => {
-  console.log(`\n✓ Server running at http://localhost:${PORT}`);
-  console.log(`✓ Health check: http://localhost:${PORT}/health`);
-  console.log(`✓ API test: http://localhost:${PORT}/api/test`);
   
   try {
     const trades = await TradeDB.getAllTrades('default');
-    console.log(`\n📊 Database Status:`);
-    console.log(`   Total trades: ${trades.length}`);
-    console.log(`   Active: ${trades.filter(t => t.status === 'active').length}`);
-    console.log(`   Closed: ${trades.filter(t => t.status === 'closed').length}`);
   } catch (error) {
-    console.error('   Database error:', error.message);
   }
   
   // Run automatic user recovery on startup
   try {
     await autoRecoverUsers();
   } catch (error) {
-    console.error('Error during startup user recovery:', error);
   }
   
   // Run initial alert check
   if (telegramBot) {
-    console.log('\n🔔 Alert System: Active');
+    if (telegramBot) {
     checkTradeAlerts();
   }
+  }
   
-  console.log('\n=================================\n');
 });
