@@ -60,7 +60,8 @@
       "Bash(python3:*)",
       "Bash(pkill:*)",
       "Bash(TELEGRAM_WEBHOOK_MODE=true npm start)",
-      "Read(//mnt/c/Users/**)"
+      "Read(//mnt/c/Users/**)",
+      "WebSearch"
     ],
     "deny": []
   },

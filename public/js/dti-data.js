@@ -25,9 +25,12 @@ const DTIData = (function() {
 
     // Blocklist for known problematic stocks (delisted, renamed, or data unavailable)
     const STOCK_BLOCKLIST = new Set([
-        'ZOMATO.NS', 'TV18BRDCST.NS', 'ATFL.NS', 'DLG.L', 'TIFS.L',
-        'WISH', 'JNPR', 'SWI', 'NSTG', 'ENFN', 'ZI', 'NVRO', 'ESGR',
-        'JWN', 'LANC', 'NOVA', 'SRCL', 'BERY', 'X', 'EQC', 'IVAC', 'ME', 'BTTR'
+        // Delisted stocks (removed from stock data files)
+        'DLG.L', 'TIFS.L', 'WISH', 'JNPR', 'SWI', 'NSTG', 'ENFN',
+        'ESGR', 'JWN', 'NOVA', 'SRCL', 'BERY', 'X', 'EQC', 'IVAC', 'ME', 'BTTR',
+
+        // Legacy symbols that have changed (old symbols blocked to prevent confusion)
+        'ZI', 'LANC', 'NVRO'
     ]);
 
     // Track failed stocks for better reporting
