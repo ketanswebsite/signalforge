@@ -358,7 +358,6 @@ DTIUI.StockSelector = (function() {
                 DTIBacktester.utils.showNotification(`Data for ${stockName} loaded successfully`, 'success');
                 
             } catch (error) {
-                console.error('Error processing data:', error);
                 DTIBacktester.utils.showNotification(`Error: ${error.message}`, 'error');
             } finally {
                 // Reset button state
@@ -578,7 +577,6 @@ batchButton.addEventListener('click', async function() {
         // Perform the batch scan
         await DTIData.fetchAllStocksData();
         
-        console.log(`After scan: Found ${DTIBacktester.activeTradeOpportunities.length} opportunities`);
         
         // Restore original getCurrentStockList method
         if (scanType !== 'current') {
@@ -612,16 +610,13 @@ batchButton.addEventListener('click', async function() {
             if (typeof DTIUI.TradeDisplay !== 'undefined' && 
                 typeof DTIUI.TradeDisplay.displayBuyingOpportunities === 'function') {
                 DTIUI.TradeDisplay.displayBuyingOpportunities();
-                console.log("Explicitly called displayBuyingOpportunities");
             } else {
-                console.error("Display function not available");
             }
         }, 500);
         
         // Update the UI to show the scan completed for the selected scan type
         DTIBacktester.utils.showNotification(`${scanTypeName} scan completed with ${DTIBacktester.activeTradeOpportunities.length} opportunities found`, 'success');
     } catch (error) {
-        console.error('Error in batch processing:', error);
         DTIBacktester.utils.showNotification('Error processing stocks: ' + error.message, 'error');
         
         // Restore original getCurrentStockList method on error

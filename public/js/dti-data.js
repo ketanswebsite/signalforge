@@ -215,7 +215,6 @@ if (period === '5y') {
         
         return csvData;
     } catch (error) {
-        console.error('Error fetching stock data:', error);
         
         // Update status on error
         const statusElement = document.getElementById('data-fetch-status');
@@ -234,7 +233,6 @@ if (period === '5y') {
         
         // Implement retry logic
         if (retryCount < MAX_RETRIES) {
-            console.log(`Retrying fetch for ${symbol} (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
             
             // Update status to show retry
             if (statusElement) {
@@ -277,7 +275,6 @@ async function fetchCurrentQuote(symbol) {
         
         return await response.json();
     } catch (error) {
-        console.error('Error fetching current quote:', error);
         DTIBacktester.utils.showNotification(`Failed to fetch quote for ${symbol}: ${error.message}`, 'error');
         return null;
     }
@@ -353,7 +350,6 @@ async function fetchCurrentQuote(symbol) {
             
             if (dateIndex === -1 || openIndex === -1 || highIndex === -1 || 
                 lowIndex === -1 || closeIndex === -1) {
-                console.error('Missing required columns in data');
                 return null;
             }
             
@@ -422,7 +418,6 @@ async function fetchCurrentQuote(symbol) {
                 activeTrade: activeTrade
             };
         } catch (error) {
-            console.error('Error processing stock data:', error);
             return null;
         }
     }
@@ -470,7 +465,6 @@ async function fetchCurrentQuote(symbol) {
                     }
                 })
                 .catch(error => {
-                    console.error(`Error processing ${stock.name}:`, error);
                     errorCount++;
                     return null;
                 })
@@ -758,12 +752,6 @@ async function fetchCurrentQuote(symbol) {
                 const closeVal = DTIBacktester.utils.parseFloatSafe(data[i][formatInfo.closeIndex]);
                 
                 if (isNaN(openVal) || isNaN(highVal) || isNaN(lowVal) || isNaN(closeVal)) {
-                    console.log(`Skipping row ${i} due to invalid numeric data:`, {
-                        open: data[i][formatInfo.openIndex],
-                        high: data[i][formatInfo.highIndex],
-                        low: data[i][formatInfo.lowIndex],
-                        close: data[i][formatInfo.closeIndex]
-                    });
                     continue; // Skip rows with invalid numeric data
                 }
                 
@@ -830,7 +818,6 @@ async function fetchCurrentQuote(symbol) {
                 DTIBacktester.utils.showNotification(`Backtest completed with ${completedTrades.length} trades`, 'success');
             }, 200);
         } catch (error) {
-            console.error('Error processing CSV:', error);
             DTIBacktester.utils.showNotification('Error processing CSV file: ' + error.message, 'error');
         } finally {
             // Reset button state
@@ -855,7 +842,6 @@ async function fetchCurrentQuote(symbol) {
         const headers = data[0].map(h => (h || '').toString().trim().toLowerCase());
         const formatInfo = { headers: headers };
         
-        console.log("Detected headers:", headers);
         
         // For the new format with named columns
         if (headers.includes('open') || headers.includes('high') || headers.includes('low') || 
@@ -891,14 +877,6 @@ async function fetchCurrentQuote(symbol) {
             throw new Error('Unrecognized CSV format. Please ensure your data includes date, open, high, low, close columns.');
         }
         
-        console.log("Format detection results:", {
-            format: formatInfo.format,
-            dateIndex: formatInfo.dateIndex,
-            openIndex: formatInfo.openIndex,
-            highIndex: formatInfo.highIndex,
-            lowIndex: formatInfo.lowIndex,
-            closeIndex: formatInfo.closeIndex
-        });
         
         return formatInfo;
     }
@@ -909,7 +887,6 @@ async function fetchCurrentQuote(symbol) {
      */
     function clearDataCache() {
         dataCache.clear();
-        console.log("Data cache cleared");
         DTIBacktester.utils.showNotification("Data cache cleared", "info");
     }
     

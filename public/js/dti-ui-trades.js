@@ -37,13 +37,9 @@ DTIUI.TradeDisplay = (function() {
      * Display active trade opportunities with "Take a Trade" button
      */
 function displayBuyingOpportunities() {
-    console.log("Display function called, opportunities:", 
-        DTIBacktester.activeTradeOpportunities ? 
-        DTIBacktester.activeTradeOpportunities.length : 0);
     
     // Send direct alerts for current opportunities
     if (DTIBacktester.activeTradeOpportunities && DTIBacktester.activeTradeOpportunities.length > 0) {
-        console.log("🔔 Sending direct alerts for current opportunities...");
         setTimeout(() => {
             sendDirectOpportunityAlerts(DTIBacktester.activeTradeOpportunities);
         }, 1000);
@@ -70,7 +66,6 @@ function displayBuyingOpportunities() {
            DTIBacktester.currentStockIndex === 'indices' ? 'Market Indices' : 'Nifty 50');
     
     if (!DTIBacktester.activeTradeOpportunities || DTIBacktester.activeTradeOpportunities.length === 0) {
-        console.log("No opportunities found, displaying empty state");
         opportunitiesContainer.innerHTML = `
             <h3 class="card-title">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -84,7 +79,6 @@ function displayBuyingOpportunities() {
         return;
     }
 
-    console.log("Processing opportunities for display...");
     
          
         // Calculate win rates for each stock
@@ -334,7 +328,6 @@ function displayBuyingOpportunities() {
                     // Show the modal and pass the symbol directly
                     MLInsightsUI.showMLInsights(symbol);
                 } else {
-                    console.error('ML Insights UI not available. Make sure ml-insights-ui.js is loaded.');
                     // Fallback notification
                     if (typeof DTIBacktester !== 'undefined' && DTIBacktester.utils && DTIBacktester.utils.showNotification) {
                         DTIBacktester.utils.showNotification('AI Insights feature is not available. Please refresh the page.', 'error');
@@ -500,7 +493,6 @@ function displayBuyingOpportunities() {
         
         // Send backtest alerts for completed backtests if BacktestAlerts module is available
         if (typeof BacktestAlerts !== 'undefined' && completedTrades.length > 0) {
-            console.log("🔔 Processing backtest results for alerts...");
             setTimeout(() => {
                 const backtestData = {
                     trades: completedTrades,
@@ -770,14 +762,12 @@ function displayBuyingOpportunities() {
  */
 async function sendDirectOpportunityAlerts(opportunities) {
     try {
-        console.log(`📤 Sending alerts for ${opportunities.length} opportunities...`);
         
         // Get alert preferences
         const prefsResponse = await fetch('/api/alerts/preferences', {
             credentials: 'include' // Include cookies for authentication
         });
         if (!prefsResponse.ok) {
-            console.log('❌ Failed to fetch alert preferences');
             return;
         }
         
@@ -787,10 +777,8 @@ async function sendDirectOpportunityAlerts(opportunities) {
         let telegramChatId = null;
         if (prefs.telegram_enabled && prefs.telegram_chat_id) {
             telegramChatId = prefs.telegram_chat_id;
-            console.log('📱 Using user configured Telegram chat ID');
         } else {
             // Fallback to backend environment Telegram chat ID (same as 7AM scan)
-            console.log('📱 User Telegram not configured, using backend default chat ID');
             // Send alerts via backend API instead of user preferences
             try {
                 const backendResponse = await fetch('/api/send-backend-alerts', {
@@ -803,19 +791,15 @@ async function sendDirectOpportunityAlerts(opportunities) {
                 });
                 
                 if (backendResponse.ok) {
-                    console.log('✅ Alerts sent via backend system');
                 } else {
-                    console.log('❌ Failed to send alerts via backend system');
                 }
                 return;
             } catch (error) {
-                console.error('❌ Error sending backend alerts:', error);
                 return;
             }
         }
         
         if (!telegramChatId) {
-            console.log('❌ No Telegram configuration available');
             return;
         }
         
@@ -837,7 +821,6 @@ async function sendDirectOpportunityAlerts(opportunities) {
             if (!isRecent && highConvictionOpportunities.indexOf(opp) < 5) {
                 const today = new Date();
                 const daysDiff = Math.floor((today - signalDate) / (1000 * 60 * 60 * 24));
-                console.log(`📅 ${opp.stock.symbol} signal from ${signalDate.toLocaleDateString()} (${daysDiff} days ago) - excluded`);
             }
             
             return isRecent;
@@ -846,19 +829,13 @@ async function sendDirectOpportunityAlerts(opportunities) {
         // Send ALL recent high conviction opportunities (no limit)
         const alertOpportunities = recentOpportunities;
         
-        console.log(`📊 Total opportunities: ${opportunities.length}`);
-        console.log(`⭐ High conviction opportunities: ${highConvictionOpportunities.length}`);
-        console.log(`📅 Recent high conviction opportunities: ${recentOpportunities.length}`);
-        console.log(`📤 Sending alerts for: ${alertOpportunities.length}`);
         
         // Log which opportunities are being sent
         alertOpportunities.forEach(opp => {
             const signalDate = new Date(opp.trade.signalDate || opp.trade.entryDate);
-            console.log(`✅ Including ${opp.stock.symbol} - signal from ${signalDate.toLocaleDateString()}`);
         });
         
         if (alertOpportunities.length === 0) {
-            console.log('❌ No recent high conviction opportunities found - skipping alerts');
             return;
         }
         
@@ -911,10 +888,8 @@ async function sendDirectOpportunityAlerts(opportunities) {
         // Send just the message string for custom messages
         await sendTelegramMessage(prefs.telegram_chat_id, message);
         
-        console.log('✅ All opportunity alerts sent successfully');
         
     } catch (error) {
-        console.error('❌ Error sending opportunity alerts:', error);
     }
 }
 
@@ -922,7 +897,6 @@ async function sendDirectOpportunityAlerts(opportunities) {
  * Send telegram message
  */
 async function sendTelegramMessage(chatId, messageData) {
-    console.log(`📤 Sending to Telegram (${chatId}):`, messageData);
     
     // Handle both string and object messages
     const messagePayload = typeof messageData === 'string' 
@@ -941,12 +915,10 @@ async function sendTelegramMessage(chatId, messageData) {
     
     if (!response.ok) {
         const errorText = await response.text();
-        console.error(`❌ Telegram send failed: ${response.status} - ${errorText}`);
         throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
     
     const result = await response.json();
-    console.log('✅ Telegram response:', result);
 }
 
 /**
