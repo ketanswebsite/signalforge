@@ -30,7 +30,10 @@ const DTIData = (function() {
         'ESGR', 'JWN', 'NOVA', 'SRCL', 'BERY', 'X', 'EQC', 'IVAC', 'ME', 'BTTR',
 
         // Legacy symbols that have changed (old symbols blocked to prevent confusion)
-        'ZI', 'LANC', 'NVRO'
+        'ZI', 'LANC', 'NVRO',
+
+        // Indian NSE stocks with Yahoo Finance data feed issues (temporarily blocked)
+        'ZOMATO.NS', 'TV18BRDCST.NS', 'ATFL.NS'
     ]);
 
     // Track failed stocks for better reporting
@@ -1040,10 +1043,12 @@ async function fetchCurrentQuote(symbol) {
 
         // Known symbol mappings for common renamings/mergers
         const symbolMappings = {
-            // Indian stocks
-            'zomato': ['ZOMATO.BO'], // Alternative exchange
-            'tv18 broadcast': ['TV18BRDCST.BO'],
-            'agro tech foods': ['ATFL.BO'],
+            // Indian stocks (trying BSE alternatives for NSE data issues)
+            'zomato': ['ZOMATO.BO'], // Alternative exchange (BSE)
+            'eternal limited': ['ZOMATO.BO'], // New company name
+            'tv18 broadcast': ['TV18BRDCST.BO'], // Alternative exchange (BSE)
+            'agro tech foods': ['ATFL.BO'], // Alternative exchange (BSE)
+            'sundrop brands limited': ['ATFL.BO'], // New company name
 
             // US stocks - known mergers/acquisitions
             'wish': [], // Delisted
