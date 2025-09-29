@@ -1147,7 +1147,7 @@ app.post('/api/alerts/send-custom', ensureAuthenticatedAPI, ensureSubscriptionAc
   }
 });
 
-// Health check with detailed info
+// Health check with detailed info including cron status
 app.get('/health', (req, res) => {
   const healthInfo = {
     status: 'ok',
@@ -1158,6 +1158,39 @@ app.get('/health', (req, res) => {
     sessionStore: authEnabled ? 'SQLite' : 'none',
     timestamp: new Date().toISOString()
   };
+
+  // Add cron status if scanner is available
+  if (stockScanner) {
+    try {
+      const scannerStatus = stockScanner.getStatus();
+      const ukNow = new Date(new Date().toLocaleString("en-US", {timeZone: "Europe/London"}));
+
+      // Calculate next 7 AM weekday
+      const next7am = new Date(ukNow);
+      next7am.setHours(7, 0, 0, 0);
+      if (next7am <= ukNow) {
+        next7am.setDate(next7am.getDate() + 1);
+      }
+      // Skip to next weekday if weekend
+      while (next7am.getDay() === 0 || next7am.getDay() === 6) {
+        next7am.setDate(next7am.getDate() + 1);
+      }
+
+      healthInfo.cron = {
+        active: true,
+        scheduledJobs: scannerStatus.scheduledJobs,
+        telegramConfigured: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
+        currentUKTime: ukNow.toLocaleString("en-GB", {timeZone: "Europe/London"}),
+        nextScheduledRun: next7am.toLocaleString("en-GB", {timeZone: "Europe/London"}),
+        serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      };
+    } catch (error) {
+      healthInfo.cron = { active: false, error: error.message };
+    }
+  } else {
+    healthInfo.cron = { active: false, error: 'Scanner not initialized' };
+  }
+
   res.json(healthInfo);
 });
 
