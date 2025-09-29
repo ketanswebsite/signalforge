@@ -276,6 +276,36 @@ app.get('/admin', ensureAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
+// New admin portal
+app.get('/admin-portal', ensureAuthenticated, (req, res) => {
+  // Check if user is admin
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).send('Access denied. Admin privileges required.');
+  }
+  res.sendFile(path.join(__dirname, 'public', 'admin-portal.html'));
+});
+
+// API endpoint to get all Telegram subscribers (admin only)
+app.get('/api/admin/subscribers', ensureAuthenticatedAPI, async (req, res) => {
+  // Check if user is admin
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+  }
+
+  try {
+    // Get all subscribers (both active and inactive)
+    const subscribers = await TradeDB.getAllActiveSubscribers();
+
+    res.json({
+      success: true,
+      total: subscribers.length,
+      subscribers: subscribers
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch subscribers', details: error.message });
+  }
+});
+
 app.get('/api/admin/stats', ensureAuthenticatedAPI, async (req, res) => {
   // Check if user is admin
   if (req.user.email !== ADMIN_EMAIL) {
