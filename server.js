@@ -147,12 +147,16 @@ async function ensureUserInDatabase(user) {
 
 // IMPORTANT: Telegram webhook must come BEFORE authentication middleware!
 // Telegram webhook endpoint for production (NO AUTH REQUIRED)
-app.post('/api/telegram/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+app.post('/api/telegram/webhook', express.json(), (req, res) => {
   console.log('📨 [WEBHOOK] Received update from Telegram');
 
   try {
-    const update = JSON.parse(req.body);
+    const update = req.body;
     console.log('📨 [WEBHOOK] Update type:', Object.keys(update).join(', '));
+
+    if (update.message) {
+      console.log('📨 [WEBHOOK] Message from:', update.message.from.first_name, '- Text:', update.message.text);
+    }
 
     if (telegramBot && typeof telegramBot.processUpdate === 'function') {
       telegramBot.processUpdate(update);
@@ -164,6 +168,7 @@ app.post('/api/telegram/webhook', express.raw({ type: 'application/json' }), (re
     res.status(200).send('OK');
   } catch (error) {
     console.error('❌ [WEBHOOK] Error processing webhook:', error.message);
+    console.error('❌ [WEBHOOK] Stack:', error.stack);
     res.status(500).send('Error processing webhook');
   }
 });
