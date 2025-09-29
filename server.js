@@ -1161,6 +1161,44 @@ app.get('/health', (req, res) => {
   res.json(healthInfo);
 });
 
+// Scanner status endpoint - check if cron jobs are active
+app.get('/api/scanner/cron-status', (req, res) => {
+  try {
+    if (!stockScanner) {
+      return res.status(503).json({
+        error: 'Scanner not initialized',
+        cronActive: false
+      });
+    }
+
+    const status = stockScanner.getStatus();
+    const ukNow = new Date(new Date().toLocaleString("en-US", {timeZone: "Europe/London"}));
+
+    // Calculate next 7 AM weekday
+    const next7am = new Date(ukNow);
+    next7am.setHours(7, 0, 0, 0);
+    if (next7am <= ukNow) {
+      next7am.setDate(next7am.getDate() + 1);
+    }
+    // Skip to next weekday if weekend
+    while (next7am.getDay() === 0 || next7am.getDay() === 6) {
+      next7am.setDate(next7am.getDate() + 1);
+    }
+
+    res.json({
+      cronActive: true,
+      scheduledJobs: status.scheduledJobs,
+      telegramConfigured: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
+      currentUKTime: ukNow.toLocaleString("en-GB", {timeZone: "Europe/London"}),
+      nextScheduledRun: next7am.toLocaleString("en-GB", {timeZone: "Europe/London"}),
+      serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      lastScanResults: status.lastScanResults || 0
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message, cronActive: false });
+  }
+});
+
 // Favicon
 app.get('/favicon.ico', (req, res) => {
   res.sendStatus(204);
@@ -1319,17 +1357,19 @@ app.post('/api/test-7am-scan', ensureAuthenticatedAPI, ensureSubscriptionActive,
     if (!stockScanner) {
       return res.status(503).json({ error: 'Stock scanner not available' });
     }
-    
+
     if (!process.env.TELEGRAM_CHAT_ID) {
       return res.status(400).json({ error: 'TELEGRAM_CHAT_ID not configured in environment variables' });
     }
-    
-    
+
+    console.log('🧪 [TEST] Manual 7 AM scan test triggered');
+    console.log('🧪 [TEST] UK Time:', new Date().toLocaleString("en-GB", {timeZone: "Europe/London"}));
+
     // Run high conviction scan exactly as the 7 AM cron job would
     stockScanner.runHighConvictionScan(process.env.TELEGRAM_CHAT_ID);
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       message: '7 AM scan test initiated. This simulates the exact behavior of the scheduled scan. Check your Telegram for results.',
       details: {
         ukTime: new Date().toLocaleString("en-GB", {timeZone: "Europe/London"}),
@@ -1337,7 +1377,39 @@ app.post('/api/test-7am-scan', ensureAuthenticatedAPI, ensureSubscriptionActive,
       }
     });
   } catch (error) {
+    console.error('🧪 [TEST] Failed to start test:', error.message);
     res.status(500).json({ error: 'Failed to start 7 AM scan test' });
+  }
+});
+
+// Force trigger cron job (admin only) - useful for debugging on Render
+app.post('/api/force-cron-trigger', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.email !== ADMIN_EMAIL) {
+      return res.status(403).json({ error: 'Admin privileges required' });
+    }
+
+    if (!stockScanner) {
+      return res.status(503).json({ error: 'Stock scanner not available' });
+    }
+
+    console.log('⚡ [FORCE TRIGGER] Admin manually triggered cron job');
+    console.log('⚡ [FORCE TRIGGER] User:', req.user.email);
+    console.log('⚡ [FORCE TRIGGER] UK Time:', new Date().toLocaleString("en-GB", {timeZone: "Europe/London"}));
+
+    // Run the scan without chatId to trigger broadcast to all subscribers
+    const result = await stockScanner.runHighConvictionScan();
+
+    res.json({
+      success: true,
+      message: 'Cron job triggered successfully. Messages sent to all subscribers.',
+      result: result,
+      ukTime: new Date().toLocaleString("en-GB", {timeZone: "Europe/London"})
+    });
+  } catch (error) {
+    console.error('⚡ [FORCE TRIGGER] Failed:', error.message);
+    res.status(500).json({ error: 'Failed to trigger cron job', details: error.message });
   }
 });
 
