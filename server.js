@@ -145,7 +145,30 @@ async function ensureUserInDatabase(user) {
 
 // === API ROUTES ===
 
-// Protect all API routes except auth routes
+// IMPORTANT: Telegram webhook must come BEFORE authentication middleware!
+// Telegram webhook endpoint for production (NO AUTH REQUIRED)
+app.post('/api/telegram/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+  console.log('📨 [WEBHOOK] Received update from Telegram');
+
+  try {
+    const update = JSON.parse(req.body);
+    console.log('📨 [WEBHOOK] Update type:', Object.keys(update).join(', '));
+
+    if (telegramBot && typeof telegramBot.processUpdate === 'function') {
+      telegramBot.processUpdate(update);
+      console.log('✅ [WEBHOOK] Update processed successfully');
+    } else {
+      console.error('❌ [WEBHOOK] Telegram bot not available');
+    }
+
+    res.status(200).send('OK');
+  } catch (error) {
+    console.error('❌ [WEBHOOK] Error processing webhook:', error.message);
+    res.status(500).send('Error processing webhook');
+  }
+});
+
+// Protect all API routes except auth routes and telegram webhook
 app.use('/api', ensureAuthenticatedAPI);
 
 // ML routes
@@ -162,23 +185,6 @@ app.get('/api/test', (req, res) => {
     server: 'app.js',
     timestamp: new Date().toISOString()
   });
-});
-
-// Telegram webhook endpoint for production
-app.post('/api/telegram/webhook', express.raw({ type: 'application/json' }), (req, res) => {
-
-  try {
-    const update = JSON.parse(req.body);
-    
-    if (telegramBot && typeof telegramBot.processUpdate === 'function') {
-      telegramBot.processUpdate(update);
-    } else {
-      }
-    
-    res.status(200).send('OK');
-  } catch (error) {
-    res.status(500).send('Error processing webhook');
-  }
 });
 
 // User endpoint for authentication check
