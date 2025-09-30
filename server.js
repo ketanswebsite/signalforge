@@ -314,6 +314,13 @@ app.get('/api/admin/users', ensureAuthenticatedAPI, async (req, res) => {
   }
 
   try {
+    // Use TradeDB's pool connection
+    const { Pool } = require('pg');
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    });
+
     // First check if telegram columns exist, if not add them
     try {
       await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_chat_id VARCHAR(100)`);
@@ -344,6 +351,8 @@ app.get('/api/admin/users', ensureAuthenticatedAPI, async (req, res) => {
                u.telegram_chat_id, u.telegram_username, u.telegram_linked_at
       ORDER BY u.last_login DESC
     `);
+
+    await pool.end(); // Close the connection
 
     res.json({
       success: true,
