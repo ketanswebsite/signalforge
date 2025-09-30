@@ -1928,6 +1928,187 @@ app.post('/api/scan/global', async (req, res) => {
   }
 });
 
+// ===== HIGH CONVICTION PORTFOLIO ENDPOINTS =====
+
+// Get portfolio status (admin only)
+app.get('/api/portfolio/status', ensureAuthenticatedAPI, async (req, res) => {
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  try {
+    if (!stockScanner || !stockScanner.portfolioManager) {
+      return res.status(500).json({ error: 'Portfolio manager not initialized' });
+    }
+
+    const status = await stockScanner.portfolioManager.getPortfolioStatus();
+    res.json(status);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get all active high conviction trades
+app.get('/api/portfolio/trades/active', ensureAuthenticatedAPI, async (req, res) => {
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  try {
+    const trades = await TradeDB.getActiveHighConvictionTrades();
+    res.json({ trades });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get all high conviction trades (with date filter)
+app.get('/api/portfolio/trades/all', ensureAuthenticatedAPI, async (req, res) => {
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  try {
+    const { startDate, endDate } = req.query;
+    const trades = await TradeDB.getAllHighConvictionTrades(startDate, endDate);
+    res.json({ trades });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get P&L summary
+app.get('/api/portfolio/pl-summary', ensureAuthenticatedAPI, async (req, res) => {
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  try {
+    const { startDate, endDate } = req.query;
+    const summary = await TradeDB.getHighConvictionPLSummary(startDate, endDate);
+    res.json(summary);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update all active trades (manual trigger)
+app.post('/api/portfolio/update-trades', ensureAuthenticatedAPI, async (req, res) => {
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  try {
+    if (!stockScanner || !stockScanner.portfolioManager) {
+      return res.status(500).json({ error: 'Portfolio manager not initialized' });
+    }
+
+    const result = await stockScanner.portfolioManager.updateAllActiveTrades();
+    res.json({ success: true, result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Generate and send weekly report (manual trigger)
+app.post('/api/portfolio/send-weekly-report', ensureAuthenticatedAPI, async (req, res) => {
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  try {
+    if (!stockScanner || !stockScanner.portfolioManager) {
+      return res.status(500).json({ error: 'Portfolio manager not initialized' });
+    }
+
+    const result = await stockScanner.portfolioManager.sendWeeklyReport();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Preview weekly report (without sending)
+app.get('/api/portfolio/preview-report', ensureAuthenticatedAPI, async (req, res) => {
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  try {
+    if (!stockScanner || !stockScanner.portfolioManager) {
+      return res.status(500).json({ error: 'Portfolio manager not initialized' });
+    }
+
+    const message = await stockScanner.portfolioManager.generateWeeklyReport();
+    res.json({ message });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Close a specific trade manually
+app.post('/api/portfolio/close-trade/:symbol', ensureAuthenticatedAPI, async (req, res) => {
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  try {
+    const { symbol } = req.params;
+    const { exitPrice, exitReason } = req.body;
+
+    if (!exitPrice || !exitReason) {
+      return res.status(400).json({ error: 'exitPrice and exitReason required' });
+    }
+
+    // Get the active trade
+    const activeTrades = await TradeDB.getActiveHighConvictionTrades();
+    const trade = activeTrades.find(t => t.symbol === symbol);
+
+    if (!trade) {
+      return res.status(404).json({ error: 'Active trade not found' });
+    }
+
+    // Calculate P&L
+    const market = trade.market;
+    const shares = parseFloat(trade.shares);
+    const entryPrice = parseFloat(trade.entry_price);
+
+    if (!stockScanner || !stockScanner.portfolioManager) {
+      return res.status(500).json({ error: 'Portfolio manager not initialized' });
+    }
+
+    const pl = stockScanner.portfolioManager.calculatePL(entryPrice, exitPrice, shares, market);
+
+    const exitData = {
+      exitDate: new Date().toISOString().split('T')[0],
+      exitPrice: exitPrice,
+      exitReason: exitReason,
+      plPercent: pl.plPercent,
+      plAmountGBP: pl.plGBP,
+      plAmountINR: pl.plINR,
+      plAmountUSD: pl.plUSD
+    };
+
+    const result = await TradeDB.closeHighConvictionTrade(symbol, exitData);
+
+    // Send exit alert to all subscribers
+    const closure = {
+      symbol: trade.symbol,
+      name: trade.name,
+      market: trade.market,
+      currencySymbol: trade.currency_symbol,
+      entryPrice: entryPrice,
+      entryDate: trade.entry_date,
+      exitData: exitData
+    };
+    await stockScanner.portfolioManager.sendExitAlert(closure);
+
+    res.json({ success: true, trade: result, alertSent: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Global error handler
 app.use((err, req, res, next) => {
   res.status(500).json({ 

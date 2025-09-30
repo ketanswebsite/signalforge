@@ -127,12 +127,50 @@ async function initializeDatabase() {
       )
     `);
 
+    // Create high_conviction_portfolio table for tracking high conviction trades
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS high_conviction_portfolio (
+        id SERIAL PRIMARY KEY,
+        symbol VARCHAR(50) NOT NULL,
+        name VARCHAR(255),
+        market VARCHAR(50),
+        signal_date DATE NOT NULL,
+        entry_date DATE NOT NULL,
+        entry_price DECIMAL(12, 4) NOT NULL,
+        current_price DECIMAL(12, 4),
+        target_price DECIMAL(12, 4) NOT NULL,
+        stop_loss_price DECIMAL(12, 4) NOT NULL,
+        square_off_date DATE NOT NULL,
+        investment_gbp DECIMAL(12, 4),
+        investment_inr DECIMAL(12, 4),
+        investment_usd DECIMAL(12, 4),
+        shares DECIMAL(12, 6),
+        currency_symbol VARCHAR(10),
+        status VARCHAR(20) DEFAULT 'active',
+        exit_date DATE,
+        exit_price DECIMAL(12, 4),
+        exit_reason VARCHAR(100),
+        pl_percent DECIMAL(8, 4),
+        pl_amount_gbp DECIMAL(12, 4),
+        pl_amount_inr DECIMAL(12, 4),
+        pl_amount_usd DECIMAL(12, 4),
+        win_rate DECIMAL(8, 4),
+        total_backtest_trades INT,
+        entry_dti DECIMAL(8, 4),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Create index on user_id for better performance
     await pool.query('CREATE INDEX IF NOT EXISTS idx_trades_user_id ON trades(user_id)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_trades_status ON trades(status)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_trades_symbol ON trades(symbol)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_telegram_subscribers_chat_id ON telegram_subscribers(chat_id)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_telegram_subscribers_active ON telegram_subscribers(is_active)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_high_conviction_symbol ON high_conviction_portfolio(symbol)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_high_conviction_status ON high_conviction_portfolio(status)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_high_conviction_signal_date ON high_conviction_portfolio(signal_date)');
 
     // Migrate existing users from trades table
     await migrateExistingUsers();
@@ -1142,6 +1180,207 @@ const TradeDB = {
       return { success: true };
     } catch (error) {
       throw error;
+    }
+  },
+
+  // ===== HIGH CONVICTION PORTFOLIO MANAGEMENT =====
+
+  // Add high conviction trade to portfolio
+  async addHighConvictionTrade(tradeData) {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        INSERT INTO high_conviction_portfolio (
+          symbol, name, market, signal_date, entry_date, entry_price,
+          current_price, target_price, stop_loss_price, square_off_date,
+          investment_gbp, investment_inr, investment_usd, shares,
+          currency_symbol, win_rate, total_backtest_trades, entry_dti
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+        RETURNING *
+      `, [
+        tradeData.symbol,
+        tradeData.name,
+        tradeData.market,
+        tradeData.signalDate,
+        tradeData.entryDate,
+        tradeData.entryPrice,
+        tradeData.currentPrice || tradeData.entryPrice,
+        tradeData.targetPrice,
+        tradeData.stopLossPrice,
+        tradeData.squareOffDate,
+        tradeData.investmentGBP,
+        tradeData.investmentINR,
+        tradeData.investmentUSD,
+        tradeData.shares,
+        tradeData.currencySymbol,
+        tradeData.winRate,
+        tradeData.totalBacktestTrades,
+        tradeData.entryDTI
+      ]);
+      return result.rows[0];
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get all active high conviction trades
+  async getActiveHighConvictionTrades() {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        SELECT * FROM high_conviction_portfolio
+        WHERE status = 'active'
+        ORDER BY signal_date DESC
+      `);
+      return result.rows;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get all high conviction trades (active and closed)
+  async getAllHighConvictionTrades(startDate = null, endDate = null) {
+    checkConnection();
+    try {
+      let query = `
+        SELECT * FROM high_conviction_portfolio
+        WHERE 1=1
+      `;
+      const params = [];
+
+      if (startDate) {
+        params.push(startDate);
+        query += ` AND signal_date >= $${params.length}`;
+      }
+
+      if (endDate) {
+        params.push(endDate);
+        query += ` AND signal_date <= $${params.length}`;
+      }
+
+      query += ` ORDER BY signal_date DESC`;
+
+      const result = await pool.query(query, params);
+      return result.rows;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Update high conviction trade (daily price update)
+  async updateHighConvictionTrade(symbol, updateData) {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        UPDATE high_conviction_portfolio
+        SET
+          current_price = $1,
+          pl_percent = $2,
+          pl_amount_gbp = $3,
+          pl_amount_inr = $4,
+          pl_amount_usd = $5,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE symbol = $6 AND status = 'active'
+        RETURNING *
+      `, [
+        updateData.currentPrice,
+        updateData.plPercent,
+        updateData.plAmountGBP,
+        updateData.plAmountINR,
+        updateData.plAmountUSD,
+        symbol
+      ]);
+      return result.rows[0];
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Close high conviction trade
+  async closeHighConvictionTrade(symbol, exitData) {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        UPDATE high_conviction_portfolio
+        SET
+          status = 'closed',
+          exit_date = $1,
+          exit_price = $2,
+          exit_reason = $3,
+          pl_percent = $4,
+          pl_amount_gbp = $5,
+          pl_amount_inr = $6,
+          pl_amount_usd = $7,
+          current_price = $2,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE symbol = $8 AND status = 'active'
+        RETURNING *
+      `, [
+        exitData.exitDate,
+        exitData.exitPrice,
+        exitData.exitReason,
+        exitData.plPercent,
+        exitData.plAmountGBP,
+        exitData.plAmountINR,
+        exitData.plAmountUSD,
+        symbol
+      ]);
+      return result.rows[0];
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get high conviction P&L summary
+  async getHighConvictionPLSummary(startDate = null, endDate = null) {
+    checkConnection();
+    try {
+      let query = `
+        SELECT
+          COUNT(*) FILTER (WHERE status = 'active') as active_trades,
+          COUNT(*) FILTER (WHERE status = 'closed') as closed_trades,
+          SUM(pl_amount_gbp) FILTER (WHERE status = 'closed') as total_pl_gbp,
+          SUM(pl_amount_inr) FILTER (WHERE status = 'closed') as total_pl_inr,
+          SUM(pl_amount_usd) FILTER (WHERE status = 'closed') as total_pl_usd,
+          SUM(pl_amount_gbp) FILTER (WHERE status = 'active') as open_pl_gbp,
+          SUM(pl_amount_inr) FILTER (WHERE status = 'active') as open_pl_inr,
+          SUM(pl_amount_usd) FILTER (WHERE status = 'active') as open_pl_usd,
+          AVG(pl_percent) FILTER (WHERE status = 'closed') as avg_return_percent,
+          COUNT(*) FILTER (WHERE status = 'closed' AND pl_percent > 0) as winning_trades,
+          COUNT(*) FILTER (WHERE status = 'closed' AND pl_percent < 0) as losing_trades
+        FROM high_conviction_portfolio
+        WHERE 1=1
+      `;
+      const params = [];
+
+      if (startDate) {
+        params.push(startDate);
+        query += ` AND signal_date >= $${params.length}`;
+      }
+
+      if (endDate) {
+        params.push(endDate);
+        query += ` AND signal_date <= $${params.length}`;
+      }
+
+      const result = await pool.query(query, params);
+      return result.rows[0];
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Check if trade already exists (avoid duplicates)
+  async highConvictionTradeExists(symbol, signalDate) {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        SELECT id FROM high_conviction_portfolio
+        WHERE symbol = $1 AND signal_date = $2
+      `, [symbol, signalDate]);
+      return result.rows.length > 0;
+    } catch (error) {
+      return false;
     }
   },
 
