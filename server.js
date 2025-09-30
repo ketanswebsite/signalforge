@@ -306,6 +306,40 @@ app.get('/api/admin/subscribers', ensureAuthenticatedAPI, async (req, res) => {
   }
 });
 
+// API endpoint to get all OAuth users (admin only)
+app.get('/api/admin/users', ensureAuthenticatedAPI, async (req, res) => {
+  // Check if user is admin
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+  }
+
+  try {
+    // Get all registered users from the users table
+    const result = await pool.query(`
+      SELECT
+        u.email,
+        u.name,
+        u.first_login,
+        u.last_login,
+        u.created_at,
+        COUNT(t.id) as trade_count,
+        MAX(t.created_at) as last_trade_date
+      FROM users u
+      LEFT JOIN trades t ON u.email = t.user_id
+      GROUP BY u.email, u.name, u.first_login, u.last_login, u.created_at
+      ORDER BY u.last_login DESC
+    `);
+
+    res.json({
+      success: true,
+      total: result.rows.length,
+      users: result.rows
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch users', details: error.message });
+  }
+});
+
 app.get('/api/admin/stats', ensureAuthenticatedAPI, async (req, res) => {
   // Check if user is admin
   if (req.user.email !== ADMIN_EMAIL) {

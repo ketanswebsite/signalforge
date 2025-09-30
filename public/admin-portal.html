@@ -449,11 +449,24 @@
         <div class="dashboard-grid">
             <div class="card">
                 <div class="card-header">
-                    <span class="card-title">Total Subscribers</span>
+                    <span class="card-title">Total Users</span>
+                    <span>👥</span>
+                </div>
+                <div class="card-metric" id="total-users">--</div>
+                <div class="card-label">OAuth Registered</div>
+                <div class="card-trend trend-up">
+                    <span>↑</span>
+                    <span id="users-trend">Loading...</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Telegram Subscribers</span>
                     <span>📱</span>
                 </div>
                 <div class="card-metric" id="total-subscribers">--</div>
-                <div class="card-label">Telegram Users</div>
+                <div class="card-label">Bot Users</div>
                 <div class="card-trend trend-up">
                     <span>↑</span>
                     <span id="subscribers-trend">Loading...</span>
@@ -536,7 +549,39 @@
             </div>
         </div>
 
-        <!-- Subscribers Table -->
+        <!-- OAuth Users Table -->
+        <div class="data-table" style="margin-bottom: 2rem;">
+            <div class="table-header">
+                <div class="table-title">OAuth Users (Google Login)</div>
+                <button class="btn btn-secondary" onclick="refreshUsers()">
+                    ↻ Refresh
+                </button>
+            </div>
+            <div class="table-content">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Name</th>
+                            <th>Trades</th>
+                            <th>First Login</th>
+                            <th>Last Login</th>
+                            <th>Last Trade</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table">
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 2rem;">
+                                <div class="spinner"></div>
+                                <div style="margin-top: 1rem;">Loading users...</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Telegram Subscribers Table -->
         <div class="data-table">
             <div class="table-header">
                 <div class="table-title">Telegram Subscribers</div>
@@ -588,6 +633,7 @@
     <script>
         // Global state
         let systemData = {
+            users: [],
             subscribers: [],
             cronStatus: null,
             health: null
@@ -621,6 +667,7 @@
                 await Promise.all([
                     loadHealthStatus(),
                     loadCronStatus(),
+                    loadOAuthUsers(),
                     loadSubscribers(),
                     loadTradeStats()
                 ]);
@@ -669,6 +716,68 @@
                 }
             } catch (error) {
                 addLog(`Error loading cron status: ${error.message}`, 'error');
+            }
+        }
+
+        // Load OAuth users
+        async function loadOAuthUsers() {
+            try {
+                const response = await fetch('/api/admin/users');
+
+                if (response.ok) {
+                    const data = await response.json();
+                    systemData.users = data.users;
+
+                    document.getElementById('total-users').textContent = data.total;
+                    document.getElementById('users-trend').textContent =
+                        data.total === 0 ? 'No users yet' :
+                        data.total === 1 ? '1 user' :
+                        `${data.total} users`;
+
+                    // Update table
+                    const tableBody = document.getElementById('users-table');
+
+                    if (data.users.length === 0) {
+                        tableBody.innerHTML = `
+                            <tr>
+                                <td colspan="6" style="text-align: center; padding: 2rem; color: var(--gray-700);">
+                                    No OAuth users yet. Waiting for first Google login.
+                                </td>
+                            </tr>
+                        `;
+                    } else {
+                        tableBody.innerHTML = data.users.map(user => `
+                            <tr>
+                                <td>${user.email}</td>
+                                <td>${user.name || 'N/A'}</td>
+                                <td><span class="status-indicator ${user.trade_count > 0 ? 'status-active' : 'status-inactive'}">${user.trade_count || 0}</span></td>
+                                <td>${new Date(user.first_login).toLocaleDateString()}</td>
+                                <td>${new Date(user.last_login).toLocaleDateString()}</td>
+                                <td>${user.last_trade_date ? new Date(user.last_trade_date).toLocaleDateString() : 'Never'}</td>
+                            </tr>
+                        `).join('');
+                    }
+
+                    addLog(`✓ Loaded ${data.total} OAuth users`, 'success');
+                } else if (response.status === 403) {
+                    addLog('✗ Access denied - admin only', 'error');
+                    document.getElementById('total-users').textContent = '--';
+                } else {
+                    throw new Error('Failed to load users');
+                }
+            } catch (error) {
+                addLog(`✗ Error loading OAuth users: ${error.message}`, 'error');
+                document.getElementById('total-users').textContent = '--';
+                document.getElementById('users-trend').textContent = 'Error loading';
+
+                const tableBody = document.getElementById('users-table');
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 2rem; color: var(--danger);">
+                            Error loading users. Please check console for details.
+                        </td>
+                    </tr>
+                `;
             }
         }
 
@@ -821,6 +930,13 @@
         // View scan history
         function viewScanHistory() {
             showNotification('ℹ Scan history feature coming soon');
+        }
+
+        // Refresh OAuth users
+        async function refreshUsers() {
+            addLog('Refreshing OAuth users list...', 'info');
+            await loadOAuthUsers();
+            showNotification('✓ Users refreshed');
         }
 
         // Refresh subscribers
