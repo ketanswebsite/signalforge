@@ -69,11 +69,25 @@ async function initializeDatabase() {
         name VARCHAR(255),
         google_id VARCHAR(255),
         picture VARCHAR(500),
+        telegram_chat_id VARCHAR(100),
+        telegram_username VARCHAR(100),
+        linking_token VARCHAR(100),
+        telegram_linked_at TIMESTAMP,
         first_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Add columns if they don't exist (for existing databases)
+    try {
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_chat_id VARCHAR(100)`);
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_username VARCHAR(100)`);
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS linking_token VARCHAR(100)`);
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_linked_at TIMESTAMP`);
+    } catch (err) {
+      // Columns might already exist
+    }
 
     // Create alert_preferences table
     await pool.query(`
@@ -948,11 +962,116 @@ const TradeDB = {
     checkConnection();
     try {
       await pool.query(`
-        UPDATE telegram_subscribers 
+        UPDATE telegram_subscribers
         SET last_activity = CURRENT_TIMESTAMP
         WHERE chat_id = $1 AND is_active = true
       `, [chatId.toString()]);
     } catch (error) {
+    }
+  },
+
+  // ===== TELEGRAM-OAUTH LINKING FUNCTIONS =====
+
+  // Generate a unique linking token for a user
+  async generateLinkingToken(email) {
+    checkConnection();
+    try {
+      const token = require('crypto').randomBytes(16).toString('hex');
+      await pool.query(`
+        UPDATE users
+        SET linking_token = $1
+        WHERE email = $2
+      `, [token, email]);
+      return token;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Link Telegram account to OAuth user
+  async linkTelegramToUser(token, telegramData) {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        UPDATE users
+        SET
+          telegram_chat_id = $1,
+          telegram_username = $2,
+          telegram_linked_at = CURRENT_TIMESTAMP,
+          linking_token = NULL
+        WHERE linking_token = $3
+        RETURNING email, name
+      `, [
+        telegramData.chatId.toString(),
+        telegramData.username,
+        token
+      ]);
+
+      if (result.rows.length === 0) {
+        return { success: false, error: 'Invalid or expired linking token' };
+      }
+
+      // Also update telegram_subscribers table with user_id
+      await pool.query(`
+        UPDATE telegram_subscribers
+        SET user_id = $1
+        WHERE chat_id = $2
+      `, [result.rows[0].email, telegramData.chatId.toString()]);
+
+      return {
+        success: true,
+        user: result.rows[0]
+      };
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Check if user has Telegram linked
+  async getUserTelegramStatus(email) {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        SELECT
+          telegram_chat_id,
+          telegram_username,
+          telegram_linked_at
+        FROM users
+        WHERE email = $1
+      `, [email]);
+
+      if (result.rows.length === 0) {
+        return { linked: false };
+      }
+
+      const user = result.rows[0];
+      return {
+        linked: !!user.telegram_chat_id,
+        chatId: user.telegram_chat_id,
+        username: user.telegram_username,
+        linkedAt: user.telegram_linked_at
+      };
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Unlink Telegram from user
+  async unlinkTelegram(email) {
+    checkConnection();
+    try {
+      await pool.query(`
+        UPDATE users
+        SET
+          telegram_chat_id = NULL,
+          telegram_username = NULL,
+          telegram_linked_at = NULL
+        WHERE email = $1
+      `, [email]);
+
+      return { success: true };
+    } catch (error) {
+      throw error;
     }
   },
 

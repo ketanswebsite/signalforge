@@ -314,7 +314,7 @@ app.get('/api/admin/users', ensureAuthenticatedAPI, async (req, res) => {
   }
 
   try {
-    // Get all registered users from the users table
+    // Get all registered users from the users table with Telegram link status
     const result = await pool.query(`
       SELECT
         u.email,
@@ -322,11 +322,15 @@ app.get('/api/admin/users', ensureAuthenticatedAPI, async (req, res) => {
         u.first_login,
         u.last_login,
         u.created_at,
+        u.telegram_chat_id,
+        u.telegram_username,
+        u.telegram_linked_at,
         COUNT(t.id) as trade_count,
         MAX(t.created_at) as last_trade_date
       FROM users u
       LEFT JOIN trades t ON u.email = t.user_id
-      GROUP BY u.email, u.name, u.first_login, u.last_login, u.created_at
+      GROUP BY u.email, u.name, u.first_login, u.last_login, u.created_at,
+               u.telegram_chat_id, u.telegram_username, u.telegram_linked_at
       ORDER BY u.last_login DESC
     `);
 

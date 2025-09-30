@@ -564,6 +564,7 @@
                             <th>Email</th>
                             <th>Name</th>
                             <th>Trades</th>
+                            <th>Telegram</th>
                             <th>First Login</th>
                             <th>Last Login</th>
                             <th>Last Trade</th>
@@ -740,22 +741,30 @@
                     if (data.users.length === 0) {
                         tableBody.innerHTML = `
                             <tr>
-                                <td colspan="6" style="text-align: center; padding: 2rem; color: var(--gray-700);">
+                                <td colspan="7" style="text-align: center; padding: 2rem; color: var(--gray-700);">
                                     No OAuth users yet. Waiting for first Google login.
                                 </td>
                             </tr>
                         `;
                     } else {
-                        tableBody.innerHTML = data.users.map(user => `
+                        tableBody.innerHTML = data.users.map(user => {
+                            const telegramLinked = !!user.telegram_chat_id;
+                            const telegramDisplay = telegramLinked
+                                ? `<span class="status-indicator status-active">✓ @${user.telegram_username || 'linked'}</span>`
+                                : `<span class="status-indicator status-inactive">✗ Not linked</span>`;
+
+                            return `
                             <tr>
                                 <td>${user.email}</td>
                                 <td>${user.name || 'N/A'}</td>
                                 <td><span class="status-indicator ${user.trade_count > 0 ? 'status-active' : 'status-inactive'}">${user.trade_count || 0}</span></td>
+                                <td>${telegramDisplay}</td>
                                 <td>${new Date(user.first_login).toLocaleDateString()}</td>
                                 <td>${new Date(user.last_login).toLocaleDateString()}</td>
                                 <td>${user.last_trade_date ? new Date(user.last_trade_date).toLocaleDateString() : 'Never'}</td>
                             </tr>
-                        `).join('');
+                            `;
+                        }).join('');
                     }
 
                     addLog(`✓ Loaded ${data.total} OAuth users`, 'success');
