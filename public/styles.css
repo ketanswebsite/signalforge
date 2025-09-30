@@ -1407,7 +1407,7 @@ table tr:last-child td:last-child {
     border-radius: var(--radius);
     font-size: 14px;
     font-weight: 600;
-    background-color: white;
+    background-color: var(--card-bg);
     color: var(--primary-color);
     border: 1.5px solid var(--primary-color);
     cursor: pointer;
@@ -1425,6 +1425,35 @@ table tr:last-child td:last-child {
     transform: translateY(-2px);
     box-shadow: var(--shadow-sm);
     text-decoration: none;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 1024px) {
+    .btn-nav {
+        right: 80px;
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 768px) {
+    .btn-nav {
+        right: 40px;
+        padding: 8px 10px;
+        font-size: 12px;
+        gap: 6px;
+    }
+
+    .btn-nav svg {
+        width: 14px;
+        height: 14px;
+    }
+}
+
+@media (max-width: 640px) {
+    .btn-nav.desktop-only {
+        display: none;
+    }
 }
 
 /* Enhanced trade cards */

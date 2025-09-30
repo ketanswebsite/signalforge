@@ -78,8 +78,7 @@ const AlertsUI = (function() {
             if (!targetContainer) return;
             
             const telegramButton = document.createElement('a');
-            telegramButton.href = 'https://t.me/MySignalForgeBot?start=all';
-            telegramButton.target = '_blank';
+            telegramButton.href = '/telegram-subscribe.html';
             telegramButton.className = 'telegram-button btn-nav desktop-only';
             telegramButton.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -88,10 +87,10 @@ const AlertsUI = (function() {
                 </svg>
                 📈 Subscribe to Telegram
             `;
-            
-            telegramButton.title = 'Click to subscribe to daily 7 AM conviction trades on Telegram (requires Telegram app)';
-            
-            // Add click tracking and fallback handling
+
+            telegramButton.title = 'Click to subscribe to daily 7 AM conviction trades on Telegram';
+
+            // Add click tracking
             telegramButton.onclick = function(e) {
                 // Track the click for analytics
                 if (window.gtag) {
@@ -100,14 +99,6 @@ const AlertsUI = (function() {
                         'event_label': 'homepage_button'
                     });
                 }
-                
-                // Show user-friendly message for better UX
-                setTimeout(() => {
-                    if (!document.hidden) {
-                        // If page is still visible after 1 second, Telegram might not be installed
-                        showTelegramInstructions();
-                    }
-                }, 1000);
             };
             
             // Insert the button before the target container
@@ -127,8 +118,7 @@ const AlertsUI = (function() {
         if (mobileDrawer.querySelector('.telegram-mobile-link')) return;
         
         const mobileTelegramLink = document.createElement('a');
-        mobileTelegramLink.href = 'https://t.me/MySignalForgeBot?start=all';
-        mobileTelegramLink.target = '_blank';
+        mobileTelegramLink.href = '/telegram-subscribe.html';
         mobileTelegramLink.className = 'drawer-nav-link telegram-mobile-link';
         mobileTelegramLink.innerHTML = `
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -137,7 +127,7 @@ const AlertsUI = (function() {
             </svg>
             <span>📈 Subscribe to Telegram</span>
         `;
-        
+
         // Add click tracking for mobile
         mobileTelegramLink.onclick = function(e) {
             if (window.gtag) {

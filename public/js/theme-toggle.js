@@ -7,7 +7,7 @@
     const LIGHT_THEME = 'light';
     const DARK_THEME = 'dark';
     
-    // Get current theme from localStorage or system preference
+    // Get current theme from localStorage or default to dark mode
     function getCurrentTheme() {
         // Check if we have functional cookie consent
         if (window.cookieConsent && window.cookieConsent.hasFunctionalConsent()) {
@@ -16,13 +16,9 @@
                 return savedTheme;
             }
         }
-        
-        // Fall back to system preference if no consent or no saved theme
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            return DARK_THEME;
-        }
-        
-        return LIGHT_THEME;
+
+        // Default to dark mode
+        return DARK_THEME;
     }
     
     // Apply theme to document

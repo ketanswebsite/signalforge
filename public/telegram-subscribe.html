@@ -4,255 +4,398 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Subscribe to Telegram Alerts - SignalForge</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="js/theme-toggle.js"></script>
     <style>
-        :root {
-            --primary: #0088cc;
-            --primary-dark: #006699;
-            --success: #10b981;
-            --gray-50: #f9fafb;
-            --gray-100: #f3f4f6;
-            --gray-700: #374151;
-            --gray-900: #111827;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        /* Additional page-specific styles */
+        .telegram-page-container {
+            max-width: 900px;
+            margin: 0 auto;
             padding: 2rem 1rem;
         }
 
-        .container {
-            max-width: 600px;
-            background: white;
-            border-radius: 16px;
-            padding: 3rem;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-
-        .header {
+        .telegram-header {
             text-align: center;
-            margin-bottom: 2rem;
+            margin-bottom: 3rem;
         }
 
         .telegram-icon {
             width: 80px;
             height: 80px;
-            margin: 0 auto 1rem;
-            background: var(--primary);
+            margin: 0 auto 1.5rem;
+            background: var(--primary-color);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 3rem;
-            color: white;
-            box-shadow: 0 8px 24px rgba(0, 136, 204, 0.4);
+            box-shadow: var(--shadow-lg);
         }
 
-        h1 {
-            font-size: 2rem;
-            color: var(--gray-900);
-            margin-bottom: 0.5rem;
+        .telegram-header h1 {
+            font-size: 2.25rem;
+            color: var(--text-color);
+            margin-bottom: 0.75rem;
         }
 
-        .subtitle {
-            color: var(--gray-700);
+        .telegram-header .subtitle {
+            color: var(--text-secondary);
             font-size: 1.125rem;
         }
 
-        .benefits {
-            background: var(--gray-50);
-            border-radius: 12px;
-            padding: 2rem;
-            margin: 2rem 0;
+        .benefits-section {
+            margin: 3rem 0;
         }
 
-        .benefits h2 {
-            font-size: 1.25rem;
-            margin-bottom: 1rem;
-            color: var(--gray-900);
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.25rem;
+            margin-top: 1.5rem;
         }
 
-        .benefit-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-            margin-bottom: 1rem;
-            padding: 0.75rem;
-            background: white;
-            border-radius: 8px;
+        .benefit-card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            transition: all var(--transition-normal);
+        }
+
+        .benefit-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
         }
 
         .benefit-icon {
-            font-size: 1.5rem;
-            flex-shrink: 0;
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+            display: block;
         }
 
-        .benefit-text {
-            font-size: 1rem;
-            color: var(--gray-700);
-            line-height: 1.5;
+        .benefit-card h3 {
+            font-size: 1.125rem;
+            color: var(--text-color);
+            margin-bottom: 0.5rem;
         }
 
-        .steps {
-            margin: 2rem 0;
+        .benefit-card p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin: 0;
         }
 
-        .steps h2 {
-            font-size: 1.25rem;
-            margin-bottom: 1.5rem;
-            color: var(--gray-900);
+        .steps-section {
+            margin: 3rem 0;
+        }
+
+        .steps-section h2 {
             text-align: center;
+            font-size: 1.75rem;
+            color: var(--text-color);
+            margin-bottom: 2rem;
         }
 
-        .step {
+        .steps-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .step-card {
             display: flex;
             gap: 1.5rem;
-            margin-bottom: 1.5rem;
-            padding: 1.5rem;
-            background: var(--gray-50);
-            border-radius: 12px;
-            transition: transform 0.2s;
+            padding: 1.75rem;
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            transition: all var(--transition-normal);
         }
 
-        .step:hover {
+        .step-card:hover {
             transform: translateX(4px);
+            box-shadow: var(--shadow-md);
         }
 
         .step-number {
-            width: 40px;
-            height: 40px;
-            background: var(--primary);
+            width: 50px;
+            height: 50px;
+            background: var(--primary-color);
             color: white;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.25rem;
+            font-size: 1.5rem;
             font-weight: 700;
             flex-shrink: 0;
         }
 
         .step-content h3 {
-            font-size: 1.125rem;
-            color: var(--gray-900);
+            font-size: 1.25rem;
+            color: var(--text-color);
             margin-bottom: 0.5rem;
         }
 
         .step-content p {
-            color: var(--gray-700);
+            color: var(--text-secondary);
             line-height: 1.6;
+            margin: 0;
+        }
+
+        .cta-section {
+            margin: 3rem 0;
+            text-align: center;
         }
 
         .cta-button {
-            display: block;
-            width: 100%;
-            padding: 1.25rem;
-            background: var(--primary);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1.25rem 2.5rem;
+            background: var(--primary-color);
             color: white;
-            text-align: center;
             text-decoration: none;
             font-size: 1.125rem;
             font-weight: 600;
-            border-radius: 12px;
-            margin: 2rem 0;
-            transition: all 0.3s;
-            box-shadow: 0 4px 12px rgba(0, 136, 204, 0.3);
+            border-radius: var(--radius-lg);
+            transition: all var(--transition-normal);
+            box-shadow: var(--shadow-md);
         }
 
         .cta-button:hover {
             background: var(--primary-dark);
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 136, 204, 0.4);
+            box-shadow: var(--shadow-lg);
+            color: white;
         }
 
-        .cta-button:active {
-            transform: translateY(0);
+        .subscription-types {
+            margin: 3rem 0;
         }
 
-        .alternative {
+        .subscription-types h2 {
+            font-size: 1.75rem;
+            color: var(--text-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .subscription-cards {
+            display: grid;
+            gap: 1.25rem;
+            margin-top: 1.5rem;
+        }
+
+        .subscription-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            padding: 1.75rem;
+            border-left: 4px solid var(--primary-color);
+            box-shadow: var(--shadow-sm);
+            transition: all var(--transition-normal);
+        }
+
+        .subscription-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateX(4px);
+        }
+
+        .subscription-card h3 {
+            font-size: 1.25rem;
+            color: var(--text-color);
+            margin-bottom: 0.75rem;
+        }
+
+        .subscription-card p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .subscription-card .link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9375rem;
+            transition: all var(--transition-fast);
+        }
+
+        .subscription-card .link:hover {
+            color: var(--primary-dark);
+            gap: 0.75rem;
+        }
+
+        .alternative-section {
             text-align: center;
-            padding: 1.5rem;
-            background: var(--gray-50);
-            border-radius: 12px;
-            margin-top: 2rem;
+            padding: 2rem;
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            margin: 3rem 0;
+            box-shadow: var(--shadow-sm);
         }
 
-        .alternative h3 {
-            font-size: 1rem;
-            color: var(--gray-900);
-            margin-bottom: 0.5rem;
+        .alternative-section h3 {
+            font-size: 1.125rem;
+            color: var(--text-color);
+            margin-bottom: 0.75rem;
+        }
+
+        .alternative-section p {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
         }
 
         .bot-username {
             font-family: 'Courier New', monospace;
-            font-size: 1.125rem;
-            color: var(--primary);
-            font-weight: 600;
-            background: white;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            display: inline-block;
-            margin-top: 0.5rem;
-        }
-
-        .subscription-types {
-            margin: 2rem 0;
-        }
-
-        .subscription-types h2 {
             font-size: 1.25rem;
-            margin-bottom: 1rem;
-            color: var(--gray-900);
+            color: var(--primary-color);
+            font-weight: 600;
+            background: var(--bg-color);
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius);
+            display: inline-block;
+            border: 1px solid var(--border-color);
         }
 
-        .subscription-card {
-            background: var(--gray-50);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            border-left: 4px solid var(--primary);
+        .help-text {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 2px solid var(--border-color);
         }
 
-        .subscription-card h3 {
-            font-size: 1.125rem;
-            color: var(--gray-900);
+        .help-text p {
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+            line-height: 1.8;
+        }
+
+        .help-text strong {
+            color: var(--text-color);
+        }
+
+        .oauth-linking-section {
+            margin: 3rem 0;
+            padding: 2.5rem;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            border-radius: var(--radius-lg);
+            color: white;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .oauth-linking-section h2 {
+            color: white;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .oauth-content {
+            text-align: center;
+        }
+
+        .oauth-content > p {
+            opacity: 0.95;
+            margin-bottom: 2rem;
+        }
+
+        .oauth-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .benefits-list {
+            list-style: none;
+            padding: 0;
+            margin: 1.5rem 0;
+        }
+
+        .benefits-list li {
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+        }
+
+        .oauth-button {
+            background: white;
+            color: var(--primary-color);
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: var(--radius-lg);
+            font-size: 1.0625rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .oauth-button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .secondary-button {
+            background: transparent;
+            border: 2px solid white;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius);
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: all var(--transition-normal);
+        }
+
+        .secondary-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .linked-state {
+            text-align: center;
+        }
+
+        .linked-state .success-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .linked-state h3 {
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .linked-state p {
+            opacity: 0.95;
             margin-bottom: 0.5rem;
         }
 
-        .subscription-card p {
-            color: var(--gray-700);
-            line-height: 1.6;
-        }
-
-        .subscription-card .link {
-            display: inline-block;
-            margin-top: 0.75rem;
-            color: var(--primary);
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
             text-decoration: none;
-            font-weight: 600;
-            font-size: 0.875rem;
+            font-size: 0.9375rem;
+            margin-bottom: 2rem;
+            transition: all var(--transition-fast);
         }
 
-        .subscription-card .link:hover {
-            text-decoration: underline;
+        .back-link:hover {
+            color: var(--primary-color);
+            gap: 0.75rem;
         }
 
-        @media (max-width: 640px) {
-            .container {
-                padding: 2rem 1.5rem;
-            }
-
-            h1 {
+        @media (max-width: 768px) {
+            .telegram-header h1 {
                 font-size: 1.75rem;
             }
 
@@ -262,115 +405,165 @@
                 font-size: 2rem;
             }
 
-            .step {
+            .step-card {
                 flex-direction: column;
                 align-items: center;
                 text-align: center;
+            }
+
+            .benefits-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .cta-button {
+                width: 100%;
+                justify-content: center;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
+    <!-- Dark Mode Toggle -->
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+        <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+    </button>
+
+    <div class="telegram-page-container">
+        <a href="index.html" class="back-link">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            Back to Home
+        </a>
+
+        <div class="telegram-header">
             <div class="telegram-icon">📱</div>
             <h1>Get Trading Signals on Telegram</h1>
             <p class="subtitle">Receive instant alerts for high-conviction trading opportunities</p>
         </div>
 
-        <div class="benefits">
+        <div class="card benefits-section">
             <h2>Why Subscribe to Telegram?</h2>
-            <div class="benefit-item">
-                <div class="benefit-icon">⚡</div>
-                <div class="benefit-text">
-                    <strong>Instant Notifications</strong> - Get alerts the moment opportunities are found
+            <div class="benefits-grid">
+                <div class="benefit-card">
+                    <span class="benefit-icon">⚡</span>
+                    <h3>Instant Notifications</h3>
+                    <p>Get alerts the moment opportunities are found</p>
                 </div>
-            </div>
-            <div class="benefit-item">
-                <div class="benefit-icon">🌅</div>
-                <div class="benefit-text">
-                    <strong>Daily 7 AM Scans</strong> - Automatic morning conviction trades every weekday (UK time)
+                <div class="benefit-card">
+                    <span class="benefit-icon">🌅</span>
+                    <h3>Daily 7 AM Scans</h3>
+                    <p>Automatic morning conviction trades every weekday (UK time)</p>
                 </div>
-            </div>
-            <div class="benefit-item">
-                <div class="benefit-icon">📊</div>
-                <div class="benefit-text">
-                    <strong>Backtested Signals</strong> - All trades include 5-year win rate statistics
+                <div class="benefit-card">
+                    <span class="benefit-icon">📊</span>
+                    <h3>Backtested Signals</h3>
+                    <p>All trades include 5-year win rate statistics</p>
                 </div>
-            </div>
-            <div class="benefit-item">
-                <div class="benefit-icon">🎯</div>
-                <div class="benefit-text">
-                    <strong>High Conviction Only</strong> - Filter for >75% win rate opportunities
+                <div class="benefit-card">
+                    <span class="benefit-icon">🎯</span>
+                    <h3>High Conviction Only</h3>
+                    <p>Filter for >75% win rate opportunities</p>
                 </div>
             </div>
         </div>
 
-        <div class="steps">
+        <div class="card steps-section">
             <h2>How to Subscribe (3 Easy Steps)</h2>
-
-            <div class="step">
-                <div class="step-number">1</div>
-                <div class="step-content">
-                    <h3>Click the Button Below</h3>
-                    <p>Tap "Open in Telegram" to launch the Telegram app on your device</p>
+            <div class="steps-container">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Click the Button Below</h3>
+                        <p>Tap "Open in Telegram" to launch the Telegram app on your device</p>
+                    </div>
                 </div>
-            </div>
-
-            <div class="step">
-                <div class="step-number">2</div>
-                <div class="step-content">
-                    <h3>Send /start to the Bot</h3>
-                    <p>The bot will respond with a welcome message and confirm your subscription</p>
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Send /start to the Bot</h3>
+                        <p>The bot will respond with a welcome message and confirm your subscription</p>
+                    </div>
                 </div>
-            </div>
-
-            <div class="step">
-                <div class="step-number">3</div>
-                <div class="step-content">
-                    <h3>You're All Set!</h3>
-                    <p>You'll start receiving trading signals automatically. No setup required!</p>
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>You're All Set!</h3>
+                        <p>You'll start receiving trading signals automatically. No setup required!</p>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <a href="https://t.me/MySignalForgeBot?start=all" class="cta-button">
-            📱 Open in Telegram
-        </a>
+        <div class="cta-section">
+            <a href="https://t.me/MySignalForgeBot?start=all" class="cta-button">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21.198 2.433a1.3 1.3 0 0 0-1.394-.12L2.304 9.585a1.4 1.4 0 0 0 .096 2.64l3.93 1.434 1.47 4.722c.22.704 1.177.85 1.654.252l2.13-2.67 4.263 3.155a1.3 1.3 0 0 0 2.092-.934L21.334 3.684a1.3 1.3 0 0 0-.136-1.25Z"></path>
+                </svg>
+                Open in Telegram
+            </a>
+        </div>
 
-        <div class="subscription-types">
+        <div class="card subscription-types">
             <h2>Choose Your Subscription Type</h2>
-
-            <div class="subscription-card">
-                <h3>🎯 All Signals (Recommended)</h3>
-                <p>Get everything: daily 7 AM scans, conviction trades, and all market alerts</p>
-                <a href="https://t.me/MySignalForgeBot?start=all" class="link">Subscribe to All →</a>
-            </div>
-
-            <div class="subscription-card">
-                <h3>🌅 Morning Conviction Only</h3>
-                <p>Just the daily 7 AM conviction trades with >75% win rates</p>
-                <a href="https://t.me/MySignalForgeBot?start=conviction" class="link">Subscribe to Morning Trades →</a>
-            </div>
-
-            <div class="subscription-card">
-                <h3>🔍 Scan Results Only</h3>
-                <p>Receive only the scan results when high conviction opportunities are found</p>
-                <a href="https://t.me/MySignalForgeBot?start=scans" class="link">Subscribe to Scans →</a>
+            <div class="subscription-cards">
+                <div class="subscription-card">
+                    <h3>🎯 All Signals (Recommended)</h3>
+                    <p>Get everything: daily 7 AM scans, conviction trades, and all market alerts</p>
+                    <a href="https://t.me/MySignalForgeBot?start=all" class="link">
+                        Subscribe to All
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                </div>
+                <div class="subscription-card">
+                    <h3>🌅 Morning Conviction Only</h3>
+                    <p>Just the daily 7 AM conviction trades with >75% win rates</p>
+                    <a href="https://t.me/MySignalForgeBot?start=conviction" class="link">
+                        Subscribe to Morning Trades
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                </div>
+                <div class="subscription-card">
+                    <h3>🔍 Scan Results Only</h3>
+                    <p>Receive only the scan results when high conviction opportunities are found</p>
+                    <a href="https://t.me/MySignalForgeBot?start=scans" class="link">
+                        Subscribe to Scans
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                </div>
             </div>
         </div>
 
-        <div class="alternative">
+        <div class="alternative-section">
             <h3>Or Search Manually in Telegram</h3>
             <p>Open Telegram and search for:</p>
             <div class="bot-username">@MySignalForgeBot</div>
-            <p style="margin-top: 1rem; font-size: 0.875rem; color: var(--gray-700);">
+            <p style="margin-top: 1.5rem; font-size: 0.9375rem;">
                 Then send <strong>/start</strong> to begin receiving alerts
             </p>
         </div>
 
-        <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 2px solid var(--gray-100);">
-            <p style="color: var(--gray-700); font-size: 0.875rem;">
+        <div class="help-text">
+            <p>
                 Already subscribed? Send <strong>/status</strong> to check your subscription<br>
                 Want to change subscription type? Send <strong>/change</strong><br>
                 Need help? Send <strong>/help</strong> to the bot
@@ -378,56 +571,52 @@
         </div>
 
         <!-- OAuth User Linking Section (only visible if logged in) -->
-        <div id="oauth-linking-section" style="display: none; margin-top: 3rem; padding: 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; color: white;">
-            <div style="text-align: center;">
-                <h2 style="color: white; margin-bottom: 1rem;">🔗 Link Your Account</h2>
-                <p style="opacity: 0.95; margin-bottom: 2rem;">
-                    Connect your Google account with Telegram to sync your subscription across both platforms
-                </p>
+        <div id="oauth-linking-section" class="oauth-linking-section" style="display: none;">
+            <div class="oauth-content">
+                <h2>🔗 Link Your Account</h2>
+                <p>Connect your Google account with Telegram to sync your subscription across both platforms</p>
 
                 <!-- Not Linked State -->
                 <div id="not-linked-state">
-                    <div style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border-radius: 12px; padding: 2rem; margin-bottom: 1.5rem;">
+                    <div class="oauth-card">
                         <p style="margin-bottom: 1rem; font-size: 1rem;">
                             ✨ <strong>Benefits of linking:</strong>
                         </p>
-                        <ul style="list-style: none; padding: 0; margin-bottom: 1.5rem;">
-                            <li style="margin-bottom: 0.5rem;">📧 Single subscription for both platforms</li>
-                            <li style="margin-bottom: 0.5rem;">🔄 Automatic sync of preferences</li>
-                            <li style="margin-bottom: 0.5rem;">💳 Unified subscription management</li>
+                        <ul class="benefits-list">
+                            <li>📧 Single subscription for both platforms</li>
+                            <li>🔄 Automatic sync of preferences</li>
+                            <li>💳 Unified subscription management</li>
                         </ul>
-                        <button id="generate-link-btn" class="cta-button" style="background: white; color: var(--primary); margin: 0;">
+                        <button id="generate-link-btn" class="oauth-button">
                             Generate Telegram Link
                         </button>
                     </div>
 
                     <!-- Deep Link Display (hidden initially) -->
-                    <div id="deep-link-display" style="display: none; background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border-radius: 12px; padding: 2rem;">
+                    <div id="deep-link-display" class="oauth-card" style="display: none;">
                         <p style="margin-bottom: 1rem;"><strong>Step 1:</strong> Click the button below</p>
-                        <a id="telegram-deep-link" href="#" class="cta-button" style="background: white; color: var(--primary); margin: 0 0 1.5rem 0; text-decoration: none;">
+                        <a id="telegram-deep-link" href="#" class="cta-button" style="margin-bottom: 1.5rem;">
                             📱 Open in Telegram & Link
                         </a>
                         <p style="margin-bottom: 1rem;"><strong>Step 2:</strong> Send /start to the bot</p>
-                        <p style="font-size: 0.875rem; opacity: 0.9;">Your accounts will be linked automatically!</p>
+                        <p style="font-size: 0.9375rem; opacity: 0.9;">Your accounts will be linked automatically!</p>
 
-                        <button id="check-link-status-btn" style="background: transparent; border: 2px solid white; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin-top: 1rem;">
+                        <button id="check-link-status-btn" class="secondary-button">
                             Check Link Status
                         </button>
                     </div>
                 </div>
 
                 <!-- Linked State -->
-                <div id="linked-state" style="display: none;">
-                    <div style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border-radius: 12px; padding: 2rem;">
-                        <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
-                        <h3 style="color: white; margin-bottom: 1rem;">Account Linked!</h3>
-                        <p style="opacity: 0.95; margin-bottom: 0.5rem;">
-                            Your Telegram account <strong id="linked-username"></strong> is connected
-                        </p>
-                        <p style="font-size: 0.875rem; opacity: 0.8; margin-bottom: 1.5rem;">
+                <div id="linked-state" class="linked-state" style="display: none;">
+                    <div class="oauth-card">
+                        <div class="success-icon">✅</div>
+                        <h3>Account Linked!</h3>
+                        <p>Your Telegram account <strong id="linked-username"></strong> is connected</p>
+                        <p style="font-size: 0.9375rem; opacity: 0.8; margin-bottom: 1.5rem;">
                             Linked on <span id="linked-date"></span>
                         </p>
-                        <button id="unlink-btn" style="background: transparent; border: 2px solid white; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
+                        <button id="unlink-btn" class="secondary-button">
                             Unlink Account
                         </button>
                     </div>
