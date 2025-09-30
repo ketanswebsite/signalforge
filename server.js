@@ -1491,15 +1491,13 @@ app.post('/api/test-7am-scan', ensureAuthenticatedAPI, ensureSubscriptionActive,
       return res.status(503).json({ error: 'Stock scanner not available' });
     }
 
-    if (!process.env.TELEGRAM_CHAT_ID) {
-      return res.status(400).json({ error: 'TELEGRAM_CHAT_ID not configured in environment variables' });
-    }
-
     console.log('🧪 [TEST] Manual 7 AM scan test triggered');
     console.log('🧪 [TEST] UK Time:', new Date().toLocaleString("en-GB", {timeZone: "Europe/London"}));
+    console.log('🧪 [TEST] This will broadcast to ALL subscribers');
 
-    // Run high conviction scan exactly as the 7 AM cron job would
-    stockScanner.runHighConvictionScan(process.env.TELEGRAM_CHAT_ID);
+    // Run high conviction scan WITHOUT chatId to broadcast to all subscribers
+    // This simulates the exact behavior of the 7 AM cron job
+    stockScanner.runHighConvictionScan();
 
     res.json({
       success: true,
