@@ -878,6 +878,28 @@ table tr:last-child td:last-child {
     right: 120px; /* Dynamic spacing from right edge */
 }
 
+/* Responsive adjustments for nav-links container */
+@media (max-width: 1024px) {
+    .nav-links {
+        right: 60px;
+        gap: 10px;
+    }
+}
+
+@media (max-width: 900px) {
+    .nav-links {
+        right: 20px;
+        gap: 8px;
+    }
+}
+
+@media (max-width: 768px) {
+    .nav-links {
+        right: 0;
+        gap: 6px;
+    }
+}
+
 .nav-link {
     display: flex;
     align-items: center;
@@ -1430,15 +1452,15 @@ table tr:last-child td:last-child {
 /* Responsive adjustments for smaller screens */
 @media (max-width: 1024px) {
     .btn-nav {
-        right: 80px;
+        right: 60px;
         padding: 8px 12px;
         font-size: 13px;
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
     .btn-nav {
-        right: 40px;
+        right: 20px;
         padding: 8px 10px;
         font-size: 12px;
         gap: 6px;
@@ -1447,6 +1469,15 @@ table tr:last-child td:last-child {
     .btn-nav svg {
         width: 14px;
         height: 14px;
+    }
+}
+
+@media (max-width: 768px) {
+    .btn-nav {
+        right: 0;
+        padding: 6px 8px;
+        font-size: 11px;
+        gap: 4px;
     }
 }
 
