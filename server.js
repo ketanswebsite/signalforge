@@ -440,6 +440,100 @@ app.post('/api/admin/manual-link', ensureAuthenticatedAPI, async (req, res) => {
   }
 });
 
+// Admin-only: Manually unlink Telegram from OAuth user
+app.post('/api/admin/manual-unlink', ensureAuthenticatedAPI, async (req, res) => {
+  // Check if user is admin
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+  }
+
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    await TradeDB.unlinkTelegram(email);
+    res.json({
+      success: true,
+      message: `Unlinked Telegram from ${email}`
+    });
+  } catch (error) {
+    console.error('Error manual unlinking:', error);
+    res.status(500).json({ error: 'Failed to unlink account', details: error.message });
+  }
+});
+
+// Admin-only: Remove Telegram subscriber completely
+app.post('/api/admin/remove-telegram-user', ensureAuthenticatedAPI, async (req, res) => {
+  // Check if user is admin
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+  }
+
+  try {
+    const { chatId } = req.body;
+
+    if (!chatId) {
+      return res.status(400).json({ error: 'Chat ID is required' });
+    }
+
+    // Remove from telegram_subscribers (this also unlinks from OAuth via database function)
+    await TradeDB.removeTelegramSubscriber(chatId);
+
+    res.json({
+      success: true,
+      message: `Removed Telegram user ${chatId} from subscribers`
+    });
+  } catch (error) {
+    console.error('Error removing Telegram user:', error);
+    res.status(500).json({ error: 'Failed to remove user', details: error.message });
+  }
+});
+
+// Admin-only: Remove OAuth user completely
+app.post('/api/admin/remove-oauth-user', ensureAuthenticatedAPI, async (req, res) => {
+  // Check if user is admin
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+  }
+
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Use TradeDB's pool connection
+    const { Pool } = require('pg');
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    });
+
+    // First, unlink any Telegram account
+    await TradeDB.unlinkTelegram(email);
+
+    // Delete all trades for this user
+    await pool.query(`DELETE FROM trades WHERE user_id = $1`, [email]);
+
+    // Delete the user
+    await pool.query(`DELETE FROM users WHERE email = $1`, [email]);
+
+    await pool.end();
+
+    res.json({
+      success: true,
+      message: `Removed user ${email} and all associated data`
+    });
+  } catch (error) {
+    console.error('Error removing OAuth user:', error);
+    res.status(500).json({ error: 'Failed to remove user', details: error.message });
+  }
+});
+
 app.get('/api/admin/stats', ensureAuthenticatedAPI, async (req, res) => {
   // Check if user is admin
   if (req.user.email !== ADMIN_EMAIL) {

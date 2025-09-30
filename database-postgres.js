@@ -1113,6 +1113,23 @@ const TradeDB = {
   async unlinkTelegram(email) {
     checkConnection();
     try {
+      // Get the chat_id before unlinking
+      const userResult = await pool.query(`
+        SELECT telegram_chat_id FROM users WHERE email = $1
+      `, [email]);
+
+      if (userResult.rows.length > 0 && userResult.rows[0].telegram_chat_id) {
+        const chatId = userResult.rows[0].telegram_chat_id;
+
+        // Clear user_id in telegram_subscribers table
+        await pool.query(`
+          UPDATE telegram_subscribers
+          SET user_id = NULL
+          WHERE chat_id = $1
+        `, [chatId]);
+      }
+
+      // Clear Telegram info from users table
       await pool.query(`
         UPDATE users
         SET

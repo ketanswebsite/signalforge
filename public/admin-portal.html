@@ -600,6 +600,7 @@
                             <th>Status</th>
                             <th>Subscribed Date</th>
                             <th>Last Activity</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="subscribers-table">
@@ -754,9 +755,12 @@
                                 ? `<span class="status-indicator status-active">✓ @${user.telegram_username || 'linked'}</span>`
                                 : `<span class="status-indicator status-inactive">✗ Not linked</span>`;
 
-                            const actionButton = !telegramLinked
+                            const linkButton = !telegramLinked
                                 ? `<button class="btn btn-primary btn-sm" onclick="showLinkModal('${user.email}', '${user.name || user.email}')">🔗 Link</button>`
                                 : `<button class="btn btn-secondary btn-sm" onclick="unlinkUser('${user.email}')">❌ Unlink</button>`;
+
+                            const removeButton = `<button class="btn btn-secondary btn-sm" onclick="removeOAuthUser('${user.email}', '${user.name || user.email}')">🗑️ Remove</button>`;
+                            const actionButton = `${linkButton} ${removeButton}`;
 
                             return `
                             <tr>
@@ -841,6 +845,9 @@
                                     <td><span class="status-indicator status-active">Active</span></td>
                                     <td>${new Date(sub.subscribed_at).toLocaleDateString()}</td>
                                     <td>${sub.last_activity ? new Date(sub.last_activity).toLocaleDateString() : 'Never'}</td>
+                                    <td>
+                                        <button class="btn btn-secondary btn-sm" onclick="removeTelegramUser('${sub.chat_id}', '${displayName.replace(/'/g, "\\'")}')">🗑️ Remove</button>
+                                    </td>
                                 </tr>
                             `;
                         }).join('');
@@ -1149,26 +1156,89 @@
         }
 
         async function unlinkUser(email) {
-            if (!confirm(`Unlink Telegram account from ${email}?`)) {
+            if (!confirm(`Unlink Telegram account from ${email}?\n\nThis will remove the link but the Telegram user will remain subscribed.`)) {
                 return;
             }
 
             try {
-                const response = await fetch('/api/user/unlink-telegram', {
+                const response = await fetch('/api/admin/manual-unlink', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email })
                 });
 
                 if (response.ok) {
-                    showNotification(`✓ Unlinked Telegram from ${email}`, 'success');
+                    const data = await response.json();
+                    showNotification(`✓ ${data.message}`, 'success');
                     await loadOAuthUsers();
                     addLog(`✓ Unlinked Telegram from ${email}`, 'success');
                 } else {
-                    alert('Failed to unlink account');
+                    const error = await response.json();
+                    alert('Failed to unlink: ' + error.error);
                 }
             } catch (error) {
                 alert('Error unlinking account: ' + error.message);
+            }
+        }
+
+        async function removeTelegramUser(chatId, displayName) {
+            if (!confirm(`Permanently remove ${displayName} from subscribers?\n\nThis will:\n• Unsubscribe them from all alerts\n• Remove them from the database\n• Unlink from any OAuth account\n\nThey can re-subscribe by sending /start to the bot.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/remove-telegram-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chatId })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showNotification(`✓ ${data.message}`, 'success');
+                    await loadSubscribers();
+                    await loadOAuthUsers(); // Refresh OAuth users to update link status
+                    addLog(`✓ Removed ${displayName} from subscribers`, 'success');
+                } else {
+                    const error = await response.json();
+                    alert('Failed to remove user: ' + error.error);
+                }
+            } catch (error) {
+                alert('Error removing user: ' + error.message);
+            }
+        }
+
+        async function removeOAuthUser(email, name) {
+            if (!confirm(`Permanently remove ${name} (${email})?\n\nThis will:\n• Delete the user account\n• Delete all their trades\n• Unlink any Telegram account\n• Remove all user data\n\nThis action CANNOT be undone!`)) {
+                return;
+            }
+
+            // Double confirmation for safety
+            const confirmText = prompt(`Type "DELETE" to confirm removal of ${email}:`);
+            if (confirmText !== 'DELETE') {
+                alert('Removal cancelled - confirmation text did not match');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/remove-oauth-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showNotification(`✓ ${data.message}`, 'success');
+                    await loadOAuthUsers();
+                    await loadSubscribers(); // Refresh subscribers to update link status
+                    addLog(`✓ Removed OAuth user ${email}`, 'success');
+                } else {
+                    const error = await response.json();
+                    alert('Failed to remove user: ' + error.error);
+                }
+            } catch (error) {
+                alert('Error removing user: ' + error.message);
             }
         }
     </script>
