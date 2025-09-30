@@ -919,19 +919,19 @@ const TradeDB = {
     checkConnection();
     try {
       let query = `
-        SELECT chat_id, username, first_name, subscription_type, subscribed_at
-        FROM telegram_subscribers 
+        SELECT chat_id, username, first_name, last_name, subscription_type, subscribed_at, last_activity
+        FROM telegram_subscribers
         WHERE is_active = true
       `;
       let params = [];
-      
+
       if (subscriptionType) {
         query += ` AND (subscription_type = $1 OR subscription_type = 'all')`;
         params.push(subscriptionType);
       }
-      
+
       query += ` ORDER BY subscribed_at DESC`;
-      
+
       const result = await pool.query(query, params);
       return result.rows;
     } catch (error) {

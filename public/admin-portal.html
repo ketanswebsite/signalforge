@@ -817,15 +817,27 @@
                             </tr>
                         `;
                     } else {
-                        tableBody.innerHTML = data.subscribers.map(sub => `
-                            <tr>
-                                <td>@${sub.username || 'anonymous'}</td>
-                                <td><span class="status-indicator status-active">${sub.subscription_type || 'all'}</span></td>
-                                <td><span class="status-indicator status-active">Active</span></td>
-                                <td>${new Date(sub.subscribed_at).toLocaleDateString()}</td>
-                                <td>${sub.last_activity ? new Date(sub.last_activity).toLocaleDateString() : 'Never'}</td>
-                            </tr>
-                        `).join('');
+                        tableBody.innerHTML = data.subscribers.map(sub => {
+                            // Create a friendly display name
+                            let displayName = '';
+                            if (sub.username) {
+                                displayName = `@${sub.username}`;
+                            } else if (sub.first_name || sub.last_name) {
+                                displayName = [sub.first_name, sub.last_name].filter(Boolean).join(' ');
+                            } else {
+                                displayName = 'Anonymous User';
+                            }
+
+                            return `
+                                <tr>
+                                    <td>${displayName}</td>
+                                    <td><span class="status-indicator status-active">${sub.subscription_type || 'all'}</span></td>
+                                    <td><span class="status-indicator status-active">Active</span></td>
+                                    <td>${new Date(sub.subscribed_at).toLocaleDateString()}</td>
+                                    <td>${sub.last_activity ? new Date(sub.last_activity).toLocaleDateString() : 'Never'}</td>
+                                </tr>
+                            `;
+                        }).join('');
                     }
 
                     addLog(`✓ Loaded ${data.total} subscribers`, 'success');

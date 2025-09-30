@@ -365,6 +365,49 @@ app.get('/api/admin/users', ensureAuthenticatedAPI, async (req, res) => {
   }
 });
 
+// OAuth-Telegram Linking Endpoints
+// Generate linking token for current user
+app.post('/api/user/generate-telegram-link', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const email = req.user.email;
+    const token = await TradeDB.generateLinkingToken(email);
+    const deepLink = `https://t.me/${process.env.TELEGRAM_BOT_USERNAME || 'MySignalForgeBot'}?start=link_${token}`;
+
+    res.json({
+      success: true,
+      token,
+      deepLink
+    });
+  } catch (error) {
+    console.error('Error generating link:', error);
+    res.status(500).json({ error: 'Failed to generate linking token' });
+  }
+});
+
+// Check Telegram linking status for current user
+app.get('/api/user/telegram-status', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const email = req.user.email;
+    const status = await TradeDB.getUserTelegramStatus(email);
+    res.json(status);
+  } catch (error) {
+    console.error('Error checking status:', error);
+    res.status(500).json({ error: 'Failed to check linking status' });
+  }
+});
+
+// Unlink Telegram from current user
+app.post('/api/user/unlink-telegram', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const email = req.user.email;
+    await TradeDB.unlinkTelegram(email);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error unlinking:', error);
+    res.status(500).json({ error: 'Failed to unlink Telegram account' });
+  }
+});
+
 app.get('/api/admin/stats', ensureAuthenticatedAPI, async (req, res) => {
   // Check if user is admin
   if (req.user.email !== ADMIN_EMAIL) {
