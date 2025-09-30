@@ -314,6 +314,17 @@ app.get('/api/admin/users', ensureAuthenticatedAPI, async (req, res) => {
   }
 
   try {
+    // First check if telegram columns exist, if not add them
+    try {
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_chat_id VARCHAR(100)`);
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_username VARCHAR(100)`);
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS linking_token VARCHAR(100)`);
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_linked_at TIMESTAMP`);
+    } catch (migrationError) {
+      // Columns might already exist, that's fine
+      console.log('Migration check:', migrationError.message);
+    }
+
     // Get all registered users from the users table with Telegram link status
     const result = await pool.query(`
       SELECT
@@ -340,6 +351,7 @@ app.get('/api/admin/users', ensureAuthenticatedAPI, async (req, res) => {
       users: result.rows
     });
   } catch (error) {
+    console.error('Error fetching users:', error);
     res.status(500).json({ error: 'Failed to fetch users', details: error.message });
   }
 });
