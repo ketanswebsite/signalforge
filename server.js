@@ -408,6 +408,38 @@ app.post('/api/user/unlink-telegram', ensureAuthenticatedAPI, async (req, res) =
   }
 });
 
+// Admin-only: Manually link Telegram to OAuth user
+app.post('/api/admin/manual-link', ensureAuthenticatedAPI, async (req, res) => {
+  // Check if user is admin
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+  }
+
+  try {
+    const { email, chatId } = req.body;
+
+    if (!email || !chatId) {
+      return res.status(400).json({ error: 'Email and Chat ID are required' });
+    }
+
+    const result = await TradeDB.manualLinkTelegramToUser(email, chatId);
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: `Linked ${result.telegram.username || result.telegram.first_name} to ${result.user.email}`,
+        user: result.user,
+        telegram: result.telegram
+      });
+    } else {
+      res.status(400).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Error manual linking:', error);
+    res.status(500).json({ error: 'Failed to link accounts', details: error.message });
+  }
+});
+
 app.get('/api/admin/stats', ensureAuthenticatedAPI, async (req, res) => {
   // Check if user is admin
   if (req.user.email !== ADMIN_EMAIL) {

@@ -1027,6 +1027,59 @@ const TradeDB = {
     }
   },
 
+  // Manual linking by admin (directly link chat_id to email)
+  async manualLinkTelegramToUser(email, chatId) {
+    checkConnection();
+    try {
+      // Get Telegram subscriber info
+      const telegramResult = await pool.query(`
+        SELECT username, first_name, last_name
+        FROM telegram_subscribers
+        WHERE chat_id = $1 AND is_active = true
+      `, [chatId.toString()]);
+
+      if (telegramResult.rows.length === 0) {
+        return { success: false, error: 'Telegram user not found or not subscribed' };
+      }
+
+      const telegramUser = telegramResult.rows[0];
+
+      // Update OAuth user with Telegram info
+      const userResult = await pool.query(`
+        UPDATE users
+        SET
+          telegram_chat_id = $1,
+          telegram_username = $2,
+          telegram_linked_at = CURRENT_TIMESTAMP
+        WHERE email = $3
+        RETURNING email, name
+      `, [
+        chatId.toString(),
+        telegramUser.username,
+        email
+      ]);
+
+      if (userResult.rows.length === 0) {
+        return { success: false, error: 'OAuth user not found' };
+      }
+
+      // Update telegram_subscribers table with user_id
+      await pool.query(`
+        UPDATE telegram_subscribers
+        SET user_id = $1
+        WHERE chat_id = $2
+      `, [email, chatId.toString()]);
+
+      return {
+        success: true,
+        user: userResult.rows[0],
+        telegram: telegramUser
+      };
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Check if user has Telegram linked
   async getUserTelegramStatus(email) {
     checkConnection();
