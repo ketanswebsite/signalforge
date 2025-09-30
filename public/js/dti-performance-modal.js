@@ -519,18 +519,18 @@ DTIUI.PerformanceModal = (function() {
                 <h2>${isAllGlobalIndices ? 'High Conviction Trades' : 'Performance Report'}: ${entryMonthName} Entry Signals</h2>
                 <div class="month-navigation">
                     ${prevMonthName ? `
-                        <button class="month-nav-btn" onclick="DTIUI.PerformanceModal.navigateMonth(${monthsAgo + 1})" title="View ${prevMonthName} signals">
+                        <button type="button" class="month-nav-btn" onclick="DTIUI.PerformanceModal.navigateMonth(${monthsAgo + 1})" title="View ${prevMonthName} signals">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polyline points="15 18 9 12 15 6"></polyline>
                             </svg>
                             ${prevMonthName}
                         </button>
                     ` : '<div class="month-nav-spacer"></div>'}
-                    
+
                     <span class="current-month-label">${entryMonthName}</span>
-                    
+
                     ${nextMonthName ? `
-                        <button class="month-nav-btn" onclick="DTIUI.PerformanceModal.navigateMonth(${monthsAgo - 1})" title="View ${nextMonthName} signals">
+                        <button type="button" class="month-nav-btn" onclick="DTIUI.PerformanceModal.navigateMonth(${monthsAgo - 1})" title="View ${nextMonthName} signals">
                             ${nextMonthName}
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polyline points="9 18 15 12 9 6"></polyline>
@@ -538,7 +538,7 @@ DTIUI.PerformanceModal = (function() {
                         </button>
                     ` : '<div class="month-nav-spacer"></div>'}
                 </div>
-                <button class="modal-close" onclick="DTIUI.PerformanceModal.closeModal()">
+                <button type="button" class="modal-close" onclick="DTIUI.PerformanceModal.closeModal()">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -764,8 +764,8 @@ DTIUI.PerformanceModal = (function() {
             </div>
             
             <div class="modal-footer">
-                <button class="btn-secondary" onclick="DTIUI.PerformanceModal.closeModal()">Close</button>
-                <button class="btn-primary" onclick="DTIUI.PerformanceModal.navigateToOpportunities()">
+                <button type="button" class="btn-secondary" onclick="DTIUI.PerformanceModal.closeModal()">Close</button>
+                <button type="button" class="btn-primary" onclick="DTIUI.PerformanceModal.navigateToOpportunities()">
                     View Current Opportunities
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 8px;">
                         <line x1="5" y1="12" x2="19" y2="12"></line>
