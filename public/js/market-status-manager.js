@@ -6,6 +6,62 @@
     'use strict';
 
     /**
+     * Get timezone abbreviation (ET, IST, GMT, etc.)
+     * @param {string} timezone - IANA timezone string (e.g., 'America/New_York')
+     * @param {Date} date - Date to check for DST
+     * @returns {string} Timezone abbreviation
+     */
+    function getTimezoneAbbreviation(timezone, date = new Date()) {
+        // Map of common timezones to their abbreviations
+        const timezoneMap = {
+            'America/New_York': isDST(date, 'America/New_York') ? 'EDT' : 'EST',
+            'America/Chicago': isDST(date, 'America/Chicago') ? 'CDT' : 'CST',
+            'America/Denver': isDST(date, 'America/Denver') ? 'MDT' : 'MST',
+            'America/Los_Angeles': isDST(date, 'America/Los_Angeles') ? 'PDT' : 'PST',
+            'Asia/Kolkata': 'IST',
+            'Asia/Calcutta': 'IST',
+            'Europe/London': isDST(date, 'Europe/London') ? 'BST' : 'GMT',
+            'Europe/Paris': isDST(date, 'Europe/Paris') ? 'CEST' : 'CET',
+            'Asia/Tokyo': 'JST',
+            'Asia/Hong_Kong': 'HKT',
+            'Asia/Singapore': 'SGT',
+            'Australia/Sydney': isDST(date, 'Australia/Sydney') ? 'AEDT' : 'AEST'
+        };
+
+        return timezoneMap[timezone] || timezone.split('/')[1] || 'UTC';
+    }
+
+    /**
+     * Check if a date is in daylight saving time for a timezone
+     * @param {Date} date - Date to check
+     * @param {string} timezone - IANA timezone
+     * @returns {boolean} True if DST is active
+     */
+    function isDST(date, timezone) {
+        const jan = new Date(date.getFullYear(), 0, 1);
+        const jul = new Date(date.getFullYear(), 6, 1);
+
+        const janOffset = parseFloat(jan.toLocaleString('en-US', {
+            timeZone: timezone,
+            timeZoneName: 'shortOffset'
+        }).split('GMT')[1]);
+
+        const julOffset = parseFloat(jul.toLocaleString('en-US', {
+            timeZone: timezone,
+            timeZoneName: 'shortOffset'
+        }).split('GMT')[1]);
+
+        const currentOffset = parseFloat(date.toLocaleString('en-US', {
+            timeZone: timezone,
+            timeZoneName: 'shortOffset'
+        }).split('GMT')[1]);
+
+        const stdOffset = Math.max(janOffset, julOffset);
+
+        return currentOffset < stdOffset;
+    }
+
+    /**
      * Calculate time difference with timezone awareness
      * @param {Date} targetTime - The target time (open/close)
      * @param {Date} currentTime - The current time in market timezone
@@ -202,7 +258,7 @@
             content.appendChild(trades);
         }
         
-        // Current market time
+        // Current market time with timezone
         const marketTime = document.createElement('div');
         marketTime.className = 'market-current-time';
         const timeStr = marketStatus.currentMarketTime.toLocaleTimeString('en-US', {
@@ -210,7 +266,10 @@
             minute: '2-digit',
             timeZone: marketStatus.timezone
         });
-        marketTime.textContent = `${timeStr}`;
+
+        // Get timezone abbreviation
+        const timezoneAbbr = getTimezoneAbbreviation(marketStatus.timezone, marketStatus.currentMarketTime);
+        marketTime.textContent = `${timeStr} ${timezoneAbbr}`;
         content.appendChild(marketTime);
         
         badge.appendChild(content);
@@ -230,9 +289,17 @@
                 minute: '2-digit',
                 hour12: true
             });
-            
-            let message = `${marketStatus.marketName}: ${marketTimeStr} (${marketStatus.timezone.split('/')[1]})`;
-            
+
+            const timezoneAbbr = getTimezoneAbbreviation(marketStatus.timezone, marketStatus.currentMarketTime);
+            const fullDate = marketStatus.currentMarketTime.toLocaleDateString('en-US', {
+                timeZone: marketStatus.timezone,
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric'
+            });
+
+            let message = `${marketStatus.marketName}: ${marketTimeStr} ${timezoneAbbr}\n${fullDate}`;
+
             if (marketStatus.earlyCloseInfo) {
                 message += `\nEarly close today at ${marketStatus.earlyCloseInfo.closeTime}:00`;
             }

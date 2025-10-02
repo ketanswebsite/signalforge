@@ -192,12 +192,21 @@ class RealTimePriceService {
         try {
             // Update UI to show fetching status
             this.showUpdateStatus(true);
-            
-            const response = await fetch('/api/prices', {
+
+            // Use retry logic for price fetches
+            const fetchOptions = {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ symbols: symbolsToFetch })
-            });
+            };
+
+            const response = typeof NetworkRetry !== 'undefined'
+                ? await NetworkRetry.fetch('/api/prices', fetchOptions, {
+                    maxRetries: 2,
+                    baseDelay: 500,
+                    retryOn: [429, 500, 502, 503, 504]
+                })
+                : await fetch('/api/prices', fetchOptions);
             
             if (response.ok) {
                 const data = await response.json();

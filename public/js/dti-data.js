@@ -188,7 +188,11 @@ if (period === '5y') {
             statusElement.style.display = 'block';
         }
 
-        const response = await fetch(proxyUrl);
+        // Use AbortManager for cancellable requests
+        const operationId = `fetch-historical-${symbol}-${period}-${interval}`;
+        const response = typeof AbortManager !== 'undefined'
+            ? await AbortManager.fetch(operationId, proxyUrl, {}, 30000) // 30s timeout
+            : await fetch(proxyUrl);
 
         if (!response.ok) {
             const errorMessage = `HTTP ${response.status}: ${response.statusText}`;
@@ -308,8 +312,13 @@ if (period === '5y') {
 async function fetchCurrentQuote(symbol) {
     try {
         const proxyUrl = `/yahoo/quote?symbol=${symbol}`;
-        const response = await fetch(proxyUrl);
-        
+
+        // Use AbortManager for cancellable requests
+        const operationId = `fetch-quote-${symbol}`;
+        const response = typeof AbortManager !== 'undefined'
+            ? await AbortManager.fetch(operationId, proxyUrl, {}, 10000) // 10s timeout
+            : await fetch(proxyUrl);
+
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
@@ -991,7 +1000,12 @@ async function fetchCurrentQuote(symbol) {
     async function validateStockSymbol(symbol) {
         try {
             const proxyUrl = `/yahoo/quote?symbol=${symbol}`;
-            const response = await fetch(proxyUrl);
+
+            // Use AbortManager for cancellable requests
+            const operationId = `validate-symbol-${symbol}`;
+            const response = typeof AbortManager !== 'undefined'
+                ? await AbortManager.fetch(operationId, proxyUrl, {}, 10000) // 10s timeout
+                : await fetch(proxyUrl);
 
             if (response.ok) {
                 const data = await response.json();

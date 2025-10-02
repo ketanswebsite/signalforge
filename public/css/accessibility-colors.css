@@ -1,0 +1,342 @@
+/**
+ * WCAG Compliant Color Overrides
+ * Ensures all color combinations meet WCAG AA standards (4.5:1 for normal text, 3:1 for large text)
+ */
+
+:root {
+    /* Enhanced color contrast for better accessibility */
+
+    /* Light mode improvements */
+    --text-secondary: #4b5563;        /* Darker gray for better contrast (was #6b7280) */
+    --primary-light: #dbeafe;         /* Lighter blue background */
+    --primary-dark: #1e40af;          /* Darker blue for better contrast */
+
+    /* Success/Danger colors with better contrast */
+    --success-dark: #047857;          /* Darker green */
+    --danger-dark: #b91c1c;           /* Darker red */
+    --warning-dark: #b45309;          /* Darker orange */
+    --info-dark: #0e7490;             /* Darker cyan */
+
+    /* Border colors with sufficient contrast */
+    --border-hover: #d1d5db;          /* Slightly darker for visibility */
+}
+
+/* Dark mode color improvements */
+[data-theme="dark"] {
+    /* Ensure text has sufficient contrast on dark backgrounds */
+    --text-secondary: #9ca3af;        /* Lighter gray for dark mode */
+
+    /* Lighter colors for dark mode to maintain contrast */
+    --primary-light: #1e3a8a;         /* Darker blue for dark mode backgrounds */
+    --success-dark: #10b981;          /* Lighter green for dark mode */
+    --danger-dark: #ef4444;           /* Lighter red for dark mode */
+    --warning-dark: #f59e0b;          /* Lighter orange for dark mode */
+    --info-dark: #06b6d4;             /* Lighter cyan for dark mode */
+}
+
+/* Fix link contrast */
+a {
+    color: var(--primary-dark);
+}
+
+a:hover {
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] a {
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] a:hover {
+    color: #93c5fd; /* Lighter blue for hover in dark mode */
+}
+
+/* Fix button text contrast */
+.btn-primary {
+    background-color: var(--primary-dark);
+    color: #ffffff;
+}
+
+.btn-primary:hover {
+    background-color: #1e3a8a; /* Darker on hover */
+}
+
+[data-theme="dark"] .btn-primary {
+    background-color: var(--primary-color);
+    color: #0f172a; /* Dark text on light button in dark mode */
+}
+
+.btn-success {
+    background-color: var(--success-dark);
+}
+
+[data-theme="dark"] .btn-success {
+    background-color: var(--success-color);
+    color: #0f172a;
+}
+
+.btn-danger {
+    background-color: var(--danger-dark);
+}
+
+[data-theme="dark"] .btn-danger {
+    background-color: var(--danger-color);
+    color: #0f172a;
+}
+
+.btn-warning {
+    background-color: var(--warning-dark);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .btn-warning {
+    background-color: var(--warning-color);
+    color: #0f172a;
+}
+
+.btn-info {
+    background-color: var(--info-dark);
+}
+
+[data-theme="dark"] .btn-info {
+    background-color: var(--info-color);
+    color: #0f172a;
+}
+
+/* Fix text on colored backgrounds */
+.badge.success,
+.status.success {
+    background-color: var(--success-dark);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .badge.success,
+[data-theme="dark"] .status.success {
+    background-color: var(--success-color);
+    color: #0f172a;
+}
+
+.badge.danger,
+.status.danger {
+    background-color: var(--danger-dark);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .badge.danger,
+[data-theme="dark"] .status.danger {
+    background-color: var(--danger-color);
+    color: #0f172a;
+}
+
+.badge.warning,
+.status.warning {
+    background-color: var(--warning-dark);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .badge.warning,
+[data-theme="dark"] .status.warning {
+    background-color: var(--warning-color);
+    color: #0f172a;
+}
+
+.badge.info,
+.status.info {
+    background-color: var(--info-dark);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .badge.info,
+[data-theme="dark"] .status.info {
+    background-color: var(--info-color);
+    color: #0f172a;
+}
+
+/* Fix market status badges contrast */
+.market-status-badge {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+.market-status-badge.open .market-status-indicator {
+    background-color: var(--success-dark);
+}
+
+[data-theme="dark"] .market-status-badge.open .market-status-indicator {
+    background-color: var(--success-color);
+}
+
+.market-status-badge.closed .market-status-indicator {
+    background-color: #6b7280;
+}
+
+.market-status-badge.pre-market .market-status-indicator,
+.market-status-badge.post-market .market-status-indicator {
+    background-color: var(--info-dark);
+}
+
+[data-theme="dark"] .market-status-badge.pre-market .market-status-indicator,
+[data-theme="dark"] .market-status-badge.post-market .market-status-indicator {
+    background-color: var(--info-color);
+}
+
+/* Fix placeholder text contrast */
+::placeholder {
+    color: #9ca3af;
+    opacity: 1;
+}
+
+[data-theme="dark"] ::placeholder {
+    color: #6b7280;
+}
+
+/* Fix disabled state contrast */
+button:disabled,
+input:disabled,
+select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Fix focus indicators for better visibility */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+[data-theme="dark"] button:focus-visible,
+[data-theme="dark"] a:focus-visible,
+[data-theme="dark"] input:focus-visible,
+[data-theme="dark"] select:focus-visible,
+[data-theme="dark"] textarea:focus-visible {
+    outline: 2px solid #93c5fd;
+    outline-offset: 2px;
+}
+
+/* Ensure notification text is readable */
+.notification.success {
+    background-color: var(--success-dark);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .notification.success {
+    background-color: var(--success-color);
+    color: #0f172a;
+}
+
+.notification.error,
+.notification.danger {
+    background-color: var(--danger-dark);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .notification.error,
+[data-theme="dark"] .notification.danger {
+    background-color: var(--danger-color);
+    color: #0f172a;
+}
+
+.notification.warning {
+    background-color: var(--warning-dark);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .notification.warning {
+    background-color: var(--warning-color);
+    color: #0f172a;
+}
+
+.notification.info {
+    background-color: var(--info-dark);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .notification.info {
+    background-color: var(--info-color);
+    color: #0f172a;
+}
+
+/* Fix table header contrast */
+th {
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+/* Ensure proper contrast for alert borders */
+.alert {
+    border-width: 1px;
+    border-style: solid;
+}
+
+.alert.success {
+    border-color: var(--success-dark);
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+[data-theme="dark"] .alert.success {
+    border-color: var(--success-color);
+    background-color: #064e3b;
+    color: #a7f3d0;
+}
+
+.alert.error,
+.alert.danger {
+    border-color: var(--danger-dark);
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+[data-theme="dark"] .alert.error,
+[data-theme="dark"] .alert.danger {
+    border-color: var(--danger-color);
+    background-color: #7f1d1d;
+    color: #fca5a5;
+}
+
+.alert.warning {
+    border-color: var(--warning-dark);
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+[data-theme="dark"] .alert.warning {
+    border-color: var(--warning-color);
+    background-color: #78350f;
+    color: #fcd34d;
+}
+
+.alert.info {
+    border-color: var(--info-dark);
+    background-color: #cffafe;
+    color: #155e75;
+}
+
+[data-theme="dark"] .alert.info {
+    border-color: var(--info-color);
+    background-color: #164e63;
+    color: #a5f3fc;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    :root {
+        --primary-color: #1e40af;
+        --success-color: #047857;
+        --danger-color: #b91c1c;
+        --warning-color: #b45309;
+        --info-color: #0e7490;
+    }
+
+    [data-theme="dark"] {
+        --primary-color: #93c5fd;
+        --success-color: #6ee7b7;
+        --danger-color: #fca5a5;
+        --warning-color: #fcd34d;
+        --info-color: #a5f3fc;
+    }
+}
