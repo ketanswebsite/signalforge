@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal - SignalForge</title>
+    <link rel="stylesheet" href="/css/admin-theme.css">
+    <script src="/js/admin-components.js"></script>
+</head>
+<body class="admin-portal">
+    <!-- Alert Container -->
+    <div id="alert-container" class="alert-container"></div>
+
+    <!-- Main Container -->
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <a href="/admin-v2" class="admin-logo">⚡ SignalForge</a>
+
+            <nav>
+                <ul class="admin-nav">
+                    <li class="admin-nav-item">
+                        <a href="#dashboard" class="admin-nav-link active" data-page="dashboard">
+                            <span class="admin-nav-icon">📊</span>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="admin-nav-item">
+                        <a href="#users" class="admin-nav-link" data-page="users">
+                            <span class="admin-nav-icon">👥</span>
+                            <span>Users</span>
+                        </a>
+                    </li>
+                    <li class="admin-nav-item">
+                        <a href="#subscriptions" class="admin-nav-link" data-page="subscriptions">
+                            <span class="admin-nav-icon">💳</span>
+                            <span>Subscriptions</span>
+                        </a>
+                    </li>
+                    <li class="admin-nav-item">
+                        <a href="#payments" class="admin-nav-link" data-page="payments">
+                            <span class="admin-nav-icon">💰</span>
+                            <span>Payments</span>
+                        </a>
+                    </li>
+                    <li class="admin-nav-item">
+                        <a href="#audit" class="admin-nav-link" data-page="audit">
+                            <span class="admin-nav-icon">📋</span>
+                            <span>Audit Log</span>
+                        </a>
+                    </li>
+                    <li class="admin-nav-item">
+                        <a href="#analytics" class="admin-nav-link" data-page="analytics">
+                            <span class="admin-nav-icon">📈</span>
+                            <span>Analytics</span>
+                        </a>
+                    </li>
+                    <li class="admin-nav-item">
+                        <a href="#database" class="admin-nav-link" data-page="database">
+                            <span class="admin-nav-icon">🗄️</span>
+                            <span>Database</span>
+                        </a>
+                    </li>
+                    <li class="admin-nav-item">
+                        <a href="#settings" class="admin-nav-link" data-page="settings">
+                            <span class="admin-nav-icon">⚙️</span>
+                            <span>Settings</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-content">
+            <!-- Header -->
+            <header class="admin-header">
+                <div class="admin-header-content">
+                    <h1 class="admin-header-title" id="page-title">Dashboard</h1>
+                    <div class="admin-header-actions">
+                        <div class="status-indicator">
+                            <span class="status-dot status-success"></span>
+                            <span class="status-text">System Online</span>
+                        </div>
+                        <button class="btn btn-secondary btn-sm" onclick="window.location.href='/'">
+                            ← Back to App
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <div id="page-content">
+                <!-- Dashboard Page (Default) -->
+                <div id="dashboard-page" class="page-section active">
+                    <!-- Key Metrics -->
+                    <div class="metrics-grid" id="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-icon">📊</div>
+                            <div class="metric-content">
+                                <div class="metric-title">Monthly Recurring Revenue</div>
+                                <div class="metric-value" id="metric-mrr">Loading...</div>
+                                <div class="metric-change metric-change-positive" id="metric-mrr-change"></div>
+                            </div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-icon">👥</div>
+                            <div class="metric-content">
+                                <div class="metric-title">Total Users</div>
+                                <div class="metric-value" id="metric-users">Loading...</div>
+                                <div class="metric-change metric-change-positive" id="metric-users-change"></div>
+                            </div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-icon">💳</div>
+                            <div class="metric-content">
+                                <div class="metric-title">Active Subscriptions</div>
+                                <div class="metric-value" id="metric-subs">Loading...</div>
+                                <div class="metric-change metric-change-positive" id="metric-subs-change"></div>
+                            </div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-icon">💰</div>
+                            <div class="metric-content">
+                                <div class="metric-title">Payments This Month</div>
+                                <div class="metric-value" id="metric-payments">Loading...</div>
+                                <div class="metric-change metric-change-positive" id="metric-payments-change"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity & Quick Actions -->
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-top: 2rem;">
+                        <!-- Recent Activity -->
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <h2 class="admin-card-title">Recent Activity</h2>
+                                <button class="btn btn-secondary btn-sm" onclick="loadPage('audit')">View All</button>
+                            </div>
+                            <div class="admin-card-body">
+                                <div class="activity-feed" id="recent-activity">
+                                    <div class="spinner-container spinner-medium">
+                                        <div class="spinner"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <h2 class="admin-card-title">Quick Actions</h2>
+                            </div>
+                            <div class="admin-card-body">
+                                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                    <button class="btn btn-primary" onclick="loadPage('users')">
+                                        👥 Manage Users
+                                    </button>
+                                    <button class="btn btn-primary" onclick="loadPage('subscriptions')">
+                                        💳 View Subscriptions
+                                    </button>
+                                    <button class="btn btn-primary" onclick="loadPage('payments')">
+                                        💰 Check Payments
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="runManualScan()">
+                                        🔍 Run Stock Scanner
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="loadPage('database')">
+                                        🗄️ Database Tools
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other pages will be loaded dynamically -->
+                <div id="users-page" class="page-section" style="display: none;"></div>
+                <div id="subscriptions-page" class="page-section" style="display: none;"></div>
+                <div id="payments-page" class="page-section" style="display: none;"></div>
+                <div id="audit-page" class="page-section" style="display: none;"></div>
+                <div id="analytics-page" class="page-section" style="display: none;"></div>
+                <div id="database-page" class="page-section" style="display: none;"></div>
+                <div id="settings-page" class="page-section" style="display: none;"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Page Navigation
+        function loadPage(pageName) {
+            // Hide all pages
+            document.querySelectorAll('.page-section').forEach(page => {
+                page.style.display = 'none';
+            });
+
+            // Remove active class from all nav links
+            document.querySelectorAll('.admin-nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+
+            // Show selected page
+            const pageElement = document.getElementById(`${pageName}-page`);
+            if (pageElement) {
+                pageElement.style.display = 'block';
+            }
+
+            // Activate nav link
+            const navLink = document.querySelector(`[data-page="${pageName}"]`);
+            if (navLink) {
+                navLink.classList.add('active');
+            }
+
+            // Update page title
+            const titles = {
+                dashboard: 'Dashboard',
+                users: 'User Management',
+                subscriptions: 'Subscription Management',
+                payments: 'Payment Management',
+                audit: 'Audit Log',
+                analytics: 'Analytics & Reports',
+                database: 'Database Tools',
+                settings: 'System Settings'
+            };
+
+            document.getElementById('page-title').textContent = titles[pageName] || pageName;
+
+            // Load page content
+            loadPageContent(pageName);
+
+            // Update URL hash
+            window.location.hash = pageName;
+        }
+
+        // Load page content
+        async function loadPageContent(pageName) {
+            switch(pageName) {
+                case 'dashboard':
+                    loadDashboard();
+                    break;
+                case 'users':
+                    loadUsers();
+                    break;
+                case 'subscriptions':
+                    loadSubscriptions();
+                    break;
+                case 'payments':
+                    loadPayments();
+                    break;
+                case 'audit':
+                    loadAuditLog();
+                    break;
+                case 'analytics':
+                    loadAnalytics();
+                    break;
+                case 'database':
+                    loadDatabase();
+                    break;
+                case 'settings':
+                    loadSettings();
+                    break;
+            }
+        }
+
+        // Load Dashboard
+        async function loadDashboard() {
+            try {
+                // Load key metrics
+                const stats = await fetch('/api/admin/stats').then(r => r.json());
+
+                document.getElementById('metric-mrr').textContent = '£0.00';
+                document.getElementById('metric-users').textContent = stats.totalUsers || '0';
+                document.getElementById('metric-subs').textContent = stats.activeSubscriptions || '0';
+                document.getElementById('metric-payments').textContent = '0';
+
+                // Load recent activity
+                loadRecentActivity();
+            } catch (error) {
+                console.error('Failed to load dashboard:', error);
+                AdminComponents.alert({
+                    type: 'error',
+                    message: 'Failed to load dashboard data',
+                    autoDismiss: 5000
+                });
+            }
+        }
+
+        // Load Recent Activity
+        async function loadRecentActivity() {
+            try {
+                const activities = [
+                    {
+                        icon: '👤',
+                        title: 'New user registered',
+                        description: 'user@example.com joined the platform',
+                        timestamp: new Date(Date.now() - 2 * 60 * 1000),
+                        user: 'System'
+                    },
+                    {
+                        icon: '💳',
+                        title: 'Subscription activated',
+                        description: 'Premium plan subscription started',
+                        timestamp: new Date(Date.now() - 30 * 60 * 1000),
+                        user: 'System'
+                    },
+                    {
+                        icon: '💰',
+                        title: 'Payment received',
+                        description: '£29.99 payment processed successfully',
+                        timestamp: new Date(Date.now() - 60 * 60 * 1000),
+                        user: 'System'
+                    }
+                ];
+
+                const activityHTML = activities.map(activity =>
+                    AdminComponents.activityItem(activity)
+                ).join('');
+
+                document.getElementById('recent-activity').innerHTML = activityHTML || '<p class="text-muted text-center">No recent activity</p>';
+            } catch (error) {
+                console.error('Failed to load recent activity:', error);
+                document.getElementById('recent-activity').innerHTML = '<p class="text-muted text-center">Failed to load activity</p>';
+            }
+        }
+
+        // Load Users (Placeholder)
+        function loadUsers() {
+            document.getElementById('users-page').innerHTML = `
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h2 class="admin-card-title">User Management</h2>
+                        <button class="btn btn-primary">Add User</button>
+                    </div>
+                    <div class="admin-card-body">
+                        <p>User management functionality coming soon...</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Load Subscriptions (Placeholder)
+        function loadSubscriptions() {
+            document.getElementById('subscriptions-page').innerHTML = `
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h2 class="admin-card-title">Subscription Management</h2>
+                        <button class="btn btn-primary">Create Plan</button>
+                    </div>
+                    <div class="admin-card-body">
+                        <p>Subscription management functionality coming soon...</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Load Payments (Placeholder)
+        function loadPayments() {
+            document.getElementById('payments-page').innerHTML = `
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h2 class="admin-card-title">Payment Management</h2>
+                    </div>
+                    <div class="admin-card-body">
+                        <p>Payment management functionality coming soon...</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Load Audit Log (Placeholder)
+        function loadAuditLog() {
+            document.getElementById('audit-page').innerHTML = `
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h2 class="admin-card-title">Audit Log</h2>
+                    </div>
+                    <div class="admin-card-body">
+                        <p>Audit log functionality coming soon...</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Load Analytics (Placeholder)
+        function loadAnalytics() {
+            document.getElementById('analytics-page').innerHTML = `
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h2 class="admin-card-title">Analytics & Reports</h2>
+                    </div>
+                    <div class="admin-card-body">
+                        <p>Analytics functionality coming soon...</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Load Database (Placeholder)
+        function loadDatabase() {
+            document.getElementById('database-page').innerHTML = `
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h2 class="admin-card-title">Database Tools</h2>
+                    </div>
+                    <div class="admin-card-body">
+                        <p>Database tools functionality coming soon...</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Load Settings (Placeholder)
+        function loadSettings() {
+            document.getElementById('settings-page').innerHTML = `
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h2 class="admin-card-title">System Settings</h2>
+                    </div>
+                    <div class="admin-card-body">
+                        <p>Settings functionality coming soon...</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Run Manual Scan
+        async function runManualScan() {
+            AdminComponents.alert({
+                type: 'info',
+                message: 'Starting stock scanner...',
+                autoDismiss: 3000
+            });
+
+            try {
+                const response = await fetch('/api/admin/trigger-scan', {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    AdminComponents.alert({
+                        type: 'success',
+                        message: 'Stock scanner started successfully!',
+                        autoDismiss: 5000
+                    });
+                } else {
+                    throw new Error(data.error || 'Failed to start scanner');
+                }
+            } catch (error) {
+                AdminComponents.alert({
+                    type: 'error',
+                    message: `Failed to start scanner: ${error.message}`,
+                    autoDismiss: 5000
+                });
+            }
+        }
+
+        // Navigation click handlers
+        document.querySelectorAll('.admin-nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const pageName = link.getAttribute('data-page');
+                loadPage(pageName);
+            });
+        });
+
+        // Handle hash changes
+        window.addEventListener('hashchange', () => {
+            const hash = window.location.hash.substring(1);
+            if (hash) {
+                loadPage(hash);
+            }
+        });
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            const hash = window.location.hash.substring(1);
+            loadPage(hash || 'dashboard');
+        });
+
+        // Setup SSE for real-time updates
+        function setupSSE() {
+            const eventSource = new EventSource('/api/admin/events');
+
+            eventSource.addEventListener('activity', (event) => {
+                const data = JSON.parse(event.data);
+                loadRecentActivity();
+            });
+
+            eventSource.addEventListener('metrics', (event) => {
+                const data = JSON.parse(event.data);
+                // Update metrics
+            });
+
+            eventSource.onerror = (error) => {
+                console.error('SSE connection error:', error);
+                eventSource.close();
+            };
+        }
+
+        // setupSSE(); // Uncomment when SSE endpoint is ready
+    </script>
+</body>
+</html>

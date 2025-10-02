@@ -183,6 +183,15 @@ try {
 } catch (error) {
 }
 
+// Admin routes (with its own authentication middleware)
+try {
+  const adminRoutes = require('./routes/admin');
+  app.use('/api/admin', adminRoutes);
+  console.log('✓ Admin routes loaded successfully');
+} catch (error) {
+  console.error('✗ Failed to load admin routes:', error.message);
+}
+
 // Test endpoint
 app.get('/api/test', (req, res) => {
   res.json({
@@ -286,6 +295,15 @@ app.get('/admin-portal', ensureAuthenticated, (req, res) => {
     return res.status(403).send('Access denied. Admin privileges required.');
   }
   res.sendFile(path.join(__dirname, 'public', 'admin-portal.html'));
+});
+
+// New admin portal v2 (revamped)
+app.get('/admin-v2', ensureAuthenticated, (req, res) => {
+  // Check if user is admin
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).send('Access denied. Admin privileges required.');
+  }
+  res.sendFile(path.join(__dirname, 'public', 'admin-v2.html'));
 });
 
 // API endpoint to get all Telegram subscribers (admin only)

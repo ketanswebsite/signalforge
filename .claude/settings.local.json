@@ -78,7 +78,10 @@
       "Bash(DATABASE_URL=\"postgresql://signalforge_db_user:Xcipr9Wa1KeSWCNPjM9ymyMbD0SENf4R@dpg-d0vgkl95pdvs738glu0g-a.oregon-postgres.render.com/signalforge_db\" NODE_ENV=production timeout 120 node run-migrations.js)",
       "Bash(DATABASE_URL=\"postgresql://signalforge_db_user:Xcipr9Wa1KeSWCNPjM9ymyMbD0SENf4R@dpg-d0vgkl95pdvs738glu0g-a.oregon-postgres.render.com/signalforge_db\" NODE_ENV=production timeout 180 node run-migrations.js)",
       "Bash(export DATABASE_URL=\"postgresql://signalforge_db_user:Xcipr9Wa1KeSWCNPjM9ymyMbD0SENf4R@dpg-d0vgkl95pdvs738glu0g-a.oregon-postgres.render.com/signalforge_db\")",
-      "Bash(export NODE_ENV=production)"
+      "Bash(export NODE_ENV=production)",
+      "Bash(DATABASE_URL=\"postgresql://signalforge_db_user:Xcipr9Wa1KeSWCNPjM9ymyMbD0SENf4R@dpg-d0vgkl95pdvs738glu0g-a.oregon-postgres.render.com/signalforge_db\" psql -f 008_create_admin_activity_log.sql)",
+      "Bash(DATABASE_URL=\"postgresql://signalforge_db_user:Xcipr9Wa1KeSWCNPjM9ymyMbD0SENf4R@dpg-d0vgkl95pdvs738glu0g-a.oregon-postgres.render.com/signalforge_db\" NODE_ENV=production node run-single-migration.js 008_create_admin_activity_log.sql)",
+      "Bash(DATABASE_URL=\"postgresql://signalforge_db_user:Xcipr9Wa1KeSWCNPjM9ymyMbD0SENf4R@dpg-d0vgkl95pdvs738glu0g-a.oregon-postgres.render.com/signalforge_db\" NODE_ENV=production node ./run-single-migration.js 008_create_admin_activity_log.sql)"
     ],
     "deny": []
   },
