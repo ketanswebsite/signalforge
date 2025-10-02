@@ -2966,6 +2966,7 @@ button:disabled::after {
         overflow-x: hidden;
         padding: 16px !important;
         margin-bottom: 16px !important;
+        height: auto !important; /* Allow cards to grow with content */
     }
 
     /* Optimize charts container */
@@ -2976,6 +2977,8 @@ button:disabled::after {
 
     .charts-container .card {
         overflow: hidden !important;
+        min-height: 450px !important; /* Fit 420px chart + padding */
+        height: auto !important;
     }
     
     /* MOBILE CHARTS - Ultra clean, no overlays - 50% TALLER */
@@ -3021,10 +3024,11 @@ button:disabled::after {
     .charts-container {
         gap: 20px;
     }
-    
+
     .charts-container .card {
-        height: auto;
-        max-height: 350px;
+        height: auto !important;
+        max-height: none !important; /* Remove height restriction to allow 420px charts */
+        min-height: 450px !important; /* Accommodate 420px chart + padding */
     }
     
     /* Statistics cards */
@@ -3300,8 +3304,15 @@ button:disabled::after {
     .card {
         padding: 12px;
         margin-bottom: 14px;
+        height: auto !important;
     }
-    
+
+    .charts-container .card {
+        min-height: 390px !important; /* Fit 360px chart + padding */
+        height: auto !important;
+        max-height: none !important;
+    }
+
     /* Charts on very small screens - 50% TALLER */
     .chart-wrapper {
         height: 360px !important;
