@@ -130,6 +130,54 @@ router.get('/users/:email', asyncHandler(async (req, res) => {
   res.json(successResponse(userResult.rows[0]));
 }));
 
+router.post('/users', asyncHandler(async (req, res) => {
+  const { email, name } = req.body;
+
+  requireFields(req.body, ['email', 'name']);
+
+  const result = await TradeDB.pool.query(`
+    INSERT INTO users (email, name, first_login, last_login)
+    VALUES ($1, $2, NOW(), NOW())
+    RETURNING *
+  `, [email, name]);
+
+  res.json(successResponse(result.rows[0], 'User created successfully'));
+}));
+
+router.put('/users/:email', asyncHandler(async (req, res) => {
+  const email = req.params.email;
+  const { name } = req.body;
+
+  requireField(req.body, 'name');
+
+  const result = await TradeDB.pool.query(`
+    UPDATE users
+    SET name = $1
+    WHERE email = $2
+    RETURNING *
+  `, [name, email]);
+
+  if (result.rows.length === 0) {
+    throw new AdminAPIError('USER_NOT_FOUND', `User with email ${email} not found`);
+  }
+
+  res.json(successResponse(result.rows[0], 'User updated successfully'));
+}));
+
+router.delete('/users/:email', asyncHandler(async (req, res) => {
+  const email = req.params.email;
+
+  const result = await TradeDB.pool.query(`
+    DELETE FROM users WHERE email = $1 RETURNING email
+  `, [email]);
+
+  if (result.rows.length === 0) {
+    throw new AdminAPIError('USER_NOT_FOUND', `User with email ${email} not found`);
+  }
+
+  res.json(successResponse({ email }, 'User deleted successfully'));
+}));
+
 // ========== Subscription Management ==========
 router.get('/subscriptions', asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;

@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Portal - SignalForge</title>
     <link rel="stylesheet" href="/css/admin-theme.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="/js/admin-components.js"></script>
+    <script src="/js/admin-dashboard.js"></script>
+    <script src="/js/admin-users.js"></script>
 </head>
 <body class="admin-portal">
     <!-- Alert Container -->
@@ -129,6 +132,20 @@
                                 <div class="metric-value" id="metric-payments">Loading...</div>
                                 <div class="metric-change metric-change-positive" id="metric-payments-change"></div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Revenue Trend Chart -->
+                    <div class="admin-card" style="margin-top: 2rem;">
+                        <div class="admin-card-header">
+                            <h2 class="admin-card-title">Revenue Trend (Last 12 Months)</h2>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="btn btn-secondary btn-sm" onclick="AdminDashboard.changeChartPeriod('month')">Month</button>
+                                <button class="btn btn-secondary btn-sm" onclick="AdminDashboard.changeChartPeriod('year')">Year</button>
+                            </div>
+                        </div>
+                        <div class="admin-card-body">
+                            <canvas id="revenue-chart" height="80"></canvas>
                         </div>
                     </div>
 
@@ -267,78 +284,13 @@
 
         // Load Dashboard
         async function loadDashboard() {
-            try {
-                // Load key metrics
-                const stats = await fetch('/api/admin/stats').then(r => r.json());
-
-                document.getElementById('metric-mrr').textContent = '£0.00';
-                document.getElementById('metric-users').textContent = stats.totalUsers || '0';
-                document.getElementById('metric-subs').textContent = stats.activeSubscriptions || '0';
-                document.getElementById('metric-payments').textContent = '0';
-
-                // Load recent activity
-                loadRecentActivity();
-            } catch (error) {
-                console.error('Failed to load dashboard:', error);
-                AdminComponents.alert({
-                    type: 'error',
-                    message: 'Failed to load dashboard data',
-                    autoDismiss: 5000
-                });
-            }
+            // Initialize dashboard with all components
+            await AdminDashboard.init();
         }
 
-        // Load Recent Activity
-        async function loadRecentActivity() {
-            try {
-                const activities = [
-                    {
-                        icon: '👤',
-                        title: 'New user registered',
-                        description: 'user@example.com joined the platform',
-                        timestamp: new Date(Date.now() - 2 * 60 * 1000),
-                        user: 'System'
-                    },
-                    {
-                        icon: '💳',
-                        title: 'Subscription activated',
-                        description: 'Premium plan subscription started',
-                        timestamp: new Date(Date.now() - 30 * 60 * 1000),
-                        user: 'System'
-                    },
-                    {
-                        icon: '💰',
-                        title: 'Payment received',
-                        description: '£29.99 payment processed successfully',
-                        timestamp: new Date(Date.now() - 60 * 60 * 1000),
-                        user: 'System'
-                    }
-                ];
-
-                const activityHTML = activities.map(activity =>
-                    AdminComponents.activityItem(activity)
-                ).join('');
-
-                document.getElementById('recent-activity').innerHTML = activityHTML || '<p class="text-muted text-center">No recent activity</p>';
-            } catch (error) {
-                console.error('Failed to load recent activity:', error);
-                document.getElementById('recent-activity').innerHTML = '<p class="text-muted text-center">Failed to load activity</p>';
-            }
-        }
-
-        // Load Users (Placeholder)
-        function loadUsers() {
-            document.getElementById('users-page').innerHTML = `
-                <div class="admin-card">
-                    <div class="admin-card-header">
-                        <h2 class="admin-card-title">User Management</h2>
-                        <button class="btn btn-primary">Add User</button>
-                    </div>
-                    <div class="admin-card-body">
-                        <p>User management functionality coming soon...</p>
-                    </div>
-                </div>
-            `;
+        // Load Users
+        async function loadUsers() {
+            await AdminUsers.init();
         }
 
         // Load Subscriptions (Placeholder)
