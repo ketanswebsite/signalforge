@@ -362,7 +362,7 @@ function renderActiveTrades() {
         
         // Populate winning trades table
         if (noWinningTrades && winningTradesTable) {
-            const winningTrades = closedTrades.filter(trade => (trade.percentGain || trade.profit || 0) > 0);
+            const winningTrades = closedTrades.filter(trade => (trade.profitLossPercentage || trade.profitLoss || 0) > 0);
             
             if (winningTrades.length === 0) {
                 noWinningTrades.style.display = 'block';
@@ -397,7 +397,7 @@ function renderActiveTrades() {
         
         // Populate losing trades table
         if (noLosingTrades && losingTradesTable) {
-            const losingTrades = closedTrades.filter(trade => (trade.percentGain || trade.profit || 0) <= 0);
+            const losingTrades = closedTrades.filter(trade => (trade.profitLossPercentage || trade.profitLoss || 0) <= 0);
             
             if (losingTrades.length === 0) {
                 noLosingTrades.style.display = 'block';
@@ -465,7 +465,7 @@ function renderActiveTrades() {
                 };
             }
             
-            const plValue = Number(trade.profitLoss || trade.plValue || trade.profit) || 0;
+            const plValue = Number(trade.profitLoss || trade.plValue) || 0;
             // For UK stocks, convert from pence to pounds for display
             // Indian (₹) and US ($) stocks are already in their base currency units
             const displayPLValue = isUKStock ? plValue / 100 : plValue;
@@ -570,10 +570,10 @@ function renderActiveTrades() {
             
             // Ensure all numeric values are valid - API now always provides investmentAmount
             const investmentAmount = Number(trade.investmentAmount) || 0;
-            // API now provides consistent profitLoss and percentGain fields for all trade statuses
+            // API now provides consistent profitLoss and profitLossPercentage fields for all trade statuses
             // But trade-core.js also maps them to plPercent and plValue for backward compatibility
-            const plPercent = Number(trade.percentGain || trade.plPercent) || 0;
-            const plValue = Number(trade.profitLoss || trade.plValue || trade.profit) || 0;
+            const plPercent = Number(trade.profitLossPercentage || trade.plPercent) || 0;
+            const plValue = Number(trade.profitLoss || trade.plValue) || 0;
             
             // Debug logging for TW.L calculations
             if (trade.symbol === 'TW.L' && trade.status === 'closed') {
