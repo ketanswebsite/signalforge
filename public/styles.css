@@ -1831,25 +1831,25 @@ table tr:last-child td:last-child {
     text-align: center;
 }
 
-/* Export button for individual analytics charts */
+/* Export button for individual analytics charts - Desktop */
 .chart-container .chart-export-btn {
     position: absolute;
     top: 15px;
     right: 20px;
-    padding: 5px 10px;
+    padding: 6px 12px;
     background: white;
     border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
+    border-radius: 6px;
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: var(--shadow-xs);
+    box-shadow: var(--shadow-sm);
     display: flex;
     align-items: center;
-    gap: 4px;
-    z-index: 15;
-    opacity: 0.7;
+    gap: 6px;
+    z-index: 50;
+    opacity: 0.95;
 }
 
 .chart-container:hover .chart-export-btn {
@@ -1857,16 +1857,28 @@ table tr:last-child td:last-child {
 }
 
 .chart-container .chart-export-btn:hover {
-    background: var(--primary-light);
+    background: var(--primary-color);
     border-color: var(--primary-color);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-sm);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.chart-container .chart-export-btn:hover svg {
+    stroke: white;
 }
 
 .chart-container .chart-export-btn svg {
-    width: 10px;
-    height: 10px;
+    width: 14px;
+    height: 14px;
     stroke-width: 2.5;
+}
+
+/* Desktop - show text on analytics chart export buttons */
+@media (min-width: 769px) {
+    .chart-container .chart-export-btn span {
+        display: inline !important;
+    }
 }
 
 .chart-row {
@@ -2944,26 +2956,50 @@ button:disabled::after {
     }
     
     /* Ensure all cards stay within bounds */
-    .main-content .card {
+    .main-content .card,
+    .card {
         max-width: 100%;
         overflow-x: hidden;
-    }
-    
-    /* Chart specific fixes - clean solution */
-    .chart-wrapper {
-        height: 300px;
-        max-height: 300px;
-        overflow: visible; /* Changed to visible to prevent clipping of tooltips */
-        position: relative;
+        padding: 16px !important;
+        margin-bottom: 16px !important;
     }
 
-    /* Ensure canvas stays within wrapper */
+    /* Optimize charts container */
+    .charts-container {
+        gap: 16px !important;
+        padding: 0 !important;
+    }
+
+    .charts-container .card {
+        overflow: hidden !important;
+    }
+    
+    /* Mobile chart containers - completely revamped */
+    .chart-wrapper {
+        height: 320px !important;
+        max-height: 320px;
+        min-height: 320px;
+        overflow: hidden; /* Prevent any overflow */
+        position: relative;
+        padding: 8px !important;
+        padding-top: 55px !important; /* Room for export button */
+        margin-bottom: 20px;
+    }
+
+    /* Ensure canvas stays within wrapper on mobile */
     .chart-wrapper canvas {
-        position: relative !important; /* Changed from absolute for better layout */
+        position: relative !important;
         max-width: 100% !important;
-        max-height: 280px !important; /* Slightly reduced to account for padding */
         width: 100% !important;
-        height: auto !important;
+        height: 260px !important; /* Fixed height for consistency */
+        max-height: 260px !important;
+        display: block !important;
+    }
+
+    /* Hide chart controls on mobile - keep only export button */
+    .chart-wrapper .chart-toolbar,
+    .chart-wrapper .chart-zoom-controls {
+        display: none !important;
     }
     
     .charts-container {
@@ -3165,24 +3201,32 @@ button:disabled::after {
     
     /* Analytics tabs */
     .analytics-tabs {
-        flex-wrap: wrap;
-        gap: 0;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none; /* Firefox */
+        flex-wrap: nowrap !important;
+        gap: 0 !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: none !important; /* Firefox */
+        margin-bottom: 16px !important;
+        border-bottom: 2px solid var(--border-color) !important;
     }
 
     .analytics-tabs::-webkit-scrollbar {
-        display: none; /* Chrome, Safari */
+        display: none !important; /* Chrome, Safari */
     }
 
     .analytics-tab {
-        flex: 0 0 auto; /* Allow tabs to scroll horizontally */
-        min-width: 120px;
-        text-align: center;
-        padding: 10px 16px;
-        font-size: 13px;
-        white-space: nowrap;
+        flex: 0 0 auto !important; /* Allow tabs to scroll horizontally */
+        min-width: 110px !important;
+        text-align: center !important;
+        padding: 12px 16px !important;
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        white-space: nowrap !important;
+        border-bottom: 3px solid transparent !important;
+    }
+
+    .analytics-tab.active {
+        border-bottom-color: var(--primary-color) !important;
     }
 
     /* Analytics controls on mobile */
@@ -3242,34 +3286,46 @@ button:disabled::after {
         margin-bottom: 14px;
     }
     
-    /* Charts on very small screens */
+    /* Charts on very small screens - ultra clean */
     .chart-wrapper {
-        height: 250px; /* Consistent height for better visibility */
-        padding-top: 35px; /* Consistent padding */
-        margin-bottom: 12px;
-        overflow: visible;
+        height: 280px !important;
+        max-height: 280px !important;
+        min-height: 280px !important;
+        padding: 6px !important;
+        padding-top: 52px !important;
+        margin-bottom: 16px !important;
+        overflow: hidden !important;
+        border-radius: 8px !important;
     }
 
     .chart-wrapper canvas {
-        max-height: 215px !important; /* Account for padding */
-        height: auto !important;
+        height: 220px !important;
+        max-height: 220px !important;
         width: 100% !important;
+        max-width: 100% !important;
+        display: block !important;
     }
 
-    /* Smaller export buttons on very small screens */
+    /* Keep export button prominent even on tiny screens */
     .export-chart-btn:not(.control-btn),
-    .chart-export-btn {
-        top: 2px;
-        right: 4px;
-        padding: 2px 4px;
-        font-size: 9px;
-        border-radius: 3px;
+    .chart-export-btn,
+    .chart-wrapper .export-chart-btn,
+    .chart-wrapper .chart-export-btn {
+        top: 6px !important;
+        right: 6px !important;
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        min-height: 40px !important;
+        padding: 8px !important;
     }
 
     .export-chart-btn svg,
-    .chart-export-btn svg {
-        width: 8px;
-        height: 8px;
+    .chart-export-btn svg,
+    .chart-wrapper .export-chart-btn svg,
+    .chart-wrapper .chart-export-btn svg {
+        width: 18px !important;
+        height: 18px !important;
     }
     
     /* Header adjustments */
@@ -3340,45 +3396,74 @@ button:disabled::after {
         display: none;
     }
 
-    /* Chart containers - consolidated rules */
+    /* Chart containers - mobile-first redesign */
     .chart-container {
-        height: 280px; /* Better height for mobile visibility */
-        min-height: 280px;
-        padding: 10px;
-        padding-top: 45px; /* Space for title */
-        margin-bottom: 20px;
+        height: 300px !important;
+        min-height: 300px !important;
+        max-height: 300px !important;
+        padding: 10px !important;
+        padding-top: 55px !important; /* Space for title and button */
+        margin-bottom: 20px !important;
+        overflow: hidden !important;
+        border-radius: 8px !important;
     }
 
     .chart-container h4 {
-        font-size: 14px;
-        margin-bottom: 8px;
-        top: 10px;
-        left: 10px;
-        right: 10px;
+        font-size: 13px !important;
+        margin-bottom: 0 !important;
+        top: 12px !important;
+        left: 12px !important;
+        right: 60px !important; /* Space for export button */
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
     }
 
     .chart-container canvas {
-        height: calc(100% - 50px) !important; /* Adjust for smaller padding */
+        height: 230px !important;
+        max-height: 230px !important;
         width: 100% !important;
-        max-width: 100%;
+        max-width: 100% !important;
+        display: block !important;
     }
 
-    /* Mobile export button for analytics charts */
+    /* Mobile export button for analytics charts - prominent */
     .chart-container .chart-export-btn {
-        top: 10px;
-        right: 10px;
-        padding: 4px 8px;
-        font-size: 10px;
-        opacity: 1; /* Always visible on mobile */
+        top: 8px !important;
+        right: 8px !important;
+        padding: 10px !important;
+        font-size: 0 !important;
+        opacity: 1 !important;
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+        border-radius: 8px !important;
+        background: rgba(37, 99, 235, 0.95) !important;
+        border: 2px solid white !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+        z-index: 100 !important;
     }
 
     .chart-container .chart-export-btn svg {
-        width: 9px;
-        height: 9px;
+        width: 20px !important;
+        height: 20px !important;
+        stroke: white !important;
     }
 
     .chart-container .chart-export-btn span {
-        display: none; /* Hide text on mobile */
+        display: none !important;
+    }
+
+    .chart-container .chart-export-btn:active {
+        transform: scale(0.9) !important;
+        background: rgba(37, 99, 235, 1) !important;
+    }
+
+    /* Make chart rows single column on mobile */
+    .chart-row {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
     }
     
     /* Tables - even smaller on mobile */
@@ -5808,32 +5893,47 @@ body.menu-open {
         height: 14px;
     }
 
-    /* Keep export button visible but smaller on mobile */
+    /* Mobile export button - large and clear */
     .export-chart-btn:not(.control-btn),
-    .chart-export-btn {
-        top: 5px;
-        right: 5px;
-        padding: 4px 7px;
-        font-size: 10px;
-        gap: 3px;
-        opacity: 1; /* Always visible on mobile */
-        z-index: 20; /* Above other controls */
-        min-height: 28px; /* Touch-friendly size */
+    .chart-export-btn,
+    .chart-wrapper .export-chart-btn,
+    .chart-wrapper .chart-export-btn {
+        top: 8px !important;
+        right: 8px !important;
+        padding: 10px !important;
+        font-size: 0 !important; /* Hide text */
+        gap: 0 !important;
+        opacity: 1 !important;
+        z-index: 100 !important; /* Very high to stay on top */
+        min-height: 44px !important; /* Touch target */
+        min-width: 44px !important; /* Touch target */
+        width: 44px !important;
+        height: 44px !important;
+        border-radius: 8px !important;
+        background: rgba(37, 99, 235, 0.95) !important;
+        border: 2px solid white !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
     }
 
     .export-chart-btn svg,
-    .chart-export-btn svg {
-        width: 10px;
-        height: 10px;
+    .chart-export-btn svg,
+    .chart-wrapper .export-chart-btn svg,
+    .chart-wrapper .chart-export-btn svg {
+        width: 20px !important;
+        height: 20px !important;
+        stroke: white !important;
+        stroke-width: 2.5 !important;
     }
 
     .export-chart-btn span,
     .chart-export-btn span {
-        display: none; /* Hide text on mobile to save space */
+        display: none !important;
     }
 
-    .chart-wrapper {
-        padding-top: 45px; /* Consistent padding for controls inside wrapper */
+    .export-chart-btn:active,
+    .chart-export-btn:active {
+        transform: scale(0.9) !important;
+        background: rgba(37, 99, 235, 1) !important;
     }
 }
 
@@ -5903,29 +6003,29 @@ body.menu-open {
     background: var(--primary-dark);
 }
 
-/* Chart export button */
+/* Chart export button - Desktop default */
 .export-chart-btn:not(.control-btn),
 .chart-export-btn {
     position: absolute;
-    top: 5px;
+    top: 8px;
     right: 10px;
-    padding: 5px 10px;
+    padding: 6px 12px;
     background: white;
     border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
+    border-radius: 6px;
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: var(--shadow-xs);
+    box-shadow: var(--shadow-sm);
     display: flex;
     align-items: center;
-    gap: 4px;
-    z-index: 20; /* Higher z-index to appear above other elements */
-    opacity: 0.9;
+    gap: 6px;
+    z-index: 50;
+    opacity: 0.95;
     margin: 0;
     width: auto;
-    min-height: 32px; /* Touch-friendly minimum height */
+    min-height: 34px;
     -webkit-tap-highlight-color: transparent;
 }
 
@@ -5936,20 +6036,26 @@ body.menu-open {
 
 .export-chart-btn:hover,
 .export-chart-btn:focus {
-    background: var(--primary-light);
+    background: var(--primary-color);
     border-color: var(--primary-color);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-sm);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.export-chart-btn:hover svg,
+.export-chart-btn:focus svg {
+    stroke: white;
 }
 
 .export-chart-btn:active {
     transform: translateY(0);
-    box-shadow: var(--shadow-xs);
+    box-shadow: var(--shadow-sm);
 }
 
 .export-chart-btn svg {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
     stroke-width: 2.5;
     flex-shrink: 0;
 }
@@ -5958,6 +6064,13 @@ body.menu-open {
     font-size: 11px;
     line-height: 1;
     white-space: nowrap;
+}
+
+/* Desktop - show text on larger screens */
+@media (min-width: 769px) {
+    .export-chart-btn span {
+        display: inline !important;
+    }
 }
 
 
