@@ -276,11 +276,11 @@ const TradeCore = (function() {
                 
                 // API now returns standardized profitLoss field
                 trade.profitLoss = parseFloat(trade.profitLoss) || 0;
-                trade.percentGain = parseFloat(trade.percentGain) || 0;
-                
+                trade.profitLossPercentage = parseFloat(trade.profitLossPercentage) || 0;
+
                 // API now always provides investmentAmount field
                 trade.investmentAmount = parseFloat(trade.investmentAmount) || 0;
-                
+
                 // Debug investment amount calculation for UK stocks
                 if (trade.symbol && trade.symbol.endsWith('.L')) {
                 }
@@ -288,27 +288,27 @@ const TradeCore = (function() {
                 trade.currentValue = trade.currentValue || (trade.currentPrice * trade.shares);
                 trade.stopLossPrice = trade.stopLossPrice || (trade.entryPrice * 0.95); // Default 5% stop loss
                 trade.targetPrice = trade.targetPrice || (trade.entryPrice * 1.10); // Default 10% target
-                
+
                 // Map database fields to UI expected fields
                 if (trade.status === 'closed') {
-                    // For closed trades, use profit and percentGain from database
-                    trade.plValue = trade.profit || 0;
-                    trade.plPercent = trade.percentGain || 0;
-                    
+                    // For closed trades, use profitLoss and profitLossPercentage from database
+                    trade.plValue = trade.profitLoss || 0;
+                    trade.plPercent = trade.profitLossPercentage || 0;
+
                     // Debug logging for closed UK trades
                     if (trade.symbol && trade.symbol.endsWith('.L')) {
                     }
-                    
-                    // If percentGain is missing but we have prices, calculate it
-                    if (!trade.percentGain && trade.exitPrice && trade.entryPrice) {
+
+                    // If profitLossPercentage is missing but we have prices, calculate it
+                    if (!trade.profitLossPercentage && trade.exitPrice && trade.entryPrice) {
                         trade.plPercent = ((trade.exitPrice - trade.entryPrice) / trade.entryPrice * 100);
-                        trade.percentGain = trade.plPercent;
+                        trade.profitLossPercentage = trade.plPercent;
                     }
-                    
-                    // If profit is missing but we have prices, calculate it
-                    if (!trade.profit && trade.exitPrice && trade.entryPrice && trade.shares) {
+
+                    // If profitLoss is missing but we have prices, calculate it
+                    if (!trade.profitLoss && trade.exitPrice && trade.entryPrice && trade.shares) {
                         trade.plValue = (trade.exitPrice - trade.entryPrice) * trade.shares;
-                        trade.profit = trade.plValue;
+                        trade.profitLoss = trade.plValue;
                     }
                 } else {
                     // For active trades, ensure currentPrice is set
@@ -451,8 +451,8 @@ const TradeCore = (function() {
                 exitPrice: trade.exitPrice || null,
                 shares: trade.shares,
                 status: trade.status || 'active',
-                profit: trade.profit || null,
-                percentGain: trade.percentGain || null,
+                profitLoss: trade.profitLoss || null,
+                profitLossPercentage: trade.profitLossPercentage || null,
                 entryReason: trade.entryReason || trade.notes || null,
                 exitReason: trade.exitReason || null,
                 stockIndex: trade.stockIndex || null,
@@ -558,28 +558,28 @@ const TradeCore = (function() {
             if (trade.symbol && trade.symbol.endsWith('.L')) {
             }
             
-            const profit = (exitPrice - entryPrice) * shares;
-            const percentGain = ((exitPrice - entryPrice) / entryPrice) * 100;
-            
+            const profitLoss = (exitPrice - entryPrice) * shares;
+            const profitLossPercentage = ((exitPrice - entryPrice) / entryPrice) * 100;
+
             // Debug logging for calculation results
             if (trade.symbol && trade.symbol.endsWith('.L')) {
             }
-            
+
             // Prepare update data
             const updates = {
                 exitDate: closeData.exitDate || new Date().toISOString(),
                 exitPrice: exitPrice,
                 status: 'closed',
-                profit: profit,
-                percentGain: percentGain,
+                profitLoss: profitLoss,
+                profitLossPercentage: profitLossPercentage,
                 exitReason: closeData.exitReason || 'Manual Exit'
             };
-            
+
             // Update in database
             const success = await updateTrade(tradeId, updates);
-            
+
             if (success) {
-                showNotification(`Trade closed successfully. ${profit >= 0 ? 'Profit' : 'Loss'}: ${trade.currencySymbol || '$'}${Math.abs(profit).toFixed(2)} (${percentGain.toFixed(2)}%)`, profit >= 0 ? 'success' : 'info');
+                showNotification(`Trade closed successfully. ${profitLoss >= 0 ? 'Profit' : 'Loss'}: ${trade.currencySymbol || '$'}${Math.abs(profitLoss).toFixed(2)} (${profitLossPercentage.toFixed(2)}%)`, profitLoss >= 0 ? 'success' : 'info');
             }
             
             return success;
@@ -1276,7 +1276,7 @@ const TradeCore = (function() {
                     date: new Date(trade.exitDate),
                     type: 'exit',
                     trade: trade,
-                    profit: trade.profit || 0
+                    profit: trade.profitLoss || 0
                 });
             }
         });

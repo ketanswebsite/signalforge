@@ -139,10 +139,10 @@ const TradeAPI = {
                 entryPrice: trade.entryPrice,
                 exitDate: trade.exitDate || null,
                 exitPrice: trade.exitPrice || null,
-                shares: trade.shares || trade.quantity, // Handle both field names
+                shares: trade.shares || null,
                 status: trade.status,
-                profitLoss: trade.profit || trade.profitLoss || null, // Use standardized field name
-                percentGain: trade.percentGain || null,
+                profitLoss: trade.profitLoss || null,
+                profitLossPercentage: trade.profitLossPercentage || null,
                 entryReason: trade.entryReason || null,
                 exitReason: trade.exitReason || null,
                 stockIndex: trade.stockIndex || null
