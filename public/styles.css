@@ -1832,7 +1832,7 @@ table tr:last-child td:last-child {
     text-align: center;
 }
 
-/* Export button for individual analytics charts - Desktop */
+/* Export button for individual analytics charts - Desktop/Laptop only */
 .chart-container .chart-export-btn {
     position: absolute;
     top: 15px;
@@ -1846,15 +1846,25 @@ table tr:last-child td:last-child {
     cursor: pointer;
     transition: all 0.2s ease;
     box-shadow: var(--shadow-sm);
-    display: flex;
+    display: none; /* Hidden by default */
     align-items: center;
     gap: 6px;
     z-index: 50;
     opacity: 0.95;
 }
 
-.chart-container:hover .chart-export-btn {
-    opacity: 1;
+@media (min-width: 1025px) {
+    .chart-container .chart-export-btn {
+        display: flex; /* Show on desktop/laptop */
+    }
+
+    .chart-container:hover .chart-export-btn {
+        opacity: 1;
+    }
+
+    .chart-container .chart-export-btn span {
+        display: inline !important;
+    }
 }
 
 .chart-container .chart-export-btn:hover {
@@ -1873,13 +1883,6 @@ table tr:last-child td:last-child {
     width: 14px;
     height: 14px;
     stroke-width: 2.5;
-}
-
-/* Desktop - show text on analytics chart export buttons */
-@media (min-width: 769px) {
-    .chart-container .chart-export-btn span {
-        display: inline !important;
-    }
 }
 
 .chart-row {
@@ -5662,18 +5665,24 @@ body.menu-open {
     padding-top: 45px; /* Space for controls - consistent with base style */
 }
 
-/* Chart zoom controls */
+/* Chart zoom controls - Desktop/Laptop only */
 .chart-zoom-controls {
     position: absolute;
     top: 5px;
     right: 60px; /* Space for export button */
-    display: flex;
+    display: none; /* Hidden by default */
     gap: 4px;
     background: white;
     border-radius: var(--radius);
     padding: 4px;
     box-shadow: var(--shadow-sm);
     z-index: 20;
+}
+
+@media (min-width: 1025px) {
+    .chart-zoom-controls {
+        display: flex; /* Show on desktop/laptop */
+    }
 }
 
 .zoom-btn {
@@ -5717,18 +5726,24 @@ body.menu-open {
     z-index: 1000;
 }
 
-/* Chart toolbar */
+/* Chart toolbar - Desktop/Laptop only */
 .chart-toolbar {
     position: absolute;
     top: 5px;
     left: 5px;
-    display: flex;
+    display: none; /* Hidden by default */
     gap: 8px;
     background: white;
     border-radius: var(--radius);
     padding: 4px;
     box-shadow: var(--shadow-sm);
     z-index: 20;
+}
+
+@media (min-width: 1025px) {
+    .chart-toolbar {
+        display: flex; /* Show on desktop/laptop */
+    }
 }
 
 .tool-group {
@@ -5841,62 +5856,44 @@ body.menu-open {
     z-index: 1;
 }
 
-/* Responsive adjustments for chart controls */
-@media (max-width: 768px) {
-    .chart-toolbar {
-        top: 5px; /* Position inside wrapper instead of outside */
-        left: 5px;
-        right: auto;
-        width: auto;
-        max-width: calc(100% - 60px); /* Leave space for export button */
-        flex-wrap: wrap;
-        gap: 4px;
-        padding: 3px;
-        z-index: 15;
-    }
-
-    .chart-zoom-controls {
-        top: 5px;
-        right: 50px; /* Space for export button */
-        gap: 4px;
-        padding: 3px;
-        z-index: 15;
-    }
-
-    .zoom-btn {
-        width: 28px;
-        height: 28px;
-        min-height: 28px; /* Smaller but still touch-friendly */
-        padding: 4px;
-    }
-
-    .zoom-btn svg {
-        width: 14px;
-        height: 14px;
-    }
-
-    .tool-btn {
-        width: 28px;
-        height: 28px;
-        padding: 4px;
-    }
-
-    .tool-btn svg {
-        width: 14px;
-        height: 14px;
-    }
-
-    /* HIDE ALL EXPORT BUTTONS ON MOBILE - they'll be below charts */
-    .export-chart-btn:not(.control-btn),
+/* MOBILE & TABLET: Hide ALL chart buttons, enable touch interactions */
+@media (max-width: 1024px) {
+    /* Hide ALL chart controls on mobile/tablet */
+    .chart-toolbar,
+    .chart-zoom-controls,
+    .export-chart-btn,
     .chart-export-btn,
+    .chart-wrapper .chart-toolbar,
+    .chart-wrapper .chart-zoom-controls,
     .chart-wrapper .export-chart-btn,
-    .chart-wrapper .chart-export-btn {
+    .chart-wrapper .chart-export-btn,
+    .chart-wrapper button,
+    .chart-container .chart-export-btn,
+    .tool-btn,
+    .zoom-btn,
+    .control-btn {
         display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
     }
 
-    /* Add chart action bar below charts on mobile */
-    .card .chart-wrapper + * {
-        margin-top: 12px !important;
+    /* Enable full touch interactions on charts */
+    .chart-wrapper,
+    .chart-container {
+        touch-action: pan-x pan-y pinch-zoom !important;
+        -webkit-user-select: none !important;
+        user-select: none !important;
+    }
+
+    .chart-wrapper canvas,
+    .chart-container canvas {
+        touch-action: pan-x pan-y pinch-zoom !important;
+        cursor: grab !important;
+    }
+
+    .chart-wrapper canvas:active,
+    .chart-container canvas:active {
+        cursor: grabbing !important;
     }
 }
 
@@ -6000,7 +5997,7 @@ body.menu-open {
     background: var(--primary-dark);
 }
 
-/* Chart export button - Desktop default */
+/* Chart export button - Desktop/Laptop only */
 .export-chart-btn:not(.control-btn),
 .chart-export-btn {
     position: absolute;
@@ -6015,7 +6012,7 @@ body.menu-open {
     cursor: pointer;
     transition: all 0.2s ease;
     box-shadow: var(--shadow-sm);
-    display: flex;
+    display: none; /* Hidden by default */
     align-items: center;
     gap: 6px;
     z-index: 50;
@@ -6024,6 +6021,13 @@ body.menu-open {
     width: auto;
     min-height: 34px;
     -webkit-tap-highlight-color: transparent;
+}
+
+@media (min-width: 1025px) {
+    .export-chart-btn:not(.control-btn),
+    .chart-export-btn {
+        display: flex; /* Show on desktop/laptop */
+    }
 }
 
 .chart-wrapper:hover .export-chart-btn,
@@ -6064,8 +6068,9 @@ body.menu-open {
 }
 
 /* Desktop - show text on larger screens */
-@media (min-width: 769px) {
-    .export-chart-btn span {
+@media (min-width: 1025px) {
+    .export-chart-btn span,
+    .chart-export-btn span {
         display: inline !important;
     }
 }
