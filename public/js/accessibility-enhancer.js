@@ -213,7 +213,7 @@
             }
 
             // Observe for dynamically added elements
-            if (typeof MutationObserver !== 'undefined') {
+            if (typeof MutationObserver !== 'undefined' && document.body) {
                 const observer = new MutationObserver((mutations) => {
                     let shouldEnhance = false;
 

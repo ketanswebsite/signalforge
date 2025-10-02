@@ -88,7 +88,8 @@
         lastErrorTime = now;
 
         // Don't show technical errors to users in production
-        if (process.env.NODE_ENV === 'production') {
+        const isProduction = window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1');
+        if (isProduction) {
             return;
         }
 
