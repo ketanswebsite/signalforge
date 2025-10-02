@@ -17,9 +17,10 @@ class RealTimePriceService {
         
         // Fallback to polling if WebSocket fails
         this.pollingInterval = null;
-        this.pollDelay = 1000; // 1 second for real-time updates during market hours
+        this.pollDelay = 5000; // 5 seconds for updates during market hours (reduced from 1s to prevent rate limiting)
         this.closedMarketPollDelay = 60000; // 60 seconds when markets are closed
         this.marketStatusCache = new Map(); // Cache market status by symbol
+        this.marketStatusCheckInterval = null; // Separate interval for checking market status changes
         
         this.init();
     }
@@ -75,30 +76,44 @@ class RealTimePriceService {
 
     startPolling() {
         if (this.pollingInterval) return;
-        
+
         // Initial fetch
         this.fetchPrices();
-        
-        // Set up dynamic interval based on market status
+
+        // Set up polling with current delay
         this.updatePollingInterval();
+
+        // Check for market status changes every 5 minutes and update interval if needed
+        this.marketStatusCheckInterval = setInterval(() => {
+            const currentDelay = this.calculatePollDelay();
+            const activeDelay = this.currentPollDelay;
+
+            // Only update interval if delay has changed significantly
+            if (currentDelay !== activeDelay) {
+                console.log(`[RealTimePrice] Market status changed, updating poll interval from ${activeDelay}ms to ${currentDelay}ms`);
+                this.updatePollingInterval();
+            }
+        }, 300000); // Check every 5 minutes
     }
-    
+
     updatePollingInterval() {
         // Clear existing interval
         if (this.pollingInterval) {
             clearInterval(this.pollingInterval);
         }
-        
+
         // Determine poll delay based on market status
         const pollDelay = this.calculatePollDelay();
-        
+        this.currentPollDelay = pollDelay; // Track current delay
+
+        // Create new interval WITHOUT recursive calls
         this.pollingInterval = setInterval(() => {
             if (!document.hidden) {
                 this.fetchPrices();
-                // Recalculate interval in case market status changed
-                this.updatePollingInterval();
             }
         }, pollDelay);
+
+        console.log(`[RealTimePrice] Poll interval set to ${pollDelay}ms (${pollDelay/1000}s)`);
     }
     
     calculatePollDelay() {
@@ -325,6 +340,10 @@ class RealTimePriceService {
             clearInterval(this.pollingInterval);
             this.pollingInterval = null;
         }
+        if (this.marketStatusCheckInterval) {
+            clearInterval(this.marketStatusCheckInterval);
+            this.marketStatusCheckInterval = null;
+        }
     }
 
     resume() {
@@ -343,6 +362,8 @@ class RealTimePriceService {
         this.subscriptions.clear();
         this.priceListeners.clear();
         this.sparklineCharts.clear();
+        this.lastPrices.clear();
+        this.marketStatusCache.clear();
     }
 }
 

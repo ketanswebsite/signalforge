@@ -6,23 +6,50 @@
 // Create Dialogs module
 window.TradeUIModules = window.TradeUIModules || {};
 window.TradeUIModules.dialogs = (function() {
+    // Track if global escape handler is already set up
+    let globalEscapeHandlerAttached = false;
+
     /**
      * Initialize the dialogs module
      */
     function init() {
         // Initialization will happen in setupAllDialogs
+        setupGlobalEscapeHandler();
     }
-    
+
+    /**
+     * Setup global escape key handler (ONCE for all dialogs)
+     * This prevents memory leaks from multiple event listeners
+     */
+    function setupGlobalEscapeHandler() {
+        if (globalEscapeHandlerAttached) return;
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                // Close any active dialog
+                const activeDialogs = document.querySelectorAll('.dialog-overlay.active');
+                activeDialogs.forEach(dialog => {
+                    dialog.classList.remove('active');
+                });
+            }
+        });
+
+        globalEscapeHandlerAttached = true;
+    }
+
     /**
      * Setup all dialog functionality
      */
     function setupAllDialogs() {
+        // Ensure global escape handler is set up
+        setupGlobalEscapeHandler();
+
         // Setup trade action dialogs
         setupCloseTradeDialog();
         setupEditTradeDialog();
         setupDeleteTradeDialog();
         setupClearHistoryDialog();
-        
+
     }
     
     /**
@@ -62,15 +89,10 @@ window.TradeUIModules.dialogs = (function() {
                 dialog.classList.remove('active');
             }
         });
-        
-        // Add escape key handler
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && dialog.classList.contains('active')) {
-                dialog.classList.remove('active');
-            }
-        });
+
+        // Note: Escape key handler is now global - see setupGlobalEscapeHandler()
     }
-    
+
     /**
      * Setup edit trade dialog
      */
@@ -111,15 +133,10 @@ window.TradeUIModules.dialogs = (function() {
                 dialog.classList.remove('active');
             }
         });
-        
-        // Add escape key handler
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && dialog.classList.contains('active')) {
-                dialog.classList.remove('active');
-            }
-        });
+
+        // Note: Escape key handler is now global - see setupGlobalEscapeHandler()
     }
-    
+
     /**
      * Create edit trade dialog dynamically if it doesn't exist in the HTML
      */
@@ -245,15 +262,10 @@ window.TradeUIModules.dialogs = (function() {
                 dialog.classList.remove('active');
             }
         });
-        
-        // Add escape key handler
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && dialog.classList.contains('active')) {
-                dialog.classList.remove('active');
-            }
-        });
+
+        // Note: Escape key handler is now global - see setupGlobalEscapeHandler()
     }
-    
+
     /**
      * Create delete trade dialog dynamically if it doesn't exist in the HTML
      */
@@ -392,15 +404,10 @@ window.TradeUIModules.dialogs = (function() {
                 dialog.classList.remove('active');
             }
         });
-        
-        // Add escape key handler
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && dialog.classList.contains('active')) {
-                dialog.classList.remove('active');
-            }
-        });
+
+        // Note: Escape key handler is now global - see setupGlobalEscapeHandler()
     }
-    
+
     /**
      * Create import trades dialog
      */
@@ -614,16 +621,16 @@ window.TradeUIModules.dialogs = (function() {
                 resetImportDialog();
             }
         });
-        
-        // Add escape key handler
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && dialog.classList.contains('active')) {
-                dialog.classList.remove('active');
+
+        // Note: Escape key handler is now global - see setupGlobalEscapeHandler()
+        // The global handler will close the dialog, and we should also reset it
+        dialog.addEventListener('transitionend', function(e) {
+            if (!dialog.classList.contains('active')) {
                 resetImportDialog();
             }
         });
     }
-    
+
     /**
      * Reset import dialog to initial state
      */

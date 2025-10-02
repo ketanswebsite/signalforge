@@ -34,9 +34,21 @@
     <!-- Main Stylesheet -->
     <link rel="stylesheet" href="styles.css">
     
+    <!-- XSS Protection (load first for security) -->
+    <script src="js/xss-protection.js"></script>
+
+    <!-- Global Error Handler -->
+    <script src="js/error-handler.js"></script>
+
+    <!-- Loading States Manager -->
+    <script src="js/loading-states.js"></script>
+
+    <!-- Form Validation -->
+    <script src="js/form-validation.js"></script>
+
     <!-- Theme Toggle Script (load early to prevent flash) -->
     <script src="js/theme-toggle.js"></script>
-    
+
     <!-- Cookie Consent (load early for GDPR compliance) -->
     <script src="js/cookie-consent.js"></script>
     

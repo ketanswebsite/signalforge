@@ -13,85 +13,11 @@ const TradeCore = (function() {
     let equityCurveData = null; // Cached equity curve data
     let drawdownData = null; // Cached drawdown data
     
-    /**
-     * Show notification helper
-     */
-    function showNotification(message, type = 'info') {
-        // Check if DTIBacktester is available
-        if (typeof DTIBacktester !== 'undefined' && DTIBacktester.utils && DTIBacktester.utils.showNotification) {
-            DTIBacktester.utils.showNotification(message, type);
-        } else {
-            // Fallback to console
-            console[type === 'error' ? 'error' : 'log'](`[${type.toUpperCase()}] ${message}`);
-        }
-    }
-
     // Constants
     const DATA_VERSION = '1.0.0'; // For versioning the exported data format
-    const PRICE_UPDATE_INTERVAL = 1000; // Update prices every 1 second
+    const PRICE_UPDATE_INTERVAL = 5000; // Update prices every 5 seconds (reduced from 1s)
     const MAX_RETRIES = 3; // Maximum retries for fetching data
-    
-    /**
-     * Get currency symbol based on market index or stock symbol
-     * @param {string} market - Market index name or stock symbol
-     * @returns {string} - Currency symbol
-     */
-    function getCurrencySymbol(market) {
-        // If a specific market index is provided
-        if (market === 'usStocks') return '$';
-        if (market === 'ftse100') return '£';
-        if (market === 'nifty50' || market === 'niftyNext50' || market === 'indices') return '₹';
-        
-        // If a stock symbol is provided
-        if (typeof market === 'string' && market.includes('.')) {
-            if (market.endsWith('.L')) return '£';  // London Stock Exchange
-            if (market.includes('.NS')) return '₹'; // National Stock Exchange (India)
-            return '₹'; // Default for other exchanges with dots
-        }
-        
-        // If no dot in symbol, assume US market
-        if (typeof market === 'string' && !market.includes('.')) return '$';
-        
-        // If nothing specified, check the global setting
-        if (typeof DTIBacktester !== 'undefined' && DTIBacktester.currentStockIndex) {
-            return getCurrencySymbol(DTIBacktester.currentStockIndex);
-        }
-        
-        // Fallback default
-        return '₹';
-    }
-    
-    // For backward compatibility, we keep CURRENCY_SYMBOL as a property but make it use the function
-    const CURRENCY_SYMBOL = getCurrencySymbol();
-    
-    /**
-     * Format price based on market (convert pence to pounds for UK stocks)
-     * @param {number} price - The price value
-     * @param {string} symbol - The stock symbol
-     * @returns {number} - Formatted price
-     */
-    function formatPrice(price, symbol) {
-        if (typeof symbol === 'string' && symbol.endsWith('.L')) {
-            // UK stocks: convert pence to pounds
-            return price / 100;
-        }
-        return price;
-    }
-    
-    /**
-     * Parse price for storage (convert pounds to pence for UK stocks)
-     * @param {number} price - The price value in display format
-     * @param {string} symbol - The stock symbol
-     * @returns {number} - Price for storage
-     */
-    function parsePrice(price, symbol) {
-        if (typeof symbol === 'string' && symbol.endsWith('.L')) {
-            // UK stocks: convert pounds to pence for storage
-            return price * 100;
-        }
-        return price;
-    }
-    
+
     /**
      * Show notification helper
      * @param {string} message - The message to display
@@ -109,6 +35,63 @@ const TradeCore = (function() {
             const prefix = type.toUpperCase();
             console[type === 'error' ? 'error' : 'log'](`[${prefix}] ${message}`);
         }
+    }
+
+    /**
+     * Get currency symbol based on market index or stock symbol
+     * @param {string} market - Market index name or stock symbol
+     * @returns {string} - Currency symbol
+     */
+    function getCurrencySymbol(market) {
+        // If a specific market index is provided
+        if (market === 'usStocks') return '$';
+        if (market === 'ftse100') return '£';
+        if (market === 'nifty50' || market === 'niftyNext50' || market === 'indices') return '₹';
+
+        // If a stock symbol is provided
+        if (typeof market === 'string' && market.includes('.')) {
+            if (market.endsWith('.L')) return '£';  // London Stock Exchange
+            if (market.includes('.NS')) return '₹'; // National Stock Exchange (India)
+            return '$'; // Default for other international exchanges (e.g., US stocks)
+        }
+
+        // If no dot in symbol, assume US market
+        if (typeof market === 'string' && !market.includes('.')) return '$';
+
+        // If nothing specified, check the global setting
+        if (typeof DTIBacktester !== 'undefined' && DTIBacktester.currentStockIndex) {
+            return getCurrencySymbol(DTIBacktester.currentStockIndex);
+        }
+
+        // Fallback default to USD (most common)
+        return '$';
+    }
+
+    // For backward compatibility, we keep CURRENCY_SYMBOL as a property but make it use the function
+    const CURRENCY_SYMBOL = getCurrencySymbol();
+
+    /**
+     * Format price based on market (NO conversion for UK stocks - Yahoo returns correct format)
+     * @param {number} price - The price value
+     * @param {string} symbol - The stock symbol
+     * @returns {number} - Formatted price
+     */
+    function formatPrice(price, symbol) {
+        // Yahoo Finance returns UK prices in pounds (GBP), not pence
+        // No conversion needed
+        return price;
+    }
+
+    /**
+     * Parse price for storage (NO conversion - store as-is)
+     * @param {number} price - The price value in display format
+     * @param {string} symbol - The stock symbol
+     * @returns {number} - Price for storage
+     */
+    function parsePrice(price, symbol) {
+        // Store price as-is without conversion
+        // Yahoo Finance provides consistent format across markets
+        return price;
     }
     
     /**

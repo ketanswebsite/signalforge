@@ -196,7 +196,10 @@ app.get('/api/test', (req, res) => {
 app.get('/api/user', ensureAuthenticatedAPI, (req, res) => {
   res.json({
     authenticated: true,
-    user: req.user
+    user: {
+      ...req.user,
+      isAdmin: req.user.email === ADMIN_EMAIL  // Add admin flag
+    }
   });
 });
 
