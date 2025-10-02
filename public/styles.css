@@ -322,10 +322,10 @@ strong {
     width: 100%;
     background-color: white;
     border-radius: var(--radius);
-    overflow: visible; /* Changed from hidden to allow export button */
+    overflow: visible; /* Visible to allow tooltips and buttons to display properly */
     box-shadow: var(--shadow-inner);
     transition: all var(--transition-normal);
-    padding-top: 20px; /* Add padding for button space */
+    padding-top: 45px; /* Consistent padding for export button and controls */
     animation: breathe 4s ease-in-out infinite;
 }
 
@@ -1779,14 +1779,15 @@ table tr:last-child td:last-child {
     background-color: white;
     border-radius: var(--radius);
     padding: 20px;
-    padding-top: 50px; /* Space for toolbar and zoom controls */
+    padding-top: 50px; /* Space for title and controls */
     box-shadow: var(--shadow-sm);
     margin-bottom: 24px;
-    height: 350px;
+    height: 380px; /* Slightly taller for better visibility */
+    min-height: 350px; /* Prevent too small on some screens */
     position: relative;
     border: 1px solid var(--border-color);
     transition: all var(--transition-normal);
-    overflow: visible; /* Allow toolbar and zoom controls to show */
+    overflow: visible; /* Allow tooltips and controls to show properly */
 }
 
 .chart-container:hover {
@@ -1805,6 +1806,11 @@ table tr:last-child td:last-child {
     white-space: nowrap; /* Prevent title wrapping */
     overflow: hidden;
     text-overflow: ellipsis;
+    position: absolute;
+    top: 15px;
+    left: 20px;
+    right: 20px;
+    z-index: 10;
 }
 
 .chart-container h4::before {
@@ -1825,6 +1831,44 @@ table tr:last-child td:last-child {
     text-align: center;
 }
 
+/* Export button for individual analytics charts */
+.chart-container .chart-export-btn {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    padding: 5px 10px;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-xs);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    z-index: 15;
+    opacity: 0.7;
+}
+
+.chart-container:hover .chart-export-btn {
+    opacity: 1;
+}
+
+.chart-container .chart-export-btn:hover {
+    background: var(--primary-light);
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.chart-container .chart-export-btn svg {
+    width: 10px;
+    height: 10px;
+    stroke-width: 2.5;
+}
+
 .chart-row {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -1839,8 +1883,10 @@ table tr:last-child td:last-child {
 /* Chart canvas sizing fix */
 .chart-container canvas {
     width: 100% !important;
-    height: calc(100% - 40px) !important; /* Subtract title height */
-    margin-top: 10px; /* Add some space below title */
+    height: calc(100% - 60px) !important; /* Subtract title and padding height */
+    margin-top: 0; /* Title is now absolutely positioned */
+    max-height: 100%;
+    touch-action: manipulation; /* Better mobile touch support */
 }
 
 /* No data message styling improvements */
@@ -2905,17 +2951,19 @@ button:disabled::after {
     
     /* Chart specific fixes - clean solution */
     .chart-wrapper {
-        height: 280px;
-        max-height: 280px;
-        overflow: hidden;
+        height: 300px;
+        max-height: 300px;
+        overflow: visible; /* Changed to visible to prevent clipping of tooltips */
         position: relative;
     }
-    
+
     /* Ensure canvas stays within wrapper */
     .chart-wrapper canvas {
-        position: absolute !important;
+        position: relative !important; /* Changed from absolute for better layout */
         max-width: 100% !important;
-        max-height: 100% !important;
+        max-height: 280px !important; /* Slightly reduced to account for padding */
+        width: 100% !important;
+        height: auto !important;
     }
     
     .charts-container {
@@ -3118,17 +3166,50 @@ button:disabled::after {
     /* Analytics tabs */
     .analytics-tabs {
         flex-wrap: wrap;
+        gap: 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; /* Firefox */
     }
-    
+
+    .analytics-tabs::-webkit-scrollbar {
+        display: none; /* Chrome, Safari */
+    }
+
     .analytics-tab {
-        flex: 1 0 50%;
+        flex: 0 0 auto; /* Allow tabs to scroll horizontally */
+        min-width: 120px;
         text-align: center;
+        padding: 10px 16px;
+        font-size: 13px;
+        white-space: nowrap;
     }
-    
+
+    /* Analytics controls on mobile */
+    .analytics-controls {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+    }
+
+    .time-filter {
+        width: 100%;
+    }
+
+    .time-filter select {
+        width: 100%;
+    }
+
     /* Export controls */
     .export-controls {
         flex-direction: column;
         width: 100%;
+        gap: 8px;
+    }
+
+    .export-report-btn {
+        width: 100%;
+        justify-content: center;
     }
     
     .export-report-btn {
@@ -3163,29 +3244,32 @@ button:disabled::after {
     
     /* Charts on very small screens */
     .chart-wrapper {
-        height: 200px;
-        padding-top: 10px;
+        height: 250px; /* Consistent height for better visibility */
+        padding-top: 35px; /* Consistent padding */
         margin-bottom: 12px;
+        overflow: visible;
     }
-    
+
     .chart-wrapper canvas {
-        height: calc(200px - 10px) !important;
+        max-height: 215px !important; /* Account for padding */
+        height: auto !important;
+        width: 100% !important;
     }
-    
-    /* Even smaller export buttons */
+
+    /* Smaller export buttons on very small screens */
     .export-chart-btn:not(.control-btn),
     .chart-export-btn {
-        top: 1px;
-        right: 3px;
-        padding: 1px 2px;
-        font-size: 8px;
-        border-radius: 2px;
+        top: 2px;
+        right: 4px;
+        padding: 2px 4px;
+        font-size: 9px;
+        border-radius: 3px;
     }
-    
+
     .export-chart-btn svg,
     .chart-export-btn svg {
-        width: 6px;
-        height: 6px;
+        width: 8px;
+        height: 8px;
     }
     
     /* Header adjustments */
@@ -3255,54 +3339,46 @@ button:disabled::after {
     .trade-tab.active::after {
         display: none;
     }
-    
-    /* Charts */
-    .chart-wrapper {
-        height: 220px;
-        padding-top: 12px;
-        margin-bottom: 16px;
-        overflow: visible;
-        border-radius: var(--radius-sm);
-    }
-    
-    .chart-wrapper canvas {
-        height: calc(220px - 12px) !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        display: block;
-    }
-    
+
+    /* Chart containers - consolidated rules */
     .chart-container {
-        height: 220px;
-        padding: 8px;
-        padding-top: 80px; /* Extra space for mobile toolbar positioning */
+        height: 280px; /* Better height for mobile visibility */
+        min-height: 280px;
+        padding: 10px;
+        padding-top: 45px; /* Space for title */
+        margin-bottom: 20px;
     }
-    
-    /* Mobile export buttons */
-    .export-chart-btn:not(.control-btn),
-    .chart-export-btn {
-        top: 2px;
-        right: 5px;
-        padding: 2px 4px;
-        font-size: 9px;
-        gap: 2px;
-    }
-    
-    .export-chart-btn svg,
-    .chart-export-btn svg {
-        width: 8px;
-        height: 8px;
-    }
-    
-    .export-chart-btn span,
-    .chart-export-btn span {
-        font-size: 9px;
-        display: none; /* Hide text on very small screens */
-    }
-    
+
     .chart-container h4 {
         font-size: 14px;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+    }
+
+    .chart-container canvas {
+        height: calc(100% - 50px) !important; /* Adjust for smaller padding */
+        width: 100% !important;
+        max-width: 100%;
+    }
+
+    /* Mobile export button for analytics charts */
+    .chart-container .chart-export-btn {
+        top: 10px;
+        right: 10px;
+        padding: 4px 8px;
+        font-size: 10px;
+        opacity: 1; /* Always visible on mobile */
+    }
+
+    .chart-container .chart-export-btn svg {
+        width: 9px;
+        height: 9px;
+    }
+
+    .chart-container .chart-export-btn span {
+        display: none; /* Hide text on mobile */
     }
     
     /* Tables - even smaller on mobile */
@@ -5505,14 +5581,14 @@ body.menu-open {
 /* Chart wrapper for proper control positioning */
 .chart-wrapper {
     position: relative;
-    padding-top: 40px; /* Space for controls */
+    padding-top: 45px; /* Space for controls - consistent with base style */
 }
 
 /* Chart zoom controls */
 .chart-zoom-controls {
     position: absolute;
-    top: -35px;
-    right: 0;
+    top: 5px;
+    right: 60px; /* Space for export button */
     display: flex;
     gap: 4px;
     background: white;
@@ -5566,8 +5642,8 @@ body.menu-open {
 /* Chart toolbar */
 .chart-toolbar {
     position: absolute;
-    top: -35px;
-    left: 0;
+    top: 5px;
+    left: 5px;
     display: flex;
     gap: 8px;
     background: white;
@@ -5690,23 +5766,74 @@ body.menu-open {
 /* Responsive adjustments for chart controls */
 @media (max-width: 768px) {
     .chart-toolbar {
-        top: -70px;
-        left: 0;
-        right: 0;
+        top: 5px; /* Position inside wrapper instead of outside */
+        left: 5px;
+        right: auto;
         width: auto;
+        max-width: calc(100% - 60px); /* Leave space for export button */
+        flex-wrap: wrap;
+        gap: 4px;
+        padding: 3px;
+        z-index: 15;
     }
-    
+
     .chart-zoom-controls {
-        top: -35px;
-        right: 0;
+        top: 5px;
+        right: 50px; /* Space for export button */
+        gap: 4px;
+        padding: 3px;
+        z-index: 15;
     }
-    
-    .export-chart-btn {
-        display: none; /* Hide on mobile to save space */
+
+    .zoom-btn {
+        width: 28px;
+        height: 28px;
+        min-height: 28px; /* Smaller but still touch-friendly */
+        padding: 4px;
     }
-    
+
+    .zoom-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .tool-btn {
+        width: 28px;
+        height: 28px;
+        padding: 4px;
+    }
+
+    .tool-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    /* Keep export button visible but smaller on mobile */
+    .export-chart-btn:not(.control-btn),
+    .chart-export-btn {
+        top: 5px;
+        right: 5px;
+        padding: 4px 7px;
+        font-size: 10px;
+        gap: 3px;
+        opacity: 1; /* Always visible on mobile */
+        z-index: 20; /* Above other controls */
+        min-height: 28px; /* Touch-friendly size */
+    }
+
+    .export-chart-btn svg,
+    .chart-export-btn svg {
+        width: 10px;
+        height: 10px;
+    }
+
+    .export-chart-btn span,
+    .chart-export-btn span {
+        display: none; /* Hide text on mobile to save space */
+    }
+
     .chart-wrapper {
-        padding-top: 80px;
+        padding-top: 45px; /* Consistent padding for controls inside wrapper */
     }
 }
 
@@ -5782,7 +5909,7 @@ body.menu-open {
     position: absolute;
     top: 5px;
     right: 10px;
-    padding: 4px 8px;
+    padding: 5px 10px;
     background: white;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
@@ -5793,33 +5920,44 @@ body.menu-open {
     box-shadow: var(--shadow-xs);
     display: flex;
     align-items: center;
-    gap: 3px;
-    z-index: 10;
-    opacity: 0.8;
+    gap: 4px;
+    z-index: 20; /* Higher z-index to appear above other elements */
+    opacity: 0.9;
     margin: 0;
     width: auto;
+    min-height: 32px; /* Touch-friendly minimum height */
+    -webkit-tap-highlight-color: transparent;
 }
 
-.chart-wrapper:hover .export-chart-btn {
+.chart-wrapper:hover .export-chart-btn,
+.chart-wrapper:focus-within .export-chart-btn {
     opacity: 1;
 }
 
-.export-chart-btn:hover {
+.export-chart-btn:hover,
+.export-chart-btn:focus {
     background: var(--primary-light);
     border-color: var(--primary-color);
     transform: translateY(-1px);
     box-shadow: var(--shadow-sm);
 }
 
+.export-chart-btn:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-xs);
+}
+
 .export-chart-btn svg {
     width: 12px;
     height: 12px;
     stroke-width: 2.5;
+    flex-shrink: 0;
 }
 
 .export-chart-btn span {
     font-size: 11px;
     line-height: 1;
+    white-space: nowrap;
 }
 
 
@@ -5832,8 +5970,40 @@ body.menu-open {
 .chart-wrapper canvas {
     max-width: 100%;
     width: 100% !important;
-    height: calc(var(--chart-height) - 20px) !important; /* Account for padding */
+    height: calc(var(--chart-height) - 45px) !important; /* Account for padding */
     display: block;
+    touch-action: pan-x pan-y; /* Enable touch interactions for charts */
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* Improve mobile chart interactions */
+@media (max-width: 768px) {
+    .chart-wrapper canvas {
+        touch-action: manipulation; /* Prevent double-tap zoom */
+    }
+
+    /* Ensure smooth scrolling in chart containers */
+    .charts-container {
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+    }
+
+    /* Better spacing between charts on mobile */
+    .charts-container .card {
+        margin-bottom: 20px;
+    }
+
+    /* Make card titles more compact on mobile */
+    .card-title {
+        font-size: 16px;
+        padding: 10px 0;
+    }
+
+    .card-title svg {
+        width: 16px;
+        height: 16px;
+    }
 }
 
 /* ==========================================================================
@@ -6811,6 +6981,17 @@ body.menu-open {
     background-color: var(--primary-color);
 }
 
+[data-theme="dark"] .chart-container .chart-export-btn {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .chart-container .chart-export-btn:hover {
+    background: var(--primary-dark);
+    border-color: var(--primary-color);
+}
+
 /* Calendar heatmap in dark mode */
 [data-theme="dark"] #calendar-heatmap {
     background-color: var(--bg-color);
@@ -6909,6 +7090,42 @@ body.menu-open {
 /* Chart.js specific dark mode fixes */
 [data-theme="dark"] .chart-wrapper canvas {
     background-color: transparent !important;
+}
+
+/* Chart export button in dark mode */
+[data-theme="dark"] .export-chart-btn:not(.control-btn),
+[data-theme="dark"] .chart-export-btn {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .export-chart-btn:hover,
+[data-theme="dark"] .export-chart-btn:focus {
+    background: var(--primary-dark);
+    border-color: var(--primary-color);
+}
+
+/* Chart controls in dark mode */
+[data-theme="dark"] .chart-toolbar,
+[data-theme="dark"] .chart-zoom-controls {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .tool-btn,
+[data-theme="dark"] .zoom-btn {
+    background: var(--card-bg);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .tool-btn:hover,
+[data-theme="dark"] .zoom-btn:hover {
+    background: var(--bg-color);
+}
+
+[data-theme="dark"] .tool-btn.active {
+    background: var(--primary-dark);
 }
 
 /* Analytics tab content sections */
