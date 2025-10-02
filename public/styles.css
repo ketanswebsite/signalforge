@@ -2985,8 +2985,14 @@ button:disabled::after {
         padding: 0 !important;
         margin-bottom: 12px !important;
         border-radius: 12px !important;
-        background: white !important;
+        background: var(--card-bg, white) !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+    }
+
+    /* Dark mode mobile charts */
+    [data-theme="dark"] .chart-wrapper {
+        background: var(--card-bg) !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
     }
 
     /* Clean canvas - full space */
@@ -3302,6 +3308,13 @@ button:disabled::after {
         margin-bottom: 12px !important;
         overflow: hidden !important;
         border-radius: 10px !important;
+        background: var(--card-bg, white) !important;
+    }
+
+    /* Dark mode for small screens */
+    [data-theme="dark"] .chart-wrapper {
+        background: var(--card-bg) !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
     }
 
     .chart-wrapper canvas {
@@ -3400,6 +3413,13 @@ button:disabled::after {
         margin-bottom: 20px !important;
         overflow: hidden !important;
         border-radius: 12px !important;
+        background: var(--card-bg, white) !important;
+    }
+
+    /* Dark mode analytics charts on mobile */
+    [data-theme="dark"] .chart-container {
+        background: var(--card-bg) !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
     }
 
     .chart-container h4 {
@@ -5886,6 +5906,7 @@ body.menu-open {
     background: var(--bg-color);
     padding: 4px;
     border-radius: var(--radius-sm);
+    flex-wrap: wrap;
 }
 
 .range-btn {
@@ -5898,6 +5919,7 @@ body.menu-open {
     color: var(--text-secondary);
     cursor: pointer;
     transition: all 0.2s ease;
+    white-space: nowrap;
 }
 
 .range-btn:hover {
@@ -5909,6 +5931,38 @@ body.menu-open {
     background: white;
     color: var(--primary-color);
     box-shadow: var(--shadow-sm);
+}
+
+/* Mobile range buttons - much smaller */
+@media (max-width: 768px) {
+    .range-buttons {
+        gap: 3px;
+        padding: 3px;
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .range-btn {
+        padding: 5px 8px;
+        font-size: 11px;
+        font-weight: 600;
+        flex: 1;
+        min-width: 0;
+        text-align: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .range-buttons {
+        gap: 2px;
+        padding: 2px;
+    }
+
+    .range-btn {
+        padding: 4px 6px;
+        font-size: 10px;
+        border-radius: 4px;
+    }
 }
 
 .custom-range {
@@ -6496,6 +6550,31 @@ body.menu-open {
 /* Dark mode specific adjustments */
 [data-theme="dark"] .chart-wrapper {
     background-color: var(--card-bg);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .chart-wrapper:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .range-buttons {
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .range-btn {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .range-btn:hover {
+    background: var(--card-bg);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .range-btn.active {
+    background: var(--card-bg);
+    color: var(--primary-color);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 [data-theme="dark"] input[type="number"], 
@@ -6998,6 +7077,11 @@ body.menu-open {
 [data-theme="dark"] .chart-container {
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .chart-container:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 [data-theme="dark"] .chart-container h4 {
