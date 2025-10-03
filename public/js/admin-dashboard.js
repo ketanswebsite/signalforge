@@ -211,6 +211,12 @@ const AdminDashboard = {
     const ctx = document.getElementById('revenue-chart');
     if (!ctx) return;
 
+    // Destroy existing chart if it exists
+    if (this.revenueChart) {
+      this.revenueChart.destroy();
+      this.revenueChart = null;
+    }
+
     // Generate sample data for last 12 months
     const labels = [];
     const data = [];

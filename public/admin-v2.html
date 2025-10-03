@@ -260,6 +260,11 @@
 
         // Load page content
         async function loadPageContent(pageName) {
+            // Cleanup previous page components before loading new page
+            if (typeof AdminDashboard !== 'undefined' && AdminDashboard.cleanup) {
+                AdminDashboard.cleanup();
+            }
+
             switch(pageName) {
                 case 'dashboard':
                     loadDashboard();
