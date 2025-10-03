@@ -211,10 +211,27 @@ const AdminDashboard = {
     const ctx = document.getElementById('revenue-chart');
     if (!ctx) return;
 
-    // Destroy existing chart if it exists
+    // Get the canvas element and check if there's already a chart
+    const canvas = ctx;
+
+    // Destroy any existing chart instance on this canvas
     if (this.revenueChart) {
-      this.revenueChart.destroy();
+      try {
+        this.revenueChart.destroy();
+      } catch (e) {
+        console.log('Chart destroy error (ignoring):', e.message);
+      }
       this.revenueChart = null;
+    }
+
+    // Also check Chart.js global registry for any chart using this canvas
+    const chartId = Chart.getChart(canvas);
+    if (chartId) {
+      try {
+        chartId.destroy();
+      } catch (e) {
+        console.log('Global chart destroy error (ignoring):', e.message);
+      }
     }
 
     // Generate sample data for last 12 months
@@ -229,46 +246,51 @@ const AdminDashboard = {
       data.push(Math.floor(Math.random() * 5000) + 1000);
     }
 
-    this.revenueChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Revenue (£)',
-          data: data,
-          borderColor: '#2563eb',
-          backgroundColor: 'rgba(37, 99, 235, 0.1)',
-          tension: 0.4,
-          fill: true
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: {
-          legend: {
-            display: false
-          },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                return '£' + context.parsed.y.toLocaleString();
+    try {
+      this.revenueChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Revenue (£)',
+            data: data,
+            borderColor: '#2563eb',
+            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return '£' + context.parsed.y.toLocaleString();
+                }
               }
             }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              callback: function(value) {
-                return '£' + value.toLocaleString();
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return '£' + value.toLocaleString();
+                }
               }
             }
           }
         }
-      }
-    });
+      });
+    } catch (error) {
+      console.error('Failed to create chart:', error);
+      this.revenueChart = null;
+    }
   },
 
   /**
