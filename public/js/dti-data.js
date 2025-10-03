@@ -21,7 +21,7 @@ const DTIData = (function() {
     
     // Constants
     const MAX_RETRIES = 1;
-    const CONCURRENT_REQUESTS_LIMIT = 1000; // Very high limit to effectively disable batching
+    const CONCURRENT_REQUESTS_LIMIT = 5; // Limit concurrent requests to avoid overwhelming Yahoo Finance API
 
     // Blocklist for known problematic stocks (now empty - all problematic stocks removed from source data)
     const STOCK_BLOCKLIST = new Set([
@@ -191,7 +191,7 @@ if (period === '5y') {
         // Use AbortManager for cancellable requests
         const operationId = `fetch-historical-${symbol}-${period}-${interval}`;
         const response = typeof AbortManager !== 'undefined'
-            ? await AbortManager.fetch(operationId, proxyUrl, {}, 30000) // 30s timeout
+            ? await AbortManager.fetch(operationId, proxyUrl, {}, 45000) // 45s timeout to match server
             : await fetch(proxyUrl);
 
         if (!response.ok) {
@@ -316,7 +316,7 @@ async function fetchCurrentQuote(symbol) {
         // Use AbortManager for cancellable requests
         const operationId = `fetch-quote-${symbol}`;
         const response = typeof AbortManager !== 'undefined'
-            ? await AbortManager.fetch(operationId, proxyUrl, {}, 10000) // 10s timeout
+            ? await AbortManager.fetch(operationId, proxyUrl, {}, 45000) // 45s timeout to match server
             : await fetch(proxyUrl);
 
         if (!response.ok) {
@@ -536,9 +536,9 @@ async function fetchCurrentQuote(symbol) {
                 }
             });
             
-            // Add a small delay between batches to avoid overwhelming the API
+            // Add a delay between batches to avoid overwhelming the API and prevent rate limiting
             if (batchIndex < batches.length - 1) {
-                await new Promise(resolve => setTimeout(resolve, 500));
+                await new Promise(resolve => setTimeout(resolve, 2000));
             }
         }
         
@@ -1004,7 +1004,7 @@ async function fetchCurrentQuote(symbol) {
             // Use AbortManager for cancellable requests
             const operationId = `validate-symbol-${symbol}`;
             const response = typeof AbortManager !== 'undefined'
-                ? await AbortManager.fetch(operationId, proxyUrl, {}, 10000) // 10s timeout
+                ? await AbortManager.fetch(operationId, proxyUrl, {}, 45000) // 45s timeout to match server
                 : await fetch(proxyUrl);
 
             if (response.ok) {

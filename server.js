@@ -1123,13 +1123,13 @@ app.get('/yahoo/history', async (req, res) => {
       includeAdjustedClose: true
     };
 
-    const response = await axios.get(url, { 
+    const response = await axios.get(url, {
       params,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Accept': 'application/json'
       },
-      timeout: 10000
+      timeout: 45000
     });
     
     const jsonData = response.data;
@@ -1175,12 +1175,12 @@ app.get('/yahoo/quote', async (req, res) => {
     
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
     
-    const response = await axios.get(url, { 
+    const response = await axios.get(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Accept': 'application/json'
       },
-      timeout: 10000
+      timeout: 45000
     });
     
     res.json(response.data);
