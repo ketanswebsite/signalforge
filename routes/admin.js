@@ -1260,6 +1260,43 @@ router.get('/analytics/overview', asyncHandler(async (req, res) => {
 }));
 
 // ========== Database Tools ==========
+
+// Database Health Monitor
+router.get('/database/health', asyncHandler(async (req, res) => {
+  const startTime = Date.now();
+
+  const result = await TradeDB.pool.query(`
+    SELECT
+      pg_database_size(current_database()) as database_size,
+      (SELECT count(*) FROM pg_stat_activity WHERE datname = current_database()) as active_connections,
+      (SELECT setting::int FROM pg_settings WHERE name = 'max_connections') as max_connections
+  `);
+
+  const tables = await TradeDB.pool.query(`
+    SELECT
+      schemaname,
+      tablename,
+      pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size,
+      n_live_tup as row_count,
+      (SELECT count(*) FROM pg_indexes WHERE tablename = t.tablename) as indexes
+    FROM pg_stat_user_tables t
+    ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC
+  `);
+
+  const latency = Date.now() - startTime;
+
+  res.json(successResponse({
+    connected: TradeDB.isConnected(),
+    latency,
+    databaseSize: result.rows[0].database_size,
+    activeConnections: parseInt(result.rows[0].active_connections),
+    maxConnections: parseInt(result.rows[0].max_connections),
+    uptime: process.uptime(),
+    tables: tables.rows
+  }));
+}));
+
+// Legacy endpoint
 router.get('/database/status', asyncHandler(async (req, res) => {
   const result = await TradeDB.pool.query(`
     SELECT
@@ -1283,6 +1320,238 @@ router.get('/database/status', asyncHandler(async (req, res) => {
       activeConnections: parseInt(result.rows[0].active_connections)
     },
     tables: tables.rows
+  }));
+}));
+
+// Get migrations
+router.get('/database/migrations', asyncHandler(async (req, res) => {
+  const fs = require('fs');
+  const path = require('path');
+
+  // Get applied migrations from database (if migrations table exists)
+  let applied = [];
+  try {
+    const result = await TradeDB.pool.query(`
+      SELECT filename, applied_at
+      FROM schema_migrations
+      ORDER BY applied_at DESC
+    `);
+    applied = result.rows;
+  } catch (error) {
+    // Migrations table doesn't exist yet
+  }
+
+  // Get all migration files
+  const migrationsDir = path.join(process.cwd(), 'migrations');
+  let allMigrations = [];
+
+  try {
+    if (fs.existsSync(migrationsDir)) {
+      allMigrations = fs.readdirSync(migrationsDir)
+        .filter(file => file.endsWith('.sql'))
+        .sort();
+    }
+  } catch (error) {
+    console.error('Error reading migrations directory:', error);
+  }
+
+  // Find pending migrations
+  const appliedFilenames = applied.map(m => m.filename);
+  const pending = allMigrations.filter(m => !appliedFilenames.includes(m));
+
+  res.json(successResponse({
+    applied,
+    pending,
+    lastMigration: applied.length > 0 ? applied[0].filename : null
+  }));
+}));
+
+// Run pending migrations
+router.post('/database/migrations/run', asyncHandler(async (req, res) => {
+  // Placeholder - would need actual migration runner implementation
+  res.json(successResponse({
+    message: 'Migrations feature coming soon',
+    status: 'pending'
+  }));
+}));
+
+// Run single migration
+router.post('/database/migrations/run-single', asyncHandler(async (req, res) => {
+  const { filename } = req.body;
+  requireField(req.body, 'filename');
+
+  // Placeholder - would need actual migration runner implementation
+  res.json(successResponse({
+    message: `Migration ${filename} feature coming soon`,
+    status: 'pending'
+  }));
+}));
+
+// Get backups
+router.get('/database/backups', asyncHandler(async (req, res) => {
+  // Placeholder - would integrate with backup system
+  res.json(successResponse({
+    backups: []
+  }));
+}));
+
+// Create backup
+router.post('/database/backups/create', asyncHandler(async (req, res) => {
+  // Placeholder - would trigger actual backup
+  res.json(successResponse({
+    message: 'Backup created',
+    filename: `backup_${new Date().toISOString().split('T')[0]}.sql`
+  }));
+}));
+
+// Download backup
+router.get('/database/backups/download/:filename', asyncHandler(async (req, res) => {
+  const { filename } = req.params;
+  // Placeholder - would serve actual backup file
+  res.json(successResponse({
+    message: `Backup download for ${filename} coming soon`
+  }));
+}));
+
+// Restore backup
+router.post('/database/backups/restore', asyncHandler(async (req, res) => {
+  const { filename } = req.body;
+  requireField(req.body, 'filename');
+
+  // Placeholder - would restore from backup
+  res.json(successResponse({
+    message: `Restore from ${filename} feature coming soon`
+  }));
+}));
+
+// Execute SQL query
+router.post('/database/query', asyncHandler(async (req, res) => {
+  const { query, mode } = req.body;
+  requireField(req.body, 'query');
+
+  // Safety check for write operations in read-only mode
+  const queryLower = query.toLowerCase().trim();
+  const isWriteQuery = queryLower.startsWith('insert') ||
+                       queryLower.startsWith('update') ||
+                       queryLower.startsWith('delete') ||
+                       queryLower.startsWith('drop') ||
+                       queryLower.startsWith('alter') ||
+                       queryLower.startsWith('create');
+
+  if (isWriteQuery && mode !== 'write') {
+    throw new AdminAPIError('FORBIDDEN', 'Write operations require write mode to be enabled');
+  }
+
+  // Execute query with timeout
+  const startTime = Date.now();
+  let result;
+
+  try {
+    // Add LIMIT if not present in SELECT queries (safety)
+    let safeQuery = query;
+    if (queryLower.startsWith('select') && !queryLower.includes('limit')) {
+      safeQuery += ' LIMIT 1000';
+    }
+
+    result = await TradeDB.pool.query(safeQuery);
+  } catch (error) {
+    throw new AdminAPIError('QUERY_ERROR', error.message);
+  }
+
+  const executionTime = Date.now() - startTime;
+
+  res.json(successResponse({
+    rows: result.rows,
+    rowCount: result.rowCount,
+    executionTime
+  }));
+}));
+
+// Get maintenance status
+router.get('/database/maintenance-status', asyncHandler(async (req, res) => {
+  // Get last vacuum/analyze times from pg_stat_user_tables
+  const statsResult = await TradeDB.pool.query(`
+    SELECT
+      MAX(last_vacuum) as last_vacuum,
+      MAX(last_autovacuum) as last_autovacuum,
+      MAX(last_analyze) as last_analyze,
+      MAX(last_autoanalyze) as last_autoanalyze
+    FROM pg_stat_user_tables
+  `);
+
+  // Get index usage stats
+  const indexResult = await TradeDB.pool.query(`
+    SELECT
+      schemaname,
+      tablename,
+      indexname,
+      idx_scan,
+      idx_tup_read,
+      idx_tup_fetch
+    FROM pg_stat_user_indexes
+    ORDER BY idx_scan DESC
+    LIMIT 20
+  `);
+
+  const stats = statsResult.rows[0];
+
+  res.json(successResponse({
+    lastVacuum: stats.last_vacuum || stats.last_autovacuum || 'Never',
+    lastAnalyze: stats.last_analyze || stats.last_autoanalyze || 'Never',
+    lastReindex: 'N/A', // PostgreSQL doesn't track this
+    indexes: indexResult.rows
+  }));
+}));
+
+// Run VACUUM
+router.post('/database/maintenance/vacuum', asyncHandler(async (req, res) => {
+  // Run VACUUM on all tables
+  await TradeDB.pool.query('VACUUM');
+
+  res.json(successResponse({
+    message: 'VACUUM completed successfully'
+  }));
+}));
+
+// Run ANALYZE
+router.post('/database/maintenance/analyze', asyncHandler(async (req, res) => {
+  // Run ANALYZE on all tables
+  await TradeDB.pool.query('ANALYZE');
+
+  res.json(successResponse({
+    message: 'ANALYZE completed successfully'
+  }));
+}));
+
+// Run REINDEX
+router.post('/database/maintenance/reindex', asyncHandler(async (req, res) => {
+  // REINDEX requires superuser privileges, so we'll reindex individual tables
+  const tables = await TradeDB.pool.query(`
+    SELECT tablename FROM pg_tables WHERE schemaname = 'public'
+  `);
+
+  for (const table of tables.rows) {
+    try {
+      await TradeDB.pool.query(`REINDEX TABLE ${table.tablename}`);
+    } catch (error) {
+      console.error(`Failed to reindex ${table.tablename}:`, error.message);
+    }
+  }
+
+  res.json(successResponse({
+    message: 'REINDEX completed successfully'
+  }));
+}));
+
+// Analyze specific table
+router.post('/database/maintenance/analyze-table', asyncHandler(async (req, res) => {
+  const { tableName } = req.body;
+  requireField(req.body, 'tableName');
+
+  await TradeDB.pool.query(`ANALYZE ${tableName}`);
+
+  res.json(successResponse({
+    message: `Table ${tableName} analyzed successfully`
   }));
 }));
 

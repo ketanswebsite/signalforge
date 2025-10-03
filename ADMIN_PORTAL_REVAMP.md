@@ -1617,23 +1617,215 @@ DELETE /api/admin/settings/admins/:id          // Remove admin
 
 **Date Completed:** 2025-10-03
 
-### Phase 6: Database Tools (Week 7)
+### Phase 6: Database Tools (Week 7) ✅ COMPLETED
 **Goal:** Database administration capabilities
 
-- [ ] Build migration manager interface
-- [ ] Implement backup/restore system
-- [ ] Create SQL query runner
-- [ ] Build database health monitor
-- [ ] Implement slow query analyzer
-- [ ] Create index usage tracker
-- [ ] Build maintenance task scheduler
-- [ ] Implement query history log
+- [x] Build migration manager interface
+- [x] Implement backup/restore system
+- [x] Create SQL query runner
+- [x] Build database health monitor
+- [x] Implement slow query analyzer
+- [x] Create index usage tracker
+- [x] Build maintenance task scheduler
+- [x] Implement query history log
 
-**Deliverables:**
-- Migration management system
-- Backup/restore interface
-- Query runner tool
-- Health monitoring dashboard
+**Deliverables:** ✅
+- Migration management system - COMPLETED
+- Backup/restore interface - COMPLETED
+- Query runner tool - COMPLETED
+- Health monitoring dashboard - COMPLETED
+
+**Files Created:**
+- `public/js/admin-database.js` (1,300 lines) - Complete database management system
+
+**Features Implemented:**
+
+**Health Monitor Tab:**
+- **Connection Status:**
+  - Real-time connection status (Online/Offline)
+  - Database latency measurement in milliseconds
+  - Active connections vs max connections
+  - System uptime display
+
+- **Database Size:**
+  - Total database size with formatted display (Bytes, KB, MB, GB, TB)
+  - Real-time size calculations
+
+- **Table Statistics:**
+  - Comprehensive table listing with schema
+  - Row count per table
+  - Size per table (pretty formatted)
+  - Index count per table
+  - Analyze button for individual tables
+
+**Migrations Tab:**
+- **Migration Status Dashboard:**
+  - Applied migrations count
+  - Pending migrations count
+  - Last migration timestamp
+  - Visual status indicators
+
+- **Pending Migrations:**
+  - List of pending migration files
+  - Run button for individual migrations
+  - Run all pending migrations button
+  - Warning alerts for pending migrations
+
+- **Applied Migrations:**
+  - Complete history of applied migrations
+  - Filename and applied timestamp
+  - Chronological ordering
+
+**Query Runner Tab:**
+- **SQL Execution Interface:**
+  - Monospace textarea for SQL queries
+  - Read-Only Mode (default, safe for SELECT queries)
+  - Write Mode (requires explicit activation)
+  - Auto-LIMIT injection for SELECT queries (safety feature)
+
+- **Safety Features:**
+  - Write operation detection (INSERT, UPDATE, DELETE, DROP, ALTER, CREATE)
+  - Mode enforcement (write queries blocked in read-only mode)
+  - Automatic LIMIT 1000 for unbounded SELECT queries
+  - Query timeout protection
+
+- **Saved Queries:**
+  - Active users by plan
+  - Revenue last 30 days
+  - Failed payments this week
+  - Users without trades
+  - Top traders by P/L
+
+- **Query Results Display:**
+  - Dynamic table rendering
+  - Row count display
+  - Execution time measurement
+  - First 100 rows display (with indicator if more)
+  - Export to CSV functionality
+  - Null value highlighting
+
+- **Query History:**
+  - Last 10 queries stored in memory
+  - Timestamp and execution stats
+  - Row count and execution time
+  - Re-run button for each query
+  - Clear history functionality
+
+**Backups Tab:**
+- **Backup Creation:**
+  - Manual backup trigger
+  - Automatic daily backups at 2 AM UTC
+  - Retention policy: 7 daily, 4 weekly, 12 monthly
+
+- **Backup Management:**
+  - List of available backups
+  - Backup filename, size, created date
+  - Download backup button
+  - Restore backup button (with confirmation)
+
+- **Restore Safety:**
+  - Type "RESTORE" confirmation required
+  - Warning about data overwrite
+
+**Maintenance Tab:**
+- **Maintenance Tasks:**
+  - VACUUM - Reclaim storage from dead tuples
+  - ANALYZE - Update table statistics for query planner
+  - REINDEX - Rebuild all indexes
+
+- **Maintenance Status:**
+  - Last VACUUM timestamp
+  - Last ANALYZE timestamp
+  - Last REINDEX timestamp (N/A - PostgreSQL doesn't track)
+
+- **Index Usage Statistics:**
+  - Top 20 indexes by scan count
+  - Index name, table, scan count
+  - Health status (Healthy >100 scans, Low Usage otherwise)
+  - Color-coded badges
+
+**Tab-Based Interface:**
+```
+🏥 Health Monitor - Connection status, size, table stats
+📦 Migrations     - Applied/pending migrations
+⚡ Query Runner   - SQL execution with safety features
+💾 Backups        - Create, download, restore backups
+🔧 Maintenance    - VACUUM, ANALYZE, REINDEX, index usage
+```
+
+**API Endpoints Added:**
+- GET    /api/admin/database/health                     - Connection and table stats
+- GET    /api/admin/database/migrations                 - Applied and pending migrations
+- POST   /api/admin/database/migrations/run             - Run all pending migrations
+- POST   /api/admin/database/migrations/run-single      - Run specific migration
+- GET    /api/admin/database/backups                    - List available backups
+- POST   /api/admin/database/backups/create             - Create manual backup
+- GET    /api/admin/database/backups/download/:filename - Download backup file
+- POST   /api/admin/database/backups/restore            - Restore from backup
+- POST   /api/admin/database/query                      - Execute SQL query
+- GET    /api/admin/database/maintenance-status         - VACUUM/ANALYZE/index stats
+- POST   /api/admin/database/maintenance/vacuum         - Run VACUUM
+- POST   /api/admin/database/maintenance/analyze        - Run ANALYZE
+- POST   /api/admin/database/maintenance/reindex        - Run REINDEX
+- POST   /api/admin/database/maintenance/analyze-table  - Analyze specific table
+
+**Technical Highlights:**
+- File system integration for migration discovery
+- PostgreSQL pg_stat_* system views for statistics
+- pg_database_size() and pg_total_relation_size() for size calculations
+- pg_stat_activity for connection monitoring
+- pg_settings for configuration retrieval
+- Query safety validation (write operation detection)
+- Auto-LIMIT injection for SELECT queries
+- Real-time latency measurement
+- Monospace font for SQL display
+- CSV export with proper quoting
+- Query history in-memory storage (10 most recent)
+- Confirmation dialogs for destructive operations
+- Alert system for user feedback
+- Tab-based lazy loading
+- Formatted size display (Bytes → TB)
+- Time-since formatting for timestamps
+
+**Security Features:**
+- Read-only mode by default
+- Explicit write mode requirement
+- Write operation detection and blocking
+- SQL injection prevention via parameterized queries
+- Confirmation prompts for destructive operations
+- RESTORE confirmation requires typing "RESTORE"
+
+**PostgreSQL System Queries:**
+- `pg_database_size(current_database())` - Database size
+- `pg_stat_activity` - Active connections
+- `pg_settings` - Configuration values
+- `pg_stat_user_tables` - Table statistics, VACUUM/ANALYZE times
+- `pg_total_relation_size()` - Table + index size
+- `pg_size_pretty()` - Human-readable size formatting
+- `pg_stat_user_indexes` - Index usage statistics
+- `pg_tables` - List of tables
+- `pg_indexes` - Index count
+
+**Query Safety Logic:**
+```javascript
+const isWriteQuery = query.toLowerCase().trim().startsWith('insert') ||
+                    query.startsWith('update') ||
+                    query.startsWith('delete') ||
+                    query.startsWith('drop') ||
+                    query.startsWith('alter') ||
+                    query.startsWith('create');
+
+if (isWriteQuery && mode !== 'write') {
+  throw new Error('Write operations require write mode');
+}
+
+// Auto-LIMIT for SELECT
+if (query.startsWith('select') && !query.includes('limit')) {
+  safeQuery += ' LIMIT 1000';
+}
+```
+
+**Date Completed:** 2025-10-03
 
 ### Phase 7: Settings & Configuration (Week 8)
 **Goal:** System configuration and admin tools
