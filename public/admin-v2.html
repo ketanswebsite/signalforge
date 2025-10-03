@@ -10,6 +10,7 @@
     <script src="/js/admin-dashboard.js"></script>
     <script src="/js/admin-users.js"></script>
     <script src="/js/admin-subscriptions.js"></script>
+    <script src="/js/admin-payments.js"></script>
 </head>
 <body class="admin-portal">
     <!-- Alert Container -->
@@ -299,18 +300,9 @@
             await AdminSubscriptions.init();
         }
 
-        // Load Payments (Placeholder)
-        function loadPayments() {
-            document.getElementById('payments-page').innerHTML = `
-                <div class="admin-card">
-                    <div class="admin-card-header">
-                        <h2 class="admin-card-title">Payment Management</h2>
-                    </div>
-                    <div class="admin-card-body">
-                        <p>Payment management functionality coming soon...</p>
-                    </div>
-                </div>
-            `;
+        // Load Payments
+        async function loadPayments() {
+            await AdminPayments.init();
         }
 
         // Load Audit Log (Placeholder)

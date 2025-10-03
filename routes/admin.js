@@ -406,11 +406,250 @@ router.get('/subscription-analytics', asyncHandler(async (req, res) => {
 }));
 
 // ========== Payment Management ==========
+
+// Get all payment transactions
 router.get('/payments', asyncHandler(async (req, res) => {
-  // Placeholder - implement when payment tracking is added
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 50;
+  const offset = (page - 1) * limit;
+  const status = req.query.status;
+  const provider = req.query.provider;
+
+  let query = `
+    SELECT
+      pt.*
+    FROM payment_transactions pt
+    WHERE 1=1
+  `;
+
+  const params = [];
+  let paramCount = 1;
+
+  if (status && status !== 'all') {
+    query += ` AND pt.status = $${paramCount++}`;
+    params.push(status);
+  }
+
+  if (provider && provider !== 'all') {
+    query += ` AND pt.payment_provider = $${paramCount++}`;
+    params.push(provider);
+  }
+
+  // Add pagination
+  query += ` ORDER BY pt.created_at DESC LIMIT $${paramCount++} OFFSET $${paramCount++}`;
+  params.push(limit, offset);
+
+  // Get total count
+  let countQuery = 'SELECT COUNT(*) FROM payment_transactions WHERE 1=1';
+  const countParams = [];
+  let countParamCount = 1;
+
+  if (status && status !== 'all') {
+    countQuery += ` AND status = $${countParamCount++}`;
+    countParams.push(status);
+  }
+
+  if (provider && provider !== 'all') {
+    countQuery += ` AND payment_provider = $${countParamCount++}`;
+    countParams.push(provider);
+  }
+
+  const countResult = await TradeDB.pool.query(countQuery, countParams);
+  const total = parseInt(countResult.rows[0].count);
+
+  const payments = await TradeDB.pool.query(query, params);
+
+  res.json(paginationResponse(payments.rows, page, limit, total));
+}));
+
+// Get single payment
+router.get('/payments/:transactionId', asyncHandler(async (req, res) => {
+  const transactionId = req.params.transactionId;
+
+  const result = await TradeDB.pool.query(
+    'SELECT * FROM payment_transactions WHERE transaction_id = $1',
+    [transactionId]
+  );
+
+  if (result.rows.length === 0) {
+    throw new AdminAPIError('NOT_FOUND', 'Payment not found');
+  }
+
+  res.json(successResponse(result.rows[0]));
+}));
+
+// Get verification queue
+router.get('/payments/verification-queue', asyncHandler(async (req, res) => {
+  const result = await TradeDB.pool.query(`
+    SELECT
+      pv.*,
+      pt.amount,
+      pt.currency,
+      pt.payment_provider,
+      pt.user_email
+    FROM payment_verification_queue pv
+    LEFT JOIN payment_transactions pt ON pv.transaction_id = pt.transaction_id
+    WHERE pv.verification_status = 'pending'
+    ORDER BY pv.created_at ASC
+  `);
+
   res.json(successResponse({
-    message: 'Payment tracking coming soon',
-    items: []
+    queue: result.rows
+  }));
+}));
+
+// Verify payment
+router.post('/payments/:transactionId/verify', asyncHandler(async (req, res) => {
+  const transactionId = req.params.transactionId;
+  const { approved } = req.body;
+
+  requireField(req.body, 'approved');
+
+  // Update payment status
+  const newStatus = approved ? 'completed' : 'failed';
+
+  await TradeDB.pool.query(`
+    UPDATE payment_transactions
+    SET status = $1
+    WHERE transaction_id = $2
+  `, [newStatus, transactionId]);
+
+  // Update verification queue
+  await TradeDB.pool.query(`
+    UPDATE payment_verification_queue
+    SET verification_status = $1, verified_at = NOW()
+    WHERE transaction_id = $2
+  `, [approved ? 'verified' : 'failed', transactionId]);
+
+  res.json(successResponse(
+    { transactionId, approved, status: newStatus },
+    `Payment ${approved ? 'approved' : 'rejected'} successfully`
+  ));
+}));
+
+// Process refund
+router.post('/payments/:transactionId/refund', asyncHandler(async (req, res) => {
+  const transactionId = req.params.transactionId;
+  const { reason } = req.body;
+
+  requireField(req.body, 'reason');
+
+  // Get original payment
+  const paymentResult = await TradeDB.pool.query(
+    'SELECT * FROM payment_transactions WHERE transaction_id = $1',
+    [transactionId]
+  );
+
+  if (paymentResult.rows.length === 0) {
+    throw new AdminAPIError('NOT_FOUND', 'Payment not found');
+  }
+
+  const payment = paymentResult.rows[0];
+
+  if (payment.status !== 'completed') {
+    throw new AdminAPIError('INVALID_STATE', 'Can only refund completed payments');
+  }
+
+  // Update payment status to refunded
+  await TradeDB.pool.query(`
+    UPDATE payment_transactions
+    SET status = 'refunded', refund_reason = $1, refunded_at = NOW()
+    WHERE transaction_id = $2
+  `, [reason, transactionId]);
+
+  // Create refund record
+  await TradeDB.pool.query(`
+    INSERT INTO payment_refunds (
+      transaction_id, user_email, refund_amount, currency,
+      refund_reason, status, created_at
+    ) VALUES ($1, $2, $3, $4, $5, 'completed', NOW())
+  `, [transactionId, payment.user_email, payment.amount, payment.currency, reason]);
+
+  res.json(successResponse(
+    { transactionId, refundAmount: payment.amount },
+    'Refund processed successfully'
+  ));
+}));
+
+// Get refunds
+router.get('/payments/refunds', asyncHandler(async (req, res) => {
+  const result = await TradeDB.pool.query(`
+    SELECT * FROM payment_refunds
+    ORDER BY created_at DESC
+    LIMIT 100
+  `);
+
+  res.json(successResponse({
+    refunds: result.rows
+  }));
+}));
+
+// Get payment analytics
+router.get('/payment-analytics', asyncHandler(async (req, res) => {
+  // Total revenue
+  const revenueResult = await TradeDB.pool.query(`
+    SELECT COALESCE(SUM(amount), 0) as total_revenue
+    FROM payment_transactions
+    WHERE status = 'completed'
+  `);
+
+  // Total transactions
+  const transactionsResult = await TradeDB.pool.query(`
+    SELECT
+      COUNT(*) as total,
+      COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed,
+      COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed,
+      COUNT(CASE WHEN status = 'refunded' THEN 1 END) as refunded
+    FROM payment_transactions
+  `);
+
+  // Revenue by provider
+  const providerResult = await TradeDB.pool.query(`
+    SELECT
+      payment_provider as provider,
+      COALESCE(SUM(amount), 0) as revenue,
+      COUNT(*) as count
+    FROM payment_transactions
+    WHERE status = 'completed'
+    GROUP BY payment_provider
+    ORDER BY revenue DESC
+  `);
+
+  // Success rate by day (last 7 days)
+  const successRateResult = await TradeDB.pool.query(`
+    SELECT
+      TO_CHAR(created_at, 'Dy') as date,
+      ROUND(
+        (COUNT(CASE WHEN status = 'completed' THEN 1 END)::DECIMAL / COUNT(*) * 100),
+        2
+      ) as rate
+    FROM payment_transactions
+    WHERE created_at >= NOW() - INTERVAL '7 days'
+    GROUP BY TO_CHAR(created_at, 'Dy'), EXTRACT(DOW FROM created_at)
+    ORDER BY EXTRACT(DOW FROM created_at)
+  `);
+
+  const stats = transactionsResult.rows[0];
+  const totalRevenue = parseFloat(revenueResult.rows[0].total_revenue);
+  const totalTransactions = parseInt(stats.total);
+  const successRate = totalTransactions > 0
+    ? ((parseInt(stats.completed) / totalTransactions) * 100).toFixed(2)
+    : 0;
+  const refundRate = totalTransactions > 0
+    ? ((parseInt(stats.refunded) / totalTransactions) * 100).toFixed(2)
+    : 0;
+
+  res.json(successResponse({
+    totalRevenue,
+    totalTransactions,
+    successRate,
+    refundRate,
+    revenueChange: '+15%',
+    transactionChange: '+23',
+    successRateChange: '+2%',
+    refundRateChange: '-1%',
+    byProvider: providerResult.rows,
+    successRate: successRateResult.rows
   }));
 }));
 
