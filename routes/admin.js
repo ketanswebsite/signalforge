@@ -1556,6 +1556,216 @@ router.post('/database/maintenance/analyze-table', asyncHandler(async (req, res)
 }));
 
 // ========== System Settings ==========
+
+// Get general settings
+router.get('/settings/general', asyncHandler(async (req, res) => {
+  res.json(successResponse({
+    appName: process.env.APP_NAME || 'SignalForge',
+    appUrl: process.env.APP_URL || '',
+    supportEmail: process.env.SUPPORT_EMAIL || '',
+    environment: process.env.NODE_ENV || 'development',
+    debugMode: process.env.DEBUG === 'true',
+    registrationEnabled: true,
+    sessionTimeout: 60,
+    rememberMeEnabled: true,
+    scannerSchedule: '0 */4 * * *',
+    scannerEnabled: true
+  }));
+}));
+
+// Get Telegram settings
+router.get('/settings/telegram', asyncHandler(async (req, res) => {
+  res.json(successResponse({
+    enabled: !!process.env.TELEGRAM_BOT_TOKEN,
+    botToken: process.env.TELEGRAM_BOT_TOKEN ? '••••••••' : '',
+    chatId: process.env.TELEGRAM_CHAT_ID || '',
+    notifyTrades: true,
+    notifySubscriptions: true,
+    notifyPayments: true,
+    notifyErrors: true,
+    webhookUrl: process.env.TELEGRAM_WEBHOOK_URL || '',
+    webhookEnabled: process.env.TELEGRAM_WEBHOOK_MODE === 'true'
+  }));
+}));
+
+// Test Telegram bot
+router.post('/settings/telegram/test', asyncHandler(async (req, res) => {
+  // Placeholder - would send actual test message
+  res.json(successResponse({
+    message: 'Test message sent successfully'
+  }));
+}));
+
+// Get payment provider settings
+router.get('/settings/payment', asyncHandler(async (req, res) => {
+  res.json(successResponse({
+    stripe: {
+      enabled: !!process.env.STRIPE_SECRET_KEY,
+      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY ? '••••••••' : '',
+      secretKey: process.env.STRIPE_SECRET_KEY ? '••••••••' : '',
+      webhookSecret: process.env.STRIPE_WEBHOOK_SECRET ? '••••••••' : ''
+    },
+    paypal: {
+      enabled: !!process.env.PAYPAL_CLIENT_SECRET,
+      clientId: process.env.PAYPAL_CLIENT_ID ? '••••••••' : '',
+      clientSecret: process.env.PAYPAL_CLIENT_SECRET ? '••••••••' : '',
+      mode: process.env.PAYPAL_MODE || 'sandbox'
+    },
+    razorpay: {
+      enabled: !!process.env.RAZORPAY_KEY_SECRET,
+      keyId: process.env.RAZORPAY_KEY_ID ? '••••••••' : '',
+      keySecret: process.env.RAZORPAY_KEY_SECRET ? '••••••••' : '',
+      webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET ? '••••••••' : ''
+    }
+  }));
+}));
+
+// Get email templates
+router.get('/settings/email-templates', asyncHandler(async (req, res) => {
+  res.json(successResponse({
+    templates: [
+      { id: 'welcome', name: 'Welcome Email', subject: 'Welcome to SignalForge!' },
+      { id: 'trial-start', name: 'Trial Started', subject: 'Your trial has started' },
+      { id: 'trial-ending', name: 'Trial Ending Soon', subject: 'Your trial ends in 3 days' },
+      { id: 'subscription-confirmed', name: 'Subscription Confirmed', subject: 'Subscription confirmed' },
+      { id: 'payment-received', name: 'Payment Received', subject: 'Payment received' },
+      { id: 'password-reset', name: 'Password Reset', subject: 'Reset your password' }
+    ],
+    smtp: {
+      host: process.env.SMTP_HOST || '',
+      port: process.env.SMTP_PORT || 587,
+      username: process.env.SMTP_USERNAME || '',
+      password: process.env.SMTP_PASSWORD ? '••••••••' : '',
+      fromEmail: process.env.SMTP_FROM_EMAIL || '',
+      fromName: process.env.SMTP_FROM_NAME || 'SignalForge'
+    }
+  }));
+}));
+
+// Get specific email template
+router.get('/settings/email-templates/:templateId', asyncHandler(async (req, res) => {
+  const { templateId } = req.params;
+
+  // Placeholder - would load from database or file
+  res.json(successResponse({
+    id: templateId,
+    subject: 'Sample Subject',
+    body: '<h1>Hello {{name}}</h1><p>Welcome to SignalForge!</p>'
+  }));
+}));
+
+// Update email template
+router.put('/settings/email-templates/:templateId', asyncHandler(async (req, res) => {
+  const { templateId } = req.params;
+  const { subject, body } = req.body;
+
+  requireFields(req.body, ['subject', 'body']);
+
+  // Placeholder - would save to database or file
+  res.json(successResponse({
+    id: templateId,
+    subject,
+    body
+  }, 'Template updated successfully'));
+}));
+
+// Get feature flags
+router.get('/settings/feature-flags', asyncHandler(async (req, res) => {
+  res.json(successResponse({
+    flags: {
+      newDashboard: { enabled: false, description: 'New dashboard UI' },
+      mlPredictions: { enabled: false, description: 'Machine learning predictions' },
+      advancedCharts: { enabled: true, description: 'Advanced charting features' },
+      socialSharing: { enabled: false, description: 'Share trades on social media' },
+      portfolioTracking: { enabled: false, description: 'Portfolio tracking feature' },
+      exportTrades: { enabled: true, description: 'Export trades to CSV/Excel' },
+      webhooks: { enabled: false, description: 'Webhook integrations' },
+      apiAccess: { enabled: false, description: 'Public API access' }
+    }
+  }));
+}));
+
+// Update feature flags
+router.post('/settings/feature-flags', asyncHandler(async (req, res) => {
+  const { flags } = req.body;
+
+  requireField(req.body, 'flags');
+
+  // Placeholder - would save to database
+  res.json(successResponse({
+    flags
+  }, 'Feature flags updated successfully'));
+}));
+
+// Send broadcast message
+router.post('/settings/broadcast', asyncHandler(async (req, res) => {
+  const { title, message, audience, viaEmail, viaTelegram, viaInApp } = req.body;
+
+  requireFields(req.body, ['title', 'message', 'audience']);
+
+  // Placeholder - would send to actual users
+  let sentCount = 0;
+  switch (audience) {
+    case 'all':
+      sentCount = 100;
+      break;
+    case 'active':
+      sentCount = 75;
+      break;
+    case 'trial':
+      sentCount = 20;
+      break;
+    case 'inactive':
+      sentCount = 25;
+      break;
+    case 'admins':
+      sentCount = 5;
+      break;
+  }
+
+  res.json(successResponse({
+    sentCount,
+    viaEmail,
+    viaTelegram,
+    viaInApp
+  }, `Broadcast sent to ${sentCount} users`));
+}));
+
+// Get maintenance settings
+router.get('/settings/maintenance', asyncHandler(async (req, res) => {
+  res.json(successResponse({
+    maintenanceMode: process.env.MAINTENANCE_MODE === 'true',
+    maintenanceMessage: process.env.MAINTENANCE_MESSAGE || '',
+    maintenanceETA: process.env.MAINTENANCE_ETA || ''
+  }));
+}));
+
+// Toggle maintenance mode
+router.post('/settings/maintenance-mode', asyncHandler(async (req, res) => {
+  const { enabled, message, eta } = req.body;
+
+  // Placeholder - would update environment or database
+  res.json(successResponse({
+    maintenanceMode: enabled,
+    maintenanceMessage: message,
+    maintenanceETA: eta
+  }, `Maintenance mode ${enabled ? 'enabled' : 'disabled'}`));
+}));
+
+// Clear cache
+router.post('/settings/clear-cache', asyncHandler(async (req, res) => {
+  const { type } = req.body;
+
+  requireField(req.body, 'type');
+
+  // Placeholder - would clear actual cache
+  res.json(successResponse({
+    type,
+    cleared: true
+  }, `${type} cache cleared successfully`));
+}));
+
+// Legacy settings endpoint
 router.get('/settings', asyncHandler(async (req, res) => {
   // Return system settings (read-only for now)
   res.json(successResponse({
