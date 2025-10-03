@@ -26,7 +26,7 @@ const DTIData = (function() {
     // Blocklist for known problematic stocks (delisted, renamed, or consistently unavailable)
     const STOCK_BLOCKLIST = new Set([
         // US stocks with 500 errors (likely delisted)
-        'SAGE', 'BPMC', 'HES', 'TGI',
+        'SAGE', 'BPMC', 'HES', 'TGI', 'FARO',
 
         // UK stock with 500 error
         'INDV.L',
