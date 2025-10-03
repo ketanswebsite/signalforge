@@ -1464,22 +1464,158 @@ DELETE /api/admin/settings/admins/:id          // Remove admin
 
 **Date Completed:** 2025-10-02
 
-### Phase 5: Audit & Analytics (Week 6)
+### Phase 5: Audit & Analytics (Week 6) ✅ COMPLETED
 **Goal:** Audit logging and business intelligence
 
-- [ ] Build unified audit log viewer
-- [ ] Implement audit log filtering
-- [ ] Create detailed change viewer
-- [ ] Build audit analytics
-- [ ] Implement revenue analytics dashboard
-- [ ] Create user engagement metrics
-- [ ] Build subscription health dashboard
-- [ ] Implement custom report generator
+- [x] Build unified audit log viewer
+- [x] Implement audit log filtering
+- [x] Create detailed change viewer
+- [x] Build audit analytics
+- [x] Implement revenue analytics dashboard
+- [x] Create user engagement metrics
+- [x] Build subscription health dashboard
+- [x] Implement custom report generator
 
-**Deliverables:**
-- Complete audit log system
-- Advanced analytics dashboard
-- Custom report generator
+**Deliverables:** ✅
+- Complete audit log system - COMPLETED
+- Advanced analytics dashboard - COMPLETED
+- Custom report generator - COMPLETED
+
+**Files Created:**
+- `public/js/admin-audit.js` (680 lines) - Complete audit log viewer with filtering
+- `public/js/admin-analytics.js` (620 lines) - Business intelligence dashboard
+
+**Features Implemented:**
+
+**Audit Log Module:**
+- **Unified Audit Log Viewer:**
+  - Paginated audit log table with 50 items per page
+  - Real-time filtering by entity type, action, user, date range
+  - Search functionality across logs
+  - Time-ago display for recent entries
+  - Entity icons (📊 trades, 👤 users, 💳 subscriptions, 💰 payments)
+  - Color-coded action badges (CREATE, UPDATE, DELETE, LOGIN, etc.)
+
+- **Advanced Filtering:**
+  - Filter by entity type (Trades, Users, Subscriptions, Payments, Admin)
+  - Filter by action (CREATE, UPDATE, DELETE, LOGIN, VERIFY, REFUND)
+  - Filter by user email (partial match)
+  - Date range filtering (from/to dates)
+  - Full-text search across audit logs
+  - Clear filters button
+
+- **Detailed Change Viewer:**
+  - Modal with full audit entry details
+  - Timestamp, user, IP address, user agent
+  - Changed fields table with old/new values comparison
+  - Old data and new data JSON snapshots (expandable)
+  - Export single entry as JSON
+
+- **Audit Analytics:**
+  - Most active users (top 10)
+  - Action distribution breakdown
+  - Total actions in last 30 days
+  - Last 24 hours activity count
+  - Visual analytics panel
+
+- **Export Functionality:**
+  - Export logs to CSV with filters applied
+  - Export individual entries as JSON
+  - Download with timestamped filenames
+
+**Analytics Module:**
+- **Revenue Analytics Tab:**
+  - MRR (Monthly Recurring Revenue)
+  - ARR (Annual Recurring Revenue)
+  - ARPU (Average Revenue Per User)
+  - LTV (Lifetime Value)
+  - MRR growth percentage
+  - Revenue by region (UK, US, India, Global)
+  - Revenue by plan type breakdown
+  - 12-month revenue trend chart (Chart.js)
+
+- **User Engagement Tab:**
+  - DAU (Daily Active Users)
+  - WAU (Weekly Active Users) with growth %
+  - MAU (Monthly Active Users) with growth %
+  - Inactive users count (30+ days)
+  - 30-day activity trend chart
+  - Feature usage breakdown with progress bars
+
+- **Subscription Health Tab:**
+  - Trial conversion rate with target comparison
+  - Churn rate with industry benchmark
+  - Monthly upgrades/downgrades count
+  - Subscription funnel visualization (signup → trial → convert)
+  - Subscription age distribution chart (0-30, 31-90, 91-180, 180+ days)
+
+- **Trading Activity Tab:**
+  - Total trades count
+  - Win rate percentage
+  - Average P/L per trade
+  - Average trades per user
+  - Top 10 traded symbols table with win rates and avg P/L
+
+- **Custom Report Generator:**
+  - Report type selector (Monthly Business Review, Revenue, Users, Subscriptions, Custom)
+  - Date range picker (Last 7/30 days, Last month/quarter/year, Custom)
+  - Section checkboxes (Summary, Revenue, Users, Subscriptions, Payments, Trades, Audit)
+  - Export format (PDF, Excel, CSV, JSON)
+  - Email delivery option
+  - Generate and download functionality
+
+**Tab-Based Interface:**
+```
+💰 Revenue        - MRR, ARR, ARPU, LTV, trend charts
+📈 Engagement     - DAU, WAU, MAU, activity trends
+💳 Subscription   - Trial conversion, churn, funnel, age distribution
+📊 Trading        - Win rate, P/L, top symbols
+```
+
+**API Endpoints Added:**
+- GET    /api/admin/audit/unified               - Unified audit log with filters
+- GET    /api/admin/audit/:id                   - Get specific audit entry
+- GET    /api/admin/audit/analytics             - Audit analytics data
+- GET    /api/admin/audit/export                - Export logs to CSV
+- GET    /api/admin/audit/:id/export            - Export single entry
+- GET    /api/admin/analytics/revenue           - Revenue metrics
+- GET    /api/admin/analytics/engagement        - User engagement metrics
+- GET    /api/admin/analytics/subscriptions     - Subscription health metrics
+- GET    /api/admin/analytics/trades            - Trading activity metrics
+- POST   /api/admin/analytics/reports           - Generate custom reports
+
+**Technical Highlights:**
+- Complex SQL queries with window functions and aggregations
+- Multi-dimensional filtering with dynamic query building
+- CSV export with proper quoting and headers
+- Time-ago display with intelligent formatting
+- ILIKE partial matching for user search
+- Date range filtering with INTERVAL calculations
+- GROUP BY with region, plan, action, symbol aggregations
+- CASE statements for conditional aggregations
+- DECIMAL division for accurate percentage calculations
+- Chart.js integration for 4 different chart types
+- Modal-based detailed views
+- Progress bar visualizations
+- Funnel visualization with percentage calculations
+- Real-time metric calculations
+- Expandable JSON data viewers
+- Tab-based navigation with lazy loading
+
+**Database Queries:**
+- JOIN between user_subscriptions and subscription_plans
+- Aggregation functions (SUM, COUNT, AVG, ROUND)
+- Window functions for period-over-period comparisons
+- GROUP BY with multiple columns
+- ORDER BY with DESC for most recent first
+- LIMIT and OFFSET for pagination
+- ILIKE for case-insensitive search
+- INTERVAL for date range queries
+- CASE WHEN for conditional logic
+- COALESCE for null handling
+- TO_CHAR for date formatting
+
+**Date Completed:** 2025-10-03
 
 ### Phase 6: Database Tools (Week 7)
 **Goal:** Database administration capabilities

@@ -11,6 +11,8 @@
     <script src="/js/admin-users.js"></script>
     <script src="/js/admin-subscriptions.js"></script>
     <script src="/js/admin-payments.js"></script>
+    <script src="/js/admin-audit.js"></script>
+    <script src="/js/admin-analytics.js"></script>
 </head>
 <body class="admin-portal">
     <!-- Alert Container -->
@@ -305,32 +307,14 @@
             await AdminPayments.init();
         }
 
-        // Load Audit Log (Placeholder)
-        function loadAuditLog() {
-            document.getElementById('audit-page').innerHTML = `
-                <div class="admin-card">
-                    <div class="admin-card-header">
-                        <h2 class="admin-card-title">Audit Log</h2>
-                    </div>
-                    <div class="admin-card-body">
-                        <p>Audit log functionality coming soon...</p>
-                    </div>
-                </div>
-            `;
+        // Load Audit Log
+        async function loadAuditLog() {
+            await AdminAudit.init();
         }
 
-        // Load Analytics (Placeholder)
-        function loadAnalytics() {
-            document.getElementById('analytics-page').innerHTML = `
-                <div class="admin-card">
-                    <div class="admin-card-header">
-                        <h2 class="admin-card-title">Analytics & Reports</h2>
-                    </div>
-                    <div class="admin-card-body">
-                        <p>Analytics functionality coming soon...</p>
-                    </div>
-                </div>
-            `;
+        // Load Analytics
+        async function loadAnalytics() {
+            await AdminAnalytics.init();
         }
 
         // Load Database (Placeholder)

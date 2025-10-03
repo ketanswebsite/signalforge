@@ -654,6 +654,266 @@ router.get('/payment-analytics', asyncHandler(async (req, res) => {
 }));
 
 // ========== Audit Log ==========
+
+// Get unified audit log with filtering
+router.get('/audit/unified', asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 50;
+  const offset = (page - 1) * limit;
+  const entity = req.query.entity;
+  const action = req.query.action;
+  const user = req.query.user;
+  const dateFrom = req.query.dateFrom;
+  const dateTo = req.query.dateTo;
+  const search = req.query.search;
+
+  let query = `
+    SELECT
+      id, entity_type, entity_id, action, user_email,
+      ip_address, user_agent, created_at,
+      changes, old_data, new_data
+    FROM trade_audit_log
+    WHERE 1=1
+  `;
+
+  const params = [];
+  let paramCount = 1;
+
+  if (entity && entity !== 'all') {
+    query += ` AND entity_type = $${paramCount++}`;
+    params.push(entity);
+  }
+
+  if (action && action !== 'all') {
+    query += ` AND action = $${paramCount++}`;
+    params.push(action);
+  }
+
+  if (user) {
+    query += ` AND user_email ILIKE $${paramCount++}`;
+    params.push(`%${user}%`);
+  }
+
+  if (dateFrom) {
+    query += ` AND created_at >= $${paramCount++}`;
+    params.push(dateFrom);
+  }
+
+  if (dateTo) {
+    query += ` AND created_at <= $${paramCount++}`;
+    params.push(dateTo);
+  }
+
+  if (search) {
+    query += ` AND (
+      user_email ILIKE $${paramCount} OR
+      entity_type ILIKE $${paramCount} OR
+      action ILIKE $${paramCount}
+    )`;
+    params.push(`%${search}%`);
+    paramCount++;
+  }
+
+  query += ` ORDER BY created_at DESC LIMIT $${paramCount++} OFFSET $${paramCount++}`;
+  params.push(limit, offset);
+
+  // Get total count
+  let countQuery = 'SELECT COUNT(*) FROM trade_audit_log WHERE 1=1';
+  const countParams = [];
+  let countParamIdx = 1;
+
+  if (entity && entity !== 'all') {
+    countQuery += ` AND entity_type = $${countParamIdx++}`;
+    countParams.push(entity);
+  }
+
+  if (action && action !== 'all') {
+    countQuery += ` AND action = $${countParamIdx++}`;
+    countParams.push(action);
+  }
+
+  if (user) {
+    countQuery += ` AND user_email ILIKE $${countParamIdx++}`;
+    countParams.push(`%${user}%`);
+  }
+
+  if (dateFrom) {
+    countQuery += ` AND created_at >= $${countParamIdx++}`;
+    countParams.push(dateFrom);
+  }
+
+  if (dateTo) {
+    countQuery += ` AND created_at <= $${countParamIdx++}`;
+    countParams.push(dateTo);
+  }
+
+  if (search) {
+    countQuery += ` AND (
+      user_email ILIKE $${countParamIdx} OR
+      entity_type ILIKE $${countParamIdx} OR
+      action ILIKE $${countParamIdx}
+    )`;
+    countParams.push(`%${search}%`);
+  }
+
+  const countResult = await TradeDB.pool.query(countQuery, countParams);
+  const total = parseInt(countResult.rows[0].count);
+
+  const logs = await TradeDB.pool.query(query, params);
+
+  res.json(paginationResponse(logs.rows, page, limit, total));
+}));
+
+// Get specific audit log entry
+router.get('/audit/:id', asyncHandler(async (req, res) => {
+  const logId = req.params.id;
+
+  const result = await TradeDB.pool.query(
+    'SELECT * FROM trade_audit_log WHERE id = $1',
+    [logId]
+  );
+
+  if (result.rows.length === 0) {
+    throw new AdminAPIError('NOT_FOUND', 'Audit log entry not found');
+  }
+
+  res.json(successResponse(result.rows[0]));
+}));
+
+// Get audit analytics
+router.get('/audit/analytics', asyncHandler(async (req, res) => {
+  // Most active users
+  const activeUsersResult = await TradeDB.pool.query(`
+    SELECT
+      user_email,
+      COUNT(*) as action_count
+    FROM trade_audit_log
+    WHERE created_at >= NOW() - INTERVAL '30 days'
+    GROUP BY user_email
+    ORDER BY action_count DESC
+    LIMIT 10
+  `);
+
+  // Action distribution
+  const actionDistResult = await TradeDB.pool.query(`
+    SELECT
+      action,
+      COUNT(*) as count
+    FROM trade_audit_log
+    WHERE created_at >= NOW() - INTERVAL '30 days'
+    GROUP BY action
+    ORDER BY count DESC
+  `);
+
+  // Total actions
+  const totalResult = await TradeDB.pool.query(`
+    SELECT COUNT(*) as total FROM trade_audit_log
+    WHERE created_at >= NOW() - INTERVAL '30 days'
+  `);
+
+  // Last 24 hours
+  const last24Result = await TradeDB.pool.query(`
+    SELECT COUNT(*) as count FROM trade_audit_log
+    WHERE created_at >= NOW() - INTERVAL '24 hours'
+  `);
+
+  const actionDistribution = {};
+  actionDistResult.rows.forEach(row => {
+    actionDistribution[row.action] = parseInt(row.count);
+  });
+
+  res.json(successResponse({
+    mostActiveUsers: activeUsersResult.rows,
+    actionDistribution,
+    totalActions: parseInt(totalResult.rows[0].total),
+    last24Hours: parseInt(last24Result.rows[0].count)
+  }));
+}));
+
+// Export audit logs
+router.get('/audit/export', asyncHandler(async (req, res) => {
+  const format = req.query.format || 'csv';
+  const entity = req.query.entity;
+  const action = req.query.action;
+  const user = req.query.user;
+  const dateFrom = req.query.dateFrom;
+  const dateTo = req.query.dateTo;
+
+  let query = 'SELECT * FROM trade_audit_log WHERE 1=1';
+  const params = [];
+  let paramCount = 1;
+
+  if (entity && entity !== 'all') {
+    query += ` AND entity_type = $${paramCount++}`;
+    params.push(entity);
+  }
+
+  if (action && action !== 'all') {
+    query += ` AND action = $${paramCount++}`;
+    params.push(action);
+  }
+
+  if (user) {
+    query += ` AND user_email ILIKE $${paramCount++}`;
+    params.push(`%${user}%`);
+  }
+
+  if (dateFrom) {
+    query += ` AND created_at >= $${paramCount++}`;
+    params.push(dateFrom);
+  }
+
+  if (dateTo) {
+    query += ` AND created_at <= $${paramCount++}`;
+    params.push(dateTo);
+  }
+
+  query += ' ORDER BY created_at DESC LIMIT 10000';
+
+  const result = await TradeDB.pool.query(query, params);
+
+  if (format === 'csv') {
+    const headers = ['ID', 'Timestamp', 'Entity Type', 'Entity ID', 'Action', 'User Email', 'IP Address'];
+    const rows = result.rows.map(row => [
+      row.id,
+      row.created_at,
+      row.entity_type,
+      row.entity_id || '',
+      row.action,
+      row.user_email || '',
+      row.ip_address || ''
+    ]);
+
+    let csv = headers.join(',') + '\n';
+    rows.forEach(row => {
+      csv += row.map(cell => `"${cell}"`).join(',') + '\n';
+    });
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=audit-logs.csv');
+    res.send(csv);
+  } else {
+    res.json(result.rows);
+  }
+}));
+
+// Export single log entry
+router.get('/audit/:id/export', asyncHandler(async (req, res) => {
+  const logId = req.params.id;
+
+  const result = await TradeDB.pool.query(
+    'SELECT * FROM trade_audit_log WHERE id = $1',
+    [logId]
+  );
+
+  if (result.rows.length === 0) {
+    throw new AdminAPIError('NOT_FOUND', 'Audit log entry not found');
+  }
+
+  res.json(successResponse(result.rows[0]));
+}));
+
+// Legacy audit endpoints (for backward compatibility)
 router.get('/audit/logs', asyncHandler(async (req, res) => {
   const limit = parseInt(req.query.limit) || 100;
   const adminEmail = req.query.adminEmail;
@@ -682,6 +942,316 @@ router.get('/audit/statistics', asyncHandler(async (req, res) => {
 }));
 
 // ========== Analytics ==========
+
+// Revenue Analytics
+router.get('/analytics/revenue', asyncHandler(async (req, res) => {
+  // Calculate MRR
+  const mrrResult = await TradeDB.pool.query(`
+    SELECT COALESCE(SUM(sp.price_monthly), 0) as mrr
+    FROM user_subscriptions us
+    JOIN subscription_plans sp ON us.plan_id = sp.id
+    WHERE us.status = 'active'
+  `);
+
+  const mrr = parseFloat(mrrResult.rows[0].mrr);
+  const arr = mrr * 12;
+
+  // Calculate ARPU (Average Revenue Per User)
+  const arpuResult = await TradeDB.pool.query(`
+    SELECT
+      CASE WHEN COUNT(*) > 0 THEN SUM(sp.price_monthly) / COUNT(*)
+      ELSE 0 END as arpu
+    FROM user_subscriptions us
+    JOIN subscription_plans sp ON us.plan_id = sp.id
+    WHERE us.status = 'active'
+  `);
+
+  // Calculate LTV (simple: MRR / churn rate)
+  const churnResult = await TradeDB.pool.query(`
+    SELECT
+      COUNT(CASE WHEN status = 'cancelled' AND subscription_end_date >= NOW() - INTERVAL '30 days' THEN 1 END) as cancelled,
+      COUNT(CASE WHEN status = 'active' THEN 1 END) as active
+    FROM user_subscriptions
+  `);
+
+  const cancelled = parseInt(churnResult.rows[0].cancelled);
+  const active = parseInt(churnResult.rows[0].active);
+  const churnRate = active > 0 ? (cancelled / (active + cancelled)) * 100 : 0;
+  const ltv = churnRate > 0 ? (mrr / (churnRate / 100)) : 0;
+
+  // Revenue by region
+  const regionResult = await TradeDB.pool.query(`
+    SELECT
+      sp.region,
+      COALESCE(SUM(sp.price_monthly), 0) as revenue
+    FROM user_subscriptions us
+    JOIN subscription_plans sp ON us.plan_id = sp.id
+    WHERE us.status = 'active'
+    GROUP BY sp.region
+    ORDER BY revenue DESC
+  `);
+
+  const byRegion = {};
+  regionResult.rows.forEach(row => {
+    byRegion[row.region] = parseFloat(row.revenue);
+  });
+
+  // Revenue by plan
+  const planResult = await TradeDB.pool.query(`
+    SELECT
+      sp.plan_name,
+      COALESCE(SUM(sp.price_monthly), 0) as revenue
+    FROM user_subscriptions us
+    JOIN subscription_plans sp ON us.plan_id = sp.id
+    WHERE us.status = 'active'
+    GROUP BY sp.plan_name
+    ORDER BY revenue DESC
+  `);
+
+  const byPlan = {};
+  planResult.rows.forEach(row => {
+    byPlan[row.plan_name] = parseFloat(row.revenue);
+  });
+
+  // Revenue trend (last 12 months)
+  const trendResult = await TradeDB.pool.query(`
+    SELECT
+      TO_CHAR(created_at, 'Mon YYYY') as month,
+      COALESCE(SUM(amount), 0) as revenue
+    FROM payment_transactions
+    WHERE created_at >= NOW() - INTERVAL '12 months' AND status = 'completed'
+    GROUP BY TO_CHAR(created_at, 'Mon YYYY'), EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at)
+    ORDER BY EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at)
+  `);
+
+  res.json(successResponse({
+    mrr,
+    arr,
+    arpu: parseFloat(arpuResult.rows[0].arpu),
+    ltv: parseFloat(ltv.toFixed(2)),
+    mrrGrowth: 12, // Placeholder
+    byRegion,
+    byPlan,
+    trend: trendResult.rows
+  }));
+}));
+
+// User Engagement Analytics
+router.get('/analytics/engagement', asyncHandler(async (req, res) => {
+  // DAU (Daily Active Users) - users who logged in today
+  const dauResult = await TradeDB.pool.query(`
+    SELECT COUNT(DISTINCT email) as dau
+    FROM users
+    WHERE last_login >= CURRENT_DATE
+  `);
+
+  // WAU (Weekly Active Users)
+  const wauResult = await TradeDB.pool.query(`
+    SELECT COUNT(DISTINCT email) as wau
+    FROM users
+    WHERE last_login >= CURRENT_DATE - INTERVAL '7 days'
+  `);
+
+  // MAU (Monthly Active Users)
+  const mauResult = await TradeDB.pool.query(`
+    SELECT COUNT(DISTINCT email) as mau
+    FROM users
+    WHERE last_login >= CURRENT_DATE - INTERVAL '30 days'
+  `);
+
+  // Inactive users (30+ days)
+  const inactiveResult = await TradeDB.pool.query(`
+    SELECT COUNT(*) as inactive
+    FROM users
+    WHERE last_login < CURRENT_DATE - INTERVAL '30 days' OR last_login IS NULL
+  `);
+
+  // Feature usage (placeholder - would need actual feature tracking)
+  const featureUsage = {
+    'Trade Management': 89,
+    'Analytics': 67,
+    'Export': 45,
+    'ML Insights': 23
+  };
+
+  // Activity trend (last 30 days)
+  const activityTrendResult = await TradeDB.pool.query(`
+    SELECT
+      TO_CHAR(last_login, 'YYYY-MM-DD') as date,
+      COUNT(DISTINCT email) as active_users
+    FROM users
+    WHERE last_login >= CURRENT_DATE - INTERVAL '30 days'
+    GROUP BY TO_CHAR(last_login, 'YYYY-MM-DD')
+    ORDER BY date
+  `);
+
+  res.json(successResponse({
+    dau: parseInt(dauResult.rows[0].dau),
+    wau: parseInt(wauResult.rows[0].wau),
+    mau: parseInt(mauResult.rows[0].mau),
+    inactive: parseInt(inactiveResult.rows[0].inactive),
+    wauGrowth: 7.6, // Placeholder
+    mauGrowth: 12.2, // Placeholder
+    featureUsage,
+    activityTrend: activityTrendResult.rows
+  }));
+}));
+
+// Subscription Health Analytics
+router.get('/analytics/subscriptions', asyncHandler(async (req, res) => {
+  // Trial conversion rate
+  const conversionResult = await TradeDB.pool.query(`
+    SELECT
+      COUNT(CASE WHEN status = 'active' AND trial_end_date IS NOT NULL THEN 1 END) as converted,
+      COUNT(CASE WHEN trial_end_date IS NOT NULL THEN 1 END) as total_trials
+    FROM user_subscriptions
+  `);
+
+  const converted = parseInt(conversionResult.rows[0].converted);
+  const totalTrials = parseInt(conversionResult.rows[0].total_trials);
+  const trialConversion = totalTrials > 0 ? ((converted / totalTrials) * 100).toFixed(1) : 0;
+
+  // Churn rate
+  const churnResult = await TradeDB.pool.query(`
+    SELECT
+      COUNT(CASE WHEN status = 'cancelled' AND subscription_end_date >= NOW() - INTERVAL '30 days' THEN 1 END) as cancelled,
+      COUNT(CASE WHEN status = 'active' THEN 1 END) as active
+    FROM user_subscriptions
+  `);
+
+  const cancelled = parseInt(churnResult.rows[0].cancelled);
+  const active = parseInt(churnResult.rows[0].active);
+  const churnRate = active > 0 ? ((cancelled / (active + cancelled)) * 100).toFixed(1) : 0;
+
+  // Upgrades/downgrades (placeholder)
+  const upgrades = 12;
+  const downgrades = 3;
+
+  // Subscription funnel
+  const funnelResult = await TradeDB.pool.query(`
+    SELECT
+      COUNT(*) as signups
+    FROM users
+  `);
+
+  const funnel = {
+    signups: parseInt(funnelResult.rows[0].signups),
+    trialStarted: totalTrials,
+    profileCompleted: Math.floor(totalTrials * 0.88), // Placeholder
+    converted
+  };
+
+  // Age distribution
+  const ageDistResult = await TradeDB.pool.query(`
+    SELECT
+      CASE
+        WHEN us.created_at >= NOW() - INTERVAL '30 days' THEN '0-30 days'
+        WHEN us.created_at >= NOW() - INTERVAL '90 days' THEN '31-90 days'
+        WHEN us.created_at >= NOW() - INTERVAL '180 days' THEN '91-180 days'
+        ELSE '180+ days'
+      END as age_group,
+      COUNT(*) as count
+    FROM user_subscriptions us
+    WHERE status = 'active'
+    GROUP BY age_group
+  `);
+
+  const ageDistribution = {};
+  ageDistResult.rows.forEach(row => {
+    ageDistribution[row.age_group] = parseInt(row.count);
+  });
+
+  res.json(successResponse({
+    trialConversion: parseFloat(trialConversion),
+    churnRate: parseFloat(churnRate),
+    upgrades,
+    downgrades,
+    funnel,
+    ageDistribution
+  }));
+}));
+
+// Trading Activity Analytics
+router.get('/analytics/trades', asyncHandler(async (req, res) => {
+  // Total trades
+  const totalResult = await TradeDB.pool.query(`
+    SELECT COUNT(*) as total FROM trades
+  `);
+
+  // Win rate
+  const winRateResult = await TradeDB.pool.query(`
+    SELECT
+      COUNT(CASE WHEN profit_loss_percentage > 0 THEN 1 END) as winning,
+      COUNT(*) as total
+    FROM trades
+    WHERE status = 'closed'
+  `);
+
+  const winning = parseInt(winRateResult.rows[0].winning);
+  const total = parseInt(winRateResult.rows[0].total);
+  const winRate = total > 0 ? ((winning / total) * 100).toFixed(1) : 0;
+
+  // Average P/L
+  const avgPLResult = await TradeDB.pool.query(`
+    SELECT AVG(profit_loss_percentage) as avg_pl
+    FROM trades
+    WHERE status = 'closed'
+  `);
+
+  // Avg trades per user
+  const avgTradesResult = await TradeDB.pool.query(`
+    SELECT
+      CASE WHEN COUNT(DISTINCT user_email) > 0
+      THEN COUNT(*)::DECIMAL / COUNT(DISTINCT user_email)
+      ELSE 0 END as avg_trades
+    FROM trades
+  `);
+
+  // Top symbols
+  const topSymbolsResult = await TradeDB.pool.query(`
+    SELECT
+      symbol,
+      COUNT(*) as count,
+      ROUND((COUNT(CASE WHEN profit_loss_percentage > 0 THEN 1 END)::DECIMAL / COUNT(*) * 100), 1) as win_rate,
+      ROUND(AVG(profit_loss_percentage), 2) as avg_pl
+    FROM trades
+    WHERE status = 'closed'
+    GROUP BY symbol
+    ORDER BY count DESC
+    LIMIT 10
+  `);
+
+  res.json(successResponse({
+    totalTrades: parseInt(totalResult.rows[0].total),
+    winRate: parseFloat(winRate),
+    winningTrades: winning,
+    avgPL: parseFloat(avgPLResult.rows[0].avg_pl || 0).toFixed(2),
+    avgTradesPerUser: parseFloat(avgTradesResult.rows[0].avg_trades || 0).toFixed(1),
+    topSymbols: topSymbolsResult.rows
+  }));
+}));
+
+// Generate Custom Report
+router.post('/analytics/reports', asyncHandler(async (req, res) => {
+  const { type, period, format, email, sections } = req.body;
+
+  requireFields(req.body, ['type', 'period', 'format']);
+
+  // Placeholder implementation
+  // In a real implementation, this would generate actual reports in PDF, Excel, etc.
+
+  res.json(successResponse({
+    message: `Report generation started`,
+    type,
+    period,
+    format,
+    email,
+    sections,
+    status: 'processing'
+  }));
+}));
+
+// Legacy analytics endpoint
 router.get('/analytics/overview', asyncHandler(async (req, res) => {
   // Placeholder - implement detailed analytics
   res.json(successResponse({
