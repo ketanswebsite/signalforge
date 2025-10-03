@@ -9,6 +9,7 @@
     <script src="/js/admin-components.js"></script>
     <script src="/js/admin-dashboard.js"></script>
     <script src="/js/admin-users.js"></script>
+    <script src="/js/admin-subscriptions.js"></script>
 </head>
 <body class="admin-portal">
     <!-- Alert Container -->
@@ -293,19 +294,9 @@
             await AdminUsers.init();
         }
 
-        // Load Subscriptions (Placeholder)
-        function loadSubscriptions() {
-            document.getElementById('subscriptions-page').innerHTML = `
-                <div class="admin-card">
-                    <div class="admin-card-header">
-                        <h2 class="admin-card-title">Subscription Management</h2>
-                        <button class="btn btn-primary">Create Plan</button>
-                    </div>
-                    <div class="admin-card-body">
-                        <p>Subscription management functionality coming soon...</p>
-                    </div>
-                </div>
-            `;
+        // Load Subscriptions
+        async function loadSubscriptions() {
+            await AdminSubscriptions.init();
         }
 
         // Load Payments (Placeholder)
