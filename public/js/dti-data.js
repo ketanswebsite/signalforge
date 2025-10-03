@@ -21,12 +21,18 @@ const DTIData = (function() {
     
     // Constants
     const MAX_RETRIES = 1;
-    const CONCURRENT_REQUESTS_LIMIT = 5; // Limit concurrent requests to avoid overwhelming Yahoo Finance API
+    const CONCURRENT_REQUESTS_LIMIT = 50; // Process stocks in parallel batches
 
-    // Blocklist for known problematic stocks (now empty - all problematic stocks removed from source data)
+    // Blocklist for known problematic stocks (delisted, renamed, or consistently unavailable)
     const STOCK_BLOCKLIST = new Set([
-        // All problematic stocks have been completely removed from the stock data files
-        // This blocklist is maintained for future use if new problematic stocks are discovered
+        // US stocks with 500 errors (likely delisted)
+        'SAGE', 'BPMC', 'HES', 'TGI',
+
+        // UK stock with 500 error
+        'INDV.L',
+
+        // Indian stock with persistent failures
+        'SESHAPAPER.NS'
     ]);
 
     // Track failed stocks for better reporting
@@ -536,9 +542,9 @@ async function fetchCurrentQuote(symbol) {
                 }
             });
             
-            // Add a delay between batches to avoid overwhelming the API and prevent rate limiting
+            // Add a small delay between batches to avoid overwhelming the API
             if (batchIndex < batches.length - 1) {
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                await new Promise(resolve => setTimeout(resolve, 100));
             }
         }
         
