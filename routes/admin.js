@@ -43,7 +43,8 @@ router.post('/auth/verify', verifyTokenEndpoint);
 
 // Apply admin authentication and activity logging to all routes below
 router.use(ensureAdminAPI);
-router.use(logAdminAPIRequest());
+// Temporarily disable activity logging to debug 500 errors
+// router.use(logAdminAPIRequest());
 
 // ========== SSE Endpoint ==========
 router.get('/events', (req, res) => {
