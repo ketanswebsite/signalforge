@@ -51,82 +51,65 @@ router.get('/events', (req, res) => {
 });
 
 // ========== Dashboard Metrics ==========
-router.get('/dashboard/metrics', async (req, res) => {
+router.get('/dashboard/metrics', asyncHandler(async (req, res) => {
+  // Initialize default values
+  let totalUsers = 0;
+  let activeSubscriptions = 0;
+  let totalTrades = 0;
+  let mrr = 0;
+  let paymentsThisMonth = 0;
+
+  // Get metrics from database with individual try-catch for each table
   try {
-    // Initialize default values
-    let totalUsers = 0;
-    let activeSubscriptions = 0;
-    let totalTrades = 0;
-    let mrr = 0;
-    let paymentsThisMonth = 0;
-
-    // Get metrics from database with individual try-catch for each table
-    try {
-      const usersResult = await TradeDB.pool.query('SELECT COUNT(*) FROM users');
-      totalUsers = parseInt(usersResult.rows[0].count) || 0;
-    } catch (error) {
-      console.log('Users table query failed:', error.message);
-    }
-
-    try {
-      const subsResult = await TradeDB.pool.query(
-        "SELECT COUNT(*) FROM user_subscriptions WHERE status = 'active'"
-      );
-      activeSubscriptions = parseInt(subsResult.rows[0].count) || 0;
-    } catch (error) {
-      console.log('Subscriptions table query failed:', error.message);
-    }
-
-    try {
-      const tradesResult = await TradeDB.pool.query('SELECT COUNT(*) FROM trades');
-      totalTrades = parseInt(tradesResult.rows[0].count) || 0;
-    } catch (error) {
-      console.log('Trades table query failed:', error.message);
-    }
-
-    // Calculate MRR (if subscription_plans table exists)
-    try {
-      const mrrResult = await TradeDB.pool.query(`
-        SELECT COALESCE(SUM(sp.price_monthly), 0) as total_mrr
-        FROM user_subscriptions us
-        JOIN subscription_plans sp ON us.plan_id = sp.id
-        WHERE us.status = 'active'
-      `);
-      mrr = parseFloat(mrrResult.rows[0]?.total_mrr || 0);
-    } catch (error) {
-      console.log('MRR calculation failed:', error.message);
-    }
-
-    return res.json(successResponse({
-      mrr,
-      totalUsers,
-      activeSubscriptions,
-      totalTrades,
-      paymentsThisMonth,
-      changes: {
-        mrr: '+0%',
-        users: '+0',
-        subscriptions: '+0',
-        payments: '+0'
-      }
-    }));
+    const usersResult = await TradeDB.pool.query('SELECT COUNT(*) FROM users');
+    totalUsers = parseInt(usersResult.rows[0].count) || 0;
   } catch (error) {
-    console.error('Dashboard metrics error:', error);
-    return res.json(successResponse({
-      mrr: 0,
-      totalUsers: 0,
-      activeSubscriptions: 0,
-      totalTrades: 0,
-      paymentsThisMonth: 0,
-      changes: {
-        mrr: '+0%',
-        users: '+0',
-        subscriptions: '+0',
-        payments: '+0'
-      }
-    }));
+    console.log('Users table query failed:', error.message);
   }
-});
+
+  try {
+    const subsResult = await TradeDB.pool.query(
+      "SELECT COUNT(*) FROM user_subscriptions WHERE status = 'active'"
+    );
+    activeSubscriptions = parseInt(subsResult.rows[0].count) || 0;
+  } catch (error) {
+    console.log('Subscriptions table query failed:', error.message);
+  }
+
+  try {
+    const tradesResult = await TradeDB.pool.query('SELECT COUNT(*) FROM trades');
+    totalTrades = parseInt(tradesResult.rows[0].count) || 0;
+  } catch (error) {
+    console.log('Trades table query failed:', error.message);
+  }
+
+  // Calculate MRR (if subscription_plans table exists)
+  try {
+    const mrrResult = await TradeDB.pool.query(`
+      SELECT COALESCE(SUM(sp.price_monthly), 0) as total_mrr
+      FROM user_subscriptions us
+      JOIN subscription_plans sp ON us.plan_id = sp.id
+      WHERE us.status = 'active'
+    `);
+    mrr = parseFloat(mrrResult.rows[0]?.total_mrr || 0);
+  } catch (error) {
+    console.log('MRR calculation failed:', error.message);
+  }
+
+  res.json(successResponse({
+    mrr,
+    totalUsers,
+    activeSubscriptions,
+    totalTrades,
+    paymentsThisMonth,
+    changes: {
+      mrr: '+0%',
+      users: '+0',
+      subscriptions: '+0',
+      payments: '+0'
+    }
+  }));
+}));
 
 // ========== User Management ==========
 router.get('/users', asyncHandler(async (req, res) => {
@@ -951,34 +934,29 @@ router.get('/audit/:id/export', asyncHandler(async (req, res) => {
 }));
 
 // Legacy audit endpoints (for backward compatibility)
-router.get('/audit/logs', async (req, res) => {
+router.get('/audit/logs', asyncHandler(async (req, res) => {
+  const limit = parseInt(req.query.limit) || 100;
+  const adminEmail = req.query.adminEmail;
+  const activityType = req.query.activityType;
+  const startDate = req.query.startDate;
+  const endDate = req.query.endDate;
+
+  let logs = [];
   try {
-    const limit = parseInt(req.query.limit) || 100;
-    const adminEmail = req.query.adminEmail;
-    const activityType = req.query.activityType;
-    const startDate = req.query.startDate;
-    const endDate = req.query.endDate;
-
-    let logs = [];
-    try {
-      logs = await getRecentActivityLogs({
-        limit,
-        adminEmail,
-        activityType,
-        startDate,
-        endDate
-      });
-    } catch (error) {
-      console.log('Failed to load activity logs:', error.message);
-      // Return empty logs array
-    }
-
-    return res.json(successResponse({ logs }));
+    logs = await getRecentActivityLogs({
+      limit,
+      adminEmail,
+      activityType,
+      startDate,
+      endDate
+    });
   } catch (error) {
-    console.error('Audit logs error:', error);
-    return res.json(successResponse({ logs: [] }));
+    console.log('Failed to load activity logs:', error.message);
+    // Return empty logs array
   }
-});
+
+  res.json(successResponse({ logs }));
+}));
 
 router.get('/audit/statistics', asyncHandler(async (req, res) => {
   const startDate = req.query.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
