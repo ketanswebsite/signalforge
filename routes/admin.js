@@ -1215,8 +1215,8 @@ router.get('/analytics/trades', asyncHandler(async (req, res) => {
   // Avg trades per user
   const avgTradesResult = await TradeDB.pool.query(`
     SELECT
-      CASE WHEN COUNT(DISTINCT user_email) > 0
-      THEN COUNT(*)::DECIMAL / COUNT(DISTINCT user_email)
+      CASE WHEN COUNT(DISTINCT user_id) > 0
+      THEN COUNT(*)::DECIMAL / COUNT(DISTINCT user_id)
       ELSE 0 END as avg_trades
     FROM trades
   `);
