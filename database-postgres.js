@@ -225,6 +225,11 @@ const TradeDB = {
     return dbConnected && pool !== null;
   },
 
+  // Expose pool for direct queries (used by admin routes)
+  get pool() {
+    return pool;
+  },
+
   // Get all trades for a user
   async getAllTrades(userId = 'default') {
     checkConnection();
