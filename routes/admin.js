@@ -1289,12 +1289,12 @@ router.get('/database/health', asyncHandler(async (req, res) => {
   const tables = await TradeDB.pool.query(`
     SELECT
       t.schemaname,
-      t.tablename,
-      pg_size_pretty(pg_total_relation_size(t.schemaname||'.'||t.tablename)) AS size,
+      t.relname as tablename,
+      pg_size_pretty(pg_total_relation_size(t.schemaname||'.'||t.relname)) AS size,
       t.n_live_tup as row_count,
-      (SELECT count(*) FROM pg_indexes i WHERE i.tablename = t.tablename AND i.schemaname = t.schemaname) as indexes
+      (SELECT count(*) FROM pg_indexes i WHERE i.tablename = t.relname AND i.schemaname = t.schemaname) as indexes
     FROM pg_stat_user_tables t
-    ORDER BY pg_total_relation_size(t.schemaname||'.'||t.tablename) DESC
+    ORDER BY pg_total_relation_size(t.schemaname||'.'||t.relname) DESC
   `);
 
   const latency = Date.now() - startTime;
