@@ -794,23 +794,7 @@ router.get('/audit/unified', asyncHandler(async (req, res) => {
   res.json(paginationResponse(logs.rows, page, limit, total));
 }));
 
-// Get specific audit log entry
-router.get('/audit/:id', asyncHandler(async (req, res) => {
-  const logId = req.params.id;
-
-  const result = await TradeDB.pool.query(
-    'SELECT * FROM trade_audit_log WHERE id = $1',
-    [logId]
-  );
-
-  if (result.rows.length === 0) {
-    throw new AdminAPIError('NOT_FOUND', 'Audit log entry not found');
-  }
-
-  res.json(successResponse(result.rows[0]));
-}));
-
-// Get audit analytics
+// Get audit analytics (must come BEFORE /audit/:id to avoid route conflict)
 router.get('/audit/analytics', asyncHandler(async (req, res) => {
   // Most active users
   const activeUsersResult = await TradeDB.pool.query(`
@@ -860,7 +844,7 @@ router.get('/audit/analytics', asyncHandler(async (req, res) => {
   }));
 }));
 
-// Export audit logs
+// Export audit logs (must come BEFORE /audit/:id to avoid route conflict)
 router.get('/audit/export', asyncHandler(async (req, res) => {
   const format = req.query.format || 'csv';
   const entity = req.query.entity;
@@ -927,6 +911,32 @@ router.get('/audit/export', asyncHandler(async (req, res) => {
   }
 }));
 
+// Get audit statistics (must come BEFORE /audit/:id to avoid route conflict)
+router.get('/audit/statistics', asyncHandler(async (req, res) => {
+  const startDate = req.query.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const endDate = req.query.endDate || new Date().toISOString();
+
+  const statistics = await getActivityStatistics({ startDate, endDate });
+
+  res.json(successResponse({ statistics }));
+}));
+
+// Get specific audit log entry (must come AFTER specific routes)
+router.get('/audit/:id', asyncHandler(async (req, res) => {
+  const logId = req.params.id;
+
+  const result = await TradeDB.pool.query(
+    'SELECT * FROM trade_audit_log WHERE id = $1',
+    [logId]
+  );
+
+  if (result.rows.length === 0) {
+    throw new AdminAPIError('NOT_FOUND', 'Audit log entry not found');
+  }
+
+  res.json(successResponse(result.rows[0]));
+}));
+
 // Export single log entry
 router.get('/audit/:id/export', asyncHandler(async (req, res) => {
   const logId = req.params.id;
@@ -944,15 +954,6 @@ router.get('/audit/:id/export', asyncHandler(async (req, res) => {
 }));
 
 // Note: /audit/logs route is defined earlier before auth middleware
-
-router.get('/audit/statistics', asyncHandler(async (req, res) => {
-  const startDate = req.query.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-  const endDate = req.query.endDate || new Date().toISOString();
-
-  const statistics = await getActivityStatistics({ startDate, endDate });
-
-  res.json(successResponse({ statistics }));
-}));
 
 // ========== Analytics ==========
 
