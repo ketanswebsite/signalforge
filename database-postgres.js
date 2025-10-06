@@ -122,6 +122,21 @@ async function initializeDatabase() {
       )
     `);
 
+    // Create payment_refunds table for tracking refunded payments
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS payment_refunds (
+        id SERIAL PRIMARY KEY,
+        transaction_id VARCHAR(255) NOT NULL,
+        user_email VARCHAR(255) NOT NULL,
+        refund_amount DECIMAL(12, 2) NOT NULL,
+        currency VARCHAR(10) NOT NULL,
+        refund_reason TEXT,
+        status VARCHAR(50) DEFAULT 'completed',
+        refunded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Create high_conviction_portfolio table for tracking high conviction trades
     await pool.query(`
       CREATE TABLE IF NOT EXISTS high_conviction_portfolio (
