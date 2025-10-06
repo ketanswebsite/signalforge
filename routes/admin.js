@@ -492,23 +492,7 @@ router.get('/payments', asyncHandler(async (req, res) => {
   res.json(paginationResponse(payments.rows, page, limit, total));
 }));
 
-// Get single payment
-router.get('/payments/:transactionId', asyncHandler(async (req, res) => {
-  const transactionId = req.params.transactionId;
-
-  const result = await TradeDB.pool.query(
-    'SELECT * FROM payment_transactions WHERE transaction_id = $1',
-    [transactionId]
-  );
-
-  if (result.rows.length === 0) {
-    throw new AdminAPIError('NOT_FOUND', 'Payment not found');
-  }
-
-  res.json(successResponse(result.rows[0]));
-}));
-
-// Get verification queue
+// Get verification queue (must come BEFORE /:transactionId to avoid route conflict)
 router.get('/payments/verification-queue', asyncHandler(async (req, res) => {
   const result = await TradeDB.pool.query(`
     SELECT
@@ -526,6 +510,35 @@ router.get('/payments/verification-queue', asyncHandler(async (req, res) => {
   res.json(successResponse({
     queue: result.rows
   }));
+}));
+
+// Get refunds (must come BEFORE /:transactionId to avoid route conflict)
+router.get('/payments/refunds', asyncHandler(async (req, res) => {
+  const result = await TradeDB.pool.query(`
+    SELECT * FROM payment_refunds
+    ORDER BY created_at DESC
+    LIMIT 100
+  `);
+
+  res.json(successResponse({
+    refunds: result.rows
+  }));
+}));
+
+// Get single payment
+router.get('/payments/:transactionId', asyncHandler(async (req, res) => {
+  const transactionId = req.params.transactionId;
+
+  const result = await TradeDB.pool.query(
+    'SELECT * FROM payment_transactions WHERE transaction_id = $1',
+    [transactionId]
+  );
+
+  if (result.rows.length === 0) {
+    throw new AdminAPIError('NOT_FOUND', 'Payment not found');
+  }
+
+  res.json(successResponse(result.rows[0]));
 }));
 
 // Verify payment
@@ -599,19 +612,6 @@ router.post('/payments/:transactionId/refund', asyncHandler(async (req, res) => 
     { transactionId, refundAmount: payment.amount },
     'Refund processed successfully'
   ));
-}));
-
-// Get refunds
-router.get('/payments/refunds', asyncHandler(async (req, res) => {
-  const result = await TradeDB.pool.query(`
-    SELECT * FROM payment_refunds
-    ORDER BY created_at DESC
-    LIMIT 100
-  `);
-
-  res.json(successResponse({
-    refunds: result.rows
-  }));
 }));
 
 // Get payment analytics
