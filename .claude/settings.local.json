@@ -81,7 +81,12 @@
       "Bash(export NODE_ENV=production)",
       "Bash(DATABASE_URL=\"postgresql://signalforge_db_user:Xcipr9Wa1KeSWCNPjM9ymyMbD0SENf4R@dpg-d0vgkl95pdvs738glu0g-a.oregon-postgres.render.com/signalforge_db\" psql -f 008_create_admin_activity_log.sql)",
       "Bash(DATABASE_URL=\"postgresql://signalforge_db_user:Xcipr9Wa1KeSWCNPjM9ymyMbD0SENf4R@dpg-d0vgkl95pdvs738glu0g-a.oregon-postgres.render.com/signalforge_db\" NODE_ENV=production node run-single-migration.js 008_create_admin_activity_log.sql)",
-      "Bash(DATABASE_URL=\"postgresql://signalforge_db_user:Xcipr9Wa1KeSWCNPjM9ymyMbD0SENf4R@dpg-d0vgkl95pdvs738glu0g-a.oregon-postgres.render.com/signalforge_db\" NODE_ENV=production node ./run-single-migration.js 008_create_admin_activity_log.sql)"
+      "Bash(DATABASE_URL=\"postgresql://signalforge_db_user:Xcipr9Wa1KeSWCNPjM9ymyMbD0SENf4R@dpg-d0vgkl95pdvs738glu0g-a.oregon-postgres.render.com/signalforge_db\" NODE_ENV=production node ./run-single-migration.js 008_create_admin_activity_log.sql)",
+      "mcp__render__list_services",
+      "mcp__render__list_postgres_instances",
+      "mcp__render__list_workspaces",
+      "mcp__render__list_logs",
+      "mcp__render__list_deploys"
     ],
     "deny": []
   },
