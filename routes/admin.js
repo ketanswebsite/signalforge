@@ -332,8 +332,8 @@ router.get('/subscriptions', asyncHandler(async (req, res) => {
       us.plan_id,
       us.status,
       us.trial_end_date,
-      us.subscription_start_date,
-      us.subscription_end_date,
+      us.start_date,
+      us.end_date,
       us.created_at,
       sp.plan_name,
       sp.currency,
@@ -376,7 +376,7 @@ router.post('/subscriptions/:id/cancel', asyncHandler(async (req, res) => {
 
   const result = await TradeDB.pool.query(`
     UPDATE user_subscriptions
-    SET status = 'cancelled', subscription_end_date = NOW()
+    SET status = 'cancelled', end_date = NOW()
     WHERE id = $1
     RETURNING *
   `, [subscriptionId]);
@@ -401,7 +401,7 @@ router.get('/subscription-analytics', asyncHandler(async (req, res) => {
   // Calculate churn rate (cancelled in last 30 days / active at start of period)
   const churnResult = await TradeDB.pool.query(`
     SELECT
-      COUNT(CASE WHEN status = 'cancelled' AND subscription_end_date >= NOW() - INTERVAL '30 days' THEN 1 END) as cancelled,
+      COUNT(CASE WHEN status = 'cancelled' AND end_date >= NOW() - INTERVAL '30 days' THEN 1 END) as cancelled,
       COUNT(CASE WHEN status = 'active' THEN 1 END) as active
     FROM user_subscriptions
   `);
@@ -982,7 +982,7 @@ router.get('/analytics/revenue', asyncHandler(async (req, res) => {
   // Calculate LTV (simple: MRR / churn rate)
   const churnResult = await TradeDB.pool.query(`
     SELECT
-      COUNT(CASE WHEN status = 'cancelled' AND subscription_end_date >= NOW() - INTERVAL '30 days' THEN 1 END) as cancelled,
+      COUNT(CASE WHEN status = 'cancelled' AND end_date >= NOW() - INTERVAL '30 days' THEN 1 END) as cancelled,
       COUNT(CASE WHEN status = 'active' THEN 1 END) as active
     FROM user_subscriptions
   `);
@@ -1127,7 +1127,7 @@ router.get('/analytics/subscriptions', asyncHandler(async (req, res) => {
   // Churn rate
   const churnResult = await TradeDB.pool.query(`
     SELECT
-      COUNT(CASE WHEN status = 'cancelled' AND subscription_end_date >= NOW() - INTERVAL '30 days' THEN 1 END) as cancelled,
+      COUNT(CASE WHEN status = 'cancelled' AND end_date >= NOW() - INTERVAL '30 days' THEN 1 END) as cancelled,
       COUNT(CASE WHEN status = 'active' THEN 1 END) as active
     FROM user_subscriptions
   `);
