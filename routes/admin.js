@@ -1497,8 +1497,8 @@ router.get('/database/maintenance-status', asyncHandler(async (req, res) => {
   const indexResult = await TradeDB.pool.query(`
     SELECT
       schemaname,
-      tablename,
-      indexname,
+      relname as tablename,
+      indexrelname as indexname,
       idx_scan,
       idx_tup_read,
       idx_tup_fetch
