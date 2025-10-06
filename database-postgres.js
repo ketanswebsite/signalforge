@@ -201,6 +201,24 @@ async function initializeDatabase() {
       // Table might not exist yet or columns already added - this is OK
     }
 
+    // Create schema_migrations table for tracking applied migrations
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS schema_migrations (
+        id SERIAL PRIMARY KEY,
+        filename VARCHAR(255) UNIQUE NOT NULL,
+        applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Mark migrations 008 and 009 as applied (they were run through database initialization)
+    await pool.query(`
+      INSERT INTO schema_migrations (filename, applied_at)
+      VALUES
+        ('008_create_admin_activity_log.sql', NOW()),
+        ('009_add_unified_audit_columns.sql', NOW())
+      ON CONFLICT (filename) DO NOTHING
+    `);
+
   } catch (error) {
     throw error;
   }
