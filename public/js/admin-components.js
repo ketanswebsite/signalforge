@@ -56,7 +56,7 @@ const AdminComponents = {
       const actionButtons = actions.map(action => {
         const disabled = action.disabled && action.disabled(row) ? 'disabled' : '';
         const className = action.className || 'btn-secondary';
-        return `<button class="btn btn-sm ${className}" onclick="(${action.onClick.toString()})(${JSON.stringify(row)})" ${disabled}>${action.label}</button>`;
+        return `<button class="btn btn-sm ${className}" onclick="${action.onClick(row)}" ${disabled}>${action.label}</button>`;
       }).join('');
 
       const actionsCell = actions.length > 0 ? `<td class="actions-column">${actionButtons}</td>` : '';
@@ -328,7 +328,7 @@ const AdminComponents = {
       return `
         <button
           class="pagination-btn ${isActive ? 'active' : ''}"
-          onclick="(${onPageChange.toString()})(${page})"
+          onclick="${onPageChange(page)}"
           ${isActive ? 'disabled' : ''}
         >${page}</button>
       `;
@@ -338,13 +338,13 @@ const AdminComponents = {
       <div class="pagination">
         <button
           class="pagination-btn"
-          onclick="(${onPageChange.toString()})(${currentPage - 1})"
+          onclick="${onPageChange(currentPage - 1)}"
           ${currentPage === 1 ? 'disabled' : ''}
         >← Previous</button>
         ${pageButtons}
         <button
           class="pagination-btn"
-          onclick="(${onPageChange.toString()})(${currentPage + 1})"
+          onclick="${onPageChange(currentPage + 1)}"
           ${currentPage === totalPages ? 'disabled' : ''}
         >Next →</button>
       </div>
