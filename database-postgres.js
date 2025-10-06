@@ -170,6 +170,22 @@ async function initializeDatabase() {
     // Migrate existing users from trades table
     await migrateExistingUsers();
 
+    // Add unified audit log columns if they don't exist (for admin portal compatibility)
+    try {
+      await pool.query(`ALTER TABLE trade_audit_log ADD COLUMN IF NOT EXISTS entity_type VARCHAR(50) DEFAULT 'trade'`);
+      await pool.query(`ALTER TABLE trade_audit_log ADD COLUMN IF NOT EXISTS entity_id VARCHAR(255)`);
+      await pool.query(`ALTER TABLE trade_audit_log ADD COLUMN IF NOT EXISTS changes JSONB`);
+
+      // Populate entity_id from trade_id for existing records
+      await pool.query(`UPDATE trade_audit_log SET entity_id = trade_id::VARCHAR WHERE entity_id IS NULL`);
+
+      // Create indexes for new columns
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_trade_audit_entity_type ON trade_audit_log(entity_type)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_trade_audit_entity_id ON trade_audit_log(entity_id)`);
+    } catch (err) {
+      // Table might not exist yet or columns already added - this is OK
+    }
+
   } catch (error) {
     throw error;
   }
