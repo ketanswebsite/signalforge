@@ -650,22 +650,15 @@ const PortfolioSimulator = (function() {
 
     /**
      * Calculate current portfolio value
+     * Portfolio value = Initial Capital + Realized P/L from closed trades
+     * Active positions are valued at cost (capital allocated)
      */
     function calculatePortfolioValue(portfolio, displayCurrency) {
-        let totalValue = 0;
+        // Start with initial capital
+        const initialCapital = calculateInitialValue(displayCurrency);
+        let totalValue = initialCapital;
 
-        // Sum up all active positions
-        for (const position of portfolio.positions) {
-            const positionValue = position.tradeSize;
-            const convertedValue = convertCurrency(
-                positionValue,
-                position.currency,
-                displayCurrency
-            );
-            totalValue += convertedValue;
-        }
-
-        // Add closed trades P/L
+        // Add closed trades P/L (realized gains/losses)
         for (const trade of portfolio.closedTrades) {
             const pl = (trade.tradeSize * trade.plPercent) / 100;
             const convertedPL = convertCurrency(
