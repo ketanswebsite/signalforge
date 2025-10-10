@@ -520,7 +520,25 @@ const PortfolioSimulator = (function() {
             positions: [],
             closedTrades: [],
             dailyValues: [],
-            currency: displayCurrency
+            currency: displayCurrency,
+            // Capital tracking per market for dynamic position sizing
+            capitalByMarket: {
+                'India': {
+                    initial: CONFIG.INITIAL_INVESTMENTS['INR'],
+                    realized: 0,
+                    currency: 'INR'
+                },
+                'UK': {
+                    initial: CONFIG.INITIAL_INVESTMENTS['GBP'],
+                    realized: 0,
+                    currency: 'GBP'
+                },
+                'US': {
+                    initial: CONFIG.INITIAL_INVESTMENTS['USD'],
+                    realized: 0,
+                    currency: 'USD'
+                }
+            }
         };
 
         // Group signals by entry date for efficient processing
@@ -581,14 +599,50 @@ const PortfolioSimulator = (function() {
         for (let i = 0; i < portfolio.positions.length; i++) {
             const position = portfolio.positions[i];
 
-            // Find matching signal with exit data
+            // Calculate holding days (safety check)
+            const entryDate = new Date(position.entryDate);
+            const current = new Date(currentDate);
+            const holdingDays = Math.floor((current - entryDate) / (24 * 60 * 60 * 1000));
+
+            // SAFETY CHECK: Force-close if held >= 30 days
+            if (holdingDays >= CONFIG.DTI_PARAMS.maxHoldingDays) {
+                console.warn(`[Portfolio] Force-closing ${position.symbol} after ${holdingDays} days (max ${CONFIG.DTI_PARAMS.maxHoldingDays})`);
+
+                const closedTrade = {
+                    ...position,
+                    exitDate: currentDate,
+                    exitPrice: position.entryPrice, // Conservative: assume breakeven
+                    plPercent: 0, // Conservative: assume no gain/loss
+                    exitReason: 'Max Days (Force Close)',
+                    holdingDays: holdingDays,
+                    // DTI values at entry (if available)
+                    prevDTI: position.prevDTI,
+                    entryDTI: position.entryDTI,
+                    prev7DayDTI: position.prev7DayDTI,
+                    entry7DayDTI: position.entry7DayDTI,
+                    historicalSignalCount: position.historicalSignalCount
+                };
+
+                portfolio.closedTrades.push(closedTrade);
+
+                // Update capital tracking (if available)
+                if (portfolio.capitalByMarket && portfolio.capitalByMarket[position.market]) {
+                    const pl = (position.tradeSize * 0) / 100; // 0% for force-close
+                    portfolio.capitalByMarket[position.market].realized += pl;
+                }
+
+                toRemove.push(i);
+                continue; // Skip normal exit check
+            }
+
+            // Normal exit: Find matching signal with exit data
             const signal = allSignals.find(s =>
                 s.symbol === position.symbol &&
                 s.entryDate === position.entryDate
             );
 
             if (signal && signal.exitDate === currentDate) {
-                // Close position
+                // Close position normally
                 const closedTrade = {
                     ...position,
                     exitDate: signal.exitDate,
@@ -605,6 +659,13 @@ const PortfolioSimulator = (function() {
                 };
 
                 portfolio.closedTrades.push(closedTrade);
+
+                // Update capital tracking (if available)
+                if (portfolio.capitalByMarket && portfolio.capitalByMarket[position.market]) {
+                    const pl = (position.tradeSize * signal.plPercent) / 100;
+                    portfolio.capitalByMarket[position.market].realized += pl;
+                }
+
                 toRemove.push(i);
             }
         }
@@ -613,6 +674,29 @@ const PortfolioSimulator = (function() {
         for (let i = toRemove.length - 1; i >= 0; i--) {
             portfolio.positions.splice(toRemove[i], 1);
         }
+    }
+
+    /**
+     * Calculate dynamic trade size based on accumulated capital
+     * Trade size grows with profits (compounding), shrinks with losses
+     */
+    function calculateDynamicTradeSize(portfolio, market) {
+        if (!portfolio.capitalByMarket || !portfolio.capitalByMarket[market]) {
+            // Fallback to static sizing if capital tracking not available
+            return CONFIG.TRADE_SIZES[market].amount;
+        }
+
+        const marketCap = portfolio.capitalByMarket[market];
+        const totalCapital = marketCap.initial + marketCap.realized;
+
+        // Divide by max positions per market for equal allocation
+        // This ensures we can always fill all 10 positions per market
+        const dynamicSize = totalCapital / CONFIG.MAX_POSITIONS_PER_MARKET;
+
+        // Safety floor: Don't go below 10% of initial per-trade amount
+        const minSize = CONFIG.TRADE_SIZES[market].amount * 0.1;
+
+        return Math.max(dynamicSize, minSize);
     }
 
     /**
@@ -643,16 +727,21 @@ const PortfolioSimulator = (function() {
                 continue; // Skip - already have a position in this stock
             }
 
+            // Calculate dynamic trade size (grows with profits, shrinks with losses)
+            const dynamicSize = calculateDynamicTradeSize(portfolio, market);
+
             // Enter position
             const position = {
                 symbol: signal.symbol,
                 market: market,
                 entryDate: date,
                 entryPrice: signal.entryPrice,
-                tradeSize: CONFIG.TRADE_SIZES[market].amount,
+                tradeSize: dynamicSize,
                 currency: CONFIG.TRADE_SIZES[market].currency,
                 winRate: signal.winRate
             };
+
+            console.log(`[Portfolio] Entering ${signal.symbol} with size ${dynamicSize.toFixed(2)} ${CONFIG.TRADE_SIZES[market].currency}`);
 
             portfolio.positions.push(position);
             positionCounts[market]++;
