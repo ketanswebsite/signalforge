@@ -136,37 +136,56 @@ const PortfolioSimulator = (function() {
 
     /**
      * Fetch all stocks data from all markets
+     * Uses comprehensive stock list from StockData module (2,200+ stocks)
      */
     async function fetchAllStocksData(startDate) {
-        // Get stock lists from all markets
-        const stockLists = {
-            'India': window.STOCK_INDEXES ? window.STOCK_INDEXES.nifty50 || [] : [],
-            'UK': window.STOCK_INDEXES ? window.STOCK_INDEXES.ftse100 || [] : [],
-            'US': window.STOCK_INDEXES ? window.STOCK_INDEXES.sp500 || [] : []
-        };
+        // Use StockData module (SINGLE SOURCE OF TRUTH)
+        const stockLists = window.StockData.getStockLists();
+
+        // Combine ALL stocks from ALL markets and indexes
+        const allStockDefinitions = [
+            ...stockLists.nifty50,
+            ...stockLists.niftyNext50,
+            ...stockLists.niftyMidcap150,
+            ...stockLists.ftse100,
+            ...stockLists.ftse250,
+            ...stockLists.usStocks
+        ];
+
+        console.log(`[Portfolio Simulator] Processing ${allStockDefinitions.length} stocks from all markets`);
 
         const allStocks = [];
         const endDate = new Date().toISOString().split('T')[0];
 
-        // Fetch data for each market
-        for (const [market, symbols] of Object.entries(stockLists)) {
-            for (const symbol of symbols) {
-                try {
-                    const stockData = await fetchStockData(symbol, startDate, endDate);
-                    if (stockData && stockData.dates && stockData.dates.length > 200) {
-                        allStocks.push({
-                            symbol: symbol,
-                            market: market,
-                            data: stockData
-                        });
-                    }
-                } catch (error) {
-                    console.warn(`[Portfolio Simulator] Failed to fetch ${symbol}:`, error.message);
+        // Fetch data for all stocks
+        for (const stockObj of allStockDefinitions) {
+            // Get market from symbol suffix
+            const market = getMarketForSymbol(stockObj.symbol);
+
+            try {
+                const stockData = await fetchStockData(stockObj.symbol, startDate, endDate);
+                if (stockData && stockData.dates && stockData.dates.length > 200) {
+                    allStocks.push({
+                        symbol: stockObj.symbol,
+                        market: market,
+                        data: stockData
+                    });
                 }
+            } catch (error) {
+                console.warn(`[Portfolio Simulator] Failed to fetch ${stockObj.symbol}:`, error.message);
             }
         }
 
         return allStocks;
+    }
+
+    /**
+     * Get market from symbol suffix
+     */
+    function getMarketForSymbol(symbol) {
+        if (symbol.endsWith('.NS') || symbol.endsWith('.BO')) return 'India';
+        if (symbol.endsWith('.L')) return 'UK';
+        return 'US';
     }
 
     /**
