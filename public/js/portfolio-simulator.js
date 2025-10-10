@@ -73,15 +73,17 @@ const PortfolioSimulator = (function() {
 
             // 1. Calculate date ranges
             const dates = calculateDateRanges(startDate);
-            console.log('[Portfolio Simulator] Historical backtest:', dates.backtestStart, 'to', dates.simulationStart);
+            console.log('[Portfolio Simulator] Data range:', dates.dataStart, 'to today');
+            console.log('[Portfolio Simulator] Buffer period:', dates.dataStart, 'to', dates.bufferEnd, '(DTI warmup)');
+            console.log('[Portfolio Simulator] Historical signals:', dates.bufferEnd, 'to', dates.simulationStart);
             console.log('[Portfolio Simulator] Simulation period:', dates.simulationStart, 'to today');
 
-            // 2. Fetch all stocks data (5 years + 6 months before simulation + simulation period)
+            // 2. Fetch all stocks data (5 years before simulation + simulation period to today)
             if (progressCallback) progressCallback({ stage: 'fetch', message: 'Fetching stock data...', current: 0, total: 0 });
             const allStocks = await fetchAllStocksData(dates.dataStart, progressCallback);
             console.log('[Portfolio Simulator] Fetched', allStocks.length, 'stocks');
 
-            // 3. Calculate historical win rates (5-year backtest BEFORE simulation start)
+            // 3. Calculate historical win rates (4.5 years of signals AFTER 6-month buffer)
             if (progressCallback) progressCallback({
                 stage: 'backtest',
                 message: 'Running historical backtests...',
@@ -135,23 +137,25 @@ const PortfolioSimulator = (function() {
 
     /**
      * Calculate date ranges for backtest and simulation
-     * Historical backtest: 5 years before simulation start (with 6-month DTI buffer)
+     * Data fetch: 5 years before simulation start
+     * Buffer period: First 6 months of data (for DTI warmup only, no signals counted)
+     * Historical signals: From 6 months after data start to simulation start (4.5 years)
      * Simulation period: simulation start to today
      */
     function calculateDateRanges(simulationStart) {
         const simStart = new Date(simulationStart);
 
-        // Backtest period: 5 years before simulation start
-        const backtestStart = new Date(simStart);
-        backtestStart.setFullYear(backtestStart.getFullYear() - 5);
+        // Data start: 5 years before simulation start
+        const dataStart = new Date(simStart);
+        dataStart.setFullYear(dataStart.getFullYear() - 5);
 
-        // Data fetch start: 6 months before backtest (for DTI warmup)
-        const dataStart = new Date(backtestStart);
-        dataStart.setMonth(dataStart.getMonth() - 6);
+        // Buffer end: 6 months after data start (DTI warmup period)
+        const bufferEnd = new Date(dataStart);
+        bufferEnd.setMonth(bufferEnd.getMonth() + 6);
 
         return {
-            dataStart: dataStart.toISOString().split('T')[0],          // Data fetch start (5.5 years before sim)
-            backtestStart: backtestStart.toISOString().split('T')[0],  // Historical backtest start (5 years before sim)
+            dataStart: dataStart.toISOString().split('T')[0],          // Data fetch start (5 years before sim)
+            bufferEnd: bufferEnd.toISOString().split('T')[0],          // End of buffer period (6 months after data start)
             simulationStart: simStart.toISOString().split('T')[0],     // Simulation start (user selected)
             simulationEnd: new Date().toISOString().split('T')[0]      // Today
         };
@@ -338,14 +342,27 @@ const PortfolioSimulator = (function() {
                     // Run backtest on historical period
                     const backtest = window.BacktestCalculator.runBacktest(historicalData, CONFIG.DTI_PARAMS);
 
-                    if (backtest && backtest.metrics && backtest.metrics.completedTrades >= 5) {
-                        return {
-                            symbol: stock.symbol,
-                            market: stock.market,
-                            winRate: backtest.metrics.winRate,
-                            totalTrades: backtest.metrics.completedTrades,
-                            avgReturn: backtest.metrics.avgReturn
-                        };
+                    if (backtest && backtest.trades) {
+                        // Count only signals AFTER buffer period (6 months)
+                        const bufferEnd = new Date(dates.bufferEnd);
+                        const historicalSignals = backtest.trades.filter(trade => {
+                            const entryDate = new Date(trade.entryDate);
+                            return entryDate >= bufferEnd && !trade.isOpen;
+                        });
+
+                        // Only proceed if we have at least 5 historical signals after buffer
+                        if (historicalSignals.length >= 5) {
+                            const wins = historicalSignals.filter(t => t.isWin).length;
+                            const winRate = (wins / historicalSignals.length) * 100;
+
+                            return {
+                                symbol: stock.symbol,
+                                market: stock.market,
+                                winRate: winRate,
+                                historicalSignalCount: historicalSignals.length,
+                                avgReturn: backtest.metrics.avgReturn
+                            };
+                        }
                     }
                 } catch (error) {
                     console.warn(`[Portfolio Simulator] Historical backtest failed for ${stock.symbol}:`, error.message);
@@ -409,7 +426,7 @@ const PortfolioSimulator = (function() {
                     const backtest = window.BacktestCalculator.runBacktest(stock.data, CONFIG.DTI_PARAMS);
 
                     if (backtest && backtest.trades) {
-                        // Get win rate from high conviction data
+                        // Get win rate and historical signal count from high conviction data
                         const stockInfo = highConvictionStocks.find(s => s.symbol === stock.symbol);
 
                         // Convert trades to signals, filter for simulation period
@@ -430,7 +447,13 @@ const PortfolioSimulator = (function() {
                                     holdingDays: trade.holdingDays,
                                     exitReason: trade.exitReason,
                                     winRate: stockInfo.winRate,
-                                    isWin: trade.isWin
+                                    historicalSignalCount: stockInfo.historicalSignalCount,
+                                    isWin: trade.isWin,
+                                    // DTI values at entry
+                                    prevDTI: trade.prevDTI,
+                                    entryDTI: trade.entryDTI,
+                                    prev7DayDTI: trade.prev7DayDTI,
+                                    entry7DayDTI: trade.entry7DayDTI
                                 });
                             }
                         }
@@ -572,7 +595,13 @@ const PortfolioSimulator = (function() {
                     exitPrice: signal.exitPrice,
                     plPercent: signal.plPercent,
                     exitReason: signal.exitReason,
-                    holdingDays: signal.holdingDays
+                    holdingDays: signal.holdingDays,
+                    // DTI values at entry
+                    prevDTI: signal.prevDTI,
+                    entryDTI: signal.entryDTI,
+                    prev7DayDTI: signal.prev7DayDTI,
+                    entry7DayDTI: signal.entry7DayDTI,
+                    historicalSignalCount: signal.historicalSignalCount
                 };
 
                 portfolio.closedTrades.push(closedTrade);

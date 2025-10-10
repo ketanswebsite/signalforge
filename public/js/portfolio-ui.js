@@ -239,7 +239,7 @@ const PortfolioUI = (function() {
         countSpan.textContent = trades.length;
 
         if (trades.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="13" class="no-data">No completed trades</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="18" class="no-data">No completed trades</td></tr>';
             return;
         }
 
@@ -266,6 +266,11 @@ const PortfolioUI = (function() {
                 <td>${formatDate(trade.exitDate)}</td>
                 <td>${trade.currency}${trade.exitPrice.toFixed(2)}</td>
                 <td>${trade.holdingDays}</td>
+                <td>${trade.prevDTI !== undefined ? trade.prevDTI.toFixed(2) : 'N/A'}</td>
+                <td>${trade.entryDTI !== undefined ? trade.entryDTI.toFixed(2) : 'N/A'}</td>
+                <td>${trade.prev7DayDTI !== undefined ? trade.prev7DayDTI.toFixed(2) : 'N/A'}</td>
+                <td>${trade.entry7DayDTI !== undefined ? trade.entry7DayDTI.toFixed(2) : 'N/A'}</td>
+                <td>${trade.historicalSignalCount || 0}</td>
                 <td class="${trade.plPercent >= 0 ? 'positive' : 'negative'}">${trade.plPercent.toFixed(2)}%</td>
                 <td class="${plINR >= 0 ? 'positive' : 'negative'}">₹${plINR.toFixed(2)}</td>
                 <td class="${plGBP >= 0 ? 'positive' : 'negative'}">£${plGBP.toFixed(2)}</td>
@@ -277,7 +282,7 @@ const PortfolioUI = (function() {
         }
 
         if (filteredTrades.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="13" class="no-data">No trades match the selected filters</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="18" class="no-data">No trades match the selected filters</td></tr>';
         }
     }
 
