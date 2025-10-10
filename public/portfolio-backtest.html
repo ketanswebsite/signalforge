@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="description" content="Portfolio Backtest Simulator - Simulate historical portfolio performance using high conviction DTI signals with realistic position management.">
+    <title>Portfolio Backtest Simulator - SignalForge</title>
+
+    <!-- Import Google Font (Inter) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Accessibility Color Overrides (WCAG Compliant) -->
+    <link rel="stylesheet" href="css/accessibility-colors.css">
+
+    <!-- Unified Navigation Bar -->
+    <link rel="stylesheet" href="css/unified-navbar.css">
+
+    <!-- Portfolio Backtest Specific Styles -->
+    <link rel="stylesheet" href="css/portfolio-backtest.css">
+
+    <!-- XSS Protection -->
+    <script src="js/xss-protection.js"></script>
+
+    <!-- Global Error Handler -->
+    <script src="js/error-handler.js"></script>
+
+    <!-- Theme Toggle Script -->
+    <script src="js/theme-toggle.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="page-nav">
+                <h1 class="nav-title">Portfolio Backtest Simulator</h1>
+            </div>
+            <p class="app-description">
+                Simulate historical portfolio performance using high conviction DTI signals with realistic position management.
+                See how a diversified portfolio would have performed across global markets.
+            </p>
+
+            <!-- UK Regulatory Compliance Disclaimers -->
+            <div class="legal-disclaimer">
+                <div class="disclaimer-content">
+                    <p><strong>Important Disclaimer:</strong> This is a simulated backtest based on historical data. Past performance is not a reliable indicator of future results. This simulation does not account for slippage, market impact, fees, or taxes. For educational purposes only, not investment advice.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuration Section -->
+        <div class="card">
+            <h3 class="card-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+                Simulation Parameters
+            </h3>
+
+            <div class="simulation-config">
+                <div class="config-row">
+                    <div class="parameter-group">
+                        <label for="simulation-start-date">Simulation Start Date</label>
+                        <input type="date" id="simulation-start-date" class="date-input">
+                        <span class="form-hint">Default: 1 year ago</span>
+                    </div>
+
+                    <div class="parameter-group">
+                        <label for="display-currency">Display Currency</label>
+                        <select id="display-currency" class="currency-select">
+                            <option value="GBP" selected>GBP (£)</option>
+                            <option value="INR">INR (₹)</option>
+                            <option value="USD">USD ($)</option>
+                        </select>
+                        <span class="form-hint">Currency for portfolio display</span>
+                    </div>
+                </div>
+
+                <div class="config-info">
+                    <h4>Initial Investment Amounts (Fixed per Trade)</h4>
+                    <div class="investment-display">
+                        <div class="investment-item">
+                            <span class="currency-label">India Market:</span>
+                            <span class="amount">₹50,000 per trade</span>
+                        </div>
+                        <div class="investment-item">
+                            <span class="currency-label">UK Market:</span>
+                            <span class="amount">£400 per trade</span>
+                        </div>
+                        <div class="investment-item">
+                            <span class="currency-label">US Market:</span>
+                            <span class="amount">$500 per trade</span>
+                        </div>
+                    </div>
+                    <p class="config-note"><strong>Position Limits:</strong> Maximum 30 concurrent positions (10 per market)</p>
+                    <p class="config-note"><strong>Signal Filter:</strong> High conviction only (>75% historical win rate)</p>
+                    <p class="config-note"><strong>Entry Logic:</strong> First come, first serve (chronological order)</p>
+                </div>
+
+                <button id="run-simulation-btn" class="btn-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    Run Simulation
+                </button>
+
+                <div id="simulation-status" class="simulation-status" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- Portfolio Summary -->
+        <div class="card" id="portfolio-summary" style="display: none;">
+            <h3 class="card-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                </svg>
+                Portfolio Summary
+            </h3>
+
+            <div class="portfolio-metrics">
+                <div class="metric-card">
+                    <div class="metric-label">Initial Value</div>
+                    <div class="metric-value" id="initial-value">-</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Final Value</div>
+                    <div class="metric-value" id="final-value">-</div>
+                </div>
+                <div class="metric-card highlight">
+                    <div class="metric-label">Total Return</div>
+                    <div class="metric-value" id="total-return">-</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Win Rate</div>
+                    <div class="metric-value" id="win-rate">-</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Total Trades</div>
+                    <div class="metric-value" id="total-trades">-</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Max Drawdown</div>
+                    <div class="metric-value" id="max-drawdown">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Portfolio Value Chart -->
+        <div class="card" id="portfolio-chart-card" style="display: none;">
+            <h3 class="card-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+                Portfolio Value Over Time
+            </h3>
+            <div class="chart-wrapper">
+                <canvas id="portfolio-value-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Analytics Dashboard -->
+        <div class="card" id="analytics-dashboard" style="display: none;">
+            <h3 class="card-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                </svg>
+                Analytics Dashboard
+            </h3>
+
+            <!-- Analytics Tabs -->
+            <div class="analytics-tabs">
+                <div class="analytics-tab active" data-tab="performance-tab">Performance</div>
+                <div class="analytics-tab" data-tab="market-tab">Market Analysis</div>
+                <div class="analytics-tab" data-tab="trade-pattern-tab">Trade Patterns</div>
+                <div class="analytics-tab" data-tab="drawdown-tab">Drawdown Analysis</div>
+            </div>
+
+            <!-- Performance Tab -->
+            <div class="analytics-tab-content active" id="performance-tab">
+                <div class="analytics-metrics">
+                    <div class="analytics-metric">
+                        <span class="metric-name">Annualized Return:</span>
+                        <span class="metric-result" id="annualized-return">-</span>
+                    </div>
+                    <div class="analytics-metric">
+                        <span class="metric-name">Sharpe Ratio:</span>
+                        <span class="metric-result" id="sharpe-ratio">-</span>
+                    </div>
+                    <div class="analytics-metric">
+                        <span class="metric-name">Sortino Ratio:</span>
+                        <span class="metric-result" id="sortino-ratio">-</span>
+                    </div>
+                    <div class="analytics-metric">
+                        <span class="metric-name">Profit Factor:</span>
+                        <span class="metric-result" id="profit-factor">-</span>
+                    </div>
+                    <div class="analytics-metric">
+                        <span class="metric-name">Expectancy:</span>
+                        <span class="metric-result" id="expectancy">-</span>
+                    </div>
+                    <div class="analytics-metric">
+                        <span class="metric-name">Calmar Ratio:</span>
+                        <span class="metric-result" id="calmar-ratio">-</span>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="monthly-returns-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Market Analysis Tab -->
+            <div class="analytics-tab-content" id="market-tab">
+                <div class="chart-row">
+                    <div class="chart-container">
+                        <h4>Trades by Market</h4>
+                        <canvas id="trades-by-market-chart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h4>P&L by Market</h4>
+                        <canvas id="pl-by-market-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trade Patterns Tab -->
+            <div class="analytics-tab-content" id="trade-pattern-tab">
+                <div class="chart-row">
+                    <div class="chart-container">
+                        <h4>Return Distribution</h4>
+                        <canvas id="return-distribution-chart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h4>Exit Reason Breakdown</h4>
+                        <canvas id="exit-reason-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Drawdown Analysis Tab -->
+            <div class="analytics-tab-content" id="drawdown-tab">
+                <div class="chart-wrapper">
+                    <canvas id="drawdown-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Trades Table -->
+        <div class="card" id="active-trades-card" style="display: none;">
+            <h3 class="card-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <circle cx="12" cy="12" r="6"></circle>
+                    <circle cx="12" cy="12" r="2"></circle>
+                </svg>
+                Active Positions
+                <span class="position-count" id="active-count">0</span>
+            </h3>
+
+            <div class="table-container">
+                <table id="active-trades-table" class="trades-table">
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Name</th>
+                            <th>Market</th>
+                            <th>Entry Date</th>
+                            <th>Entry Price</th>
+                            <th>Current Price</th>
+                            <th>Days Held</th>
+                            <th>P/L %</th>
+                            <th>P/L Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="active-trades-body">
+                        <tr><td colspan="9" class="no-data">No active positions</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Completed Trades Table -->
+        <div class="card" id="completed-trades-card" style="display: none;">
+            <h3 class="card-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                Completed Trades
+                <span class="position-count" id="completed-count">0</span>
+                <div class="table-actions">
+                    <button id="export-csv-btn" class="btn-secondary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Export CSV
+                    </button>
+                </div>
+            </h3>
+
+            <!-- Trade Filters -->
+            <div class="trade-filters">
+                <select id="market-filter" class="filter-select">
+                    <option value="all">All Markets</option>
+                    <option value="India">India</option>
+                    <option value="UK">UK</option>
+                    <option value="US">US</option>
+                </select>
+                <select id="outcome-filter" class="filter-select">
+                    <option value="all">All Trades</option>
+                    <option value="winners">Winners Only</option>
+                    <option value="losers">Losers Only</option>
+                </select>
+            </div>
+
+            <div class="table-container scrollable">
+                <table id="completed-trades-table" class="trades-table">
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Name</th>
+                            <th>Market</th>
+                            <th>Entry Date</th>
+                            <th>Entry Price</th>
+                            <th>Exit Date</th>
+                            <th>Exit Price</th>
+                            <th>Days</th>
+                            <th>P/L %</th>
+                            <th>P/L (INR)</th>
+                            <th>P/L (GBP)</th>
+                            <th>P/L (USD)</th>
+                            <th>Exit Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody id="completed-trades-body">
+                        <tr><td colspan="13" class="no-data">No completed trades</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Notification container -->
+        <div id="notification-container"></div>
+
+        <!-- Dark Mode Toggle -->
+        <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+            <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Legal Footer -->
+    <footer class="legal-footer">
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="terms.html" class="footer-link">Terms of Service</a>
+                <a href="privacy.html" class="footer-link">Privacy Policy</a>
+                <span class="footer-text">© 2025 SignalForge - Educational tools only, not investment advice</span>
+            </div>
+            <div class="footer-disclaimer">
+                <p>Simulated backtest results. Past performance is not a reliable indicator of future results. You accept full responsibility for all investment decisions.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Core Scripts -->
+    <script src="js/dti-core.js"></script>
+    <script src="../lib/shared/stock-data.js"></script>
+    <script src="../lib/shared/dti-calculator.js"></script>
+    <script src="../lib/shared/backtest-calculator.js"></script>
+
+    <!-- Portfolio Backtest Scripts -->
+    <script src="js/portfolio-simulator.js"></script>
+    <script src="js/portfolio-analytics.js"></script>
+    <script src="js/portfolio-charts.js"></script>
+    <script src="js/portfolio-ui.js"></script>
+    <script src="js/portfolio-export.js"></script>
+
+    <!-- Unified Navigation Bar -->
+    <script src="js/unified-navbar.js"></script>
+</body>
+</html>

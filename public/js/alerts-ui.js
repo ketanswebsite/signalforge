@@ -56,102 +56,19 @@ const AlertsUI = (function() {
     }
     
     // Add telegram subscription button to navigation
+    // NOTE: Buttons moved to unified navbar - this function is now deprecated
     function addTelegramButton() {
-        // Check if button already exists
-        if (document.querySelector('.telegram-button')) return;
-        
-        // Wait a bit for page to load
-        setTimeout(() => {
-            // Check which page we're on to determine where to insert the button
-            const currentPage = window.location.pathname;
-            let targetContainer = null;
-            let insertPosition = 'beforebegin';
-            
-            if (currentPage.includes('trades.html')) {
-                // On trades page, insert before "Back to Backtester" button
-                targetContainer = document.querySelector('.btn-nav[onclick*="index.html"]');
-            } else if (currentPage.includes('index.html') || currentPage === '/') {
-                // On index page, insert before "Signal Management" link
-                targetContainer = document.querySelector('.nav-link[href="trades.html"]');
-            }
-            
-            if (!targetContainer) return;
-            
-            const telegramButton = document.createElement('a');
-            telegramButton.href = '/telegram-subscribe.html';
-            telegramButton.className = 'telegram-button btn-nav desktop-only';
-            telegramButton.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21.198 2.433a1.3 1.3 0 0 0-1.394-.12L2.304 9.585a1.4 1.4 0 0 0 .096 2.64l3.93 1.434 1.47 4.722c.22.704 1.177.85 1.654.252l2.13-2.67 4.263 3.155a1.3 1.3 0 0 0 2.092-.934L21.334 3.684a1.3 1.3 0 0 0-.136-1.25Z"></path>
-                    <path d="M11.44 14.435 9.9 15.98"></path>
-                </svg>
-                📈 Subscribe to Telegram
-            `;
-
-            telegramButton.title = 'Click to subscribe to daily 7 AM conviction trades on Telegram';
-
-            // Add click tracking
-            telegramButton.onclick = function(e) {
-                // Track the click for analytics
-                if (window.gtag) {
-                    window.gtag('event', 'telegram_subscribe_click', {
-                        'event_category': 'engagement',
-                        'event_label': 'homepage_button'
-                    });
-                }
-            };
-            
-            // Insert the button before the target container
-            targetContainer.parentNode.insertBefore(telegramButton, targetContainer);
-            
-            // Also add to mobile navigation drawer
-            addTelegramButtonToMobileNav();
-        }, 1000); // Wait 1 second for page to fully load
+        // Buttons are now in the unified navbar at the top of the page
+        // This function is kept for backwards compatibility but does nothing
+        console.log('[AlertsUI] Telegram buttons are now in unified navbar');
     }
     
     // Add telegram subscription button to mobile navigation drawer
+    // NOTE: Mobile buttons also moved to unified navbar - this function is now deprecated
     function addTelegramButtonToMobileNav() {
-        const mobileDrawer = document.querySelector('.mobile-nav-drawer .drawer-nav-links');
-        if (!mobileDrawer) return;
-        
-        // Check if mobile telegram button already exists
-        if (mobileDrawer.querySelector('.telegram-mobile-link')) return;
-        
-        const mobileTelegramLink = document.createElement('a');
-        mobileTelegramLink.href = '/telegram-subscribe.html';
-        mobileTelegramLink.className = 'drawer-nav-link telegram-mobile-link';
-        mobileTelegramLink.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21.198 2.433a1.3 1.3 0 0 0-1.394-.12L2.304 9.585a1.4 1.4 0 0 0 .096 2.64l3.93 1.434 1.47 4.722c.22.704 1.177.85 1.654.252l2.13-2.67 4.263 3.155a1.3 1.3 0 0 0 2.092-.934L21.334 3.684a1.3 1.3 0 0 0-.136-1.25Z"></path>
-                <path d="M11.44 14.435 9.9 15.98"></path>
-            </svg>
-            <span>📈 Subscribe to Telegram</span>
-        `;
-
-        // Add click tracking for mobile
-        mobileTelegramLink.onclick = function(e) {
-            if (window.gtag) {
-                window.gtag('event', 'telegram_subscribe_click', {
-                    'event_category': 'engagement',
-                    'event_label': 'mobile_menu_button'
-                });
-            }
-            
-            // Show user-friendly message for mobile too
-            setTimeout(() => {
-                if (!document.hidden) {
-                    showTelegramInstructions();
-                }
-            }, 1000);
-        };
-        
-        // Find the first nav link and insert before it
-        const firstNavLink = mobileDrawer.querySelector('.drawer-nav-link');
-        if (firstNavLink) {
-            mobileDrawer.insertBefore(mobileTelegramLink, firstNavLink);
-        } else {
-            mobileDrawer.appendChild(mobileTelegramLink);
-        }
+        // Mobile Telegram link is now in the unified navbar mobile drawer
+        // This function is kept for backwards compatibility but does nothing
+        console.log('[AlertsUI] Mobile Telegram button is now in unified navbar');
     }
     
     // Show instructions if Telegram isn't installed
