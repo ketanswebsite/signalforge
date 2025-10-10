@@ -65,28 +65,29 @@ const PortfolioSimulator = (function() {
         try {
             console.log('[Portfolio Simulator] Starting simulation from', startDate);
 
-            // 1. Calculate data fetch start date (with buffer)
-            const dataStartDate = calculateDataStartDate(startDate);
-            console.log('[Portfolio Simulator] Data fetch start:', dataStartDate);
+            // 1. Calculate date ranges
+            const dates = calculateDateRanges(startDate);
+            console.log('[Portfolio Simulator] Historical backtest:', dates.backtestStart, 'to', dates.simulationStart);
+            console.log('[Portfolio Simulator] Simulation period:', dates.simulationStart, 'to today');
 
-            // 2. Fetch all stocks data
-            const allStocks = await fetchAllStocksData(dataStartDate);
+            // 2. Fetch all stocks data (5 years + 6 months before simulation + simulation period)
+            const allStocks = await fetchAllStocksData(dates.dataStart);
             console.log('[Portfolio Simulator] Fetched', allStocks.length, 'stocks');
 
-            // 3. Generate signals for all stocks
-            const allSignals = await generateAllSignals(allStocks);
-            console.log('[Portfolio Simulator] Generated', allSignals.length, 'total signals');
+            // 3. Calculate historical win rates (5-year backtest BEFORE simulation start)
+            const stockWinRates = await calculateHistoricalWinRates(allStocks, dates);
+            console.log('[Portfolio Simulator] Calculated win rates for', stockWinRates.length, 'stocks');
 
-            // 4. Filter high conviction signals
-            const highConvictionSignals = filterHighConviction(allSignals);
-            console.log('[Portfolio Simulator] High conviction signals:', highConvictionSignals.length);
+            // 4. Filter high conviction stocks (>75% win rate in historical period)
+            const highConvictionStocks = stockWinRates.filter(s => s.winRate > CONFIG.HIGH_CONVICTION_THRESHOLD);
+            console.log('[Portfolio Simulator] High conviction stocks:', highConvictionStocks.length);
 
-            // 5. Sort signals chronologically
-            const sortedSignals = sortSignalsByDate(highConvictionSignals, startDate);
-            console.log('[Portfolio Simulator] Signals after date filter:', sortedSignals.length);
+            // 5. Generate signals during simulation period for high conviction stocks only
+            const simulationSignals = await generateSimulationSignals(allStocks, highConvictionStocks, dates);
+            console.log('[Portfolio Simulator] Simulation signals:', simulationSignals.length);
 
-            // 6. Run day-by-day simulation
-            const portfolio = await simulatePortfolio(sortedSignals, startDate, displayCurrency);
+            // 6. Run day-by-day portfolio simulation
+            const portfolio = await simulatePortfolio(simulationSignals, startDate, displayCurrency);
 
             // 7. Return complete simulation results
             return {
@@ -110,13 +111,27 @@ const PortfolioSimulator = (function() {
     }
 
     /**
-     * Calculate data start date (add 12-month buffer)
+     * Calculate date ranges for backtest and simulation
+     * Historical backtest: 5 years before simulation start (with 6-month DTI buffer)
+     * Simulation period: simulation start to today
      */
-    function calculateDataStartDate(simulationStart) {
-        const start = new Date(simulationStart);
-        const bufferMonths = CONFIG.DATA_BUFFER.warmup + CONFIG.DATA_BUFFER.safety;
-        start.setMonth(start.getMonth() - bufferMonths);
-        return start.toISOString().split('T')[0];
+    function calculateDateRanges(simulationStart) {
+        const simStart = new Date(simulationStart);
+
+        // Backtest period: 5 years before simulation start
+        const backtestStart = new Date(simStart);
+        backtestStart.setFullYear(backtestStart.getFullYear() - 5);
+
+        // Data fetch start: 6 months before backtest (for DTI warmup)
+        const dataStart = new Date(backtestStart);
+        dataStart.setMonth(dataStart.getMonth() - 6);
+
+        return {
+            dataStart: dataStart.toISOString().split('T')[0],          // Data fetch start (5.5 years before sim)
+            backtestStart: backtestStart.toISOString().split('T')[0],  // Historical backtest start (5 years before sim)
+            simulationStart: simStart.toISOString().split('T')[0],     // Simulation start (user selected)
+            simulationEnd: new Date().toISOString().split('T')[0]      // Today
+        };
     }
 
     /**
@@ -203,21 +218,74 @@ const PortfolioSimulator = (function() {
     }
 
     /**
-     * Generate signals for all stocks
+     * Calculate historical win rates for all stocks
+     * Uses 5-year backtest period BEFORE simulation start
      */
-    async function generateAllSignals(allStocks) {
-        const allSignals = [];
+    async function calculateHistoricalWinRates(allStocks, dates) {
+        const stockWinRates = [];
 
         for (const stock of allStocks) {
             try {
-                // Run backtest using existing calculator
+                // Filter data for historical backtest period only
+                const historicalData = filterDataByDateRange(
+                    stock.data,
+                    dates.dataStart,
+                    dates.simulationStart
+                );
+
+                if (!historicalData || historicalData.dates.length < 200) {
+                    continue; // Not enough data
+                }
+
+                // Run backtest on historical period
+                const backtest = window.BacktestCalculator.runBacktest(historicalData, CONFIG.DTI_PARAMS);
+
+                if (backtest && backtest.metrics && backtest.metrics.completedTrades >= 5) {
+                    stockWinRates.push({
+                        symbol: stock.symbol,
+                        market: stock.market,
+                        winRate: backtest.metrics.winRate,
+                        totalTrades: backtest.metrics.completedTrades,
+                        avgReturn: backtest.metrics.avgReturn
+                    });
+                }
+            } catch (error) {
+                console.warn(`[Portfolio Simulator] Historical backtest failed for ${stock.symbol}:`, error.message);
+            }
+        }
+
+        return stockWinRates;
+    }
+
+    /**
+     * Generate signals during simulation period for high conviction stocks
+     */
+    async function generateSimulationSignals(allStocks, highConvictionStocks, dates) {
+        const signals = [];
+        const highConvictionSymbols = new Set(highConvictionStocks.map(s => s.symbol));
+
+        for (const stock of allStocks) {
+            // Only process high conviction stocks
+            if (!highConvictionSymbols.has(stock.symbol)) {
+                continue;
+            }
+
+            try {
+                // Run backtest on entire data range to get all signals
                 const backtest = window.BacktestCalculator.runBacktest(stock.data, CONFIG.DTI_PARAMS);
 
                 if (backtest && backtest.trades) {
-                    // Convert trades to signals
+                    // Get win rate from high conviction data
+                    const stockInfo = highConvictionStocks.find(s => s.symbol === stock.symbol);
+
+                    // Convert trades to signals, filter for simulation period
                     for (const trade of backtest.trades) {
-                        if (!trade.isOpen) { // Only completed trades
-                            allSignals.push({
+                        const entryDate = new Date(trade.entryDate);
+                        const simStart = new Date(dates.simulationStart);
+
+                        // Only include signals that occur during simulation period
+                        if (entryDate >= simStart && !trade.isOpen) {
+                            signals.push({
                                 symbol: stock.symbol,
                                 market: stock.market,
                                 entryDate: trade.entryDate,
@@ -227,36 +295,51 @@ const PortfolioSimulator = (function() {
                                 plPercent: trade.plPercent,
                                 holdingDays: trade.holdingDays,
                                 exitReason: trade.exitReason,
-                                winRate: backtest.metrics.winRate,
+                                winRate: stockInfo.winRate,
                                 isWin: trade.isWin
                             });
                         }
                     }
                 }
             } catch (error) {
-                console.warn(`[Portfolio Simulator] Backtest failed for ${stock.symbol}:`, error.message);
+                console.warn(`[Portfolio Simulator] Signal generation failed for ${stock.symbol}:`, error.message);
             }
         }
 
-        return allSignals;
+        // Sort by entry date (FIFO)
+        return signals.sort((a, b) => new Date(a.entryDate) - new Date(b.entryDate));
     }
 
     /**
-     * Filter for high conviction signals (>75% win rate)
+     * Filter stock data by date range
      */
-    function filterHighConviction(signals) {
-        return signals.filter(signal => signal.winRate > CONFIG.HIGH_CONVICTION_THRESHOLD);
-    }
+    function filterDataByDateRange(data, startDate, endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
 
-    /**
-     * Sort signals by entry date and filter by simulation start
-     */
-    function sortSignalsByDate(signals, simulationStart) {
-        const startDate = new Date(simulationStart);
+        const filtered = {
+            symbol: data.symbol,
+            dates: [],
+            open: [],
+            high: [],
+            low: [],
+            close: [],
+            volume: []
+        };
 
-        return signals
-            .filter(signal => new Date(signal.entryDate) >= startDate)
-            .sort((a, b) => new Date(a.entryDate) - new Date(b.entryDate));
+        for (let i = 0; i < data.dates.length; i++) {
+            const date = new Date(data.dates[i]);
+            if (date >= start && date <= end) {
+                filtered.dates.push(data.dates[i]);
+                filtered.open.push(data.open[i]);
+                filtered.high.push(data.high[i]);
+                filtered.low.push(data.low[i]);
+                filtered.close.push(data.close[i]);
+                filtered.volume.push(data.volume[i]);
+            }
+        }
+
+        return filtered;
     }
 
     /**
