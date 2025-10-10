@@ -58,11 +58,35 @@ const PortfolioUI = (function() {
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner"></span> Running Simulation...';
             statusDiv.style.display = 'block';
-            statusDiv.innerHTML = '⏳ Fetching stock data and generating signals...';
             statusDiv.className = 'simulation-status info';
 
-            // Run simulation
-            const result = await window.PortfolioSimulator.runSimulation(startDate, currency);
+            // Progress callback to update UI
+            const updateProgress = (progress) => {
+                let message = progress.message || 'Processing...';
+                let html = `<div class="progress-message">${message}</div>`;
+
+                // Add progress bar if percentage is available
+                if (progress.percent !== undefined) {
+                    html += `
+                        <div class="progress-info">
+                            <span>${progress.current || 0} / ${progress.total || 0}</span>
+                            <span>${progress.percent}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${progress.percent}%"></div>
+                        </div>
+                    `;
+                }
+
+                statusDiv.innerHTML = html;
+            };
+
+            // Run simulation with progress updates
+            const result = await window.PortfolioSimulator.runSimulation(
+                startDate,
+                currency,
+                updateProgress  // Pass progress callback
+            );
 
             if (!result.success) {
                 throw new Error(result.error || 'Simulation failed');

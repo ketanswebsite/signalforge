@@ -60,10 +60,16 @@ const PortfolioSimulator = (function() {
 
     /**
      * Main simulation function
+     * @param {string} startDate - Simulation start date
+     * @param {string} displayCurrency - Currency for display (GBP, INR, USD)
+     * @param {function} progressCallback - Optional callback for progress updates
      */
-    async function runSimulation(startDate, displayCurrency = 'GBP') {
+    async function runSimulation(startDate, displayCurrency = 'GBP', progressCallback = null) {
         try {
             console.log('[Portfolio Simulator] Starting simulation from', startDate);
+
+            // Report initial progress
+            if (progressCallback) progressCallback({ stage: 'init', message: 'Initializing simulation...' });
 
             // 1. Calculate date ranges
             const dates = calculateDateRanges(startDate);
@@ -71,11 +77,18 @@ const PortfolioSimulator = (function() {
             console.log('[Portfolio Simulator] Simulation period:', dates.simulationStart, 'to today');
 
             // 2. Fetch all stocks data (5 years + 6 months before simulation + simulation period)
-            const allStocks = await fetchAllStocksData(dates.dataStart);
+            if (progressCallback) progressCallback({ stage: 'fetch', message: 'Fetching stock data...', current: 0, total: 0 });
+            const allStocks = await fetchAllStocksData(dates.dataStart, progressCallback);
             console.log('[Portfolio Simulator] Fetched', allStocks.length, 'stocks');
 
             // 3. Calculate historical win rates (5-year backtest BEFORE simulation start)
-            const stockWinRates = await calculateHistoricalWinRates(allStocks, dates);
+            if (progressCallback) progressCallback({
+                stage: 'backtest',
+                message: 'Running historical backtests...',
+                current: 0,
+                total: allStocks.length
+            });
+            const stockWinRates = await calculateHistoricalWinRates(allStocks, dates, progressCallback);
             console.log('[Portfolio Simulator] Calculated win rates for', stockWinRates.length, 'stocks');
 
             // 4. Filter high conviction stocks (>75% win rate in historical period)
@@ -83,13 +96,23 @@ const PortfolioSimulator = (function() {
             console.log('[Portfolio Simulator] High conviction stocks:', highConvictionStocks.length);
 
             // 5. Generate signals during simulation period for high conviction stocks only
-            const simulationSignals = await generateSimulationSignals(allStocks, highConvictionStocks, dates);
+            if (progressCallback) progressCallback({
+                stage: 'signals',
+                message: 'Generating trading signals...',
+                current: 0,
+                total: highConvictionStocks.length
+            });
+            const simulationSignals = await generateSimulationSignals(allStocks, highConvictionStocks, dates, progressCallback);
             console.log('[Portfolio Simulator] Simulation signals:', simulationSignals.length);
 
             // 6. Run day-by-day portfolio simulation
+            if (progressCallback) progressCallback({ stage: 'simulate', message: 'Simulating portfolio performance...' });
             const portfolio = await simulatePortfolio(simulationSignals, startDate, displayCurrency);
 
-            // 7. Return complete simulation results
+            // 7. Report completion
+            if (progressCallback) progressCallback({ stage: 'complete', message: 'Simulation complete!' });
+
+            // 8. Return complete simulation results
             return {
                 success: true,
                 portfolio: portfolio,
@@ -138,7 +161,7 @@ const PortfolioSimulator = (function() {
      * Fetch all stocks data from all markets
      * Uses comprehensive stock list from StockData module (2,200+ stocks)
      */
-    async function fetchAllStocksData(startDate) {
+    async function fetchAllStocksData(startDate, progressCallback) {
         // Use StockData module (SINGLE SOURCE OF TRUTH)
         const stockLists = window.StockData.getStockLists();
 
@@ -152,15 +175,27 @@ const PortfolioSimulator = (function() {
             ...stockLists.usStocks
         ];
 
-        console.log(`[Portfolio Simulator] Processing ${allStockDefinitions.length} stocks from all markets`);
+        const total = allStockDefinitions.length;
+        console.log(`[Portfolio Simulator] Processing ${total} stocks from all markets`);
 
         const allStocks = [];
         const endDate = new Date().toISOString().split('T')[0];
 
         // Fetch data for all stocks
-        for (const stockObj of allStockDefinitions) {
-            // Get market from symbol suffix
+        for (let i = 0; i < allStockDefinitions.length; i++) {
+            const stockObj = allStockDefinitions[i];
             const market = getMarketForSymbol(stockObj.symbol);
+
+            // Report progress every 10 stocks
+            if (progressCallback && i % 10 === 0) {
+                progressCallback({
+                    stage: 'fetch',
+                    message: `Fetching ${stockObj.symbol}`,
+                    current: i,
+                    total: total,
+                    percent: Math.round((i / total) * 100)
+                });
+            }
 
             try {
                 const stockData = await fetchStockData(stockObj.symbol, startDate, endDate);
@@ -240,10 +275,24 @@ const PortfolioSimulator = (function() {
      * Calculate historical win rates for all stocks
      * Uses 5-year backtest period BEFORE simulation start
      */
-    async function calculateHistoricalWinRates(allStocks, dates) {
+    async function calculateHistoricalWinRates(allStocks, dates, progressCallback) {
         const stockWinRates = [];
+        const total = allStocks.length;
 
-        for (const stock of allStocks) {
+        for (let i = 0; i < allStocks.length; i++) {
+            const stock = allStocks[i];
+
+            // Report progress every 5 stocks
+            if (progressCallback && i % 5 === 0) {
+                progressCallback({
+                    stage: 'backtest',
+                    message: `Backtesting ${stock.symbol}`,
+                    current: i,
+                    total: total,
+                    percent: Math.round((i / total) * 100)
+                });
+            }
+
             try {
                 // Filter data for historical backtest period only
                 const historicalData = filterDataByDateRange(
@@ -279,15 +328,31 @@ const PortfolioSimulator = (function() {
     /**
      * Generate signals during simulation period for high conviction stocks
      */
-    async function generateSimulationSignals(allStocks, highConvictionStocks, dates) {
+    async function generateSimulationSignals(allStocks, highConvictionStocks, dates, progressCallback) {
         const signals = [];
         const highConvictionSymbols = new Set(highConvictionStocks.map(s => s.symbol));
+
+        let processed = 0;
+        const total = highConvictionStocks.length;
 
         for (const stock of allStocks) {
             // Only process high conviction stocks
             if (!highConvictionSymbols.has(stock.symbol)) {
                 continue;
             }
+
+            // Report progress every 5 stocks
+            if (progressCallback && processed % 5 === 0) {
+                progressCallback({
+                    stage: 'signals',
+                    message: `Generating signals for ${stock.symbol}`,
+                    current: processed,
+                    total: total,
+                    percent: Math.round((processed / total) * 100)
+                });
+            }
+
+            processed++;
 
             try {
                 // Run backtest on entire data range to get all signals
@@ -466,6 +531,9 @@ const PortfolioSimulator = (function() {
         // Count current positions per market
         const positionCounts = countPositionsByMarket(portfolio.positions);
 
+        // Track symbols already in portfolio to prevent duplicates
+        const activeSymbols = new Set(portfolio.positions.map(p => p.symbol));
+
         // Process signals in order (FIFO)
         for (const signal of signals) {
             const market = signal.market;
@@ -477,6 +545,11 @@ const PortfolioSimulator = (function() {
 
             if (positionCounts[market] >= CONFIG.MAX_POSITIONS_PER_MARKET) {
                 continue; // Market limit reached
+            }
+
+            // Prevent duplicate positions in the same stock
+            if (activeSymbols.has(signal.symbol)) {
+                continue; // Skip - already have a position in this stock
             }
 
             // Enter position
@@ -492,6 +565,7 @@ const PortfolioSimulator = (function() {
 
             portfolio.positions.push(position);
             positionCounts[market]++;
+            activeSymbols.add(signal.symbol); // Track this symbol
         }
     }
 
