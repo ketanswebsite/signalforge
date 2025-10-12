@@ -87,7 +87,7 @@ class PricingPage {
     createPlanCard(plan, isFeatured = false) {
         const isFree = plan.plan_code === 'FREE';
         const currencySymbol = this.getCurrencySymbol(plan.currency);
-        const price = plan.price_monthly;
+        const price = parseFloat(plan.price_monthly) || 0;
         const features = this.getPlanFeatures(plan);
 
         return `

@@ -1,0 +1,1 @@
+- please run deploy-to-render.bat everytime we finalise making changes to a code
