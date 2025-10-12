@@ -70,7 +70,7 @@ class PricingPage {
         regionPlans.sort((a, b) => {
             if (a.plan_code === 'FREE') return -1;
             if (b.plan_code === 'FREE') return 1;
-            return a.monthly_price - b.monthly_price;
+            return a.price_monthly - b.price_monthly;
         });
 
         container.innerHTML = regionPlans.map((plan, index) => this.createPlanCard(plan, index === 1)).join('');
@@ -87,7 +87,7 @@ class PricingPage {
     createPlanCard(plan, isFeatured = false) {
         const isFree = plan.plan_code === 'FREE';
         const currencySymbol = this.getCurrencySymbol(plan.currency);
-        const price = plan.monthly_price;
+        const price = plan.price_monthly;
         const features = this.getPlanFeatures(plan);
 
         return `
