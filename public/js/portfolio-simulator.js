@@ -988,7 +988,13 @@ const PortfolioSimulator = (function() {
                 entryPrice: signal.entryPrice,
                 tradeSize: dynamicSize,
                 currency: CONFIG.TRADE_SIZES[market].currency,
-                winRate: signal.winRate
+                winRate: signal.winRate,
+                // Copy DTI values and historical signal count from signal (for force-close scenarios)
+                prevDTI: signal.prevDTI,
+                entryDTI: signal.entryDTI,
+                prev7DayDTI: signal.prev7DayDTI,
+                entry7DayDTI: signal.entry7DayDTI,
+                historicalSignalCount: signal.historicalSignalCount
             };
 
             console.log(`[Portfolio] Entering ${signal.symbol} with size ${dynamicSize.toFixed(2)} ${CONFIG.TRADE_SIZES[market].currency}`);
