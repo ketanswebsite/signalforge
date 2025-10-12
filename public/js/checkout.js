@@ -66,13 +66,13 @@ class CheckoutPage {
         try {
             // Get Stripe publishable key from server
             const response = await fetch('/api/stripe/config');
-            const config = await response.json();
+            const data = await response.json();
 
-            if (!config.publishableKey) {
+            if (!data.success || !data.data?.publishableKey) {
                 throw new Error('Stripe not configured');
             }
 
-            this.stripe = Stripe(config.publishableKey);
+            this.stripe = Stripe(data.data.publishableKey);
 
             // Create card element
             const elements = this.stripe.elements();
@@ -177,40 +177,44 @@ class CheckoutPage {
         const currencySymbol = this.getCurrencySymbol(plan.currency);
         const periods = [];
 
-        if (plan.monthly_price > 0) {
+        const monthlyPrice = parseFloat(plan.price_monthly) || 0;
+        const quarterlyPrice = parseFloat(plan.price_quarterly) || 0;
+        const yearlyPrice = parseFloat(plan.price_yearly) || 0;
+
+        if (monthlyPrice > 0) {
             periods.push({
                 name: 'Monthly',
                 value: 'monthly',
-                price: plan.monthly_price,
-                display: `${currencySymbol}${plan.monthly_price.toFixed(2)}/month`,
+                price: monthlyPrice,
+                display: `${currencySymbol}${monthlyPrice.toFixed(2)}/month`,
                 details: 'Billed monthly. Cancel anytime.'
             });
         }
 
-        if (plan.quarterly_price > 0) {
-            const monthlySavings = (plan.monthly_price * 3) - plan.quarterly_price;
-            const percentSavings = Math.round((monthlySavings / (plan.monthly_price * 3)) * 100);
+        if (quarterlyPrice > 0) {
+            const monthlySavings = (monthlyPrice * 3) - quarterlyPrice;
+            const percentSavings = Math.round((monthlySavings / (monthlyPrice * 3)) * 100);
 
             periods.push({
                 name: 'Quarterly',
                 value: 'quarterly',
-                price: plan.quarterly_price,
-                display: `${currencySymbol}${plan.quarterly_price.toFixed(2)}/quarter`,
-                details: `Billed every 3 months. Effective ${currencySymbol}${(plan.quarterly_price / 3).toFixed(2)}/month`,
+                price: quarterlyPrice,
+                display: `${currencySymbol}${quarterlyPrice.toFixed(2)}/quarter`,
+                details: `Billed every 3 months. Effective ${currencySymbol}${(quarterlyPrice / 3).toFixed(2)}/month`,
                 savings: percentSavings > 0 ? `Save ${percentSavings}%` : null
             });
         }
 
-        if (plan.annual_price > 0) {
-            const monthlySavings = (plan.monthly_price * 12) - plan.annual_price;
-            const percentSavings = Math.round((monthlySavings / (plan.monthly_price * 12)) * 100);
+        if (yearlyPrice > 0) {
+            const monthlySavings = (monthlyPrice * 12) - yearlyPrice;
+            const percentSavings = Math.round((monthlySavings / (monthlyPrice * 12)) * 100);
 
             periods.push({
                 name: 'Annual',
                 value: 'annual',
-                price: plan.annual_price,
-                display: `${currencySymbol}${plan.annual_price.toFixed(2)}/year`,
-                details: `Billed annually. Effective ${currencySymbol}${(plan.annual_price / 12).toFixed(2)}/month`,
+                price: yearlyPrice,
+                display: `${currencySymbol}${yearlyPrice.toFixed(2)}/year`,
+                details: `Billed annually. Effective ${currencySymbol}${(yearlyPrice / 12).toFixed(2)}/month`,
                 savings: percentSavings > 0 ? `Save ${percentSavings}%` : null
             });
         }
@@ -290,13 +294,13 @@ class CheckoutPage {
         let price = 0;
         switch (this.selectedPeriod) {
             case 'monthly':
-                price = plan.monthly_price;
+                price = parseFloat(plan.price_monthly) || 0;
                 break;
             case 'quarterly':
-                price = plan.quarterly_price;
+                price = parseFloat(plan.price_quarterly) || 0;
                 break;
             case 'annual':
-                price = plan.annual_price;
+                price = parseFloat(plan.price_yearly) || 0;
                 break;
         }
 

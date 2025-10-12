@@ -97,13 +97,13 @@ router.post('/create-subscription', ensureAuthenticated, async (req, res) => {
         let amount = 0;
         switch (billingPeriod) {
             case 'monthly':
-                amount = plan.monthly_price;
+                amount = parseFloat(plan.price_monthly) || 0;
                 break;
             case 'quarterly':
-                amount = plan.quarterly_price;
+                amount = parseFloat(plan.price_quarterly) || 0;
                 break;
             case 'annual':
-                amount = plan.annual_price;
+                amount = parseFloat(plan.price_yearly) || 0;
                 break;
             default:
                 return res.status(400).json(errorResponse('Invalid billing period'));
