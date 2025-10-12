@@ -195,13 +195,6 @@ if (typeof window !== 'undefined' && window.XSS_DEBUG) {
         set: function(value) {
             const scan = window.XSSProtection.scanForXSS(value);
 
-            if (!scan.safe) {
-                    element: this.tagName,
-                    threats: scan.threats,
-                    html: value.substring(0, 100) + (value.length > 100 ? '...' : '')
-                });
-            }
-
             // Apply sanitization based on level
             const sanitized = window.XSSProtection.sanitizeHTML(value, scan.level);
             originalInnerHTMLSetter.call(this, sanitized);

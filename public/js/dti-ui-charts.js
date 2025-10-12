@@ -53,10 +53,6 @@ DTIUI.Charts = (function() {
         
         // Validate data arrays have same length
         if (dates.length !== prices.length || dates.length !== dti.length) {
-                dates: dates.length,
-                prices: prices.length,
-                dti: dti.length
-            });
             // Truncate to minimum length to avoid errors
             const minLength = Math.min(dates.length, prices.length, dti.length);
             dates = dates.slice(0, minLength);
