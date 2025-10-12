@@ -115,8 +115,8 @@ You should see your new subscription with `status='active'`.
 
 Make sure your `.env` has both keys:
 ```env
-STRIPE_SECRET_KEY=sk_test_51SHWX9P1ve4eSIfefPExh8st4drVUm1Xfb0wAwSMCGjRtmDXZXA8xdpxR6WJdWaT7xeb1zXtAIMMywdJ4w8YTk6j00vU5KmhIS
-STRIPE_PUBLISHABLE_KEY=pk_test_51SHWX9P1ve4eSIfepRejVn1wVRBqxx2P455PhCyPnLU51MJTMcTOtiF8rNzf435hDrxIQG4FvOZFnAd4uKaoAXCp00kPBBPIZI
+STRIPE_SECRET_KEY=sk_test_your_secret_key_here
+STRIPE_PUBLISHABLE_KEY=pk_test_your_publishable_key_here
 ```
 
 Restart your server after adding them.
