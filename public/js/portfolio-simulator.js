@@ -22,9 +22,9 @@ const PortfolioSimulator = (function() {
 
         // Trade sizes per position
         TRADE_SIZES: {
-            'India': { currency: 'INR', amount: 100000 },  // 1 lakh per trade
-            'UK': { currency: 'GBP', amount: 1000 },       // 1k per trade
-            'US': { currency: 'USD', amount: 1500 }        // 1.5k per trade
+            'India': { currency: 'INR', amount: 50000 },  // 50k per trade
+            'UK': { currency: 'GBP', amount: 400 },       // 400 per trade
+            'US': { currency: 'USD', amount: 500 }        // 500 per trade
         },
 
         // High conviction threshold
