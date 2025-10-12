@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Failed - SignalForge</title>
+    <link rel="stylesheet" href="/css/unified-navbar.css">
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --dark-bg: #1a1a2e;
+            --darker-bg: #16161f;
+            --card-bg: #25253a;
+            --text-primary: #ffffff;
+            --text-secondary: #b8b8d1;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, var(--dark-bg) 0%, var(--darker-bg) 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding-top: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .failure-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .failure-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 3rem;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .failure-icon {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 2rem;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: shakeAndScale 0.5s ease-out;
+        }
+
+        .failure-icon svg {
+            width: 60px;
+            height: 60px;
+            color: white;
+            stroke-width: 3;
+        }
+
+        @keyframes shakeAndScale {
+            0% {
+                transform: scale(0) rotate(0deg);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.1) rotate(-5deg);
+            }
+            75% {
+                transform: scale(0.9) rotate(5deg);
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        .failure-title {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--danger-color);
+        }
+
+        .failure-message {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .error-details {
+            background: rgba(231, 76, 60, 0.1);
+            border: 1px solid var(--danger-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            text-align: left;
+        }
+
+        .error-code {
+            font-family: 'Courier New', monospace;
+            color: var(--danger-color);
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .error-description {
+            color: var(--text-secondary);
+        }
+
+        .common-issues {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+            text-align: left;
+        }
+
+        .common-issues h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--warning-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .issue-list {
+            list-style: none;
+        }
+
+        .issue-item {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .issue-item:last-child {
+            border-bottom: none;
+        }
+
+        .issue-icon {
+            color: var(--warning-color);
+            flex-shrink: 0;
+            margin-top: 0.2rem;
+        }
+
+        .issue-content {
+            flex: 1;
+        }
+
+        .issue-title {
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+
+        .issue-solution {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .support-section {
+            background: rgba(74, 144, 226, 0.1);
+            border: 1px solid var(--primary-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .support-section h4 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .support-section p {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .support-contact {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .support-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--primary-color);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            background: rgba(74, 144, 226, 0.1);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .support-link:hover {
+            background: rgba(74, 144, 226, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .failure-card {
+                padding: 2rem 1rem;
+            }
+
+            .failure-title {
+                font-size: 2rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="failure-container">
+        <div class="failure-card">
+            <div class="failure-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="15" y1="9" x2="9" y2="15"/>
+                    <line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>
+            </div>
+
+            <h1 class="failure-title">Payment Failed</h1>
+            <p class="failure-message" id="failure-message">
+                We encountered an issue processing your payment. Don't worry, your card has not been charged.
+            </p>
+
+            <div class="error-details" id="error-details" style="display: none;">
+                <div class="error-code" id="error-code"></div>
+                <div class="error-description" id="error-description"></div>
+            </div>
+
+            <div class="common-issues">
+                <h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="16" x2="12" y2="12"/>
+                        <line x1="12" y1="8" x2="12.01" y2="8"/>
+                    </svg>
+                    Common Issues & Solutions
+                </h3>
+                <ul class="issue-list">
+                    <li class="issue-item">
+                        <svg class="issue-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        <div class="issue-content">
+                            <div class="issue-title">Incorrect Card Details</div>
+                            <div class="issue-solution">
+                                Double-check your card number, expiry date, and CVV code. Make sure all details match your card exactly.
+                            </div>
+                        </div>
+                    </li>
+                    <li class="issue-item">
+                        <svg class="issue-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        <div class="issue-content">
+                            <div class="issue-title">Insufficient Funds</div>
+                            <div class="issue-solution">
+                                Ensure your card has sufficient funds or available credit limit to cover the subscription amount.
+                            </div>
+                        </div>
+                    </li>
+                    <li class="issue-item">
+                        <svg class="issue-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                        <div class="issue-content">
+                            <div class="issue-title">Card Declined by Bank</div>
+                            <div class="issue-solution">
+                                Your bank may have declined the transaction for security reasons. Contact your bank to authorize the payment.
+                            </div>
+                        </div>
+                    </li>
+                    <li class="issue-item">
+                        <svg class="issue-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                            <line x1="12" y1="22.08" x2="12" y2="12"/>
+                        </svg>
+                        <div class="issue-content">
+                            <div class="issue-title">International Payments Blocked</div>
+                            <div class="issue-solution">
+                                Some cards don't support international transactions. Enable international payments or use a different card.
+                            </div>
+                        </div>
+                    </li>
+                    <li class="issue-item">
+                        <svg class="issue-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                            <line x1="1" y1="10" x2="23" y2="10"/>
+                        </svg>
+                        <div class="issue-content">
+                            <div class="issue-title">Expired or Invalid Card</div>
+                            <div class="issue-solution">
+                                Check that your card hasn't expired and is still active. Try using a different payment method if available.
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="action-buttons">
+                <a href="#" class="btn btn-primary" id="retry-button">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="1 4 1 10 7 10"/>
+                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                    </svg>
+                    Try Again
+                </a>
+                <a href="/pricing.html" class="btn btn-secondary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                    Back to Pricing
+                </a>
+            </div>
+
+            <div class="support-section">
+                <h4>Need Help?</h4>
+                <p>If you continue to experience issues, our support team is here to help.</p>
+                <div class="support-contact">
+                    <a href="mailto:support@signalforge.com" class="support-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                            <polyline points="22,6 12,13 2,6"/>
+                        </svg>
+                        Email Support
+                    </a>
+                    <a href="/telegram-subscribe.html" class="support-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        Telegram Support
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/unified-navbar.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const errorCode = urlParams.get('error');
+            const errorMessage = urlParams.get('message');
+            const planCode = urlParams.get('plan');
+
+            // Display error details if provided
+            if (errorCode || errorMessage) {
+                const errorDetails = document.getElementById('error-details');
+                const errorCodeEl = document.getElementById('error-code');
+                const errorDescriptionEl = document.getElementById('error-description');
+
+                errorDetails.style.display = 'block';
+
+                if (errorCode) {
+                    errorCodeEl.textContent = `Error Code: ${errorCode}`;
+                }
+
+                if (errorMessage) {
+                    errorDescriptionEl.textContent = decodeURIComponent(errorMessage);
+                }
+            }
+
+            // Update retry button to go back to checkout with the same plan
+            const retryButton = document.getElementById('retry-button');
+            if (planCode) {
+                retryButton.href = `/checkout.html?plan=${planCode}`;
+            } else {
+                retryButton.href = '/pricing.html';
+            }
+
+            // Log failure for analytics
+            try {
+                fetch('/api/analytics/checkout-failure', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        errorCode,
+                        errorMessage,
+                        planCode,
+                        timestamp: new Date().toISOString()
+                    })
+                }).catch(() => {});
+            } catch (error) {
+                // Silent fail for analytics
+            }
+        });
+    </script>
+</body>
+</html>

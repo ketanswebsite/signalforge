@@ -192,6 +192,33 @@ try {
   console.error('✗ Failed to load admin routes:', error.message);
 }
 
+// Subscription routes (public and authenticated user endpoints)
+try {
+  const subscriptionRoutes = require('./routes/subscription');
+  app.use('/api', subscriptionRoutes);
+  console.log('✓ Subscription routes loaded successfully');
+} catch (error) {
+  console.error('✗ Failed to load subscription routes:', error.message);
+}
+
+// Stripe payment routes
+try {
+  const { initializeStripe, isStripeConfigured } = require('./config/stripe');
+
+  // Initialize Stripe if configured
+  initializeStripe();
+
+  if (isStripeConfigured()) {
+    const stripeRoutes = require('./routes/stripe');
+    app.use('/api/stripe', stripeRoutes);
+    console.log('✓ Stripe payment routes loaded successfully');
+  } else {
+    console.warn('⚠️  Stripe not configured. Payment routes will not be available.');
+  }
+} catch (error) {
+  console.error('✗ Failed to load Stripe routes:', error.message);
+}
+
 // Test endpoint
 app.get('/api/test', (req, res) => {
   res.json({

@@ -22,14 +22,18 @@ async function getUserSubscriptionStatus(userEmail) {
   }
 
   try {
-    // Get user's subscription information
+    // Get user's subscription information (including complimentary access)
     const result = await db.query(`
-      SELECT 
+      SELECT
         u.email,
         u.region,
         u.subscription_status,
         u.subscription_end_date,
         u.is_premium,
+        u.is_complimentary,
+        u.complimentary_until,
+        u.complimentary_reason,
+        u.granted_by,
         us.subscription_status as current_status,
         us.trial_end_date,
         us.subscription_end_date as active_sub_end_date
@@ -47,6 +51,47 @@ async function getUserSubscriptionStatus(userEmail) {
     const user = result.rows[0];
     const now = new Date();
 
+    // ========================================
+    // PRIORITY 1: Check complimentary access first
+    // ========================================
+    if (user.is_complimentary) {
+      // Lifetime complimentary access (no expiry date)
+      if (!user.complimentary_until) {
+        return {
+          email: user.email,
+          region: user.region || 'IN',
+          status: 'complimentary_lifetime',
+          endDate: null,
+          daysRemaining: null,
+          isPremium: true,
+          isActive: true,
+          reason: user.complimentary_reason,
+          grantedBy: user.granted_by
+        };
+      }
+
+      // Temporary complimentary access - check if not expired
+      const expiryDate = new Date(user.complimentary_until);
+      if (now <= expiryDate) {
+        const daysRemaining = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+        return {
+          email: user.email,
+          region: user.region || 'IN',
+          status: 'complimentary_temporary',
+          endDate: expiryDate,
+          daysRemaining: daysRemaining,
+          isPremium: true,
+          isActive: true,
+          reason: user.complimentary_reason,
+          grantedBy: user.granted_by
+        };
+      }
+      // If complimentary access expired, fall through to regular subscription check
+    }
+
+    // ========================================
+    // PRIORITY 2: Check regular subscription
+    // ========================================
     // Determine actual subscription status
     let status = 'expired';
     let daysRemaining = 0;

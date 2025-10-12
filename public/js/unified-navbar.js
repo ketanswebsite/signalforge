@@ -86,6 +86,15 @@
                             <span>Data & Privacy</span>
                         </a>
 
+                        <a href="/pricing.html" class="nav-item ${currentPage === 'pricing.html' ? 'active' : ''}">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                            </svg>
+                            <span>Pricing</span>
+                        </a>
+
                         ${user.isAdmin ? `
                         <a href="/admin-portal.html" class="nav-item admin-link ${currentPage === 'admin-portal.html' ? 'active' : ''}">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -115,6 +124,13 @@
                                 </div>
                             </div>
                             <div class="dropdown-divider"></div>
+                            <a href="/account.html" class="dropdown-item">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                My Account
+                            </a>
                             <a href="/logout" class="dropdown-item">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -189,6 +205,14 @@
                         </svg>
                         <span>Data & Privacy</span>
                     </a>
+                    <a href="/pricing.html" class="drawer-nav-item ${currentPage === 'pricing.html' ? 'active' : ''}">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                        <span>Pricing</span>
+                    </a>
                     ${user.isAdmin ? `
                     <a href="/admin-portal.html" class="drawer-nav-item admin-link ${currentPage === 'admin-portal.html' ? 'active' : ''}">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -199,6 +223,13 @@
                     </a>
                     ` : ''}
                     <div class="drawer-divider"></div>
+                    <a href="/account.html" class="drawer-nav-item ${currentPage === 'account.html' ? 'active' : ''}">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        <span>My Account</span>
+                    </a>
                     <a href="/logout" class="drawer-nav-item">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>

@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(DATABASE_URL=\"postgresql://signalforge_db_user:Xcipr9Wa1KeSWCNPjM9ymyMbD0SENf4R@dpg-d0vgkl95pdvs738glu0g-a.oregon-postgres.render.com/signalforge_db\" NODE_ENV=production node fix-migration-tracking.js)"
+      "Bash(DATABASE_URL=\"postgresql://signalforge_db_user:Xcipr9Wa1KeSWCNPjM9ymyMbD0SENf4R@dpg-d0vgkl95pdvs738glu0g-a.oregon-postgres.render.com/signalforge_db\" NODE_ENV=production node fix-migration-tracking.js)",
+      "Bash(DATABASE_URL=\"postgresql://signalforge_db_user:Xcipr9Wa1KeSWCNPjM9ymyMbD0SENf4R@dpg-d0vgkl95pdvs738glu0g-a.oregon-postgres.render.com/signalforge_db\" NODE_ENV=production node run-single-migration.js 009_update_trial_period.sql)",
+      "Bash(DATABASE_URL=\"postgresql://signalforge_db_user:Xcipr9Wa1KeSWCNPjM9ymyMbD0SENf4R@dpg-d0vgkl95pdvs738glu0g-a.oregon-postgres.render.com/signalforge_db\" NODE_ENV=production node run-single-migration.js 010_add_complimentary_access.sql)"
     ],
     "deny": [],
     "ask": []

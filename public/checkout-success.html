@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subscription Successful - SignalForge</title>
+    <link rel="stylesheet" href="/css/unified-navbar.css">
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --success-color: #27ae60;
+            --dark-bg: #1a1a2e;
+            --darker-bg: #16161f;
+            --card-bg: #25253a;
+            --text-primary: #ffffff;
+            --text-secondary: #b8b8d1;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, var(--dark-bg) 0%, var(--darker-bg) 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding-top: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .success-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .success-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 3rem;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .success-icon {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 2rem;
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: scaleIn 0.5s ease-out;
+        }
+
+        .success-icon svg {
+            width: 60px;
+            height: 60px;
+            color: white;
+            stroke-width: 3;
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .success-title {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .success-message {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .subscription-details {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+            text-align: left;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .detail-value {
+            color: var(--text-primary);
+            font-weight: bold;
+        }
+
+        .next-steps {
+            text-align: left;
+            margin: 2rem 0;
+        }
+
+        .next-steps h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        .step-list {
+            list-style: none;
+        }
+
+        .step-item {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem 0;
+            align-items: start;
+        }
+
+        .step-number {
+            background: var(--primary-color);
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-title {
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+
+        .step-description {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .trial-banner {
+            background: linear-gradient(135deg, rgba(39, 174, 96, 0.2) 0%, rgba(46, 204, 113, 0.2) 100%);
+            border: 2px solid var(--success-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .trial-banner svg {
+            color: var(--success-color);
+            flex-shrink: 0;
+        }
+
+        .trial-banner-content {
+            text-align: left;
+        }
+
+        .trial-banner-title {
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+
+        .trial-banner-text {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        @media (max-width: 768px) {
+            .success-card {
+                padding: 2rem 1rem;
+            }
+
+            .success-title {
+                font-size: 2rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="success-container">
+        <div class="success-card">
+            <div class="success-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+            </div>
+
+            <h1 class="success-title">Subscription Successful!</h1>
+            <p class="success-message" id="success-message">
+                Thank you for subscribing to SignalForge. Your account has been activated.
+            </p>
+
+            <div id="trial-banner" class="trial-banner" style="display: none;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                <div class="trial-banner-content">
+                    <div class="trial-banner-title">90-Day Free Trial Started</div>
+                    <div class="trial-banner-text">
+                        You have full access to all features for 90 days. Your card will not be charged during the trial period.
+                    </div>
+                </div>
+            </div>
+
+            <div class="subscription-details" id="subscription-details">
+                <!-- Populated by JavaScript -->
+            </div>
+
+            <div class="next-steps">
+                <h3>What's Next?</h3>
+                <ul class="step-list">
+                    <li class="step-item">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <div class="step-title">Connect Telegram</div>
+                            <div class="step-description">
+                                Set up Telegram notifications to receive real-time trading signals directly on your phone.
+                            </div>
+                        </div>
+                    </li>
+                    <li class="step-item">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <div class="step-title">Explore Trading Signals</div>
+                            <div class="step-description">
+                                Browse our DTI Backtest dashboard and Signal Management tools to find profitable trading opportunities.
+                            </div>
+                        </div>
+                    </li>
+                    <li class="step-item">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <div class="step-title">Set Up Custom Alerts</div>
+                            <div class="step-description">
+                                Create personalized alerts based on your trading strategy and risk preferences.
+                            </div>
+                        </div>
+                    </li>
+                    <li class="step-item">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <div class="step-title">Join Our Community</div>
+                            <div class="step-description">
+                                Connect with other traders and get support from our team via email or Telegram.
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="action-buttons">
+                <a href="/telegram-subscribe.html" class="btn btn-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    Connect Telegram
+                </a>
+                <a href="/index.html" class="btn btn-secondary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                    </svg>
+                    Go to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/unified-navbar.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const subscriptionId = urlParams.get('subscription_id');
+            const isTrial = urlParams.get('trial') === 'true';
+
+            if (isTrial) {
+                document.getElementById('trial-banner').style.display = 'flex';
+                document.getElementById('success-message').textContent =
+                    'Your 90-day free trial has been activated! Enjoy full access to all features.';
+            }
+
+            // Load subscription details
+            try {
+                const response = await fetch('/api/user/subscription');
+                const data = await response.json();
+
+                if (data.success && data.subscription) {
+                    const sub = data.subscription;
+                    const detailsHTML = `
+                        <div class="detail-row">
+                            <span class="detail-label">Plan</span>
+                            <span class="detail-value">${sub.plan_name}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Status</span>
+                            <span class="detail-value">${sub.status === 'trial' ? 'Free Trial' : 'Active'}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Start Date</span>
+                            <span class="detail-value">${new Date(sub.subscription_start_date).toLocaleDateString()}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">${sub.status === 'trial' ? 'Trial Ends' : 'Next Billing Date'}</span>
+                            <span class="detail-value">${new Date(sub.subscription_end_date).toLocaleDateString()}</span>
+                        </div>
+                        ${sub.billing_period ? `
+                        <div class="detail-row">
+                            <span class="detail-label">Billing Period</span>
+                            <span class="detail-value">${sub.billing_period.charAt(0).toUpperCase() + sub.billing_period.slice(1)}</span>
+                        </div>
+                        ` : ''}
+                    `;
+                    document.getElementById('subscription-details').innerHTML = detailsHTML;
+                }
+            } catch (error) {
+                console.error('Error loading subscription details:', error);
+            }
+
+            // Send confirmation email
+            try {
+                await fetch('/api/subscription/send-confirmation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ subscriptionId })
+                });
+            } catch (error) {
+                console.error('Error sending confirmation email:', error);
+            }
+        });
+    </script>
+</body>
+</html>

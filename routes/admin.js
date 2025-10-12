@@ -388,6 +388,143 @@ router.post('/subscriptions/:id/cancel', asyncHandler(async (req, res) => {
   res.json(successResponse(result.rows[0], 'Subscription cancelled successfully'));
 }));
 
+// ========== Complimentary Access Management ==========
+
+// Grant complimentary access to a user
+router.post('/users/:email/grant-access', asyncHandler(async (req, res) => {
+  const userEmail = req.params.email;
+  const { type, expiresAt, reason } = req.body;
+  const adminEmail = req.user?.email || 'admin';
+
+  requireFields(req.body, ['type', 'reason']);
+
+  if (!['lifetime', 'temporary'].includes(type)) {
+    throw new AdminAPIError('VALIDATION_ERROR', 'Type must be lifetime or temporary');
+  }
+
+  if (type === 'temporary' && !expiresAt) {
+    throw new AdminAPIError('VALIDATION_ERROR', 'expiresAt required for temporary access');
+  }
+
+  // Check if user exists
+  const userCheck = await TradeDB.pool.query(
+    'SELECT email FROM users WHERE email = $1',
+    [userEmail]
+  );
+
+  if (userCheck.rows.length === 0) {
+    throw new AdminAPIError('NOT_FOUND', 'User not found');
+  }
+
+  // Update user with complimentary access
+  const userUpdate = await TradeDB.pool.query(`
+    UPDATE users
+    SET is_complimentary = true,
+        complimentary_until = $1,
+        complimentary_reason = $2,
+        granted_by = $3,
+        granted_at = NOW()
+    WHERE email = $4
+    RETURNING *
+  `, [type === 'temporary' ? expiresAt : null, reason, adminEmail, userEmail]);
+
+  // Log in grants table
+  await TradeDB.pool.query(`
+    INSERT INTO subscription_grants
+    (user_email, grant_type, expires_at, reason, granted_by)
+    VALUES ($1, $2, $3, $4, $5)
+  `, [userEmail, type, type === 'temporary' ? expiresAt : null, reason, adminEmail]);
+
+  res.json(successResponse(userUpdate.rows[0], 'Complimentary access granted successfully'));
+}));
+
+// Revoke complimentary access from a user
+router.post('/users/:email/revoke-access', asyncHandler(async (req, res) => {
+  const userEmail = req.params.email;
+  const { reason } = req.body;
+  const adminEmail = req.user?.email || 'admin';
+
+  requireField(req.body, 'reason');
+
+  // Update user to remove complimentary access
+  const userUpdate = await TradeDB.pool.query(`
+    UPDATE users
+    SET is_complimentary = false,
+        complimentary_until = NULL
+    WHERE email = $1
+    RETURNING *
+  `, [userEmail]);
+
+  if (userUpdate.rows.length === 0) {
+    throw new AdminAPIError('NOT_FOUND', 'User not found');
+  }
+
+  // Log revocation
+  await TradeDB.pool.query(`
+    INSERT INTO subscription_grants
+    (user_email, grant_type, reason, granted_by, revoked_at, revoked_by, revoke_reason)
+    VALUES ($1, 'revoked', $2, $3, NOW(), $4, $5)
+  `, [userEmail, 'Access revoked', adminEmail, adminEmail, reason]);
+
+  res.json(successResponse(userUpdate.rows[0], 'Complimentary access revoked successfully'));
+}));
+
+// Get all users with complimentary access
+router.get('/users/complimentary', asyncHandler(async (req, res) => {
+  const result = await TradeDB.pool.query(`
+    SELECT
+      email,
+      name,
+      is_complimentary,
+      complimentary_until,
+      complimentary_reason,
+      granted_by,
+      granted_at,
+      CASE
+        WHEN complimentary_until IS NULL THEN 'lifetime'
+        WHEN complimentary_until > NOW() THEN 'active'
+        ELSE 'expired'
+      END as status
+    FROM users
+    WHERE is_complimentary = true
+    ORDER BY granted_at DESC
+  `);
+
+  res.json(successResponse({ users: result.rows }));
+}));
+
+// Extend subscription
+router.post('/subscriptions/:id/extend', asyncHandler(async (req, res) => {
+  const subscriptionId = req.params.id;
+  const { days, reason } = req.body;
+
+  requireFields(req.body, ['days', 'reason']);
+
+  const daysInt = parseInt(days);
+  if (isNaN(daysInt) || daysInt <= 0) {
+    throw new AdminAPIError('VALIDATION_ERROR', 'Days must be a positive number');
+  }
+
+  const result = await TradeDB.pool.query(`
+    UPDATE user_subscriptions
+    SET
+      end_date = COALESCE(end_date, NOW()) + INTERVAL '${daysInt} days',
+      trial_end_date = CASE
+        WHEN status = 'trial' THEN COALESCE(trial_end_date, NOW()) + INTERVAL '${daysInt} days'
+        ELSE trial_end_date
+      END,
+      notes = COALESCE(notes, '') || E'\n' || NOW() || ': Extended by ${daysInt} days - ' || $1
+    WHERE id = $2
+    RETURNING *
+  `, [reason, subscriptionId]);
+
+  if (result.rows.length === 0) {
+    throw new AdminAPIError('NOT_FOUND', 'Subscription not found');
+  }
+
+  res.json(successResponse(result.rows[0], `Subscription extended by ${daysInt} days`));
+}));
+
 // Get subscription analytics
 router.get('/subscription-analytics', asyncHandler(async (req, res) => {
   // Calculate MRR

@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="description" content="SignalForge Pricing - Choose the plan that's right for you. Start with a free 90-day trial.">
+    <title>Pricing - SignalForge</title>
+
+    <!-- Import Google Font (Inter) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Accessibility Color Overrides (WCAG Compliant) -->
+    <link rel="stylesheet" href="css/accessibility-colors.css">
+
+    <!-- Unified Navigation Bar -->
+    <link rel="stylesheet" href="css/unified-navbar.css">
+
+    <!-- Theme Toggle Script (load early to prevent flash) -->
+    <script src="js/theme-toggle.js"></script>
+
+    <style>
+        /* Pricing Page Specific Styles */
+        .pricing-hero {
+            text-align: center;
+            padding: 60px 20px 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .pricing-hero h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .pricing-hero p {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+        }
+
+        .region-selector {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 48px;
+            flex-wrap: wrap;
+        }
+
+        .region-btn {
+            padding: 10px 24px;
+            border: 2px solid var(--border-color);
+            background: var(--background-secondary);
+            color: var(--text-primary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.938rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .region-btn:hover {
+            border-color: var(--accent-color);
+            background: var(--background-tertiary);
+        }
+
+        .region-btn.active {
+            border-color: var(--accent-color);
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .pricing-plans {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            max-width: 1200px;
+            margin: 0 auto 60px;
+            padding: 0 20px;
+        }
+
+        .pricing-card {
+            background: var(--background-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 32px;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .pricing-card:hover {
+            border-color: var(--accent-color);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .pricing-card.featured {
+            border-color: var(--accent-color);
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.2);
+        }
+
+        .featured-badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--accent-color);
+            color: white;
+            padding: 4px 16px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .plan-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .plan-description {
+            color: var(--text-secondary);
+            font-size: 0.938rem;
+            margin-bottom: 24px;
+        }
+
+        .plan-price {
+            margin-bottom: 24px;
+        }
+
+        .price-amount {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .price-currency {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .price-period {
+            font-size: 0.938rem;
+            color: var(--text-secondary);
+            margin-left: 4px;
+        }
+
+        .trial-badge {
+            display: inline-block;
+            background: var(--success-color);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .plan-features {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 24px 0;
+        }
+
+        .plan-features li {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 10px 0;
+            color: var(--text-primary);
+            font-size: 0.938rem;
+        }
+
+        .plan-features li svg {
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .plan-cta {
+            width: 100%;
+            padding: 14px 24px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .plan-cta:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        .plan-cta.secondary {
+            background: var(--background-tertiary);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+        }
+
+        .plan-cta.secondary:hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        .features-comparison {
+            max-width: 1200px;
+            margin: 60px auto;
+            padding: 0 20px;
+        }
+
+        .features-comparison h2 {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 40px;
+            color: var(--text-primary);
+        }
+
+        .comparison-table {
+            background: var(--background-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .comparison-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .comparison-table th {
+            background: var(--background-tertiary);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .comparison-table td {
+            color: var(--text-secondary);
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .check-icon {
+            color: var(--success-color);
+        }
+
+        .faq-section {
+            max-width: 800px;
+            margin: 60px auto;
+            padding: 0 20px;
+        }
+
+        .faq-section h2 {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 40px;
+            color: var(--text-primary);
+        }
+
+        .faq-item {
+            background: var(--background-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+
+        .faq-question {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .faq-answer {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .pricing-hero h1 {
+                font-size: 2rem;
+            }
+
+            .pricing-plans {
+                grid-template-columns: 1fr;
+            }
+
+            .price-amount {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <div class="nav-bar">
+                <h1 class="app-title"><a href="index.html" style="text-decoration: none; color: inherit;">SignalForge</a></h1>
+                <button class="hamburger-menu" id="hamburger-menu" aria-label="Toggle navigation">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
+                <div class="nav-links" id="nav-links">
+                    <a href="index.html" class="nav-link">Home</a>
+                    <a href="trades.html" class="nav-link">Signals</a>
+                    <a href="pricing.html" class="nav-link active">Pricing</a>
+                    <a href="login.html" class="nav-link">Login</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hero Section -->
+        <div class="pricing-hero">
+            <h1>Choose Your Plan</h1>
+            <p>Start with a free 90-day trial. No credit card required. Cancel anytime.</p>
+
+            <!-- Region Selector -->
+            <div class="region-selector">
+                <button class="region-btn" data-region="UK">🇬🇧 United Kingdom (GBP)</button>
+                <button class="region-btn active" data-region="US">🇺🇸 United States (USD)</button>
+                <button class="region-btn" data-region="IN">🇮🇳 India (INR)</button>
+            </div>
+        </div>
+
+        <!-- Pricing Plans -->
+        <div class="pricing-plans" id="pricing-plans">
+            <!-- Plans will be loaded here by JavaScript -->
+            <div class="pricing-card">
+                <div class="plan-name">Loading...</div>
+                <div class="plan-description">Please wait while we load the pricing plans.</div>
+            </div>
+        </div>
+
+        <!-- Features Comparison -->
+        <div class="features-comparison">
+            <h2>Feature Comparison</h2>
+            <div class="comparison-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>Free Trial</th>
+                            <th>Basic</th>
+                            <th>Pro</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Trading Signals</strong></td>
+                            <td>✓ Full Access (90 days)</td>
+                            <td>✓ Unlimited</td>
+                            <td>✓ Unlimited</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Telegram Notifications</strong></td>
+                            <td>✓ Full Access</td>
+                            <td>✓ Real-time</td>
+                            <td>✓ Real-time + Priority</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Technical Analysis</strong></td>
+                            <td>✓ All Indicators</td>
+                            <td>✓ All Indicators</td>
+                            <td>✓ All Indicators</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Historical Data</strong></td>
+                            <td>✓ 5 years</td>
+                            <td>✓ 5 years</td>
+                            <td>✓ 10 years</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Backtest Portfolio</strong></td>
+                            <td>✓ Basic</td>
+                            <td>✓ Basic</td>
+                            <td>✓ Advanced</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Email Support</strong></td>
+                            <td>✓ Standard</td>
+                            <td>✓ Standard</td>
+                            <td>✓ Priority</td>
+                        </tr>
+                        <tr>
+                            <td><strong>API Access</strong></td>
+                            <td>✗</td>
+                            <td>✗</td>
+                            <td>✓ Included</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Custom Alerts</strong></td>
+                            <td>5 alerts</td>
+                            <td>20 alerts</td>
+                            <td>Unlimited</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- FAQ Section -->
+        <div class="faq-section">
+            <h2>Frequently Asked Questions</h2>
+
+            <div class="faq-item">
+                <div class="faq-question">How does the 90-day free trial work?</div>
+                <div class="faq-answer">
+                    Sign up and get instant access to all features for 90 days. No credit card required.
+                    You can upgrade to a paid plan anytime during or after the trial period.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">Can I change my plan later?</div>
+                <div class="faq-answer">
+                    Yes! You can upgrade or downgrade your plan at any time from your account settings.
+                    Changes take effect immediately and billing is prorated.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">What payment methods do you accept?</div>
+                <div class="faq-answer">
+                    We accept all major credit cards (Visa, Mastercard, American Express) via Stripe.
+                    We also support PayPal and Razorpay for certain regions.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">Can I cancel anytime?</div>
+                <div class="faq-answer">
+                    Absolutely. You can cancel your subscription at any time from your account settings.
+                    You'll continue to have access until the end of your billing period.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">Do you offer refunds?</div>
+                <div class="faq-answer">
+                    We offer a 14-day money-back guarantee on all paid plans.
+                    If you're not satisfied, contact us within 14 days for a full refund.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">Is this investment advice?</div>
+                <div class="faq-answer">
+                    No. SignalForge is an educational platform. All signals and analysis are for
+                    informational purposes only and should not be considered investment advice.
+                    Past performance is not indicative of future results.
+                </div>
+            </div>
+        </div>
+
+        <!-- Legal Footer -->
+        <footer class="legal-footer">
+            <div class="footer-content">
+                <div class="footer-links">
+                    <a href="terms.html" class="footer-link">Terms of Service</a>
+                    <a href="privacy.html" class="footer-link">Privacy Policy</a>
+                    <span class="footer-text">© 2025 SignalForge - Educational tools only, not investment advice</span>
+                </div>
+                <div class="footer-disclaimer">
+                    <p>Past performance is not a reliable indicator of future results. You accept full responsibility for all investment decisions.</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Dark Mode Toggle -->
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+        <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+    </button>
+
+    <!-- Mobile Navigation -->
+    <script src="js/mobile-nav.js"></script>
+
+    <!-- Pricing Page JavaScript -->
+    <script src="js/pricing.js"></script>
+
+    <!-- Unified Navigation Bar -->
+    <script src="js/unified-navbar.js"></script>
+</body>
+</html>

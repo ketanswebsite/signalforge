@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS subscription_plans (
     price_monthly DECIMAL(10, 2),
     price_quarterly DECIMAL(10, 2),
     price_yearly DECIMAL(10, 2),
-    trial_days INTEGER DEFAULT 14,
+    trial_days INTEGER DEFAULT 90,
     max_active_trades INTEGER,
     max_backtests_per_day INTEGER,
     features JSONB DEFAULT '{}',
@@ -44,13 +44,13 @@ CREATE INDEX IF NOT EXISTS idx_subscription_plans_region ON subscription_plans(r
 -- Insert default plans
 INSERT INTO subscription_plans (plan_name, plan_code, region, currency, price_monthly, price_quarterly, price_yearly, trial_days, max_active_trades, max_backtests_per_day, features)
 VALUES
-    ('Free Trial', 'FREE', 'Global', 'USD', 0.00, 0.00, 0.00, 14, 5, 10, '{"telegram_alerts": false, "ml_insights": false, "priority_support": false}'),
-    ('Basic UK', 'BASIC_UK', 'UK', 'GBP', 9.99, 26.97, 99.99, 14, 20, 50, '{"telegram_alerts": true, "ml_insights": false, "priority_support": false}'),
-    ('Pro UK', 'PRO_UK', 'UK', 'GBP', 19.99, 53.97, 199.99, 14, 100, 200, '{"telegram_alerts": true, "ml_insights": true, "priority_support": true}'),
-    ('Basic US', 'BASIC_US', 'US', 'USD', 12.99, 34.97, 129.99, 14, 20, 50, '{"telegram_alerts": true, "ml_insights": false, "priority_support": false}'),
-    ('Pro US', 'PRO_US', 'US', 'USD', 24.99, 67.47, 249.99, 14, 100, 200, '{"telegram_alerts": true, "ml_insights": true, "priority_support": true}'),
-    ('Basic India', 'BASIC_IN', 'India', 'INR', 799.00, 2157.30, 7999.00, 14, 20, 50, '{"telegram_alerts": true, "ml_insights": false, "priority_support": false}'),
-    ('Pro India', 'PRO_IN', 'India', 'INR', 1599.00, 4317.30, 15999.00, 14, 100, 200, '{"telegram_alerts": true, "ml_insights": true, "priority_support": true}')
+    ('Free Trial', 'FREE', 'Global', 'USD', 0.00, 0.00, 0.00, 90, 5, 10, '{"telegram_alerts": false, "ml_insights": false, "priority_support": false}'),
+    ('Basic UK', 'BASIC_UK', 'UK', 'GBP', 9.99, 26.97, 99.99, 90, 20, 50, '{"telegram_alerts": true, "ml_insights": false, "priority_support": false}'),
+    ('Pro UK', 'PRO_UK', 'UK', 'GBP', 19.99, 53.97, 199.99, 90, 100, 200, '{"telegram_alerts": true, "ml_insights": true, "priority_support": true}'),
+    ('Basic US', 'BASIC_US', 'US', 'USD', 12.99, 34.97, 129.99, 90, 20, 50, '{"telegram_alerts": true, "ml_insights": false, "priority_support": false}'),
+    ('Pro US', 'PRO_US', 'US', 'USD', 24.99, 67.47, 249.99, 90, 100, 200, '{"telegram_alerts": true, "ml_insights": true, "priority_support": true}'),
+    ('Basic India', 'BASIC_IN', 'India', 'INR', 799.00, 2157.30, 7999.00, 90, 20, 50, '{"telegram_alerts": true, "ml_insights": false, "priority_support": false}'),
+    ('Pro India', 'PRO_IN', 'India', 'INR', 1599.00, 4317.30, 15999.00, 90, 100, 200, '{"telegram_alerts": true, "ml_insights": true, "priority_support": true}')
 ON CONFLICT (plan_code) DO NOTHING;
 
 -- ========================================
