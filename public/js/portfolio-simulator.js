@@ -641,32 +641,42 @@ const PortfolioSimulator = (function() {
                 s.entryDate === position.entryDate
             );
 
-            if (signal && signal.exitDate === currentDate) {
-                // Close position normally
-                const closedTrade = {
-                    ...position,
-                    exitDate: signal.exitDate,
-                    exitPrice: signal.exitPrice,
-                    plPercent: signal.plPercent,
-                    exitReason: signal.exitReason,
-                    holdingDays: signal.holdingDays,
-                    // DTI values at entry
-                    prevDTI: signal.prevDTI,
-                    entryDTI: signal.entryDTI,
-                    prev7DayDTI: signal.prev7DayDTI,
-                    entry7DayDTI: signal.entry7DayDTI,
-                    historicalSignalCount: signal.historicalSignalCount
-                };
+            if (signal) {
+                // Check if exit date has passed (handles weekends/holidays)
+                const signalExitDate = new Date(signal.exitDate);
+                const current = new Date(currentDate);
 
-                portfolio.closedTrades.push(closedTrade);
+                // Close if exit date has passed or is today
+                // This handles weekend/holiday exits that simulation loop skipped
+                if (signalExitDate <= current) {
+                    // Close position with actual P/L from signal
+                    const closedTrade = {
+                        ...position,
+                        exitDate: signal.exitDate,
+                        exitPrice: signal.exitPrice,
+                        plPercent: signal.plPercent,
+                        exitReason: signal.exitReason,
+                        holdingDays: signal.holdingDays,
+                        // DTI values at entry
+                        prevDTI: signal.prevDTI,
+                        entryDTI: signal.entryDTI,
+                        prev7DayDTI: signal.prev7DayDTI,
+                        entry7DayDTI: signal.entry7DayDTI,
+                        historicalSignalCount: signal.historicalSignalCount
+                    };
 
-                // Update capital tracking (if available)
-                if (portfolio.capitalByMarket && portfolio.capitalByMarket[position.market]) {
-                    const pl = (position.tradeSize * signal.plPercent) / 100;
-                    portfolio.capitalByMarket[position.market].realized += pl;
+                    portfolio.closedTrades.push(closedTrade);
+
+                    // Update capital tracking with REAL P/L (not 0%)
+                    if (portfolio.capitalByMarket && portfolio.capitalByMarket[position.market]) {
+                        const pl = (position.tradeSize * signal.plPercent) / 100;
+                        portfolio.capitalByMarket[position.market].realized += pl;
+                    }
+
+                    toRemove.push(i);
+
+                    console.log(`[Portfolio] Closing ${position.symbol} on ${currentDate} (signal exit: ${signal.exitDate}, P/L: ${signal.plPercent.toFixed(2)}%)`);
                 }
-
-                toRemove.push(i);
             }
         }
 
