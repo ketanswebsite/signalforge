@@ -1,0 +1,121 @@
+================================================================
+    ✅ STRIPE WEBHOOK CONFIGURED - READY TO TEST!
+================================================================
+
+Your webhook secret has been added to .env successfully!
+
+----------------------------------------------------------------
+STEP 1: Keep Webhook Listener Running
+----------------------------------------------------------------
+
+The Command Prompt window where you ran quick-start-stripe.bat
+should still be open and showing:
+
+   Ready! Your webhook signing secret is whsec_92e61b...
+   [200] POST /api/stripe/webhook [evt_xxx]
+
+⚠️ IMPORTANT: Keep this window OPEN while testing!
+
+----------------------------------------------------------------
+STEP 2: Start Your Server (New Window)
+----------------------------------------------------------------
+
+Open a NEW Command Prompt window and run:
+
+   cd "C:\Users\Ketan Joshi\Downloads\stock-proxy (2)\stock-proxy"
+   npm start
+
+Wait for:
+   ✓ Stripe payment routes loaded successfully
+   Server running on port 3000
+
+----------------------------------------------------------------
+STEP 3: Test Free Trial (No Payment)
+----------------------------------------------------------------
+
+1. Open browser: http://localhost:3000/pricing.html
+
+2. Click "Start Free Trial" on the Free tier
+
+3. Should see success message!
+
+4. Check database:
+   - A new subscription record should be created
+   - Status: 'trial'
+
+----------------------------------------------------------------
+STEP 4: Test Paid Subscription
+----------------------------------------------------------------
+
+1. Go back to: http://localhost:3000/pricing.html
+
+2. Click "Get Started" on Basic, Pro, or Enterprise plan
+
+3. Enter test card details:
+   Card Number: 4242 4242 4242 4242
+   Expiry: 12/34
+   CVC: 123
+   ZIP: 12345
+   Name: Test User
+
+4. Click "Complete Subscription"
+
+5. You should see success message!
+
+6. Check your webhook listener window - you should see:
+   [200] POST /api/stripe/webhook [evt_xxx]
+
+7. Check your server logs - you should see:
+   Stripe webhook received: payment_intent.succeeded
+   Payment succeeded for user: ketanjoshisahs@gmail.com
+
+8. Check your database:
+   SELECT * FROM user_subscriptions ORDER BY created_at DESC LIMIT 1;
+
+   Should show:
+   - Your email
+   - Selected plan code
+   - Status: 'active'
+   - Stripe payment intent ID
+
+----------------------------------------------------------------
+WHAT TO WATCH:
+----------------------------------------------------------------
+
+✅ Good signs:
+   - Webhook listener shows [200] POST
+   - Server logs show "payment_intent.succeeded"
+   - Subscription appears in database with status='active'
+
+❌ If you see errors:
+   - Webhook listener shows [400] or [500]
+   - Server logs show "Webhook signature verification failed"
+   - Make sure you restarted the server after adding webhook secret
+   - Make sure the webhook listener is still running
+
+----------------------------------------------------------------
+OTHER TEST CARDS:
+----------------------------------------------------------------
+
+Declined:              4000 0000 0000 0002
+Insufficient funds:    4000 0000 0000 9995
+Requires 3D Secure:    4000 0025 0000 3155
+
+All cards accept:
+- Any future expiry date
+- Any 3-digit CVC
+- Any billing ZIP
+
+----------------------------------------------------------------
+VIEW IN STRIPE DASHBOARD:
+----------------------------------------------------------------
+
+https://dashboard.stripe.com/test/payments
+https://dashboard.stripe.com/test/webhooks
+
+You should see your test payments and webhook events there!
+
+================================================================
+Ready to test! Start npm start in a NEW window and visit:
+http://localhost:3000/pricing.html
+================================================================

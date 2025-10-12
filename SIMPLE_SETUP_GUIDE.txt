@@ -1,0 +1,73 @@
+================================================================
+    STRIPE SETUP - SIMPLE 3-STEP GUIDE
+================================================================
+
+✅ Stripe CLI v1.21.8 is installed and ready in your project!
+
+----------------------------------------------------------------
+STEP 1: Run the Setup
+----------------------------------------------------------------
+
+Just DOUBLE-CLICK this file:
+   quick-start-stripe.bat
+
+Or open Command Prompt in this folder and run:
+   quick-start-stripe.bat
+
+----------------------------------------------------------------
+STEP 2: Login to Stripe
+----------------------------------------------------------------
+
+When the browser opens:
+   1. Login to your Stripe account
+   2. Click "Allow access"
+   3. Go back to the Command Prompt window
+
+----------------------------------------------------------------
+STEP 3: Copy the Webhook Secret
+----------------------------------------------------------------
+
+In the Command Prompt window, you'll see:
+
+   Ready! Your webhook signing secret is whsec_abc123xyz...
+
+Copy the ENTIRE secret (everything starting with whsec_)
+
+Then:
+   1. Open the .env file (in this same folder)
+   2. Find the line: STRIPE_WEBHOOK_SECRET=
+   3. Paste your secret after the = sign
+      Like this: STRIPE_WEBHOOK_SECRET=whsec_abc123xyz...
+   4. Save the .env file
+
+----------------------------------------------------------------
+STEP 4: Start Your Server
+----------------------------------------------------------------
+
+Keep the webhook listener running (don't close that window!)
+
+Open a NEW Command Prompt and run:
+   npm start
+
+----------------------------------------------------------------
+STEP 5: Test It!
+----------------------------------------------------------------
+
+Open your browser and go to:
+   http://localhost:3000/pricing.html
+
+Click "Get Started" on any plan
+
+Use test card:
+   Card Number: 4242 4242 4242 4242
+   Expiry: 12/34
+   CVC: 123
+   ZIP: 12345
+
+================================================================
+
+That's it! You're done!
+
+If you have any issues, let me know!
+
+================================================================

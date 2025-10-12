@@ -1,0 +1,55 @@
+================================================================
+    ✅ STRIPE CLI READY - LET'S TEST IT NOW!
+================================================================
+
+Your Stripe CLI has been upgraded to v1.21.8 and is ready to use!
+
+----------------------------------------------------------------
+NEXT STEP: Run the Setup (Just 2 minutes!)
+----------------------------------------------------------------
+
+Simply DOUBLE-CLICK this file in your project folder:
+   📁 quick-start-stripe.bat
+
+Or open Command Prompt and run:
+   cd "C:\Users\Ketan Joshi\Downloads\stock-proxy (2)\stock-proxy"
+   quick-start-stripe.bat
+
+----------------------------------------------------------------
+What Will Happen:
+----------------------------------------------------------------
+
+1. Browser will open → Login to your Stripe account
+2. Click "Allow access"
+3. Return to Command Prompt window
+4. Webhook listener will start and show your secret like:
+
+   Ready! Your webhook signing secret is whsec_abc123xyz...
+
+5. COPY the entire secret (whsec_...)
+
+6. Open .env file and add it:
+   STRIPE_WEBHOOK_SECRET=whsec_abc123xyz...
+
+7. Save .env and you're done!
+
+----------------------------------------------------------------
+After Setup:
+----------------------------------------------------------------
+
+Keep the webhook listener running (don't close that window!)
+
+Open a NEW Command Prompt and start your server:
+   npm start
+
+Then test at:
+   http://localhost:3000/pricing.html
+
+Use test card:
+   Card: 4242 4242 4242 4242
+   Expiry: 12/34
+   CVC: 123
+
+================================================================
+Ready when you are! Just run quick-start-stripe.bat
+================================================================

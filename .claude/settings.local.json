@@ -3,7 +3,13 @@
     "allow": [
       "Bash(DATABASE_URL=\"postgresql://signalforge_db_user:Xcipr9Wa1KeSWCNPjM9ymyMbD0SENf4R@dpg-d0vgkl95pdvs738glu0g-a.oregon-postgres.render.com/signalforge_db\" NODE_ENV=production node fix-migration-tracking.js)",
       "Bash(DATABASE_URL=\"postgresql://signalforge_db_user:Xcipr9Wa1KeSWCNPjM9ymyMbD0SENf4R@dpg-d0vgkl95pdvs738glu0g-a.oregon-postgres.render.com/signalforge_db\" NODE_ENV=production node run-single-migration.js 009_update_trial_period.sql)",
-      "Bash(DATABASE_URL=\"postgresql://signalforge_db_user:Xcipr9Wa1KeSWCNPjM9ymyMbD0SENf4R@dpg-d0vgkl95pdvs738glu0g-a.oregon-postgres.render.com/signalforge_db\" NODE_ENV=production node run-single-migration.js 010_add_complimentary_access.sql)"
+      "Bash(DATABASE_URL=\"postgresql://signalforge_db_user:Xcipr9Wa1KeSWCNPjM9ymyMbD0SENf4R@dpg-d0vgkl95pdvs738glu0g-a.oregon-postgres.render.com/signalforge_db\" NODE_ENV=production node run-single-migration.js 010_add_complimentary_access.sql)",
+      "Bash(powershell:*)",
+      "Bash(cmd.exe /c install-stripe-cli.bat)",
+      "Bash(unzip:*)",
+      "Bash(./stripe.exe --version)",
+      "Bash(./stripe.exe listen:*)",
+      "mcp__render__update_environment_variables"
     ],
     "deny": [],
     "ask": []

@@ -1,0 +1,71 @@
+================================================================
+    📤 PUSH TO GITHUB TO DEPLOY STRIPE INTEGRATION
+================================================================
+
+I've committed all your Stripe integration code locally.
+
+Now you need to push it to GitHub to trigger the Render deployment!
+
+----------------------------------------------------------------
+STEP 1: Push to GitHub
+----------------------------------------------------------------
+
+Open Command Prompt or PowerShell in your project folder and run:
+
+   git push origin main
+
+Or if you're using GitHub Desktop:
+   1. Open GitHub Desktop
+   2. You should see "Push origin" button
+   3. Click it to push the changes
+
+----------------------------------------------------------------
+STEP 2: Wait for Render Deployment
+----------------------------------------------------------------
+
+After pushing:
+   1. Go to: https://dashboard.render.com/web/srv-d0rjgm6uk2gs73aarnm0
+   2. You'll see a new deployment starting automatically
+   3. Wait for it to show "Live" status (usually 2-3 minutes)
+
+The deployment will:
+   ✓ Install the stripe package (v19.1.0)
+   ✓ Load your Stripe routes
+   ✓ Connect to the production webhook
+
+----------------------------------------------------------------
+STEP 3: Test Stripe on Production
+----------------------------------------------------------------
+
+Once deployed:
+   1. Go to: https://stock-proxy.onrender.com/pricing.html
+   2. Try Free Trial first
+   3. Then test paid subscription with card: 4242 4242 4242 4242
+
+----------------------------------------------------------------
+What Was Committed:
+----------------------------------------------------------------
+
+✅ package.json - Added stripe dependency
+✅ config/stripe.js - Stripe client configuration
+✅ routes/stripe.js - Payment endpoints and webhooks
+✅ public/checkout.html - Payment form
+✅ public/js/checkout.js - Checkout logic
+✅ public/pricing.html - Updated pricing page
+✅ public/js/pricing.js - Pricing page logic
+✅ And 8 more files...
+
+Commit message: "Add Stripe payment integration with subscription system"
+
+----------------------------------------------------------------
+Current Status:
+----------------------------------------------------------------
+
+✅ Code committed locally
+⏳ Waiting for you to push to GitHub
+⏳ Render will auto-deploy after push
+⏳ Then ready to test!
+
+================================================================
+Just run: git push origin main
+================================================================
