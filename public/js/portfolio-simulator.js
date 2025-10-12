@@ -15,16 +15,16 @@ const PortfolioSimulator = (function() {
 
         // Default investment amounts (for display)
         INITIAL_INVESTMENTS: {
-            'INR': 500000,
-            'GBP': 4000,
-            'USD': 5000
+            'INR': 1000000,  // 10 lakhs
+            'GBP': 10000,    // 10k
+            'USD': 15000     // 15k
         },
 
         // Trade sizes per position
         TRADE_SIZES: {
-            'India': { currency: 'INR', amount: 50000 },
-            'UK': { currency: 'GBP', amount: 400 },
-            'US': { currency: 'USD', amount: 500 }
+            'India': { currency: 'INR', amount: 100000 },  // 1 lakh per trade
+            'UK': { currency: 'GBP', amount: 1000 },       // 1k per trade
+            'US': { currency: 'USD', amount: 1500 }        // 1.5k per trade
         },
 
         // High conviction threshold
@@ -1069,10 +1069,17 @@ const PortfolioSimulator = (function() {
     }
 
     /**
-     * Calculate initial portfolio value
+     * Calculate initial portfolio value across ALL markets
+     * Converts all market capital to display currency
      */
-    function calculateInitialValue(currency) {
-        return CONFIG.INITIAL_INVESTMENTS[currency] || 0;
+    function calculateInitialValue(displayCurrency) {
+        // Convert each market's initial capital to display currency
+        const inrValue = convertCurrency(CONFIG.INITIAL_INVESTMENTS['INR'], 'INR', displayCurrency);
+        const gbpValue = convertCurrency(CONFIG.INITIAL_INVESTMENTS['GBP'], 'GBP', displayCurrency);
+        const usdValue = convertCurrency(CONFIG.INITIAL_INVESTMENTS['USD'], 'USD', displayCurrency);
+
+        // Return total initial capital across all markets
+        return inrValue + gbpValue + usdValue;
     }
 
     /**
