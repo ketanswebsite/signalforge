@@ -68,6 +68,17 @@ const PortfolioSimulator = (function() {
         try {
             console.log('[Portfolio Simulator] Starting simulation from', startDate);
 
+            // Layer 5: Initialize statistics tracking
+            const stats = {
+                staleDataStocks: 0,
+                openTradesIncluded: 0,
+                fuzzyMatches: 0,
+                forceClosedTotal: 0,
+                forceClosedWithRealPrice: 0,
+                forceClosedWithFallback: 0,
+                unmatchedPositions: []
+            };
+
             // Report initial progress
             if (progressCallback) progressCallback({ stage: 'init', message: 'Initializing simulation...' });
 
@@ -82,6 +93,12 @@ const PortfolioSimulator = (function() {
             if (progressCallback) progressCallback({ stage: 'fetch', message: 'Fetching stock data...', current: 0, total: 0 });
             const allStocks = await fetchAllStocksData(dates.dataStart, progressCallback);
             console.log('[Portfolio Simulator] Fetched', allStocks.length, 'stocks');
+
+            // Layer 5: Count stale data stocks
+            stats.staleDataStocks = allStocks.filter(s => s.data && s.data.isStale).length;
+            if (stats.staleDataStocks > 0) {
+                console.warn(`[Data Quality] Found ${stats.staleDataStocks} stocks with stale data (> 7 days old)`);
+            }
 
             // 3. Calculate historical win rates (4.5 years of signals AFTER 6-month buffer)
             if (progressCallback) progressCallback({
@@ -109,12 +126,41 @@ const PortfolioSimulator = (function() {
 
             // 6. Run day-by-day portfolio simulation
             if (progressCallback) progressCallback({ stage: 'simulate', message: 'Simulating portfolio performance...' });
-            const portfolio = await simulatePortfolio(simulationSignals, startDate, displayCurrency);
+            const portfolio = await simulatePortfolio(simulationSignals, startDate, displayCurrency, stats);
 
-            // 7. Report completion
+            // 7. Layer 5: Print comprehensive summary statistics
+            console.log('\n═══════════════════════════════════════════════════════════');
+            console.log('                  SIMULATION SUMMARY                       ');
+            console.log('═══════════════════════════════════════════════════════════');
+            console.log(`  Data Quality:`);
+            console.log(`    • Total stocks processed: ${allStocks.length}`);
+            console.log(`    • Stocks with stale data: ${stats.staleDataStocks} (${((stats.staleDataStocks / allStocks.length) * 100).toFixed(1)}%)`);
+            console.log(`\n  Signal Generation:`);
+            console.log(`    • Total signals generated: ${simulationSignals.length}`);
+            console.log(`    • Open trades included: ${stats.openTradesIncluded}`);
+            console.log(`\n  Signal Matching:`);
+            console.log(`    • Fuzzy matches used: ${stats.fuzzyMatches}`);
+            console.log(`    • Unmatched positions: ${stats.unmatchedPositions.length}`);
+            if (stats.unmatchedPositions.length > 0) {
+                console.log(`      Symbols: ${stats.unmatchedPositions.join(', ')}`);
+            }
+            console.log(`\n  Force-Close Events:`);
+            console.log(`    • Total force-closed: ${stats.forceClosedTotal}`);
+            console.log(`    • With real price: ${stats.forceClosedWithRealPrice} (${stats.forceClosedTotal > 0 ? ((stats.forceClosedWithRealPrice / stats.forceClosedTotal) * 100).toFixed(1) : 0}%)`);
+            console.log(`    • With 0% fallback: ${stats.forceClosedWithFallback} (${stats.forceClosedTotal > 0 ? ((stats.forceClosedWithFallback / stats.forceClosedTotal) * 100).toFixed(1) : 0}%)`);
+            console.log(`\n  Portfolio Results:`);
+            console.log(`    • Total trades: ${portfolio.closedTrades.length}`);
+            console.log(`    • Active positions: ${portfolio.positions.length}`);
+            const avgPL = portfolio.closedTrades.length > 0
+                ? portfolio.closedTrades.reduce((sum, t) => sum + t.plPercent, 0) / portfolio.closedTrades.length
+                : 0;
+            console.log(`    • Average P/L: ${avgPL.toFixed(2)}%`);
+            console.log('═══════════════════════════════════════════════════════════\n');
+
+            // 8. Report completion
             if (progressCallback) progressCallback({ stage: 'complete', message: 'Simulation complete!' });
 
-            // 8. Return complete simulation results
+            // 9. Return complete simulation results
             return {
                 success: true,
                 portfolio: portfolio,
@@ -123,7 +169,8 @@ const PortfolioSimulator = (function() {
                     displayCurrency: displayCurrency,
                     initialValue: calculateInitialValue(displayCurrency),
                     tradeSizes: CONFIG.TRADE_SIZES
-                }
+                },
+                stats: stats  // Include statistics in results
             };
 
         } catch (error) {
@@ -265,6 +312,7 @@ const PortfolioSimulator = (function() {
 
     /**
      * Parse CSV data into stock data object
+     * Layer 1: Validates data freshness to ensure quality
      */
     function parseCSVData(csvText, symbol) {
         const rows = csvText.trim().split('\n');
@@ -289,6 +337,26 @@ const PortfolioSimulator = (function() {
                 data.low.push(parseFloat(values[3]));
                 data.close.push(parseFloat(values[4]));
                 data.volume.push(parseFloat(values[5]));
+            }
+        }
+
+        // Layer 1: Validate data freshness
+        if (data.dates.length > 0) {
+            const lastDate = new Date(data.dates[data.dates.length - 1]);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            lastDate.setHours(0, 0, 0, 0);
+
+            const daysSinceLastData = Math.floor((today - lastDate) / (24 * 60 * 60 * 1000));
+
+            // Mark data as stale if > 7 days old
+            if (daysSinceLastData > 7) {
+                console.warn(`[Data Quality] ${symbol}: Stale data (${daysSinceLastData} days old, last: ${data.dates[data.dates.length - 1]})`);
+                data.isStale = true;
+                data.daysSinceLastData = daysSinceLastData;
+            } else {
+                data.isStale = false;
+                data.daysSinceLastData = daysSinceLastData;
             }
         }
 
@@ -386,7 +454,23 @@ const PortfolioSimulator = (function() {
     }
 
     /**
+     * Layer 2: Check if an open trade should be included as a signal
+     * Include open trades that entered during simulation period - they need proper exit handling
+     */
+    function shouldIncludeOpenTrade(trade, dates) {
+        if (!trade.isOpen) return false;
+
+        const entryDate = new Date(trade.entryDate);
+        const simStart = new Date(dates.simulationStart);
+
+        // Include open trades that entered during simulation period
+        // These likely have incomplete data but represent real entry opportunities
+        return entryDate >= simStart;
+    }
+
+    /**
      * Generate signals during simulation period for high conviction stocks
+     * Layer 2: Includes open trades with proper handling
      * Optimized with parallel batch processing
      */
     async function generateSimulationSignals(allStocks, highConvictionStocks, dates, progressCallback) {
@@ -434,8 +518,9 @@ const PortfolioSimulator = (function() {
                             const entryDate = new Date(trade.entryDate);
                             const simStart = new Date(dates.simulationStart);
 
-                            // Only include signals that occur during simulation period
-                            if (entryDate >= simStart && !trade.isOpen) {
+                            // Layer 2: Include completed trades OR open trades that entered during simulation
+                            // Open trades likely have incomplete data but represent real opportunities
+                            if (entryDate >= simStart && (!trade.isOpen || shouldIncludeOpenTrade(trade, dates))) {
                                 stockSignals.push({
                                     symbol: stock.symbol,
                                     market: stock.market,
@@ -449,12 +534,18 @@ const PortfolioSimulator = (function() {
                                     winRate: stockInfo.winRate,
                                     historicalSignalCount: stockInfo.historicalSignalCount,
                                     isWin: trade.isWin,
+                                    isOpen: trade.isOpen || false,  // Track if signal is from open trade
                                     // DTI values at entry
                                     prevDTI: trade.prevDTI,
                                     entryDTI: trade.entryDTI,
                                     prev7DayDTI: trade.prev7DayDTI,
                                     entry7DayDTI: trade.entry7DayDTI
                                 });
+
+                                // Log when including an open trade
+                                if (trade.isOpen) {
+                                    console.log(`[Signal Gen] Including open trade: ${stock.symbol} entry ${trade.entryDate} (incomplete data)`);
+                                }
                             }
                         }
                     }
@@ -513,8 +604,9 @@ const PortfolioSimulator = (function() {
 
     /**
      * Main portfolio simulation (day by day)
+     * Layer 5: Tracks statistics during simulation
      */
-    async function simulatePortfolio(signals, startDate, displayCurrency) {
+    async function simulatePortfolio(signals, startDate, displayCurrency, stats = null) {
         const portfolio = {
             cash: 0, // Track cash (not used for trades, just for display)
             positions: [],
@@ -555,8 +647,8 @@ const PortfolioSimulator = (function() {
             // Skip weekends
             if (date.getDay() === 0 || date.getDay() === 6) continue;
 
-            // 1. Check exit conditions for active positions
-            checkExitConditions(portfolio, dateStr, signals);
+            // 1. Check exit conditions for active positions (Layer 4: async for price fetching)
+            await checkExitConditions(portfolio, dateStr, signals, stats);
 
             // 2. Process new entry signals for this date
             const todaySignals = signalsByDate[dateStr] || [];
@@ -591,9 +683,115 @@ const PortfolioSimulator = (function() {
     }
 
     /**
-     * Check exit conditions for active positions
+     * Layer 4: Fetch actual price for a stock at a specific date
+     * Used for calculating real P/L when force-closing positions without signals
      */
-    function checkExitConditions(portfolio, currentDate, allSignals) {
+    async function fetchPriceAtDate(symbol, targetDate) {
+        try {
+            // Fetch data for a small range around the target date (7 days before and after)
+            const target = new Date(targetDate);
+            const startDate = new Date(target);
+            startDate.setDate(startDate.getDate() - 7);
+            const endDate = new Date(target);
+            endDate.setDate(endDate.getDate() + 7);
+
+            const start = Math.floor(startDate.getTime() / 1000);
+            const end = Math.floor(endDate.getTime() / 1000);
+
+            const url = `/yahoo/history?symbol=${symbol}&period1=${start}&period2=${end}&interval=1d`;
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const csvText = await response.text();
+            const rows = csvText.trim().split('\n');
+
+            if (rows.length < 2) {
+                throw new Error('No data returned');
+            }
+
+            // Find the closest date to target
+            let closestPrice = null;
+            let closestDateDiff = Infinity;
+
+            for (let i = 1; i < rows.length; i++) {
+                const values = rows[i].split(',');
+                if (values.length >= 5) {
+                    const rowDate = new Date(values[0]);
+                    const dateDiff = Math.abs((rowDate - target) / (24 * 60 * 60 * 1000));
+
+                    if (dateDiff < closestDateDiff) {
+                        closestDateDiff = dateDiff;
+                        closestPrice = parseFloat(values[4]); // close price
+                    }
+                }
+            }
+
+            if (closestPrice === null) {
+                throw new Error('No valid price found');
+            }
+
+            console.log(`[Price Fetch] ${symbol} at ${targetDate}: ${closestPrice} (±${closestDateDiff.toFixed(0)} days)`);
+            return closestPrice;
+
+        } catch (error) {
+            console.error(`[Price Fetch] Failed for ${symbol} at ${targetDate}:`, error.message);
+            throw error;
+        }
+    }
+
+    /**
+     * Layer 3: Find matching signal for a position with fuzzy fallback
+     * Primary: Exact symbol + entry date match
+     * Fallback: Fuzzy match (symbol + entry date ±3 days + price ±2%)
+     */
+    function findMatchingSignal(position, allSignals) {
+        // Try exact match first (existing logic)
+        let signal = allSignals.find(s =>
+            s.symbol === position.symbol &&
+            s.entryDate === position.entryDate
+        );
+
+        if (signal) {
+            return { signal, matchType: 'exact' };
+        }
+
+        // Fallback: Fuzzy match for cases where dates/prices differ slightly
+        signal = allSignals.find(s => {
+            if (s.symbol !== position.symbol) return false;
+
+            const posEntryDate = new Date(position.entryDate);
+            const sigEntryDate = new Date(s.entryDate);
+            const daysDiff = Math.abs((posEntryDate - sigEntryDate) / (24 * 60 * 60 * 1000));
+
+            const priceDiff = Math.abs((s.entryPrice - position.entryPrice) / position.entryPrice) * 100;
+
+            // Match if within ±3 days AND ±2% price
+            return daysDiff <= 3 && priceDiff <= 2;
+        });
+
+        if (signal) {
+            const posEntryDate = new Date(position.entryDate);
+            const sigEntryDate = new Date(signal.entryDate);
+            const daysDiff = Math.abs((posEntryDate - sigEntryDate) / (24 * 60 * 60 * 1000));
+            const priceDiff = Math.abs((signal.entryPrice - position.entryPrice) / position.entryPrice) * 100;
+
+            console.warn(`[Fuzzy Match] ${position.symbol}: Matched with ±${daysDiff} days, ±${priceDiff.toFixed(2)}% price`);
+            return { signal, matchType: 'fuzzy' };
+        }
+
+        return { signal: null, matchType: 'none' };
+    }
+
+    /**
+     * Check exit conditions for active positions
+     * Layer 3: Uses fuzzy matching as fallback
+     * Layer 4: Fetches real prices for force-close (async)
+     * Layer 5: Tracks statistics
+     */
+    async function checkExitConditions(portfolio, currentDate, allSignals, stats = null) {
         const toRemove = [];
 
         for (let i = 0; i < portfolio.positions.length; i++) {
@@ -605,15 +803,42 @@ const PortfolioSimulator = (function() {
             const holdingDays = Math.floor((current - entryDate) / (24 * 60 * 60 * 1000));
 
             // SAFETY CHECK: Force-close if held >= 30 days
+            // Layer 4: Fetch REAL price to calculate actual P/L (not 0%)
             if (holdingDays >= CONFIG.DTI_PARAMS.maxHoldingDays) {
-                console.warn(`[Portfolio] Force-closing ${position.symbol} after ${holdingDays} days (max ${CONFIG.DTI_PARAMS.maxHoldingDays})`);
+                console.warn(`[Force Close] ${position.symbol} after ${holdingDays} days - fetching real price...`);
+
+                let exitPrice = position.entryPrice;  // Fallback: assume breakeven
+                let plPercent = 0;                     // Fallback: assume no gain/loss
+                let exitReason = 'Max Days (Force Close - No Price)';
+
+                try {
+                    // Try to fetch actual price at exit date
+                    exitPrice = await fetchPriceAtDate(position.symbol, currentDate);
+                    plPercent = ((exitPrice - position.entryPrice) / position.entryPrice) * 100;
+                    exitReason = 'Max Days (Calculated)';
+
+                    console.log(`[Force Close] ${position.symbol}: Real P/L ${plPercent.toFixed(2)}% (entry: ${position.entryPrice}, exit: ${exitPrice})`);
+
+                    // Layer 5: Track successful real price fetch
+                    if (stats) stats.forceClosedWithRealPrice++;
+
+                } catch (error) {
+                    console.error(`[Force Close] ${position.symbol}: Failed to fetch price, using 0% P/L fallback`);
+                    // Keep default values (0% P/L)
+
+                    // Layer 5: Track fallback to 0%
+                    if (stats) stats.forceClosedWithFallback++;
+                }
+
+                // Layer 5: Track total force-closes
+                if (stats) stats.forceClosedTotal++;
 
                 const closedTrade = {
                     ...position,
                     exitDate: currentDate,
-                    exitPrice: position.entryPrice, // Conservative: assume breakeven
-                    plPercent: 0, // Conservative: assume no gain/loss
-                    exitReason: 'Max Days (Force Close)',
+                    exitPrice: exitPrice,
+                    plPercent: plPercent,
+                    exitReason: exitReason,
                     holdingDays: holdingDays,
                     // DTI values at entry (if available)
                     prevDTI: position.prevDTI,
@@ -625,9 +850,9 @@ const PortfolioSimulator = (function() {
 
                 portfolio.closedTrades.push(closedTrade);
 
-                // Update capital tracking (if available)
+                // Update capital tracking with REAL P/L (not 0%)
                 if (portfolio.capitalByMarket && portfolio.capitalByMarket[position.market]) {
-                    const pl = (position.tradeSize * 0) / 100; // 0% for force-close
+                    const pl = (position.tradeSize * plPercent) / 100;
                     portfolio.capitalByMarket[position.market].realized += pl;
                 }
 
@@ -635,13 +860,17 @@ const PortfolioSimulator = (function() {
                 continue; // Skip normal exit check
             }
 
-            // Normal exit: Find matching signal with exit data
-            const signal = allSignals.find(s =>
-                s.symbol === position.symbol &&
-                s.entryDate === position.entryDate
-            );
+            // Normal exit: Find matching signal with exit data (Layer 3: fuzzy matching)
+            const matchResult = findMatchingSignal(position, allSignals);
 
-            if (signal) {
+            if (matchResult.signal) {
+                const signal = matchResult.signal;
+
+                // Layer 5: Track fuzzy matches
+                if (matchResult.matchType === 'fuzzy' && stats) {
+                    stats.fuzzyMatches++;
+                }
+
                 // Check if exit date has passed (handles weekends/holidays)
                 const signalExitDate = new Date(signal.exitDate);
                 const current = new Date(currentDate);
@@ -675,7 +904,18 @@ const PortfolioSimulator = (function() {
 
                     toRemove.push(i);
 
-                    console.log(`[Portfolio] Closing ${position.symbol} on ${currentDate} (signal exit: ${signal.exitDate}, P/L: ${signal.plPercent.toFixed(2)}%)`);
+                    const matchInfo = matchResult.matchType === 'fuzzy' ? ' [FUZZY]' : '';
+                    console.log(`[Portfolio] Closing ${position.symbol} on ${currentDate} (signal exit: ${signal.exitDate}, P/L: ${signal.plPercent.toFixed(2)}%)${matchInfo}`);
+                }
+            } else {
+                // Layer 3 & 5: Log and track when no matching signal found
+                if (holdingDays >= 20) {  // Only log if getting close to force-close
+                    console.warn(`[No Signal Match] ${position.symbol}: No matching signal found (held ${holdingDays} days, entry: ${position.entryDate})`);
+
+                    // Track unmatched position (avoid duplicates)
+                    if (stats && !stats.unmatchedPositions.includes(position.symbol)) {
+                        stats.unmatchedPositions.push(position.symbol);
+                    }
                 }
             }
         }
