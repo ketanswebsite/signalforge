@@ -723,13 +723,17 @@ const PortfolioSimulator = (function() {
                     const dateDiff = Math.abs((rowDate - target) / (24 * 60 * 60 * 1000));
 
                     if (dateDiff < closestDateDiff) {
-                        closestDateDiff = dateDiff;
-                        closestPrice = parseFloat(values[4]); // close price
+                        const price = parseFloat(values[4]); // close price
+                        // Only use valid prices (reject NaN, null, or non-positive values)
+                        if (!isNaN(price) && price > 0) {
+                            closestDateDiff = dateDiff;
+                            closestPrice = price;
+                        }
                     }
                 }
             }
 
-            if (closestPrice === null) {
+            if (closestPrice === null || isNaN(closestPrice)) {
                 throw new Error('No valid price found');
             }
 
