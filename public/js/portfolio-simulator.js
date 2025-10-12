@@ -1069,17 +1069,11 @@ const PortfolioSimulator = (function() {
     }
 
     /**
-     * Calculate initial portfolio value across ALL markets
-     * Converts all market capital to display currency
+     * Calculate initial portfolio value for selected display currency
+     * Returns the initial capital for that currency's market only
      */
     function calculateInitialValue(displayCurrency) {
-        // Convert each market's initial capital to display currency
-        const inrValue = convertCurrency(CONFIG.INITIAL_INVESTMENTS['INR'], 'INR', displayCurrency);
-        const gbpValue = convertCurrency(CONFIG.INITIAL_INVESTMENTS['GBP'], 'GBP', displayCurrency);
-        const usdValue = convertCurrency(CONFIG.INITIAL_INVESTMENTS['USD'], 'USD', displayCurrency);
-
-        // Return total initial capital across all markets
-        return inrValue + gbpValue + usdValue;
+        return CONFIG.INITIAL_INVESTMENTS[displayCurrency] || 0;
     }
 
     /**
