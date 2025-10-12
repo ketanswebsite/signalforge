@@ -1,1 +1,0 @@
-- use C:\Users\Ketan Joshi\Downloads\stock-proxy (2)\stock-proxy\deploy-to-render.bat to deploy to render
