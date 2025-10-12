@@ -133,7 +133,6 @@ async function fetchStockData(symbol, period = '5y', interval = '1d', retryCount
     if (STOCK_BLOCKLIST.has(symbol)) {
         const reason = 'Stock is in blocklist (likely delisted, renamed, or data unavailable)';
         failedStocks.set(symbol, { reason, error: 'BLOCKLISTED', timestamp: new Date() });
-        console.log(`Skipping blocklisted stock: ${symbol} - ${reason}`);
         return null;
     }
 
@@ -207,7 +206,6 @@ if (period === '5y') {
             if (response.status === 500) {
                 const reason = 'Data source returned 500 error - stock may be delisted, renamed, or data unavailable';
                 failedStocks.set(symbol, { reason, error: `HTTP_${response.status}`, timestamp: new Date() });
-                console.warn(`Stock ${symbol} failed with 500 error - adding to failed stocks list`);
             }
 
             throw new Error(errorMessage);
@@ -977,7 +975,6 @@ async function fetchCurrentQuote(symbol) {
      */
     function clearFailedStocks() {
         failedStocks.clear();
-        console.log('Failed stocks tracking cleared');
     }
 
     /**
@@ -986,7 +983,6 @@ async function fetchCurrentQuote(symbol) {
      */
     function addToBlocklist(symbol) {
         STOCK_BLOCKLIST.add(symbol);
-        console.log(`Added ${symbol} to blocklist`);
     }
 
     /**
@@ -995,7 +991,6 @@ async function fetchCurrentQuote(symbol) {
      */
     function removeFromBlocklist(symbol) {
         STOCK_BLOCKLIST.delete(symbol);
-        console.log(`Removed ${symbol} from blocklist`);
     }
 
     /**
@@ -1113,35 +1108,16 @@ async function fetchCurrentQuote(symbol) {
      * Available globally as DTIData.debugStocks()
      */
     function debugStocks() {
-        console.log('=== DTI Stock Debugging Helper ===\n');
 
         // Show failed stocks report
         const failedReport = getFailedStocksReport();
-        console.log('Failed Stocks Report:');
-        console.log(`- Total failed: ${failedReport.count}`);
-        console.log(`- Blocklisted: ${failedReport.summary.blocklisted}`);
-        console.log(`- Failed with 500 (likely delisted): ${failedReport.summary.failed_500}`);
-        console.log(`- Other errors: ${failedReport.summary.failed_other}\n`);
 
         if (failedReport.stocks.length > 0) {
-            console.log('Recent failures:');
             failedReport.stocks.slice(0, 10).forEach(stock => {
-                console.log(`  ${stock.symbol}: ${stock.reason}`);
             });
-            console.log('');
         }
 
-        console.log('Available commands:');
-        console.log('- DTIData.getFailedStocksReport() - Get detailed failed stocks report');
-        console.log('- DTIData.clearFailedStocks() - Clear failed stocks tracking');
-        console.log('- DTIData.addToBlocklist("SYMBOL") - Add symbol to blocklist');
-        console.log('- DTIData.removeFromBlocklist("SYMBOL") - Remove symbol from blocklist');
-        console.log('- DTIData.validateStockSymbol("SYMBOL") - Test if a symbol is valid');
-        console.log('- DTIData.findAlternativeSymbols({name: "Company Name", symbol: "SYM"}) - Find alternatives');
-        console.log('- DTIData.validateStockList(stockArray) - Validate a list of stocks');
-        console.log('- DTIData.clearDataCache() - Clear all cached data\n');
 
-        console.log('Current blocklist:', Array.from(STOCK_BLOCKLIST));
     }
 
     /**
@@ -1163,12 +1139,10 @@ async function fetchCurrentQuote(symbol) {
     function importConfiguration(config) {
         if (config.blocklist) {
             config.blocklist.forEach(symbol => STOCK_BLOCKLIST.add(symbol));
-            console.log(`Imported ${config.blocklist.length} blocklisted symbols`);
         }
 
         if (config.failedStocks) {
             config.failedStocks.forEach(([symbol, info]) => failedStocks.set(symbol, info));
-            console.log(`Imported ${config.failedStocks.length} failed stock records`);
         }
     }
 

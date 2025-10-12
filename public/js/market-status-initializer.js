@@ -12,13 +12,11 @@
     function initializeMarketStatus() {
         const container = document.getElementById('market-status-container');
         if (!container) {
-            console.log('[MarketStatus] Container not found on this page');
             return;
         }
 
         // Wait for required dependencies
         if (typeof getEnhancedMarketStatus !== 'function' || typeof createMarketStatusBadge !== 'function') {
-            console.warn('[MarketStatus] Required functions not loaded, retrying...');
             setTimeout(initializeMarketStatus, 500);
             return;
         }
@@ -43,7 +41,6 @@
                     });
                 }
             } catch (error) {
-                console.warn('[MarketStatus] Error getting trade counts:', error);
             }
 
             return marketCounts;
@@ -72,7 +69,6 @@
                         container.appendChild(badge);
                     }
                 } catch (error) {
-                    console.error(`[MarketStatus] Error creating badge for ${market.key}:`, error);
                 }
             });
         };
@@ -83,7 +79,6 @@
         // Update every minute
         setInterval(updateMarketStatus, 60000);
 
-        console.log('[MarketStatus] Initialized successfully');
     }
 
     // Initialize when DOM is ready

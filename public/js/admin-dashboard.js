@@ -21,7 +21,6 @@ const AdminDashboard = {
       this.setupSSE();
       this.startMetricsRefresh();
     } catch (error) {
-      console.error('Dashboard initialization failed:', error);
       AdminComponents.alert({
         type: 'error',
         message: 'Failed to load dashboard data',
@@ -61,7 +60,6 @@ const AdminDashboard = {
       document.getElementById('metric-payments-change').textContent = metrics.changes?.payments || '+0';
 
     } catch (error) {
-      console.error('Failed to load metrics:', error);
 
       // Show placeholder values
       document.getElementById('metric-mrr').textContent = '£0.00';
@@ -122,7 +120,6 @@ const AdminDashboard = {
       activityContainer.innerHTML = activityHTML;
 
     } catch (error) {
-      console.error('Failed to load recent activity:', error);
       document.getElementById('recent-activity').innerHTML =
         '<p class="text-muted text-center">Failed to load activity</p>';
     }
@@ -140,19 +137,16 @@ const AdminDashboard = {
       this.eventSource = new EventSource('/api/admin/events');
 
       this.eventSource.addEventListener('connected', (event) => {
-        console.log('SSE connected:', event.data);
       });
 
       this.eventSource.addEventListener('activity', (event) => {
         const data = JSON.parse(event.data);
-        console.log('New activity:', data);
         // Reload recent activity
         this.loadRecentActivity();
       });
 
       this.eventSource.addEventListener('metrics', (event) => {
         const data = JSON.parse(event.data);
-        console.log('Metrics update:', data);
         // Update metrics without full reload
         this.updateMetricsDisplay(data);
       });
@@ -162,7 +156,6 @@ const AdminDashboard = {
       });
 
       this.eventSource.onerror = (error) => {
-        console.error('SSE error:', error);
         this.eventSource.close();
 
         // Retry connection after 30 seconds
@@ -170,7 +163,6 @@ const AdminDashboard = {
       };
 
     } catch (error) {
-      console.error('Failed to setup SSE:', error);
     }
   },
 
@@ -219,7 +211,6 @@ const AdminDashboard = {
       try {
         this.revenueChart.destroy();
       } catch (e) {
-        console.log('Chart destroy error (ignoring):', e.message);
       }
       this.revenueChart = null;
     }
@@ -230,7 +221,6 @@ const AdminDashboard = {
       try {
         chartId.destroy();
       } catch (e) {
-        console.log('Global chart destroy error (ignoring):', e.message);
       }
     }
 
@@ -288,7 +278,6 @@ const AdminDashboard = {
         }
       });
     } catch (error) {
-      console.error('Failed to create chart:', error);
       this.revenueChart = null;
     }
   },
@@ -297,7 +286,6 @@ const AdminDashboard = {
    * Change chart period
    */
   changeChartPeriod(period) {
-    console.log('Change chart period to:', period);
     // TODO: Implement period change (fetch different data range)
     AdminComponents.alert({
       type: 'info',

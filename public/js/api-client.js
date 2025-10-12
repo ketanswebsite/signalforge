@@ -31,7 +31,6 @@ const TradeAPI = {
             const data = await response.json();
             return data;
         } catch (error) {
-            console.error('API request failed:', error);
             throw error;
         }
     },
@@ -159,7 +158,6 @@ const TradeAPI = {
             
             return { migrated: false, count: 0 };
         } catch (error) {
-            console.error('Migration failed:', error);
             return { migrated: false, count: 0, error: error.message };
         }
     }

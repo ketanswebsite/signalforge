@@ -166,7 +166,6 @@ const BacktestAlerts = (function() {
                 }
             }
         } catch (error) {
-            console.error('Failed to send backtest alerts:', error);
         }
     }
     
@@ -256,12 +255,9 @@ const BacktestAlerts = (function() {
             
             if (response.ok) {
             } else {
-                console.error('❌ Failed to send telegram message:', response.status);
                 const errorText = await response.text();
-                console.error('Error details:', errorText);
             }
         } catch (error) {
-            console.error('❌ Error sending telegram message:', error);
         }
     }
     

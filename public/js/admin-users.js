@@ -122,7 +122,6 @@ const AdminUsers = {
       this.renderUsersTable(data.data.items, data.data.pagination);
 
     } catch (error) {
-      console.error('Failed to load users:', error);
       document.getElementById('users-table-container').innerHTML = `
         <div class="text-center text-muted">
           <p>Failed to load users</p>

@@ -43,7 +43,6 @@ window.TradeUIModules.charts = (function() {
     function renderEquityCurve() {
         const container = document.getElementById('equity-curve-chart');
         if (!container) {
-            console.warn('Equity curve chart container not found');
             return;
         }
         

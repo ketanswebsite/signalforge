@@ -92,22 +92,18 @@ const DTIBacktest = (function() {
      */
     function validateBacktestInputs(dates, prices, dti, sevenDayDTIData) {
         if (!Array.isArray(dates) || !Array.isArray(prices) || !Array.isArray(dti)) {
-            console.error('Backtest inputs must be arrays');
             return false;
         }
 
         if (!sevenDayDTIData || typeof sevenDayDTIData !== 'object') {
-            console.error('Invalid sevenDayDTIData');
             return false;
         }
 
         if (dates.length !== prices.length || dates.length !== dti.length) {
-            console.error('Input arrays must have the same length');
             return false;
         }
 
         if (!sevenDayDTIData.daily7DayDTI || !sevenDayDTIData.sevenDayData || !sevenDayDTIData.sevenDayDTI) {
-            console.error('sevenDayDTIData missing required properties');
             return false;
         }
 

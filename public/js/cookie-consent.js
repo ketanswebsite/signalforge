@@ -52,7 +52,6 @@ class CookieConsent {
                 body: JSON.stringify(consentData)
             });
         } catch (error) {
-            console.error('Failed to record consent:', error);
         }
     }
 

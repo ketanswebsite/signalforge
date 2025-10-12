@@ -313,7 +313,6 @@
             if (window.TradeCore && window.TradeCore.showNotification) {
                 window.TradeCore.showNotification(message, 'info');
             } else {
-                console.log(message);
             }
         });
         

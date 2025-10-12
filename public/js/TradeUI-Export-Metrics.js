@@ -136,7 +136,6 @@ window.TradeUIModules.export = (function() {
                             TradeCore.showNotification(`Exported ${closedTrades.length} trade records successfully`, 'success');
                         }
                     } catch (error) {
-                        console.error("Error exporting trade history:", error);
                         TradeCore.showNotification('Error exporting trade history: ' + error.message, 'error');
                     } finally {
                         // Reset button state
@@ -258,7 +257,6 @@ window.TradeUIModules.export = (function() {
                     TradeCore.showNotification(`Exported ${allTrades.length} trades (${activeTrades} active, ${closedTrades} closed)`, 'success');
                 }
             } catch (error) {
-                console.error("Error exporting all trades:", error);
                 TradeCore.showNotification('Error exporting trades: ' + error.message, 'error');
             } finally {
                 // Reset button state
@@ -285,14 +283,12 @@ window.TradeUIModules.export = (function() {
     function getChartInstance(canvasId) {
         const canvas = document.getElementById(canvasId);
         if (!canvas) {
-            console.warn(`Canvas with ID ${canvasId} not found`);
             return null;
         }
         
         // Get Chart.js instance from the canvas
         const chart = Chart.getChart(canvas);
         if (!chart) {
-            console.warn(`Chart instance not found for canvas ${canvasId}`);
             return null;
         }
         
@@ -309,7 +305,6 @@ window.TradeUIModules.export = (function() {
         try {
             const chart = getChartInstance(canvasId);
             if (!chart) {
-                console.warn(`Failed to get chart instance for ${chartTitle}`);
                 return null;
             }
             
@@ -319,14 +314,12 @@ window.TradeUIModules.export = (function() {
             // Get the canvas element
             const canvas = chart.canvas;
             if (!canvas) {
-                console.warn(`Canvas not found for ${chartTitle}`);
                 return null;
             }
             
             // Convert to data URL
             return canvas.toDataURL('image/png', 1.0); // High quality
         } catch (error) {
-            console.error(`Error getting data URL for ${chartTitle}:`, error);
             return null;
         }
     }
@@ -612,7 +605,6 @@ window.TradeUIModules.export = (function() {
                         `;
                         exportedCharts++;
                     } else {
-                        console.warn(`Failed to export chart: ${chartInfo.title}`);
                     }
                 });
                 
@@ -680,7 +672,6 @@ window.TradeUIModules.export = (function() {
                     TradeCore.showNotification('No charts were available to export', 'warning');
                 }
             } catch (error) {
-                console.error("Error exporting charts:", error);
                 TradeCore.showNotification('Error exporting charts: ' + error.message, 'error');
             } finally {
                 // Reset button state
@@ -1351,7 +1342,6 @@ window.TradeUIModules.export = (function() {
                 
                 TradeCore.showNotification('Trading report generated successfully', 'success');
             } catch (error) {
-                console.error("Error generating report:", error);
                 TradeCore.showNotification('Error generating report: ' + error.message, 'error');
             } finally {
                 // Reset button state
@@ -1419,14 +1409,12 @@ window.TradeUIModules.metrics = (function() {
     function renderAdvancedMetricsCards() {
         const advancedMetricsContainer = document.getElementById('advanced-metrics-container');
         if (!advancedMetricsContainer) {
-            console.error("Advanced metrics container not found");
             return;
         }
         
         try {
             const metrics = TradeCore.getAdvancedMetrics();
             if (!metrics) {
-                console.error("Failed to get advanced metrics data");
                 return;
             }
             
@@ -1539,7 +1527,6 @@ window.TradeUIModules.metrics = (function() {
             advancedMetricsContainer.appendChild(row3);
             
         } catch (error) {
-            console.error("Error rendering advanced metrics:", error);
             advancedMetricsContainer.innerHTML = `<div class="error-message">Error loading metrics: ${error.message}</div>`;
         }
     }

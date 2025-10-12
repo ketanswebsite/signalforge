@@ -14,7 +14,6 @@
      * Handle unhandled promise rejections
      */
     window.addEventListener('unhandledrejection', function(event) {
-        console.error('[UnhandledRejection]', event.reason);
 
         const now = Date.now();
         if (now - lastErrorTime < ERROR_THROTTLE_MS) {
@@ -58,7 +57,6 @@
             window.DTIBacktester.utils.showNotification(message, 'error');
         } else {
             // Fallback to alert if no notification system
-            console.error(message);
         }
 
         // Mark as handled
@@ -79,7 +77,6 @@
             return;
         }
 
-        console.error('[GlobalError]', event.message, event.filename, event.lineno, event.colno);
 
         const now = Date.now();
         if (now - lastErrorTime < ERROR_THROTTLE_MS) {
@@ -111,13 +108,11 @@
             // Log failed requests
             if (!response.ok) {
                 const url = typeof args[0] === 'string' ? args[0] : args[0].url;
-                console.error(`[FetchError] ${response.status} ${response.statusText} - ${url}`);
 
                 // Clone response to read body without consuming it
                 const clonedResponse = response.clone();
                 try {
                     const errorData = await clonedResponse.json();
-                    console.error('[FetchError] Response:', errorData);
                 } catch (e) {
                     // Response is not JSON, that's fine
                 }
@@ -126,7 +121,6 @@
             return response;
         } catch (error) {
             const url = typeof args[0] === 'string' ? args[0] : args[0].url;
-            console.error(`[FetchError] Network error - ${url}:`, error);
             throw error;
         }
     };
@@ -202,5 +196,4 @@
         document.head.appendChild(style);
     }
 
-    console.log('[ErrorHandler] Global error handler initialized');
 })();

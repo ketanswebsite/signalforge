@@ -67,7 +67,6 @@
                     if (!response.ok && (shouldRetryStatus || shouldRetryCustom) && attempt < options.maxRetries) {
                         const delay = this.calculateBackoff(attempt, options.baseDelay, options.maxDelay);
 
-                        console.warn(`[NetworkRetry] Attempt ${attempt + 1}/${options.maxRetries} failed with status ${response.status}. Retrying in ${Math.round(delay)}ms...`);
 
                         // Call retry callback if provided
                         if (options.onRetry) {
@@ -91,13 +90,11 @@
 
                     // Check if this is the last attempt
                     if (attempt >= options.maxRetries) {
-                        console.error(`[NetworkRetry] All ${options.maxRetries} retry attempts failed for ${url}:`, error);
                         throw error;
                     }
 
                     const delay = this.calculateBackoff(attempt, options.baseDelay, options.maxDelay);
 
-                    console.warn(`[NetworkRetry] Attempt ${attempt + 1}/${options.maxRetries} failed with error: ${error.message}. Retrying in ${Math.round(delay)}ms...`);
 
                     // Call retry callback if provided
                     if (options.onRetry) {
@@ -148,5 +145,4 @@
         return window.NetworkRetry.fetch(url, fetchOptions, retryOptions);
     };
 
-    console.log('[NetworkRetry] Network retry manager initialized');
 })();

@@ -36,14 +36,12 @@ window.TradeUIModules.filters = (function() {
         }
         
         if (!activesCard) {
-            console.warn("Active trades card not found - filters may not be displayed");
             // Don't return here, let it continue
         }
         
         // Find the section right after the header, before the trades container
         const tradesContainer = document.getElementById('active-trades-container');
         if (!tradesContainer) {
-            console.error("Active trades container not found");
             return;
         }
         
@@ -98,7 +96,6 @@ window.TradeUIModules.filters = (function() {
             // If no activesCard, insert before tradesContainer
             tradesContainer.parentNode.insertBefore(filterContainer, tradesContainer);
         } else {
-            console.warn("Could not find suitable location for filter UI");
             return;
         }
         
@@ -302,7 +299,6 @@ window.TradeUIModules.filters = (function() {
         const noActiveTradesMsg = document.getElementById('no-active-trades');
         
         if (!container || !noActiveTradesMsg) {
-            console.error("Active trades container elements not found");
             return;
         }
         
@@ -342,7 +338,6 @@ window.TradeUIModules.filters = (function() {
         // Get the template
         const template = document.getElementById('active-trade-template');
         if (!template) {
-            console.error("Active trade card template not found");
             return;
         }
         
@@ -485,7 +480,6 @@ window.TradeUIModules.filters = (function() {
                     card.style.transform = 'translateY(0)';
                 }, 50 * index); // Stagger the animations
             } catch (error) {
-                console.error("Error rendering trade card:", error, trade);
                 TradeCore.showNotification('Error displaying a trade card', 'error');
             }
         });

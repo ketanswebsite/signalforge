@@ -1879,7 +1879,6 @@ const MLInsightsUI = (function() {
         const symbol = providedSymbol || activeSymbol;
         
         if (!symbol) {
-            console.error('No symbol provided for analysis');
             return;
         }
         
@@ -1911,7 +1910,6 @@ const MLInsightsUI = (function() {
             displayAnalysis(currentAnalysis);
             
         } catch (error) {
-            console.error('ML analysis error:', error);
             contentDiv.innerHTML = `
                 <div class="ml-error">
                     <p>Error analyzing ${symbol}: ${error.message}</p>

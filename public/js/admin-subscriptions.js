@@ -163,7 +163,6 @@ const AdminSubscriptions = {
       this.renderPlans(data.data.plans || []);
 
     } catch (error) {
-      console.error('Failed to load plans:', error);
       document.getElementById('plans-container').innerHTML = `
         <div class="text-center text-muted">
           <p>Failed to load plans</p>
@@ -251,7 +250,6 @@ const AdminSubscriptions = {
       this.renderSubscriptions(data.data.items || [], data.data.pagination);
 
     } catch (error) {
-      console.error('Failed to load subscriptions:', error);
       document.getElementById('subscriptions-container').innerHTML = `
         <div class="text-center text-muted">
           <p>Failed to load subscriptions</p>
@@ -362,7 +360,6 @@ const AdminSubscriptions = {
       }
 
     } catch (error) {
-      console.error('Failed to load analytics:', error);
     }
   },
 

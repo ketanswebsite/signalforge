@@ -60,7 +60,6 @@ class RealTimePriceService {
             };
 
             this.ws.onerror = (error) => {
-                console.error('WebSocket error:', error);
                 this.handleDisconnect();
             };
 
@@ -69,7 +68,6 @@ class RealTimePriceService {
             };
             */
         } catch (error) {
-            console.error('Failed to connect:', error);
             this.startPolling();
         }
     }
@@ -90,7 +88,6 @@ class RealTimePriceService {
 
             // Only update interval if delay has changed significantly
             if (currentDelay !== activeDelay) {
-                console.log(`[RealTimePrice] Market status changed, updating poll interval from ${activeDelay}ms to ${currentDelay}ms`);
                 this.updatePollingInterval();
             }
         }, 300000); // Check every 5 minutes
@@ -113,7 +110,6 @@ class RealTimePriceService {
             }
         }, pollDelay);
 
-        console.log(`[RealTimePrice] Poll interval set to ${pollDelay}ms (${pollDelay/1000}s)`);
     }
     
     calculatePollDelay() {
@@ -225,7 +221,6 @@ class RealTimePriceService {
                 });
             }
         } catch (error) {
-            console.error('Failed to fetch prices:', error);
         } finally {
             this.showUpdateStatus(false);
         }

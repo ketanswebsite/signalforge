@@ -88,7 +88,10 @@
       "mcp__render__list_logs",
       "mcp__render__list_deploys",
       "mcp__render__query_render_postgres",
-      "mcp__render__get_deploy"
+      "mcp__render__get_deploy",
+      "Bash(for file in *.js)",
+      "Bash(do)",
+      "Bash(done)"
     ],
     "deny": []
   },

@@ -569,7 +569,6 @@ window.TradeUIModules.dialogs = (function() {
                         importPreview.style.display = 'block';
                         confirmBtn.disabled = false;
                     } catch (error) {
-                        console.error('Error parsing import file:', error);
                         selectedFilename.textContent = 'Error: Invalid JSON file format';
                         importPreview.style.display = 'none';
                         confirmBtn.disabled = true;
@@ -687,7 +686,6 @@ window.TradeUIModules.dialogs = (function() {
     function handleTradeClose() {
         const tradeId = TradeCore.getSelectedTradeId();
         if (!tradeId) {
-            console.error("No trade selected for closing");
             return;
         }
         
@@ -697,7 +695,6 @@ window.TradeUIModules.dialogs = (function() {
         const confirmButton = document.getElementById('close-dialog-confirm');
         
         if (!exitPriceInput || !reasonSelect) {
-            console.error("Required close trade form elements not found");
             TradeCore.showNotification('Error: Could not find form elements', 'error');
             return;
         }
@@ -760,7 +757,6 @@ window.TradeUIModules.dialogs = (function() {
                     }
                 }
             } catch (error) {
-                console.error("Error closing trade:", error);
                 TradeCore.showNotification('Error closing trade: ' + error.message, 'error');
                 
                 // Reset button state
@@ -785,7 +781,6 @@ window.TradeUIModules.dialogs = (function() {
     function handleTradeEdit() {
         const tradeId = TradeCore.getSelectedTradeId();
         if (!tradeId) {
-            console.error("No trade selected for editing");
             return;
         }
         
@@ -797,7 +792,6 @@ window.TradeUIModules.dialogs = (function() {
         const confirmButton = document.getElementById('edit-dialog-confirm');
         
         if (!entryPriceInput || !stopLossInput || !targetInput || !squareOffDateInput) {
-            console.error("Required edit trade form elements not found");
             TradeCore.showNotification('Error: Could not find form elements', 'error');
             return;
         }
@@ -876,7 +870,6 @@ window.TradeUIModules.dialogs = (function() {
         // Get the current trade to preserve all fields
         const currentTrade = TradeCore.getTradeById(tradeId);
         if (!currentTrade) {
-            console.error("Trade not found:", tradeId);
             TradeCore.showNotification('Error: Trade not found', 'error');
             return;
         }
@@ -907,7 +900,6 @@ window.TradeUIModules.dialogs = (function() {
                     }
                 }
             } catch (error) {
-                console.error("Error editing trade:", error);
                 TradeCore.showNotification('Error editing trade: ' + error.message, 'error');
                 
                 // Reset button state
@@ -932,7 +924,6 @@ window.TradeUIModules.dialogs = (function() {
     function handleTradeDelete() {
         const tradeId = TradeCore.getSelectedTradeId();
         if (!tradeId) {
-            console.error("No trade selected for deletion");
             return;
         }
         
@@ -970,7 +961,6 @@ window.TradeUIModules.dialogs = (function() {
                     }
                 }
             } catch (error) {
-                console.error("Error deleting trade:", error);
                 TradeCore.showNotification('Error deleting trade: ' + error.message, 'error');
                 
                 // Reset button state
@@ -1080,7 +1070,6 @@ window.TradeUIModules.dialogs = (function() {
                             }
                         }, 500);
                     } catch (importError) {
-                        console.error('Error during import:', importError);
                         statusMessage.textContent = `Error: ${importError.message}`;
                         statusMessage.style.color = 'var(--danger-color)';
                         progress.style.width = '100%';
@@ -1099,7 +1088,6 @@ window.TradeUIModules.dialogs = (function() {
                     }
                 }, 300);
             } catch (parseError) {
-                console.error('Error parsing import file:', parseError);
                 statusMessage.textContent = 'Error: Invalid JSON file format';
                 statusMessage.style.color = 'var(--danger-color)';
                 progress.style.width = '100%';
@@ -1119,7 +1107,6 @@ window.TradeUIModules.dialogs = (function() {
         };
         
         reader.onerror = function() {
-            console.error('Error reading file');
             statusMessage.textContent = 'Error reading file';
             statusMessage.style.color = 'var(--danger-color)';
             progress.style.width = '100%';
@@ -1147,7 +1134,6 @@ window.TradeUIModules.dialogs = (function() {
     function openCloseTradeDialog(tradeId) {
         const trade = TradeCore.getTradeById(tradeId);
         if (!trade) {
-            console.error("Trade not found:", tradeId);
             return;
         }
         
@@ -1156,7 +1142,6 @@ window.TradeUIModules.dialogs = (function() {
         
         const dialog = document.getElementById('close-trade-dialog');
         if (!dialog) {
-            console.error("Close trade dialog not found");
             return;
         }
         
@@ -1165,7 +1150,6 @@ window.TradeUIModules.dialogs = (function() {
         const notesInput = document.getElementById('close-trade-notes');
         
         if (!exitPriceInput || !reasonSelect) {
-            console.error("Dialog form elements not found");
             return;
         }
         
@@ -1267,7 +1251,6 @@ window.TradeUIModules.dialogs = (function() {
     function openEditTradeDialog(tradeId) {
         const trade = TradeCore.getTradeById(tradeId);
         if (!trade) {
-            console.error("Trade not found:", tradeId);
             return;
         }
         
@@ -1282,7 +1265,6 @@ window.TradeUIModules.dialogs = (function() {
         }
         
         if (!dialog) {
-            console.error("Edit trade dialog not found");
             return;
         }
         
@@ -1294,7 +1276,6 @@ window.TradeUIModules.dialogs = (function() {
         const notesInput = document.getElementById('edit-notes');
         
         if (!entryPriceInput || !stopLossInput || !targetInput || !squareOffDateInput) {
-            console.error("Dialog form elements not found");
             return;
         }
         
@@ -1400,7 +1381,6 @@ window.TradeUIModules.dialogs = (function() {
     function openDeleteTradeDialog(tradeId) {
         const trade = TradeCore.getTradeById(tradeId);
         if (!trade) {
-            console.error("Trade not found:", tradeId);
             return;
         }
         
@@ -1415,7 +1395,6 @@ window.TradeUIModules.dialogs = (function() {
         }
         
         if (!dialog) {
-            console.error("Delete trade dialog not found");
             return;
         }
         
@@ -1470,7 +1449,6 @@ window.TradeUIModules.dialogs = (function() {
         
         const dialog = document.getElementById('import-trades-dialog');
         if (!dialog) {
-            console.error("Import dialog not found");
             return;
         }
         

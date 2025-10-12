@@ -123,5 +123,4 @@
         window.AbortManager.abortAll('Page unloading');
     });
 
-    console.log('[AbortManager] Abort controller manager initialized');
 })();

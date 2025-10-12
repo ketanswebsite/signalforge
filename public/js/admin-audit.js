@@ -156,7 +156,6 @@ const AdminAudit = {
                 throw new Error(data.error?.message || 'Failed to load audit logs');
             }
         } catch (error) {
-            console.error('Error loading audit logs:', error);
             AdminComponents.alert({
                 type: 'error',
                 message: `Failed to load audit logs: ${error.message}`,
@@ -268,7 +267,6 @@ const AdminAudit = {
                 throw new Error(data.error?.message || 'Failed to load log details');
             }
         } catch (error) {
-            console.error('Error loading log details:', error);
             AdminComponents.alert({
                 type: 'error',
                 message: `Failed to load log details: ${error.message}`,
@@ -438,7 +436,6 @@ const AdminAudit = {
                 throw new Error(data.error?.message || 'Failed to load analytics');
             }
         } catch (error) {
-            console.error('Error loading analytics:', error);
             AdminComponents.alert({
                 type: 'error',
                 message: `Failed to load analytics: ${error.message}`,
@@ -545,7 +542,6 @@ const AdminAudit = {
                 autoDismiss: 3000
             });
         } catch (error) {
-            console.error('Error exporting logs:', error);
             AdminComponents.alert({
                 type: 'error',
                 message: `Failed to export logs: ${error.message}`,
@@ -579,7 +575,6 @@ const AdminAudit = {
                 autoDismiss: 3000
             });
         } catch (error) {
-            console.error('Error exporting log entry:', error);
             AdminComponents.alert({
                 type: 'error',
                 message: `Failed to export log entry: ${error.message}`,

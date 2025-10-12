@@ -196,7 +196,6 @@ if (typeof window !== 'undefined' && window.XSS_DEBUG) {
             const scan = window.XSSProtection.scanForXSS(value);
 
             if (!scan.safe) {
-                console.warn('[XSS Warning] Potentially unsafe HTML detected:', {
                     element: this.tagName,
                     threats: scan.threats,
                     html: value.substring(0, 100) + (value.length > 100 ? '...' : '')
@@ -212,9 +211,7 @@ if (typeof window !== 'undefined' && window.XSS_DEBUG) {
         }
     });
 
-    console.log('[XSS Protection] innerHTML monitoring enabled (debug mode)');
 }
 
-console.log('[XSS Protection] XSS protection utilities loaded');
 
 })();

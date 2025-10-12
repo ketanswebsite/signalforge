@@ -198,7 +198,6 @@
             const forms = document.querySelectorAll('form');
             forms.forEach(form => this.enhanceForm(form));
 
-            console.log('[A11y] Accessibility enhancements applied');
         },
 
         /**
@@ -242,7 +241,6 @@
                 this._observer = observer;
             }
 
-            console.log('[A11y] Accessibility enhancer initialized');
         },
 
         /**

@@ -134,7 +134,6 @@ const AdminSettings = {
                     break;
             }
         } catch (error) {
-            console.error('Error loading tab:', error);
             content.innerHTML = '<p class="text-center text-danger">Failed to load settings.</p>';
         }
     },

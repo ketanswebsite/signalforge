@@ -13,7 +13,6 @@ const DTIIndicators = (function() {
      */
     function EMA(data, period) {
         if (!data || !data.length || period <= 0) {
-            console.error('Invalid inputs for EMA calculation');
             return [];
         }
         
@@ -40,12 +39,10 @@ const DTIIndicators = (function() {
     function calculateDTI(high, low, r, s, u) {
         // Validate inputs
         if (!high || !low || high.length !== low.length || high.length === 0) {
-            console.error('Invalid price data for DTI calculation');
             return [];
         }
         
         if (r <= 0 || s <= 0 || u <= 0) {
-            console.error('Invalid EMA periods for DTI calculation');
             return []; 
         }
         
@@ -119,7 +116,6 @@ const DTIIndicators = (function() {
     function aggregateTo7Day(dates, high, low) {
         // Validate inputs
         if (!dates || !high || !low || dates.length !== high.length || dates.length !== low.length) {
-            console.error('Invalid inputs for 7-day aggregation');
             return [];
         }
         
@@ -219,7 +215,6 @@ const DTIIndicators = (function() {
     function calculateROC(data, period) {
         // Validate inputs
         if (!data || data.length < period || period <= 0) {
-            console.error('Invalid inputs for ROC calculation');
             return [];
         }
         
@@ -248,7 +243,6 @@ const DTIIndicators = (function() {
             high.length !== low.length || 
             high.length !== close.length || 
             high.length < period * 2) {
-            console.error('Invalid inputs for ADX calculation');
             return {
                 adx: [],
                 plusDI: [],
@@ -370,7 +364,6 @@ const DTIIndicators = (function() {
     function calculateBollingerBands(data, period = 20, stdDev = 2) {
         // Validate inputs
         if (!data || data.length < period || period <= 0) {
-            console.error('Invalid inputs for Bollinger Bands calculation');
             return {
                 upper: [],
                 middle: [],

@@ -49,7 +49,6 @@ function getMarketStatus(symbol) {
         minutes = parseInt(minuteStr, 10);
         day = new Date(year, month - 1, dayStr).getDay(); // 0 = Sunday, 6 = Saturday
     } catch (e) {
-        console.warn(`Timezone conversion failed for ${timezone}, using local time`, e);
         // Fallback to local time
         hours = now.getHours();
         minutes = now.getMinutes();

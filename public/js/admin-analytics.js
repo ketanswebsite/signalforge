@@ -108,7 +108,6 @@ const AdminAnalytics = {
                     break;
             }
         } catch (error) {
-            console.error('Error loading tab:', error);
             content.innerHTML = '<p class="text-center text-danger">Failed to load analytics data.</p>';
         }
     },
@@ -863,7 +862,6 @@ const AdminAnalytics = {
                 throw new Error(data.error?.message || 'Failed to generate report');
             }
         } catch (error) {
-            console.error('Error generating report:', error);
             AdminComponents.alert({
                 type: 'error',
                 message: `Failed to generate report: ${error.message}`,

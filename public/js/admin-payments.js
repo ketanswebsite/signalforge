@@ -200,7 +200,6 @@ const AdminPayments = {
       this.renderTransactions(data.data.items || [], data.data.pagination);
 
     } catch (error) {
-      console.error('Failed to load transactions:', error);
       document.getElementById('transactions-container').innerHTML = `
         <div class="text-center text-muted">
           <p>Failed to load transactions</p>
@@ -321,7 +320,6 @@ const AdminPayments = {
       this.renderVerificationQueue(data.data.queue || []);
 
     } catch (error) {
-      console.error('Failed to load verification queue:', error);
       document.getElementById('verification-container').innerHTML = `
         <div class="text-center text-muted">
           <p>Failed to load verification queue</p>
@@ -384,7 +382,6 @@ const AdminPayments = {
       this.renderRefunds(data.data.refunds || []);
 
     } catch (error) {
-      console.error('Failed to load refunds:', error);
       document.getElementById('refunds-container').innerHTML = `
         <div class="text-center text-muted">
           <p>Failed to load refunds</p>
@@ -470,7 +467,6 @@ const AdminPayments = {
       }
 
     } catch (error) {
-      console.error('Failed to load analytics:', error);
     }
   },
 

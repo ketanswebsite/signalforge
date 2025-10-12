@@ -18,7 +18,6 @@
                 createUnifiedNavbar(data.user);
             }
         } catch (error) {
-            console.error('Failed to load navigation:', error);
         }
     }
 
@@ -224,7 +223,6 @@
         // Update trade count if available
         updateTradeCount();
 
-        console.log('[UnifiedNavbar] Navigation initialized');
     }
 
     function setupEventListeners() {
@@ -316,7 +314,6 @@
                 }
             }
         } catch (error) {
-            console.warn('[UnifiedNavbar] Could not update trade count:', error);
         }
     }
 

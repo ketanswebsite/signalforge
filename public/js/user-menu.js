@@ -9,7 +9,6 @@
                 addUserMenu(data.user);
             }
         } catch (error) {
-            console.error('Failed to load user info:', error);
         }
     }
     

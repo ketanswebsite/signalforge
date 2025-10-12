@@ -76,7 +76,6 @@
                         updateFn();
                         processed++;
                     } catch (error) {
-                        console.error(`[ChartPerformance] Error updating chart ${chartId}:`, error);
                     }
                 } else {
                     // Re-schedule remaining updates for next frame
@@ -190,14 +189,12 @@
                 const endTime = performance.now();
                 const duration = endTime - startTime;
 
-                console.log(`[ChartPerformance] ${chartId} rendered in ${duration.toFixed(2)}ms`);
 
                 return { result, duration };
             } catch (error) {
                 const endTime = performance.now();
                 const duration = endTime - startTime;
 
-                console.error(`[ChartPerformance] ${chartId} failed after ${duration.toFixed(2)}ms:`, error);
 
                 throw error;
             }
@@ -211,7 +208,6 @@
          */
         createOptimizedChart(canvas, config) {
             if (typeof Chart === 'undefined') {
-                console.error('[ChartPerformance] Chart.js not loaded');
                 return null;
             }
 
@@ -269,5 +265,4 @@
         ChartPerformance.destroy();
     });
 
-    console.log('[ChartPerformance] Chart performance optimizer initialized');
 })();

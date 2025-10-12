@@ -66,8 +66,6 @@ const PortfolioSimulator = (function() {
      */
     async function runSimulation(startDate, displayCurrency = 'GBP', progressCallback = null) {
         try {
-            console.log('[Portfolio Simulator] Starting simulation from', startDate);
-
             // Layer 5: Initialize statistics tracking
             const stats = {
                 staleDataStocks: 0,
@@ -84,21 +82,13 @@ const PortfolioSimulator = (function() {
 
             // 1. Calculate date ranges
             const dates = calculateDateRanges(startDate);
-            console.log('[Portfolio Simulator] Data range:', dates.dataStart, 'to today');
-            console.log('[Portfolio Simulator] Buffer period:', dates.dataStart, 'to', dates.bufferEnd, '(DTI warmup)');
-            console.log('[Portfolio Simulator] Historical signals:', dates.bufferEnd, 'to', dates.simulationStart);
-            console.log('[Portfolio Simulator] Simulation period:', dates.simulationStart, 'to today');
 
             // 2. Fetch all stocks data (5 years before simulation + simulation period to today)
             if (progressCallback) progressCallback({ stage: 'fetch', message: 'Fetching stock data...', current: 0, total: 0 });
             const allStocks = await fetchAllStocksData(dates.dataStart, progressCallback);
-            console.log('[Portfolio Simulator] Fetched', allStocks.length, 'stocks');
 
             // Layer 5: Count stale data stocks
             stats.staleDataStocks = allStocks.filter(s => s.data && s.data.isStale).length;
-            if (stats.staleDataStocks > 0) {
-                console.warn(`[Data Quality] Found ${stats.staleDataStocks} stocks with stale data (> 7 days old)`);
-            }
 
             // 3. Calculate historical win rates (4.5 years of signals AFTER 6-month buffer)
             if (progressCallback) progressCallback({
@@ -108,11 +98,9 @@ const PortfolioSimulator = (function() {
                 total: allStocks.length
             });
             const stockWinRates = await calculateHistoricalWinRates(allStocks, dates, progressCallback);
-            console.log('[Portfolio Simulator] Calculated win rates for', stockWinRates.length, 'stocks');
 
             // 4. Filter high conviction stocks (>75% win rate in historical period)
             const highConvictionStocks = stockWinRates.filter(s => s.winRate > CONFIG.HIGH_CONVICTION_THRESHOLD);
-            console.log('[Portfolio Simulator] High conviction stocks:', highConvictionStocks.length);
 
             // 5. Generate signals during simulation period for high conviction stocks only
             if (progressCallback) progressCallback({
@@ -122,45 +110,15 @@ const PortfolioSimulator = (function() {
                 total: highConvictionStocks.length
             });
             const simulationSignals = await generateSimulationSignals(allStocks, highConvictionStocks, dates, progressCallback);
-            console.log('[Portfolio Simulator] Simulation signals:', simulationSignals.length);
 
             // 6. Run day-by-day portfolio simulation
             if (progressCallback) progressCallback({ stage: 'simulate', message: 'Simulating portfolio performance...' });
             const portfolio = await simulatePortfolio(simulationSignals, startDate, displayCurrency, stats);
 
-            // 7. Layer 5: Print comprehensive summary statistics
-            console.log('\n═══════════════════════════════════════════════════════════');
-            console.log('                  SIMULATION SUMMARY                       ');
-            console.log('═══════════════════════════════════════════════════════════');
-            console.log(`  Data Quality:`);
-            console.log(`    • Total stocks processed: ${allStocks.length}`);
-            console.log(`    • Stocks with stale data: ${stats.staleDataStocks} (${((stats.staleDataStocks / allStocks.length) * 100).toFixed(1)}%)`);
-            console.log(`\n  Signal Generation:`);
-            console.log(`    • Total signals generated: ${simulationSignals.length}`);
-            console.log(`    • Open trades included: ${stats.openTradesIncluded}`);
-            console.log(`\n  Signal Matching:`);
-            console.log(`    • Fuzzy matches used: ${stats.fuzzyMatches}`);
-            console.log(`    • Unmatched positions: ${stats.unmatchedPositions.length}`);
-            if (stats.unmatchedPositions.length > 0) {
-                console.log(`      Symbols: ${stats.unmatchedPositions.join(', ')}`);
-            }
-            console.log(`\n  Force-Close Events:`);
-            console.log(`    • Total force-closed: ${stats.forceClosedTotal}`);
-            console.log(`    • With real price: ${stats.forceClosedWithRealPrice} (${stats.forceClosedTotal > 0 ? ((stats.forceClosedWithRealPrice / stats.forceClosedTotal) * 100).toFixed(1) : 0}%)`);
-            console.log(`    • With 0% fallback: ${stats.forceClosedWithFallback} (${stats.forceClosedTotal > 0 ? ((stats.forceClosedWithFallback / stats.forceClosedTotal) * 100).toFixed(1) : 0}%)`);
-            console.log(`\n  Portfolio Results:`);
-            console.log(`    • Total trades: ${portfolio.closedTrades.length}`);
-            console.log(`    • Active positions: ${portfolio.positions.length}`);
-            const avgPL = portfolio.closedTrades.length > 0
-                ? portfolio.closedTrades.reduce((sum, t) => sum + t.plPercent, 0) / portfolio.closedTrades.length
-                : 0;
-            console.log(`    • Average P/L: ${avgPL.toFixed(2)}%`);
-            console.log('═══════════════════════════════════════════════════════════\n');
-
-            // 8. Report completion
+            // 7. Report completion
             if (progressCallback) progressCallback({ stage: 'complete', message: 'Simulation complete!' });
 
-            // 9. Return complete simulation results
+            // 8. Return complete simulation results with metadata
             return {
                 success: true,
                 portfolio: portfolio,
@@ -170,11 +128,48 @@ const PortfolioSimulator = (function() {
                     initialValue: calculateInitialValue(displayCurrency),
                     tradeSizes: CONFIG.TRADE_SIZES
                 },
-                stats: stats  // Include statistics in results
+                stats: stats,  // Include statistics in results
+                metadata: {
+                    // Date ranges
+                    dates: {
+                        simulationStart: dates.simulationStart,
+                        simulationEnd: dates.simulationEnd,
+                        dataStart: dates.dataStart,
+                        bufferEnd: dates.bufferEnd
+                    },
+                    // Processing stats
+                    processing: {
+                        totalStocksProcessed: allStocks.length,
+                        stocksWithWinRates: stockWinRates.length,
+                        highConvictionStocks: highConvictionStocks.length,
+                        batchSize: 50,
+                        totalBatches: Math.ceil(allStocks.length / 50)
+                    },
+                    // Signal stats
+                    signals: {
+                        totalSignalsGenerated: simulationSignals.length,
+                        openTradesIncluded: stats.openTradesIncluded,
+                        fuzzyMatches: stats.fuzzyMatches,
+                        unmatchedPositions: stats.unmatchedPositions.length,
+                        unmatchedSymbols: stats.unmatchedPositions.join(', ')
+                    },
+                    // Data quality
+                    dataQuality: {
+                        staleDataStocks: stats.staleDataStocks,
+                        staleDataPercent: ((stats.staleDataStocks / allStocks.length) * 100).toFixed(1)
+                    },
+                    // Force-close stats
+                    forceClose: {
+                        total: stats.forceClosedTotal,
+                        withRealPrice: stats.forceClosedWithRealPrice,
+                        withRealPricePercent: stats.forceClosedTotal > 0 ? ((stats.forceClosedWithRealPrice / stats.forceClosedTotal) * 100).toFixed(1) : '0',
+                        withFallback: stats.forceClosedWithFallback,
+                        withFallbackPercent: stats.forceClosedTotal > 0 ? ((stats.forceClosedWithFallback / stats.forceClosedTotal) * 100).toFixed(1) : '0'
+                    }
+                }
             };
 
         } catch (error) {
-            console.error('[Portfolio Simulator] Error:', error);
             return {
                 success: false,
                 error: error.message
@@ -232,8 +227,6 @@ const PortfolioSimulator = (function() {
         const allStocks = [];
         const endDate = new Date().toISOString().split('T')[0];
 
-        console.log(`[Portfolio Simulator] Processing ${total} stocks in batches of ${BATCH_SIZE}`);
-
         // Process in batches for parallel execution
         for (let batchStart = 0; batchStart < total; batchStart += BATCH_SIZE) {
             const batchEnd = Math.min(batchStart + BATCH_SIZE, total);
@@ -265,7 +258,7 @@ const PortfolioSimulator = (function() {
                         };
                     }
                 } catch (error) {
-                    console.warn(`[Portfolio Simulator] Failed to fetch ${stockObj.symbol}:`, error.message);
+                    // Silently skip failed fetches
                 }
                 return null;
             });
@@ -281,7 +274,6 @@ const PortfolioSimulator = (function() {
             }
         }
 
-        console.log(`[Portfolio Simulator] Successfully fetched ${allStocks.length} stocks`);
         return allStocks;
     }
 
@@ -351,7 +343,6 @@ const PortfolioSimulator = (function() {
 
             // Mark data as stale if > 7 days old
             if (daysSinceLastData > 7) {
-                console.warn(`[Data Quality] ${symbol}: Stale data (${daysSinceLastData} days old, last: ${data.dates[data.dates.length - 1]})`);
                 data.isStale = true;
                 data.daysSinceLastData = daysSinceLastData;
             } else {
@@ -372,8 +363,6 @@ const PortfolioSimulator = (function() {
         const stockWinRates = [];
         const total = allStocks.length;
         const BATCH_SIZE = 25;  // Smaller batches for CPU-intensive backtesting
-
-        console.log(`[Portfolio Simulator] Backtesting ${total} stocks in batches of ${BATCH_SIZE}`);
 
         // Process in batches for parallel execution
         for (let batchStart = 0; batchStart < total; batchStart += BATCH_SIZE) {
@@ -433,7 +422,7 @@ const PortfolioSimulator = (function() {
                         }
                     }
                 } catch (error) {
-                    console.warn(`[Portfolio Simulator] Historical backtest failed for ${stock.symbol}:`, error.message);
+                    // Silently skip failed backtests
                 }
                 return null;
             });
@@ -449,7 +438,6 @@ const PortfolioSimulator = (function() {
             }
         }
 
-        console.log(`[Portfolio Simulator] Calculated win rates for ${stockWinRates.length} stocks`);
         return stockWinRates;
     }
 
@@ -481,8 +469,6 @@ const PortfolioSimulator = (function() {
         // Filter to only high conviction stocks first (more efficient)
         const stocksToProcess = allStocks.filter(s => highConvictionSymbols.has(s.symbol));
         const total = stocksToProcess.length;
-
-        console.log(`[Portfolio Simulator] Generating signals for ${total} high conviction stocks in batches of ${BATCH_SIZE}`);
 
         // Process in batches for parallel execution
         for (let batchStart = 0; batchStart < total; batchStart += BATCH_SIZE) {
@@ -541,16 +527,11 @@ const PortfolioSimulator = (function() {
                                     prev7DayDTI: trade.prev7DayDTI,
                                     entry7DayDTI: trade.entry7DayDTI
                                 });
-
-                                // Log when including an open trade
-                                if (trade.isOpen) {
-                                    console.log(`[Signal Gen] Including open trade: ${stock.symbol} entry ${trade.entryDate} (incomplete data)`);
-                                }
                             }
                         }
                     }
                 } catch (error) {
-                    console.warn(`[Portfolio Simulator] Signal generation failed for ${stock.symbol}:`, error.message);
+                    // Silently skip failed signal generation
                 }
                 return stockSignals;
             });
@@ -563,8 +544,6 @@ const PortfolioSimulator = (function() {
                 signals.push(...stockSignals);
             }
         }
-
-        console.log(`[Portfolio Simulator] Generated ${signals.length} signals from high conviction stocks`);
 
         // Sort by entry date (FIFO)
         return signals.sort((a, b) => new Date(a.entryDate) - new Date(b.entryDate));
@@ -737,11 +716,9 @@ const PortfolioSimulator = (function() {
                 throw new Error('No valid price found');
             }
 
-            console.log(`[Price Fetch] ${symbol} at ${targetDate}: ${closestPrice} (±${closestDateDiff.toFixed(0)} days)`);
             return closestPrice;
 
         } catch (error) {
-            console.error(`[Price Fetch] Failed for ${symbol} at ${targetDate}:`, error.message);
             throw error;
         }
     }
@@ -777,12 +754,6 @@ const PortfolioSimulator = (function() {
         });
 
         if (signal) {
-            const posEntryDate = new Date(position.entryDate);
-            const sigEntryDate = new Date(signal.entryDate);
-            const daysDiff = Math.abs((posEntryDate - sigEntryDate) / (24 * 60 * 60 * 1000));
-            const priceDiff = Math.abs((signal.entryPrice - position.entryPrice) / position.entryPrice) * 100;
-
-            console.warn(`[Fuzzy Match] ${position.symbol}: Matched with ±${daysDiff} days, ±${priceDiff.toFixed(2)}% price`);
             return { signal, matchType: 'fuzzy' };
         }
 
@@ -809,8 +780,6 @@ const PortfolioSimulator = (function() {
             // SAFETY CHECK: Force-close if held >= 30 days
             // Layer 4: Fetch REAL price to calculate actual P/L (not 0%)
             if (holdingDays >= CONFIG.DTI_PARAMS.maxHoldingDays) {
-                console.warn(`[Force Close] ${position.symbol} after ${holdingDays} days - fetching real price...`);
-
                 let exitPrice = position.entryPrice;  // Fallback: assume breakeven
                 let plPercent = 0;                     // Fallback: assume no gain/loss
                 let exitReason = 'Max Days (Force Close - No Price)';
@@ -821,13 +790,10 @@ const PortfolioSimulator = (function() {
                     plPercent = ((exitPrice - position.entryPrice) / position.entryPrice) * 100;
                     exitReason = 'Max Days (Calculated)';
 
-                    console.log(`[Force Close] ${position.symbol}: Real P/L ${plPercent.toFixed(2)}% (entry: ${position.entryPrice}, exit: ${exitPrice})`);
-
                     // Layer 5: Track successful real price fetch
                     if (stats) stats.forceClosedWithRealPrice++;
 
                 } catch (error) {
-                    console.error(`[Force Close] ${position.symbol}: Failed to fetch price, using 0% P/L fallback`);
                     // Keep default values (0% P/L)
 
                     // Layer 5: Track fallback to 0%
@@ -907,15 +873,10 @@ const PortfolioSimulator = (function() {
                     }
 
                     toRemove.push(i);
-
-                    const matchInfo = matchResult.matchType === 'fuzzy' ? ' [FUZZY]' : '';
-                    console.log(`[Portfolio] Closing ${position.symbol} on ${currentDate} (signal exit: ${signal.exitDate}, P/L: ${signal.plPercent.toFixed(2)}%)${matchInfo}`);
                 }
             } else {
-                // Layer 3 & 5: Log and track when no matching signal found
-                if (holdingDays >= 20) {  // Only log if getting close to force-close
-                    console.warn(`[No Signal Match] ${position.symbol}: No matching signal found (held ${holdingDays} days, entry: ${position.entryDate})`);
-
+                // Layer 3 & 5: Track when no matching signal found
+                if (holdingDays >= 20) {  // Only track if getting close to force-close
                     // Track unmatched position (avoid duplicates)
                     if (stats && !stats.unmatchedPositions.includes(position.symbol)) {
                         stats.unmatchedPositions.push(position.symbol);
@@ -1000,8 +961,6 @@ const PortfolioSimulator = (function() {
                 entry7DayDTI: signal.entry7DayDTI,
                 historicalSignalCount: signal.historicalSignalCount
             };
-
-            console.log(`[Portfolio] Entering ${signal.symbol} with size ${dynamicSize.toFixed(2)} ${CONFIG.TRADE_SIZES[market].currency}`);
 
             portfolio.positions.push(position);
             positionCounts[market]++;

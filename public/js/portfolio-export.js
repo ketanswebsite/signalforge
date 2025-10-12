@@ -31,7 +31,6 @@ const PortfolioExport = (function() {
         link.click();
         document.body.removeChild(link);
 
-        console.log('[Portfolio Export] Exported', trades.length, 'trades to CSV');
     }
 
     /**

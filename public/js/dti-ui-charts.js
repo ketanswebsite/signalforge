@@ -53,7 +53,6 @@ DTIUI.Charts = (function() {
         
         // Validate data arrays have same length
         if (dates.length !== prices.length || dates.length !== dti.length) {
-            console.error('Chart data arrays have different lengths:', {
                 dates: dates.length,
                 prices: prices.length,
                 dti: dti.length
@@ -91,7 +90,6 @@ DTIUI.Charts = (function() {
             tradeProfitLoss = markers.tradeProfitLoss;
             tradeMetadata = markers.tradeMetadata;
         } catch (error) {
-            console.warn('Backtest failed, continuing without trade markers:', error);
         }
         
         // Create horizontal line at zero for DTI and entry threshold line
@@ -452,7 +450,6 @@ DTIUI.Charts = (function() {
         // Create Enhanced Price Chart with dynamic background and professional styling
         const priceCanvasElement = document.getElementById('price-chart');
         if (!priceCanvasElement) {
-            console.error('Price chart canvas not found');
             return;
         }
         const priceCtx = priceCanvasElement.getContext('2d');
@@ -564,7 +561,6 @@ DTIUI.Charts = (function() {
                 }
             } else {
                 // Fall back to line chart if OHLC data is invalid
-                console.warn('Invalid OHLC data, falling back to line chart');
                 DTIBacktester.chartType = 'line';
                 // Recursive call will use line chart
                 return createCharts(dates, prices, dti, sevenDayDTIData, ohlcData);
@@ -725,14 +721,12 @@ DTIUI.Charts = (function() {
             }
         });
         } catch (error) {
-            console.error('Failed to create price chart:', error);
             throw error;
         }
         
         // Create Enhanced Daily DTI Chart
         const dtiCanvasElement = document.getElementById('dti-chart');
         if (!dtiCanvasElement) {
-            console.error('DTI chart canvas not found');
             return;
         }
         const dtiCtx = dtiCanvasElement.getContext('2d');
@@ -810,7 +804,6 @@ DTIUI.Charts = (function() {
         // Create Enhanced 7-Day DTI Chart
         const weeklyCanvasElement = document.getElementById('weekly-dti-chart');
         if (!weeklyCanvasElement) {
-            console.error('Weekly DTI chart canvas not found');
             return;
         }
         const sevenDayDTICtx = weeklyCanvasElement.getContext('2d');
@@ -1200,7 +1193,6 @@ DTIUI.Charts = (function() {
             if (DTIUI.TradeDisplay && typeof DTIUI.TradeDisplay.displayStatistics === 'function') {
                 return DTIUI.TradeDisplay.displayStatistics(trades);
             } else {
-                console.warn("TradeDisplay.displayStatistics is not available");
                 // Try fallback to original statistics element if it exists
                 const statsElement = document.getElementById('statistics');
                 if (statsElement) {
@@ -1237,7 +1229,6 @@ if (!DTIUI.displayTrades) {
         if (DTIUI.TradeDisplay && typeof DTIUI.TradeDisplay.displayTrades === 'function') {
             return DTIUI.TradeDisplay.displayTrades(trades);
         } else {
-            console.warn("TradeDisplay.displayTrades is not available");
             // Try fallback to original trade table if it exists
             const tradesTable = document.getElementById('trades-table');
             if (tradesTable) {
@@ -1347,7 +1338,6 @@ if (!DTIUI.displayTrades) {
             } else if (DTIBacktester.ohlcData) {
                 // Fallback to old method if chartData not available
                 const { dates, close, open, high, low } = DTIBacktester.ohlcData;
-                console.warn('Using fallback chart recreation method - may have incomplete data');
                 
                 // Try to construct minimal sevenDayDTIData
                 const sevenDayDTIData = {

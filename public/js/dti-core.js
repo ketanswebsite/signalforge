@@ -45,7 +45,6 @@ const DTIBacktester = {
                 
                 return date.toLocaleDateString();
             } catch (error) {
-                console.warn("Error formatting date:", error, dateInput);
                 return String(dateInput); // Fallback to string representation
             }
         },
@@ -223,12 +222,10 @@ const DTIBacktester = {
                     if (typeof DTIData !== 'undefined' && DTIData.processCSV) {
                         DTIData.processCSV(results);
                     } else {
-                        console.error("DTIData module not loaded");
                         this.utils.showNotification('Error: Data processing module not loaded', 'error');
                     }
                 },
                 error: function(error) {
-                    console.error('Error parsing CSV:', error);
                     DTIBacktester.utils.showNotification('Error parsing CSV file: ' + error.message, 'error');
                 }
             });
@@ -295,12 +292,10 @@ const DTIBacktester = {
                             if (typeof DTIData !== 'undefined' && DTIData.processCSV) {
                                 DTIData.processCSV(results);
                             } else {
-                                console.error("DTIData module not loaded");
                                 DTIBacktester.utils.showNotification('Error: Data processing module not loaded', 'error');
                             }
                         },
                         error: function(error) {
-                            console.error('Error parsing CSV:', error);
                             DTIBacktester.utils.showNotification('Error parsing CSV file: ' + error.message, 'error');
                         }
                     });
@@ -368,7 +363,6 @@ const DTIBacktester = {
                         badge.textContent = activeTrades.length;
                         badge.style.display = activeTrades.length > 0 ? 'inline-flex' : 'none';
                     } catch (e) {
-                        console.error('Error parsing trades data:', e);
                         badge.style.display = 'none';
                     }
                 } else {
@@ -376,7 +370,6 @@ const DTIBacktester = {
                 }
             }
         } catch (error) {
-            console.error('Error updating active trades count:', error);
             badge.style.display = 'none';
         }
     }

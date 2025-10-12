@@ -12,8 +12,6 @@ const PortfolioUI = (function() {
      * Initialize UI
      */
     function init() {
-        console.log('[Portfolio UI] Initializing...');
-
         // Set default date (1 year ago)
         const oneYearAgo = new Date();
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
@@ -34,8 +32,6 @@ const PortfolioUI = (function() {
                 switchAnalyticsTab(this.dataset.tab);
             });
         });
-
-        console.log('[Portfolio UI] Initialized');
     }
 
     /**
@@ -113,7 +109,6 @@ const PortfolioUI = (function() {
             displayResults(result, analytics, currency);
 
         } catch (error) {
-            console.error('[Portfolio UI] Simulation error:', error);
             statusDiv.innerHTML = `❌ Simulation failed: ${error.message}`;
             statusDiv.className = 'simulation-status error';
             showNotification('Simulation failed: ' + error.message, 'error');
@@ -135,6 +130,7 @@ const PortfolioUI = (function() {
     function displayResults(result, analytics, currency) {
         // Show all result sections
         document.getElementById('portfolio-summary').style.display = 'block';
+        document.getElementById('simulation-details-card').style.display = 'block';
         document.getElementById('portfolio-chart-card').style.display = 'block';
         document.getElementById('analytics-dashboard').style.display = 'block';
         document.getElementById('active-trades-card').style.display = 'block';
@@ -142,6 +138,9 @@ const PortfolioUI = (function() {
 
         // Update summary metrics
         updateSummaryMetrics(result, analytics, currency);
+
+        // Update simulation details
+        updateSimulationDetails(result);
 
         // Initialize charts
         window.PortfolioCharts.initializeCharts(result.portfolio, analytics, currency);
@@ -174,6 +173,41 @@ const PortfolioUI = (function() {
         document.getElementById('win-rate').textContent = `${analytics.winRate.toFixed(1)}%`;
         document.getElementById('total-trades').textContent = analytics.totalTrades;
         document.getElementById('max-drawdown').textContent = `-${analytics.maxDrawdown.toFixed(2)}%`;
+    }
+
+    /**
+     * Update simulation details section
+     */
+    function updateSimulationDetails(result) {
+        if (!result.metadata) return;
+
+        const meta = result.metadata;
+
+        // Date ranges
+        document.getElementById('detail-sim-start').textContent = formatDate(meta.dates.simulationStart);
+        document.getElementById('detail-data-range').textContent = `${formatDate(meta.dates.dataStart)} to ${formatDate(meta.dates.simulationEnd)}`;
+        document.getElementById('detail-buffer-period').textContent = `${formatDate(meta.dates.dataStart)} to ${formatDate(meta.dates.bufferEnd)}`;
+        document.getElementById('detail-historical-signals').textContent = `${formatDate(meta.dates.bufferEnd)} to ${formatDate(meta.dates.simulationStart)}`;
+        document.getElementById('detail-simulation-period').textContent = `${formatDate(meta.dates.simulationStart)} to ${formatDate(meta.dates.simulationEnd)}`;
+
+        // Data quality
+        document.getElementById('detail-stocks-processed').textContent = meta.processing.totalStocksProcessed;
+        document.getElementById('detail-high-conviction').textContent = meta.processing.highConvictionStocks;
+        document.getElementById('detail-stale-data').textContent = `${meta.dataQuality.staleDataStocks} (${meta.dataQuality.staleDataPercent}%)`;
+        document.getElementById('detail-batches').textContent = `${meta.processing.totalBatches} batches of ${meta.processing.batchSize}`;
+
+        // Signal processing
+        document.getElementById('detail-signals-generated').textContent = meta.signals.totalSignalsGenerated;
+        document.getElementById('detail-open-trades').textContent = meta.signals.openTradesIncluded;
+        document.getElementById('detail-fuzzy-matches').textContent = meta.signals.fuzzyMatches;
+        document.getElementById('detail-unmatched').textContent = meta.signals.unmatchedPositions > 0
+            ? `${meta.signals.unmatchedPositions} (${meta.signals.unmatchedSymbols})`
+            : '0';
+
+        // Force-close events
+        document.getElementById('detail-force-closed-total').textContent = meta.forceClose.total;
+        document.getElementById('detail-force-closed-real').textContent = `${meta.forceClose.withRealPrice} (${meta.forceClose.withRealPricePercent}%)`;
+        document.getElementById('detail-force-closed-fallback').textContent = `${meta.forceClose.withFallback} (${meta.forceClose.withFallbackPercent}%)`;
     }
 
     /**

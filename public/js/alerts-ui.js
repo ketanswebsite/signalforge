@@ -25,7 +25,6 @@ const AlertsUI = (function() {
             if (response.ok) {
                 alertPreferences = await response.json();
             } else {
-                console.warn('No alert preferences found, using defaults');
                 alertPreferences = {
                     telegram_enabled: false,
                     telegram_chat_id: '',
@@ -39,7 +38,6 @@ const AlertsUI = (function() {
                 };
             }
         } catch (error) {
-            console.error('Failed to load alert preferences:', error);
             // Use defaults on error
             alertPreferences = {
                 telegram_enabled: false,
@@ -60,7 +58,6 @@ const AlertsUI = (function() {
     function addTelegramButton() {
         // Buttons are now in the unified navbar at the top of the page
         // This function is kept for backwards compatibility but does nothing
-        console.log('[AlertsUI] Telegram buttons are now in unified navbar');
     }
     
     // Add telegram subscription button to mobile navigation drawer
@@ -68,7 +65,6 @@ const AlertsUI = (function() {
     function addTelegramButtonToMobileNav() {
         // Mobile Telegram link is now in the unified navbar mobile drawer
         // This function is kept for backwards compatibility but does nothing
-        console.log('[AlertsUI] Mobile Telegram button is now in unified navbar');
     }
     
     // Show instructions if Telegram isn't installed
@@ -395,7 +391,6 @@ const AlertsUI = (function() {
             modal.style.display = 'flex';
             loadPreferences(); // Reload preferences when opening
         } else {
-            console.error('AlertsUI: Modal not found! Creating it now...');
             createAlertsModal();
             // Try again
             const newModal = document.getElementById('alerts-modal');

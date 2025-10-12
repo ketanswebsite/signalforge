@@ -48,7 +48,6 @@ function displayBuyingOpportunities() {
     const opportunitiesContainer = document.getElementById('buying-opportunities');
     
     if (!opportunitiesContainer) {
-        console.error("Opportunities container not found in DOM");
         return;
     }
     
@@ -438,7 +437,6 @@ function displayBuyingOpportunities() {
                                 }
                                 
                             } catch (error) {
-                                console.error('Error loading stock data:', error);
                                 DTIBacktester.utils.showNotification(`Error: ${error.message}`, 'error');
                             }
                         }
@@ -472,7 +470,6 @@ function displayBuyingOpportunities() {
                         };
                         window.openTradeModal(modalData);
                     } else {
-                        console.error('Trade modal function not found. Make sure trade-modal.js is loaded.');
                         DTIBacktester.utils.showNotification('Trade entry is not available. Please make sure all required scripts are loaded.', 'error');
                     }
                 }

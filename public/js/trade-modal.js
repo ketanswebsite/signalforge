@@ -505,7 +505,6 @@ function calculateTradeDetails() {
                 // Show detailed error message to help diagnose the issue
                 const errorMessage = error.message || 'Unknown error occurred';
                 showNotification(`Error adding trade: ${errorMessage}`, 'error');
-                console.error('Error adding trade:', error);
                 
                 // Reset button state
                 if (confirmButton) {
@@ -520,7 +519,6 @@ function calculateTradeDetails() {
             }
         } else {
             showNotification('Trade management system is not initialized properly.', 'error');
-            console.error('addNewTrade function not found');
             
             // Reset button state
             if (confirmButton) {
@@ -576,7 +574,6 @@ function calculateTradeDetails() {
             
             return dateObj.toLocaleDateString();
         } catch (error) {
-            console.warn("Error formatting date:", error, date);
             return String(date); // Fallback to string representation
         }
     }

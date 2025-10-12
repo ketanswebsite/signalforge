@@ -64,7 +64,6 @@ function renderActiveTrades() {
     // Get the template
     const template = document.getElementById('active-trade-template');
     if (!template) {
-        console.error("Active trade card template not found");
         return;
     }
     
@@ -206,15 +205,12 @@ function renderActiveTrades() {
                         if (index === 0) {
                         }
                     } else {
-                        console.error(`Invalid entry date for trade ${trade.symbol}:`, trade.entryDate);
                         holdingDaysText = '0 days';
                     }
                 } catch (error) {
-                    console.error(`Error calculating holding days for trade ${trade.symbol}:`, error);
                     holdingDaysText = '0 days';
                 }
             } else {
-                console.warn(`No entry date for trade ${trade.symbol}`);
                 holdingDaysText = '0 days';
             }
             
@@ -228,7 +224,6 @@ function renderActiveTrades() {
                 if (index === 0) {
                 }
             } else {
-                console.error('Could not find holding-days element in card for trade:', trade.symbol);
             }
             
             const squareOffDateElement = card.querySelector('.square-off-date');
@@ -245,7 +240,6 @@ function renderActiveTrades() {
                     const currentDate = new Date();
                     daysRemaining = Math.max(0, Math.floor((squareOffDate - currentDate) / (1000 * 60 * 60 * 24)));
                 } else {
-                    console.error(`Invalid square off date for trade ${trade.symbol}:`, trade.squareOffDate);
                 }
             }
             
@@ -294,7 +288,6 @@ function renderActiveTrades() {
                 card.style.transform = 'translateY(0)';
             }, 50 * index); // Stagger the animations
         } catch (error) {
-            console.error("Error rendering trade card:", error, trade);
             TradeCore.showNotification('Error displaying a trade card', 'error');
         }
     });
@@ -601,7 +594,6 @@ function renderActiveTrades() {
                 <td><span class="exit-tag ${exitTagClass}">${trade.exitReason || 'Unknown'}</span></td>
             `;
         } catch (error) {
-            console.error("Error creating trade history row:", error, trade);
             row.innerHTML = '<td colspan="8">Error displaying trade</td>';
         }
         

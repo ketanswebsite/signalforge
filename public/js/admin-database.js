@@ -117,7 +117,6 @@ const AdminDatabase = {
                     break;
             }
         } catch (error) {
-            console.error('Error loading tab:', error);
             content.innerHTML = '<p class="text-center text-danger">Failed to load database tools.</p>';
         }
     },
@@ -709,7 +708,6 @@ const AdminDatabase = {
             this.addToQueryHistory(query, data.data);
 
         } catch (error) {
-            console.error('Error executing query:', error);
             AdminComponents.alert({
                 type: 'error',
                 message: `Query failed: ${error.message}`,

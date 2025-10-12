@@ -126,7 +126,6 @@ const TradeCore = (function() {
             
             return date.toLocaleDateString();
         } catch (error) {
-            console.warn("Error formatting date:", error, dateInput);
             return String(dateInput); // Fallback to string representation
         }
     }
@@ -175,7 +174,6 @@ const TradeCore = (function() {
             }
             
         } catch (error) {
-            console.error('Error initializing TradeCore:', error);
             showNotification('Error initializing trade system: ' + error.message, 'error');
         }
     }
@@ -214,7 +212,6 @@ const TradeCore = (function() {
                         trade.squareOffDate = new Date(trade.squareOffDate);
                         // Validate the parsed date
                         if (isNaN(trade.squareOffDate.getTime())) {
-                            console.warn(`Invalid squareOffDate for ${trade.symbol}, using default`);
                             trade.squareOffDate = new Date(trade.entryDate);
                             trade.squareOffDate.setDate(trade.squareOffDate.getDate() + 30);
                         }
@@ -231,7 +228,6 @@ const TradeCore = (function() {
                         trade.exitDate = new Date(trade.exitDate);
                     }
                 } catch (dateError) {
-                    console.warn("Error parsing date for trade:", dateError, trade);
                     // Use fallback values if date parsing fails
                     if (!(trade.entryDate instanceof Date)) trade.entryDate = new Date();
                     if (!(trade.squareOffDate instanceof Date)) {
@@ -396,7 +392,6 @@ const TradeCore = (function() {
                 try {
                     await updatePrices();
                 } catch (error) {
-                    console.warn('Initial price update failed:', error);
                 }
             }
             
@@ -422,7 +417,6 @@ const TradeCore = (function() {
                 }
             }
         } catch (error) {
-            console.error('Error loading trades from API:', error);
             showNotification('Error loading trades from database. ' + error.message, 'error');
             
             // Initialize empty arrays if there was an error
@@ -489,7 +483,6 @@ const TradeCore = (function() {
             
             return true;
         } catch (error) {
-            console.error('Error adding trade:', error);
             showNotification('Error adding trade: ' + error.message, 'error');
             return false;
         }
@@ -530,7 +523,6 @@ const TradeCore = (function() {
             
             return true;
         } catch (error) {
-            console.error('Error updating trade:', error);
             showNotification('Error updating trade: ' + error.message, 'error');
             return false;
         }
@@ -584,7 +576,6 @@ const TradeCore = (function() {
             
             return success;
         } catch (error) {
-            console.error('Error closing trade:', error);
             showNotification('Error closing trade: ' + error.message, 'error');
             return false;
         }
@@ -618,7 +609,6 @@ const TradeCore = (function() {
             
             return true;
         } catch (error) {
-            console.error('Error deleting trade:', error);
             showNotification('Error deleting trade: ' + error.message, 'error');
             return false;
         }
@@ -664,7 +654,6 @@ const TradeCore = (function() {
             }
             
         } catch (error) {
-            console.warn('Error refreshing UI:', error);
         }
     }
     
@@ -693,7 +682,6 @@ const TradeCore = (function() {
             
             return true;
         } catch (error) {
-            console.error('Error deleting all trades:', error);
             showNotification('Error deleting all trades: ' + error.message, 'error');
             return false;
         }
@@ -852,7 +840,6 @@ const TradeCore = (function() {
             minutes = marketTime.getMinutes();
             day = marketTime.getDay(); // 0 = Sunday, 6 = Saturday
         } catch (e) {
-            console.warn(`Timezone conversion failed for ${timezone}, using local time`, e);
             // Fallback to local time
             marketTime = now;
             hours = now.getHours();
@@ -1049,7 +1036,6 @@ const TradeCore = (function() {
             document.dispatchEvent(event);
             
         } catch (error) {
-            console.error('Error fetching initial prices:', error);
         }
     }
     
@@ -1115,7 +1101,6 @@ const TradeCore = (function() {
                 }
             }
         } catch (error) {
-            console.error('Error in batch price update:', error);
         } finally {
             isUpdating = false;
         }
@@ -1165,7 +1150,6 @@ const TradeCore = (function() {
                 await new Promise(resolve => setTimeout(resolve, 500 * (retryCount + 1)));
                 return updateSingleTradePrice(trade, retryCount + 1);
             } else {
-                console.error(`Failed to update ${trade.symbol} after ${MAX_RETRIES} retries:`, error.message);
             }
         }
     }
@@ -1397,7 +1381,6 @@ const TradeCore = (function() {
             // Use investmentAmount if available, otherwise calculate
             const investment = trade.investmentAmount || (trade.entryPrice * trade.shares);
             if (!investment || investment === 0) {
-                console.warn('Invalid investment amount for trade:', trade);
                 return 0;
             }
             const profitPercent = (trade.profit / investment) * 100;
@@ -1436,7 +1419,6 @@ const TradeCore = (function() {
         profitPercentages.forEach(profitPercent => {
             // Skip invalid profit percentages
             if (!isFinite(profitPercent)) {
-                console.warn('Invalid profit percentage:', profitPercent);
                 return;
             }
             
@@ -1450,7 +1432,6 @@ const TradeCore = (function() {
                 counts[binIndex]++;
                 bins[binIndex].count++;
             } else {
-                console.warn('Invalid bin index:', binIndex, 'for profit:', profitPercent);
             }
         });
         
@@ -2192,7 +2173,6 @@ const TradeCore = (function() {
                     
                     // Debug logging for UK stocks - commented out to reduce console noise
                     // if (trade.symbol && trade.symbol.endsWith('.L')) {
-                    //     console.log(`UK Stock ${trade.symbol}:`, {
                     //         entryPrice: trade.entryPrice,
                     //         currentPrice: trade.currentPrice,
                     //         shares: trade.shares,
@@ -2283,7 +2263,6 @@ const TradeCore = (function() {
             
             // Debug logging for UK currency stats - commented out to reduce console noise
             // if (currency === '£') {
-            //     console.log(`UK Currency Stats:`, {
             //         currency: currency,
             //         totalInvested: s.totalInvested,
             //         currentValue: s.currentValue,
@@ -2392,7 +2371,6 @@ window.addNewTrade = async function(tradeData) {
         }
         return null;
     } catch (error) {
-        console.error('Error in addNewTrade wrapper:', error);
         throw error; // Re-throw to let the caller handle it
     }
 };
