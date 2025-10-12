@@ -408,7 +408,7 @@ class CheckoutPage {
 
             // Confirm payment with Stripe
             const { error, paymentIntent } = await this.stripe.confirmCardPayment(
-                data.clientSecret,
+                data.data.clientSecret,
                 {
                     payment_method: {
                         card: this.cardElement,
@@ -425,7 +425,7 @@ class CheckoutPage {
 
             if (paymentIntent.status === 'succeeded') {
                 // Redirect to success page
-                window.location.href = `/checkout-success.html?subscription_id=${data.subscriptionId}`;
+                window.location.href = `/checkout-success.html?subscription_id=${data.data.subscriptionId}`;
             }
 
         } catch (error) {
