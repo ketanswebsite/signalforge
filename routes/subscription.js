@@ -65,9 +65,9 @@ router.get('/subscription-plans', async (req, res) => {
         plan_code,
         region,
         currency,
-        monthly_price,
-        quarterly_price,
-        annual_price,
+        price_monthly,
+        price_quarterly,
+        price_yearly,
         trial_days,
         features,
         is_active
@@ -80,7 +80,7 @@ router.get('/subscription-plans', async (req, res) => {
           WHEN plan_code LIKE '%PRO%' THEN 3
           ELSE 4
         END,
-        monthly_price ASC
+        price_monthly ASC
     `);
 
     // Group plans by region
@@ -124,9 +124,9 @@ router.get('/subscription-plans/:planCode', async (req, res) => {
         plan_code,
         region,
         currency,
-        monthly_price,
-        quarterly_price,
-        annual_price,
+        price_monthly,
+        price_quarterly,
+        price_yearly,
         trial_days,
         features,
         is_active,
@@ -215,8 +215,6 @@ router.get('/user/payments', ensureAuthenticated, async (req, res) => {
         pt.currency,
         pt.status,
         pt.payment_date,
-        pt.refund_amount,
-        pt.refund_date,
         us.plan_name
       FROM payment_transactions pt
       LEFT JOIN user_subscriptions us ON pt.subscription_id = us.id

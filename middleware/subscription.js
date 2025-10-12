@@ -34,11 +34,11 @@ async function getUserSubscriptionStatus(userEmail) {
         u.complimentary_until,
         u.complimentary_reason,
         u.granted_by,
-        us.subscription_status as current_status,
+        us.status as current_status,
         us.trial_end_date,
-        us.subscription_end_date as active_sub_end_date
+        us.end_date as active_sub_end_date
       FROM users u
-      LEFT JOIN user_subscriptions us ON u.email = us.user_id
+      LEFT JOIN user_subscriptions us ON u.email = us.user_email
       WHERE u.email = $1
       ORDER BY us.created_at DESC
       LIMIT 1
