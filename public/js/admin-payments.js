@@ -53,14 +53,14 @@ const AdminPayments = {
           <div class="admin-card-header flex-between">
             <h2 class="admin-card-title">Payment Transactions</h2>
             <div class="flex gap-2">
-              <select class="form-control" id="payment-status-filter" onchange="AdminPayments.handleStatusFilter(event)" style="width: 150px;">
+              <select class="form-control" id="payment-status-filter" onchange="AdminPayments.handleStatusFilter(event)">
                 <option value="all" ${this.filterStatus === 'all' ? 'selected' : ''}>All Status</option>
                 <option value="completed" ${this.filterStatus === 'completed' ? 'selected' : ''}>Completed</option>
                 <option value="pending" ${this.filterStatus === 'pending' ? 'selected' : ''}>Pending</option>
                 <option value="failed" ${this.filterStatus === 'failed' ? 'selected' : ''}>Failed</option>
                 <option value="refunded" ${this.filterStatus === 'refunded' ? 'selected' : ''}>Refunded</option>
               </select>
-              <select class="form-control" id="payment-provider-filter" onchange="AdminPayments.handleProviderFilter(event)" style="width: 150px;">
+              <select class="form-control" id="payment-provider-filter" onchange="AdminPayments.handleProviderFilter(event)">
                 <option value="all" ${this.filterProvider === 'all' ? 'selected' : ''}>All Providers</option>
                 <option value="stripe" ${this.filterProvider === 'stripe' ? 'selected' : ''}>Stripe</option>
                 <option value="paypal" ${this.filterProvider === 'paypal' ? 'selected' : ''}>PayPal</option>

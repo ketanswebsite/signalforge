@@ -190,7 +190,7 @@ if (period === '5y') {
                     Fetching data for ${symbol}...
                 </div>
             `;
-            statusElement.style.display = 'block';
+            statusElement.classList.remove('hidden');
         }
 
         // Use AbortManager for cancellable requests
@@ -237,10 +237,10 @@ if (period === '5y') {
                     Data fetched successfully for ${symbol}
                 </div>
             `;
-            
+
             // Hide after 3 seconds
             setTimeout(() => {
-                statusElement.style.display = 'none';
+                statusElement.classList.add('hidden');
             }, 3000);
         }
         
@@ -602,7 +602,7 @@ async function fetchCurrentQuote(symbol) {
                 <div>Processing ${scanDisplayName} (${stockList.length} stocks): 0/${stockList.length}</div>
                 <div class="progress-bar"><div class="progress" style="width: 0%"></div></div>
             `;
-            statusDiv.style.display = 'block';
+            statusDiv.classList.remove('hidden');
         }
         
         // Clear previous active trade opportunities
@@ -619,7 +619,7 @@ async function fetchCurrentQuote(symbol) {
                         statusDiv.innerHTML = `
                             <div>Processing ${scanDisplayName} (${stockList.length} stocks): ${processed}/${total}</div>
                             <div class="progress-bar"><div class="progress" style="width: ${percentComplete}%"></div></div>
-                            <div style="margin-top: 8px; font-size: 12px;">
+                            <div>
                                 ${successes} succeeded, ${errors} failed, ${processed} processed
                             </div>
                         `;
@@ -656,13 +656,13 @@ async function fetchCurrentQuote(symbol) {
                             Completed processing ${processedData.length} of ${stockList.length} stocks
                         </div>
                         <div class="progress-bar"><div class="progress" style="width: 100%"></div></div>
-                        <div style="margin-top: 8px; font-size: 12px;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                        <div>
+                            <div>
                                 <span>${processedData.length} stocks processed successfully</span>
                                 <span>${DTIBacktester.activeTradeOpportunities.length} active trading opportunities found</span>
                             </div>
                             ${totalSkipped > 0 ? `
-                            <div style="color: #888; font-size: 11px;">
+                            <div>
                                 ${totalSkipped} stocks skipped: ${failedReport.summary.blocklisted} blocklisted, ${failedReport.summary.failed_500} likely delisted/renamed
                                 ${failedReport.summary.failed_other > 0 ? `, ${failedReport.summary.failed_other} other errors` : ''}
                             </div>
@@ -746,9 +746,9 @@ async function fetchCurrentQuote(symbol) {
             
             // Display CSV format info
             const csvInfoElement = document.getElementById('csv-info');
-            csvInfoElement.style.display = 'block';
+            csvInfoElement.classList.remove('hidden');
             csvInfoElement.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="csv-format-info">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                     </svg>

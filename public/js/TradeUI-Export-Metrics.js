@@ -639,7 +639,7 @@ window.TradeUIModules.export = (function() {
                                 <td><span class="exit-tag ${reasonClass}">${reason.reason}</span></td>
                                 <td>${reason.count}</td>
                                 <td>${reason.percentage.toFixed(1)}%</td>
-                                <td style="color: ${reason.avgPL >= 0 ? '#10b981' : '#ef4444'}">${reason.avgPL.toFixed(2)}%</td>
+                                <td class="${reason.avgPL >= 0 ? 'positive' : 'negative'}">${reason.avgPL.toFixed(2)}%</td>
                                 <td>${reason.winRate.toFixed(1)}%</td>
                             </tr>
                         `;
@@ -811,6 +811,19 @@ window.TradeUIModules.export = (function() {
                                 display: grid;
                                 grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
                                 gap: 20px;
+                            }
+                            .metrics-grid-spaced {
+                                margin-top: 20px;
+                            }
+                            .symbol-subdued {
+                                font-size: 12px;
+                                color: #6b7280;
+                            }
+                            .trade-summary-note {
+                                text-align: center;
+                                font-style: italic;
+                                color: #6b7280;
+                                margin-top: 15px;
                             }
                             .metric-card {
                                 border-radius: 6px;
@@ -1097,8 +1110,8 @@ window.TradeUIModules.export = (function() {
                                     <div class="metric-desc">Return normalized to yearly basis</div>
                                 </div>
                             </div>
-                            
-                            <div class="metrics-grid" style="margin-top: 20px;">
+
+                            <div class="metrics-grid metrics-grid-spaced">
                                 <div class="metric-card ${streakInfo.currentStreak.type === 'win' ? 'success' : streakInfo.currentStreak.type === 'loss' ? 'danger' : 'neutral'}">
                                     <div class="metric-title">Current Streak</div>
                                     <div class="metric-value">${streakInfo.currentStreak.count} ${streakInfo.currentStreak.type === 'win' ? 'Wins' : 'Losses'}</div>
@@ -1297,7 +1310,7 @@ window.TradeUIModules.export = (function() {
                         
                         htmlContent += `
                             <tr>
-                                <td>${trade.stockName} <span style="font-size: 12px; color: #6b7280;">${trade.symbol}</span></td>
+                                <td>${trade.stockName} <span class="symbol-subdued">${trade.symbol}</span></td>
                                 <td>${TradeCore.formatDate(trade.entryDate)}</td>
                                 <td>${TradeCore.formatDate(trade.exitDate)}</td>
                                 <td>${holdingDays} days</td>
@@ -1317,7 +1330,7 @@ window.TradeUIModules.export = (function() {
                     
                     if (closedTrades.length > 20) {
                         htmlContent += `
-                            <p style="text-align: center; font-style: italic; color: #6b7280; margin-top: 15px;">
+                            <p class="trade-summary-note">
                                 Showing 20 most recent trades out of ${closedTrades.length} total closed trades
                             </p>
                         `;

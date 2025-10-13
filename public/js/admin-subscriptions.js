@@ -66,7 +66,7 @@ const AdminSubscriptions = {
           <div class="admin-card-header flex-between">
             <h2 class="admin-card-title">Active Subscriptions</h2>
             <div class="flex gap-2">
-              <select class="form-control" id="sub-filter" onchange="AdminSubscriptions.handleFilter(event)" style="width: 200px;">
+              <select class="form-control" id="sub-filter" onchange="AdminSubscriptions.handleFilter(event)">
                 <option value="all" ${this.filterStatus === 'all' ? 'selected' : ''}>All Status</option>
                 <option value="active" ${this.filterStatus === 'active' ? 'selected' : ''}>Active</option>
                 <option value="trial" ${this.filterStatus === 'trial' ? 'selected' : ''}>Trial</option>
@@ -189,7 +189,7 @@ const AdminSubscriptions = {
     const plansHTML = `
       <div class="metrics-grid">
         ${plans.map(plan => `
-          <div class="admin-card" style="border: 2px solid ${plan.is_active ? '#10b981' : '#d1d5db'};">
+          <div class="admin-card plan-card" style="border: 2px solid ${plan.is_active ? '#10b981' : '#d1d5db'};">
             <div class="admin-card-header flex-between">
               <h3 class="admin-card-title">${plan.plan_name}</h3>
               ${plan.is_active ?
@@ -199,10 +199,10 @@ const AdminSubscriptions = {
             </div>
             <div class="admin-card-body">
               <div class="metric-value">${AdminComponents.formatCurrency(plan.price_monthly || 0, plan.currency || 'GBP')}</div>
-              <div class="text-muted" style="font-size: 0.875rem;">/month</div>
+              <div class="text-muted text-sm">/month</div>
 
               <div class="mt-2">
-                <div class="text-muted" style="font-size: 0.875rem;">
+                <div class="text-muted text-sm">
                   <strong>Code:</strong> ${plan.plan_code}<br>
                   <strong>Region:</strong> ${plan.region}<br>
                   <strong>Subscribers:</strong> ${plan.subscriber_count || 0}

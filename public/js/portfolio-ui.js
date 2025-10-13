@@ -53,7 +53,7 @@ const PortfolioUI = (function() {
             // Disable button and show loading
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner"></span> Running Simulation...';
-            statusDiv.style.display = 'block';
+            statusDiv.classList.remove('hidden');
             statusDiv.className = 'simulation-status info';
 
             // Progress callback to update UI
@@ -102,7 +102,7 @@ const PortfolioUI = (function() {
             statusDiv.className = 'simulation-status success';
 
             setTimeout(() => {
-                statusDiv.style.display = 'none';
+                statusDiv.classList.add('hidden');
             }, 3000);
 
             // Display results
@@ -129,12 +129,12 @@ const PortfolioUI = (function() {
      */
     function displayResults(result, analytics, currency) {
         // Show all result sections
-        document.getElementById('portfolio-summary').style.display = 'block';
-        document.getElementById('simulation-details-card').style.display = 'block';
-        document.getElementById('portfolio-chart-card').style.display = 'block';
-        document.getElementById('analytics-dashboard').style.display = 'block';
-        document.getElementById('active-trades-card').style.display = 'block';
-        document.getElementById('completed-trades-card').style.display = 'block';
+        document.getElementById('portfolio-summary').classList.remove('hidden');
+        document.getElementById('simulation-details-card').classList.remove('hidden');
+        document.getElementById('portfolio-chart-card').classList.remove('hidden');
+        document.getElementById('analytics-dashboard').classList.remove('hidden');
+        document.getElementById('active-trades-card').classList.remove('hidden');
+        document.getElementById('completed-trades-card').classList.remove('hidden');
 
         // Update summary metrics
         updateSummaryMetrics(result, analytics, currency);

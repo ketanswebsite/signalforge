@@ -167,9 +167,8 @@
                 // Add caption if missing
                 if (!table.querySelector('caption')) {
                     const caption = document.createElement('caption');
+                    caption.className = 'sr-only';
                     caption.textContent = table.getAttribute('data-caption') || 'Data Table';
-                    caption.style.position = 'absolute';
-                    caption.style.left = '-10000px'; // Visually hidden but screen-reader accessible
                     table.insertBefore(caption, table.firstChild);
                 }
             });

@@ -286,13 +286,13 @@
         const openMobileMenu = () => {
             mobileDrawer.classList.add('active');
             mobileOverlay.classList.add('active');
-            document.body.style.overflow = 'hidden';
+            document.body.classList.add('menu-open');
         };
 
         const closeMobileMenu = () => {
             mobileDrawer.classList.remove('active');
             mobileOverlay.classList.remove('active');
-            document.body.style.overflow = '';
+            document.body.classList.remove('menu-open');
         };
 
         if (mobileMenuBtn) {

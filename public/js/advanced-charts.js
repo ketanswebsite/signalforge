@@ -433,16 +433,15 @@ class ChartDrawingTools {
         // Position it over the chart canvas
         const canvasRect = this.chart.canvas.getBoundingClientRect();
         const containerRect = container.getBoundingClientRect();
-        
-        drawingCanvas.style.cssText = `
-            position: absolute;
-            top: ${canvasRect.top - containerRect.top}px;
-            left: ${canvasRect.left - containerRect.left}px;
-            width: ${this.chart.canvas.offsetWidth}px;
-            height: ${this.chart.canvas.offsetHeight}px;
-            pointer-events: none;
-            z-index: 10;
-        `;
+
+        // Dynamic positioning
+        drawingCanvas.style.position = 'absolute';
+        drawingCanvas.style.top = `${canvasRect.top - containerRect.top}px`;
+        drawingCanvas.style.left = `${canvasRect.left - containerRect.left}px`;
+        drawingCanvas.style.width = `${this.chart.canvas.offsetWidth}px`;
+        drawingCanvas.style.height = `${this.chart.canvas.offsetHeight}px`;
+        drawingCanvas.style.pointerEvents = 'none';
+        drawingCanvas.style.zIndex = '10';
         
         container.appendChild(drawingCanvas);
         this.drawingCanvas = drawingCanvas;
@@ -646,15 +645,6 @@ class SynchronizedCrosshair {
         if (!overlay) {
             overlay = document.createElement('div');
             overlay.className = 'crosshair-overlay';
-            overlay.style.cssText = `
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                pointer-events: none;
-                z-index: 15;
-            `;
             chart.canvas.parentElement.appendChild(overlay);
         }
         
@@ -670,30 +660,18 @@ class SynchronizedCrosshair {
         // Vertical line
         const vLine = document.createElement('div');
         vLine.className = 'crosshair-line vertical';
-        vLine.style.cssText = `
-            position: absolute;
-            left: ${x}px;
-            top: ${chartArea.top}px;
-            width: 1px;
-            height: ${chartArea.bottom - chartArea.top}px;
-            background: rgba(0,0,0,0.3);
-            border-left: 1px dashed rgba(0,0,0,0.3);
-        `;
+        vLine.style.left = `${x}px`;
+        vLine.style.top = `${chartArea.top}px`;
+        vLine.style.height = `${chartArea.bottom - chartArea.top}px`;
         overlay.appendChild(vLine);
         
         // Horizontal line (only on active chart)
         if (mouseY !== null) {
             const hLine = document.createElement('div');
             hLine.className = 'crosshair-line horizontal';
-            hLine.style.cssText = `
-                position: absolute;
-                left: ${chartArea.left}px;
-                top: ${mouseY}px;
-                width: ${chartArea.right - chartArea.left}px;
-                height: 1px;
-                background: rgba(0,0,0,0.3);
-                border-top: 1px dashed rgba(0,0,0,0.3);
-            `;
+            hLine.style.left = `${chartArea.left}px`;
+            hLine.style.top = `${mouseY}px`;
+            hLine.style.width = `${chartArea.right - chartArea.left}px`;
             overlay.appendChild(hLine);
         }
         
@@ -717,36 +695,18 @@ class SynchronizedCrosshair {
             // Create label
             const label = document.createElement('div');
             label.className = 'crosshair-label';
-            label.style.cssText = `
-                position: absolute;
-                left: ${pixelX + 5}px;
-                top: ${y - 10}px;
-                background: ${dataset.borderColor || dataset.backgroundColor};
-                color: white;
-                padding: 2px 6px;
-                border-radius: 3px;
-                font-size: 11px;
-                font-weight: 500;
-                white-space: nowrap;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            `;
+            label.style.left = `${pixelX + 5}px`;
+            label.style.top = `${y - 10}px`;
+            label.style.background = dataset.borderColor || dataset.backgroundColor;
             label.textContent = this.formatValue(value);
             overlay.appendChild(label);
             
             // Add dot on line
             const dot = document.createElement('div');
             dot.className = 'crosshair-dot';
-            dot.style.cssText = `
-                position: absolute;
-                left: ${pixelX - 4}px;
-                top: ${y - 4}px;
-                width: 8px;
-                height: 8px;
-                background: ${dataset.borderColor || dataset.backgroundColor};
-                border: 2px solid white;
-                border-radius: 50%;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            `;
+            dot.style.left = `${pixelX - 4}px`;
+            dot.style.top = `${y - 4}px`;
+            dot.style.background = dataset.borderColor || dataset.backgroundColor;
             overlay.appendChild(dot);
         });
     }

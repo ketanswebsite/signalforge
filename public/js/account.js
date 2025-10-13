@@ -243,7 +243,7 @@ class AccountPage {
                                     ${this.formatPaymentStatus(payment.status)}
                                 </span>
                             </td>
-                            <td style="font-family: monospace; font-size: 0.85rem; color: var(--text-secondary);">
+                            <td class="font-mono text-sm text-muted">
                                 ${payment.transaction_id ? payment.transaction_id.substring(0, 12) + '...' : 'N/A'}
                             </td>
                         </tr>
@@ -280,7 +280,7 @@ class AccountPage {
                     <line x1="12" y1="17" x2="12.01" y2="17"/>
                 </svg>
                 <p>You don't have an active subscription</p>
-                <a href="/pricing.html" class="btn btn-primary" style="margin-top: 1rem;">
+                <a href="/pricing.html" class="btn btn-primary mt-2">
                     View Plans
                 </a>
             </div>
@@ -308,7 +308,7 @@ class AccountPage {
                     <line x1="12" y1="16" x2="12.01" y2="16"/>
                 </svg>
                 <p>${message}</p>
-                <button class="btn btn-secondary" onclick="location.reload()" style="margin-top: 1rem;">
+                <button class="btn btn-secondary mt-2" onclick="location.reload()">
                     Retry
                 </button>
             </div>

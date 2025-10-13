@@ -374,7 +374,7 @@ const AdminSettings = {
                         </div>
                     </div>
 
-                    <div style="display: flex; gap: 0.5rem;">
+                    <div class="flex gap-2">
                         <button class="btn btn-primary" onclick="AdminSettings.testTelegramBot()">
                             📤 Send Test Message
                         </button>
@@ -668,7 +668,7 @@ const AdminSettings = {
                             </small>
                         </div>
 
-                        <div style="display: flex; gap: 0.5rem;">
+                        <div class="flex gap-2">
                             <button class="btn btn-primary" onclick="AdminSettings.saveTemplate()">
                                 💾 Save Template
                             </button>
@@ -926,7 +926,7 @@ const AdminSettings = {
                         <strong>⚠️ Warning:</strong> This will send to all matching users. Please review carefully.
                     </div>
 
-                    <div style="display: flex; gap: 0.5rem;">
+                    <div class="flex gap-2">
                         <button class="btn btn-primary" onclick="AdminSettings.sendBroadcast()">
                             📢 Send Broadcast
                         </button>
@@ -1013,7 +1013,7 @@ const AdminSettings = {
                         Clear cached data to apply configuration changes immediately.
                     </p>
 
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                    <div class="grid-2col">
                         <button class="btn btn-secondary" onclick="AdminSettings.clearCache('all')">
                             🗑️ Clear All Cache
                         </button>
@@ -1035,7 +1035,7 @@ const AdminSettings = {
                     <h3>System Actions</h3>
                 </div>
                 <div class="admin-card-body">
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                    <div class="grid-2col">
                         <button class="btn btn-secondary" onclick="AdminSettings.restartServer()">
                             🔄 Restart Server
                         </button>

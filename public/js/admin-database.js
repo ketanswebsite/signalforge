@@ -194,9 +194,9 @@ const AdminDatabase = {
                     <h3>Database Size</h3>
                 </div>
                 <div class="admin-card-body">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <div class="flex-between">
                         <span><strong>Total Database Size:</strong></span>
-                        <strong style="font-size: 1.25rem;">${formatSize(health.databaseSize || 0)}</strong>
+                        <strong class="text-lg">${formatSize(health.databaseSize || 0)}</strong>
                     </div>
                 </div>
             </div>
@@ -378,8 +378,8 @@ const AdminDatabase = {
             <div class="admin-card mb-2">
                 <div class="admin-card-header">
                     <h3>SQL Query Runner</h3>
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
-                        <select id="query-mode" onchange="AdminDatabase.setQueryMode(this.value)" class="form-control" style="width: auto;">
+                    <div class="flex gap-2">
+                        <select id="query-mode" onchange="AdminDatabase.setQueryMode(this.value)" class="form-control">
                             <option value="readonly">Read-Only Mode</option>
                             <option value="write">Write Mode (Caution!)</option>
                         </select>
@@ -394,14 +394,13 @@ const AdminDatabase = {
                         <label>SQL Query:</label>
                         <textarea
                             id="sql-query"
-                            class="form-control"
+                            class="form-control font-mono"
                             rows="10"
                             placeholder="Enter your SQL query here...&#10;Example: SELECT * FROM users LIMIT 10;"
-                            style="font-family: monospace;"
                         ></textarea>
                     </div>
 
-                    <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                    <div class="flex gap-2 mb-2">
                         <button class="btn btn-primary" onclick="AdminDatabase.executeQuery()">
                             ▶️ Run Query
                         </button>
@@ -432,7 +431,7 @@ const AdminDatabase = {
             </div>
 
             <!-- Query Results -->
-            <div class="admin-card" id="query-results-card" style="display: none;">
+            <div class="admin-card" id="query-results-card" style="display: ${this.currentResults ? 'block' : 'none'};">
                 <div class="admin-card-header">
                     <h3>Query Results</h3>
                     <button class="btn btn-secondary btn-sm" onclick="AdminDatabase.exportResults()">
@@ -598,28 +597,28 @@ const AdminDatabase = {
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                    <div class="grid-3col">
                         <div>
-                            <button class="btn btn-primary" style="width: 100%;" onclick="AdminDatabase.runVacuum()">
+                            <button class="btn btn-primary btn-full" onclick="AdminDatabase.runVacuum()">
                                 🧹 Run VACUUM
                             </button>
-                            <p class="text-muted" style="font-size: 0.875rem; margin-top: 0.5rem;">
+                            <p class="text-muted text-sm mt-1">
                                 Reclaim storage occupied by dead tuples
                             </p>
                         </div>
                         <div>
-                            <button class="btn btn-primary" style="width: 100%;" onclick="AdminDatabase.runAnalyze()">
+                            <button class="btn btn-primary btn-full" onclick="AdminDatabase.runAnalyze()">
                                 📊 Run ANALYZE
                             </button>
-                            <p class="text-muted" style="font-size: 0.875rem; margin-top: 0.5rem;">
+                            <p class="text-muted text-sm mt-1">
                                 Update table statistics for query planner
                             </p>
                         </div>
                         <div>
-                            <button class="btn btn-primary" style="width: 100%;" onclick="AdminDatabase.runReindex()">
+                            <button class="btn btn-primary btn-full" onclick="AdminDatabase.runReindex()">
                                 🔧 Run REINDEX
                             </button>
-                            <p class="text-muted" style="font-size: 0.875rem; margin-top: 0.5rem;">
+                            <p class="text-muted text-sm mt-1">
                                 Rebuild all indexes for optimal performance
                             </p>
                         </div>
@@ -733,11 +732,11 @@ const AdminDatabase = {
         const columns = Object.keys(results.rows[0]);
 
         let html = `
-            <div style="margin-bottom: 1rem;">
+            <div class="mb-2">
                 <strong>Rows returned:</strong> ${results.rowCount} |
                 <strong>Execution time:</strong> ${results.executionTime}ms
             </div>
-            <div style="overflow-x: auto;">
+            <div class="table-responsive">
                 <table class="table table-sm">
                     <thead>
                         <tr>
@@ -790,12 +789,12 @@ const AdminDatabase = {
         }
 
         container.innerHTML = this.queryHistory.map((item, index) => `
-            <div class="query-history-item" style="padding: 0.75rem; background: #f9fafb; border-radius: 4px; margin-bottom: 0.5rem;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <div class="query-history-item">
+                <div class="flex-between mb-1">
                     <small class="text-muted">${item.timestamp.toLocaleString()}</small>
                     <small class="text-muted">${item.rowCount} rows • ${item.executionTime}ms</small>
                 </div>
-                <code style="display: block; white-space: pre-wrap; word-break: break-all;">${item.query}</code>
+                <code class="code-block">${item.query}</code>
                 <button class="btn btn-sm btn-secondary mt-1" onclick="AdminDatabase.rerunQuery(${index})">
                     ▶️ Re-run
                 </button>

@@ -126,7 +126,7 @@ const AdminAudit = {
             </div>
 
             <!-- Analytics Panel (hidden by default) -->
-            <div id="audit-analytics-panel" style="display: none;"></div>
+            <div id="audit-analytics-panel" style="display: ${this.showAnalytics ? 'block' : 'none'};"></div>
         `;
     },
 
@@ -332,7 +332,7 @@ const AdminAudit = {
                             </div>
                             <div class="audit-detail-item">
                                 <strong>💻 User Agent:</strong>
-                                <span style="font-size: 0.875rem;">${log.user_agent || 'N/A'}</span>
+                                <span class="text-sm">${log.user_agent || 'N/A'}</span>
                             </div>
                         </div>
 
@@ -345,14 +345,14 @@ const AdminAudit = {
                             <hr />
                             <details>
                                 <summary><strong>📄 Old Data Snapshot</strong></summary>
-                                <pre style="background: #f5f5f5; padding: 1rem; border-radius: 4px; overflow-x: auto;">${JSON.stringify(log.old_data, null, 2)}</pre>
+                                <pre class="code-pre">${JSON.stringify(log.old_data, null, 2)}</pre>
                             </details>
                         ` : ''}
 
                         ${log.new_data ? `
                             <details>
                                 <summary><strong>📄 New Data Snapshot</strong></summary>
-                                <pre style="background: #f5f5f5; padding: 1rem; border-radius: 4px; overflow-x: auto;">${JSON.stringify(log.new_data, null, 2)}</pre>
+                                <pre class="code-pre">${JSON.stringify(log.new_data, null, 2)}</pre>
                             </details>
                         ` : ''}
                     </div>
@@ -452,14 +452,14 @@ const AdminAudit = {
         panel.style.display = 'block';
 
         const activityHTML = analytics.mostActiveUsers.map((user, index) => `
-            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <div class="flex-between mb-1">
                 <span>${index + 1}. ${user.user_email || 'System'}</span>
                 <strong>${user.action_count} actions</strong>
             </div>
         `).join('');
 
         const actionHTML = Object.entries(analytics.actionDistribution).map(([action, count]) => `
-            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <div class="flex-between mb-1">
                 <span>${action}</span>
                 <strong>${count} (${((count / analytics.totalActions) * 100).toFixed(1)}%)</strong>
             </div>
@@ -474,7 +474,7 @@ const AdminAudit = {
                     </button>
                 </div>
                 <div class="admin-card-body">
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;">
+                    <div class="grid-3col">
                         <!-- Most Active Users -->
                         <div>
                             <h4>Most Active Users</h4>
@@ -490,15 +490,15 @@ const AdminAudit = {
                         <!-- Suspicious Activity -->
                         <div>
                             <h4>Recent Activity Summary</h4>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <div class="flex-between mb-1">
                                 <span>Total Actions</span>
                                 <strong>${analytics.totalActions}</strong>
                             </div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <div class="flex-between mb-1">
                                 <span>Unique Users</span>
                                 <strong>${analytics.mostActiveUsers.length}</strong>
                             </div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <div class="flex-between mb-1">
                                 <span>Last 24 Hours</span>
                                 <strong>${analytics.last24Hours || 0}</strong>
                             </div>

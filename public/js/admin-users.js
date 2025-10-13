@@ -51,9 +51,8 @@ const AdminUsers = {
               id="user-search"
               value="${this.searchQuery}"
               onkeyup="AdminUsers.handleSearch(event)"
-              style="flex: 1;"
             >
-            <select class="form-control" id="user-filter" onchange="AdminUsers.handleFilter(event)" style="width: 200px;">
+            <select class="form-control" id="user-filter" onchange="AdminUsers.handleFilter(event)">
               <option value="all" ${this.filterStatus === 'all' ? 'selected' : ''}>All Users</option>
               <option value="active" ${this.filterStatus === 'active' ? 'selected' : ''}>Active</option>
               <option value="telegram" ${this.filterStatus === 'telegram' ? 'selected' : ''}>Telegram Users</option>
@@ -64,7 +63,7 @@ const AdminUsers = {
       </div>
 
       <!-- Bulk Actions Bar (hidden by default) -->
-      <div id="bulk-actions-bar" style="display: none;" class="admin-card mb-2">
+      <div id="bulk-actions-bar" style="display: ${this.selectedUsers.size > 0 ? 'block' : 'none'};" class="admin-card mb-2">
         <div class="admin-card-body flex-between">
           <div>
             <span id="selected-count">0</span> users selected

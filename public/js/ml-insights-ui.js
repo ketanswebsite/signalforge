@@ -38,7 +38,7 @@ const MLInsightsUI = (function() {
         modal.style.display = 'none';
         
         modal.innerHTML = `
-            <div class="dialog-content" style="max-width: 900px;">
+            <div class="dialog-content ml-insights-dialog">
                 <div class="dialog-header">
                     <h3 class="dialog-title">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1894,7 +1894,7 @@ const MLInsightsUI = (function() {
                     </svg>
                 </div>
                 <p>Analyzing ${symbol} with AI/ML models...</p>
-                <p style="font-size: 14px; margin-top: 10px; opacity: 0.7;">This may take a few seconds...</p>
+                <p class="ml-loading-hint">This may take a few seconds...</p>
             </div>
         `;
         

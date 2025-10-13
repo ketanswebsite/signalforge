@@ -137,62 +137,7 @@ function displayBuyingOpportunities() {
             
             html += `</div>`;
             
-            // Add style for scan summary
-            const style = document.createElement('style');
-            style.textContent = `
-                .scan-summary {
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: 8px;
-                    margin-bottom: 15px;
-                    padding: 8px 12px;
-                    background: rgba(99, 102, 241, 0.08);
-                    border-radius: 6px;
-                }
-                .index-tag {
-                    background: rgba(99, 102, 241, 0.15);
-                    padding: 4px 8px;
-                    border-radius: 4px;
-                    font-size: 12px;
-                    color: #4f46e5;
-                    font-weight: 500;
-                }
-                .stock-index-badge {
-                    display: inline-block;
-                    font-size: 11px;
-                    padding: 2px 6px;
-                    border-radius: 4px;
-                    background: rgba(99, 102, 241, 0.1);
-                    color: #4f46e5;
-                    margin-left: 6px;
-                    vertical-align: middle;
-                }
-                .opportunity-card {
-                    position: relative;
-                }
-                .opportunity-card.high-conviction {
-                    border-left: 4px solid #10b981;
-                }
-                .opportunity-card.moderate-conviction {
-                    border-left: 4px solid #f59e0b;
-                }
-                .opportunity-card.low-conviction {
-                    border-left: 4px solid #ef4444;
-                }
-                .detail-value.high-conviction {
-                    color: #10b981;
-                    font-weight: bold;
-                }
-                .detail-value.moderate-conviction {
-                    color: #f59e0b;
-                    font-weight: bold;
-                }
-                .detail-value.low-conviction {
-                    color: #ef4444;
-                    font-weight: bold;
-                }
-            `;
-            document.head.appendChild(style);
+            // Styles moved to CSS file - components.css
         }
         
         // Function to create opportunity cards for a conviction level

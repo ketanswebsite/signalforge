@@ -592,13 +592,9 @@ class LivePnLCalculator {
             
             // Position near the P&L display
             const rect = this.plElement.getBoundingClientRect();
-            indicator.style.cssText = `
-                position: fixed;
-                left: ${rect.left}px;
-                top: ${rect.top - 20}px;
-                animation: floatUp 2s ease-out forwards;
-                z-index: 1000;
-            `;
+            indicator.className = 'pnl-change-indicator float-up-animation';
+            indicator.style.left = `${rect.left}px`;
+            indicator.style.top = `${rect.top - 20}px`;
             
             document.body.appendChild(indicator);
             setTimeout(() => indicator.remove(), 2000);

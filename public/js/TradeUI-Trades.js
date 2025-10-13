@@ -168,7 +168,7 @@ function renderActiveTrades() {
             const sharesElement = card.querySelector('.shares');
             if (trade.shares === 0 || !trade.shares) {
                 sharesElement.textContent = '⚠️ 0';
-                sharesElement.style.color = '#ff6b6b';
+                sharesElement.classList.add('shares-warning');
                 sharesElement.title = 'No shares recorded - please edit this trade';
             } else {
                 sharesElement.textContent = (trade.shares || 0).toLocaleString();

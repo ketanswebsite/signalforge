@@ -765,3 +765,145 @@
         width: 95%;
     }
 }
+
+/* ===== DTI TRADE SCANNER COMPONENTS ===== */
+
+/* Scan Summary */
+.scan-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 15px;
+    padding: 8px 12px;
+    background: rgba(99, 102, 241, 0.08);
+    border-radius: 6px;
+}
+
+.index-tag {
+    background: rgba(99, 102, 241, 0.15);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #4f46e5;
+    font-weight: 500;
+}
+
+.stock-index-badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(99, 102, 241, 0.1);
+    color: #4f46e5;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+/* Opportunity Cards with Conviction Levels */
+.opportunity-card {
+    position: relative;
+}
+
+.opportunity-card.high-conviction {
+    border-left: 4px solid #10b981;
+}
+
+.opportunity-card.moderate-conviction {
+    border-left: 4px solid #f59e0b;
+}
+
+.opportunity-card.low-conviction {
+    border-left: 4px solid #ef4444;
+}
+
+.detail-value.high-conviction {
+    color: #10b981;
+    font-weight: bold;
+}
+
+.detail-value.moderate-conviction {
+    color: #f59e0b;
+    font-weight: bold;
+}
+
+.detail-value.low-conviction {
+    color: #ef4444;
+    font-weight: bold;
+}
+
+/* ===== ML INSIGHTS COMPONENTS ===== */
+
+/* ML Insights Dialog */
+.ml-insights-dialog {
+    max-width: 900px;
+}
+
+.ml-loading-hint {
+    font-size: 14px;
+    margin-top: 10px;
+    opacity: 0.7;
+}
+
+/* ===== ADVANCED CHARTS COMPONENTS ===== */
+
+/* Crosshair Overlay */
+.crosshair-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 15;
+}
+
+/* Crosshair Lines */
+.crosshair-line {
+    position: absolute;
+}
+
+.crosshair-line.vertical {
+    width: 1px;
+    background: rgba(0,0,0,0.3);
+    border-left: 1px dashed rgba(0,0,0,0.3);
+}
+
+.crosshair-line.horizontal {
+    height: 1px;
+    background: rgba(0,0,0,0.3);
+    border-top: 1px dashed rgba(0,0,0,0.3);
+}
+
+/* Crosshair Labels */
+.crosshair-label {
+    position: absolute;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Crosshair Dots */
+.crosshair-dot {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border: 2px solid white;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* ===== ACCESSIBILITY COMPONENTS ===== */
+
+/* Screen Reader Only */
+.sr-only {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+

@@ -883,7 +883,7 @@ DTIUI.Charts = (function() {
         // Apply chart shadow effect to all chart canvases
         const chartCanvases = document.querySelectorAll('.chart-wrapper canvas');
         chartCanvases.forEach(canvas => {
-            canvas.style.filter = 'drop-shadow(0 4px 6px rgba(0,0,0,0.05))';
+            canvas.classList.add('chart-shadow');
         });
         
         // Add chart controls if not already added

@@ -26,7 +26,7 @@ window.LoadingStates = {
                 <circle class="spinner-track" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" opacity="0.25"/>
                 <circle class="spinner-head" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" opacity="0.75" stroke-dasharray="31.4" stroke-dashoffset="0"/>
             </svg>
-            <span style="margin-left: 8px;">${loadingText}</span>
+            <span class="loading-text">${loadingText}</span>
         `;
     },
 

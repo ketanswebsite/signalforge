@@ -74,43 +74,32 @@ const AlertsUI = (function() {
         
         const modal = document.createElement('div');
         modal.id = 'telegram-instructions-modal';
-        modal.style.cssText = `
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 10000; display: flex;
-            align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;
-        `;
+        modal.className = 'modal-overlay';
         
         modal.innerHTML = `
-            <div style="background: white; border-radius: 12px; padding: 30px; max-width: 500px; 
-                        text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
-                <div style="font-size: 48px; margin-bottom: 20px;">📱</div>
-                <h3 style="margin: 0 0 15px 0; color: #2c3e50;">Join My Telegram for Trading Signals!</h3>
-                <p style="color: #666; margin-bottom: 25px; line-height: 1.5;">
+            <div class="modal-content">
+                <div class="telegram-icon">📱</div>
+                <h3>Join My Telegram for Trading Signals!</h3>
+                <p class="modal-description">
                     Get my daily 7 AM conviction trades and high conviction scan results delivered directly to your phone.
                 </p>
-                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
-                    <p style="margin: 0 0 10px 0; font-weight: 500;">📲 How to subscribe:</p>
-                    <p style="margin: 0; color: #666; font-size: 14px;">
+                <div class="telegram-instructions">
+                    <p class="instructions-title">📲 How to subscribe:</p>
+                    <p class="instructions-text">
                         1. Install Telegram app on your phone<br>
                         2. Search for <strong>@MySignalForgeBot</strong><br>
                         3. Send <strong>/start</strong> to subscribe
                     </p>
                 </div>
-                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                    <a href="https://telegram.org/apps" target="_blank" 
-                       style="background: #0088cc; color: white; padding: 12px 24px; border-radius: 6px; 
-                              text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 8px;">
+                <div class="modal-actions">
+                    <a href="https://telegram.org/apps" target="_blank" class="btn-telegram-install">
                         📱 Install Telegram
                     </a>
-                    <a href="https://t.me/MySignalForgeBot" target="_blank"
-                       style="background: #24A1DE; color: white; padding: 12px 24px; border-radius: 6px; 
-                              text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 8px;">
+                    <a href="https://t.me/MySignalForgeBot" target="_blank" class="btn-telegram-open">
                         🚀 Open Bot
                     </a>
                 </div>
-                <button onclick="document.getElementById('telegram-instructions-modal').remove()" 
-                        style="background: none; border: none; color: #999; margin-top: 20px; 
-                               cursor: pointer; text-decoration: underline;">
+                <button onclick="document.getElementById('telegram-instructions-modal').remove()" class="btn-modal-close">
                     Close
                 </button>
             </div>

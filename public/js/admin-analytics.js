@@ -196,7 +196,7 @@ const AdminAnalytics = {
             </div>
 
             <!-- Revenue Breakdown -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+            <div class="revenue-breakdown-grid">
                 <!-- By Region -->
                 <div class="admin-card">
                     <div class="admin-card-header">
@@ -372,15 +372,15 @@ const AdminAnalytics = {
                     <h3>Feature Usage</h3>
                 </div>
                 <div class="admin-card-body">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="feature-usage-grid">
                         ${Object.entries(analytics.featureUsage || {}).map(([feature, percentage]) => `
-                            <div>
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <div class="feature-usage-item">
+                                <div class="feature-usage-header">
                                     <span>${feature}</span>
                                     <strong>${percentage}%</strong>
                                 </div>
-                                <div style="background: #e5e7eb; height: 8px; border-radius: 4px; overflow: hidden;">
-                                    <div style="background: #2563eb; height: 100%; width: ${percentage}%;"></div>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar-fill" style="width: ${percentage}%;"></div>
                                 </div>
                             </div>
                         `).join('')}
