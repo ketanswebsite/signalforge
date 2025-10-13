@@ -1,107 +1,17 @@
-/* DTI Backtester - Enhanced UI Styles 3.0
-   Professional trading platform with refined visuals, improved UX, and analytics dashboard */
-
-:root {
-    /* Core Color Palette - Refined trading platform colors */
-    --primary-color: #2563eb;        /* Royal blue - main accent */
-    --primary-dark: #1d4ed8;         /* Darker blue for hover states */
-    --primary-light: #dbeafe;        /* Light blue for backgrounds */
-    --primary-lightest: #f0f7ff;     /* Extremely light blue for subtle highlights */
-    --secondary-color: #7c3aed;      /* Vibrant purple - secondary accent */
-    --secondary-dark: #6d28d9;       /* Darker purple for hover states */
-    --secondary-light: #ede9fe;      /* Light purple for backgrounds */
-    --success-color: #059669;        /* Rich green for positive values */
-    --success-dark: #047857;         /* Darker green for hover states */
-    --success-light: #d1fae5;        /* Light green for backgrounds */
-    --danger-color: #dc2626;         /* Vivid red for negative values/alerts */
-    --danger-dark: #b91c1c;          /* Darker red for hover states */
-    --danger-light: #fee2e2;         /* Light red for backgrounds */
-    --warning-color: #d97706;        /* Deep amber for warnings */
-    --warning-dark: #b45309;         /* Darker amber for hover states */
-    --warning-light: #fef3c7;        /* Light amber for backgrounds */
-    --info-color: #0891b2;           /* Deep cyan for info */
-    --info-dark: #0e7490;            /* Darker cyan for hover states */
-    --info-light: #e0f2fe;           /* Light cyan for backgrounds */
-
-    /* Neutral Colors - More refined grayscale */
-    --bg-color: #f9fafb;             /* Subtle off-white background */
-    --card-bg: #ffffff;              /* Card background */
-    --text-color: #111827;           /* Darker primary text for better contrast */
-    --text-secondary: #4b5563;       /* Darker secondary text */
-    --border-color: #e5e7eb;         /* Refined border color */
-    --border-hover: #d1d5db;         /* Border hover state */
-    
-    /* Enhanced Shadows */
-    --shadow-xs: 0 1px 2px rgba(0,0,0,0.05);
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
-    --shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
-    --shadow-md: 0 10px 15px -3px rgba(0,0,0,0.07), 0 4px 6px -2px rgba(0,0,0,0.04);
-    --shadow-lg: 0 20px 25px -5px rgba(0,0,0,0.07), 0 10px 10px -5px rgba(0,0,0,0.03);
-    --shadow-inner: inset 0 2px 4px 0 rgba(0,0,0,0.04);
-    
-    /* UI Elements */
-    --chart-height: 300px;           /* Optimized chart height */
-    --radius-xs: 3px;                /* Extra small radius */
-    --radius-sm: 5px;                /* Small radius */
-    --radius: 8px;                   /* Default radius */
-    --radius-md: 10px;               /* Medium radius */
-    --radius-lg: 12px;               /* Large radius */
-    --transition-fast: 0.15s;        /* Fast transitions */
-    --transition-normal: 0.25s;      /* Standard transitions */
-    --transition-slow: 0.4s;         /* Slower, more dramatic transitions */
-    
-    /* Typography */
-    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    --line-height-tight: 1.4;
-    --line-height: 1.6;
-    --line-height-loose: 1.8;
-    
-    /* Layout */
-    --content-max-width: 1480px;
-    --sidebar-width: 340px;
-    --card-spacing: 24px;
-    --section-spacing: 32px;
-}
-
-/* Dark Mode Variables */
-[data-theme="dark"] {
-    /* Core Color Palette - Dark mode variants */
-    --primary-color: #60a5fa;        /* Lighter blue for dark mode */
-    --primary-dark: #3b82f6;         /* Adjusted hover blue */
-    --primary-light: #1e3a8a;        /* Darker blue backgrounds */
-    --primary-lightest: #1e293b;     /* Very dark blue for subtle highlights */
-    --secondary-color: #a78bfa;      /* Lighter purple for dark mode */
-    --secondary-dark: #8b5cf6;       /* Adjusted hover purple */
-    --secondary-light: #4c1d95;      /* Darker purple backgrounds */
-    --success-color: #34d399;        /* Lighter green for dark mode */
-    --success-dark: #10b981;         /* Adjusted hover green */
-    --success-light: #064e3b;        /* Darker green backgrounds */
-    --danger-color: #f87171;         /* Lighter red for dark mode */
-    --danger-dark: #ef4444;          /* Adjusted hover red */
-    --danger-light: #7f1d1d;         /* Darker red backgrounds */
-    --warning-color: #fbbf24;        /* Lighter amber for dark mode */
-    --warning-dark: #f59e0b;         /* Adjusted hover amber */
-    --warning-light: #78350f;        /* Darker amber backgrounds */
-    --info-color: #38bdf8;           /* Lighter cyan for dark mode */
-    --info-dark: #0ea5e9;            /* Adjusted hover cyan */
-    --info-light: #164e63;           /* Darker cyan backgrounds */
-
-    /* Neutral Colors - Dark mode grayscale */
-    --bg-color: #0f172a;             /* Very dark background */
-    --card-bg: #1e293b;              /* Dark card background */
-    --text-color: #f1f5f9;           /* Light primary text */
-    --text-secondary: #cbd5e1;       /* Light secondary text */
-    --border-color: #334155;         /* Dark border color */
-    --border-hover: #475569;         /* Dark border hover state */
-    
-    /* Enhanced Shadows for dark mode */
-    --shadow-xs: 0 1px 2px rgba(0,0,0,0.2);
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
-    --shadow: 0 4px 6px -1px rgba(0,0,0,0.3), 0 2px 4px -1px rgba(0,0,0,0.2);
-    --shadow-md: 0 10px 15px -3px rgba(0,0,0,0.3), 0 4px 6px -2px rgba(0,0,0,0.2);
-    --shadow-lg: 0 20px 25px -5px rgba(0,0,0,0.3), 0 10px 10px -5px rgba(0,0,0,0.15);
-    --shadow-inner: inset 0 2px 4px 0 rgba(0,0,0,0.2);
-}
+/**
+ * SignalForge - Legacy Component Styles
+ * Version 3.0 -> Migrating to Version 2.0 Design System
+ *
+ * NOTE: Design system variables (colors, typography, spacing, etc.) have been moved to:
+ * - css/design-system.css (CSS variables & design tokens)
+ * - css/animations.css (keyframes & transitions)
+ * - css/base.css (reset & typography)
+ * - css/components.css (reusable components)
+ * - css/layouts.css (grid & container systems)
+ *
+ * This file now contains only legacy page-specific styles that will be
+ * gradually migrated to the new modular CSS structure during Phase 2-3.
+ */
 
 /* ==========================================================================
    Base Styles

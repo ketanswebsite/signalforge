@@ -1,1 +1,3 @@
 - please run deploy-to-render.bat everytime we finalise making changes to a code
+- please remember if you wish to push - just run deploy-to-render.bat
+- remember to delete the old css code one the new css is written

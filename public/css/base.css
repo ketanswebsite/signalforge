@@ -1,0 +1,428 @@
+/**
+ * SignalForge Base Styles
+ * Version 2.0
+ *
+ * Contains reset, base element styles, and typography
+ */
+
+/* ===== CSS RESET ===== */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+    height: 100%;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    font-family: var(--font-body);
+    font-size: var(--text-body);
+    line-height: var(--line-normal);
+    color: var(--text-color);
+    background-color: var(--bg-color, var(--primary-dark));
+    min-height: 100vh;
+    overflow-x: hidden;
+    font-feature-settings: 'kern', 'liga', 'calt';
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    position: relative;
+}
+
+/* Remove default list styles */
+ul, ol {
+    list-style: none;
+}
+
+/* Remove default table spacing */
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+/* Remove default form element styles */
+button, input, optgroup, select, textarea {
+    font-family: inherit;
+    font-size: 100%;
+    line-height: inherit;
+    color: inherit;
+    margin: 0;
+}
+
+/* Remove button default styles */
+button {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+/* Remove input default styles */
+input, textarea, select {
+    border: none;
+    outline: none;
+}
+
+/* Image defaults */
+img, picture, video, canvas, svg {
+    display: block;
+    max-width: 100%;
+}
+
+/* ===== TYPOGRAPHY ===== */
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    font-weight: var(--weight-bold);
+    line-height: var(--line-heading);
+    color: var(--text-color, var(--white));
+    margin-bottom: var(--space-4);
+    letter-spacing: var(--tracking-snug);
+}
+
+h1 {
+    font-size: var(--text-h1);
+    font-weight: var(--weight-extrabold);
+    letter-spacing: var(--tracking-tight);
+}
+
+h2 {
+    font-size: var(--text-h2);
+    font-weight: var(--weight-bold);
+}
+
+h3 {
+    font-size: var(--text-h3);
+    font-weight: var(--weight-semibold);
+}
+
+h4 {
+    font-size: var(--text-h4);
+    font-weight: var(--weight-semibold);
+}
+
+h5, h6 {
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+}
+
+p {
+    margin-bottom: var(--space-4);
+    color: var(--text-secondary, var(--light-grey));
+}
+
+/* Large text */
+.text-large {
+    font-size: var(--text-large);
+    line-height: var(--line-relaxed);
+}
+
+/* Small text */
+.text-small {
+    font-size: var(--text-small);
+}
+
+/* Tiny text */
+.text-tiny {
+    font-size: var(--text-tiny);
+}
+
+/* Hero text */
+.text-hero {
+    font-size: var(--text-hero);
+    font-family: var(--font-heading);
+    font-weight: var(--weight-extrabold);
+    line-height: var(--line-tight);
+    letter-spacing: var(--tracking-tight);
+}
+
+/* Display text */
+.text-display {
+    font-size: var(--text-display);
+    font-family: var(--font-heading);
+    font-weight: var(--weight-extrabold);
+    line-height: var(--line-tight);
+    letter-spacing: var(--tracking-tight);
+}
+
+/* ===== LINKS ===== */
+
+a {
+    color: var(--accent-blue);
+    text-decoration: none;
+    transition: color var(--duration-fast) var(--ease-standard);
+}
+
+a:hover {
+    color: var(--accent-gold);
+}
+
+a:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+/* ===== EMPHASIS ===== */
+
+strong, b {
+    font-weight: var(--weight-bold);
+}
+
+em, i {
+    font-style: italic;
+}
+
+small {
+    font-size: var(--text-small);
+}
+
+mark {
+    background-color: var(--accent-gold);
+    color: var(--primary-dark);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+}
+
+code {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9em;
+    background-color: var(--concrete-grey);
+    color: var(--accent-blue);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+}
+
+pre {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9em;
+    background-color: var(--secondary-dark);
+    color: var(--light-grey);
+    padding: var(--space-4);
+    border-radius: var(--radius);
+    overflow-x: auto;
+    margin-bottom: var(--space-4);
+}
+
+pre code {
+    background: none;
+    padding: 0;
+}
+
+/* ===== HORIZONTAL RULE ===== */
+
+hr {
+    border: none;
+    height: 1px;
+    background: var(--border-color);
+    margin: var(--space-6) 0;
+}
+
+/* ===== BLOCKQUOTE ===== */
+
+blockquote {
+    border-left: 4px solid var(--accent-blue);
+    padding-left: var(--space-4);
+    margin: var(--space-4) 0;
+    font-style: italic;
+    color: var(--light-grey);
+}
+
+blockquote p {
+    margin-bottom: var(--space-2);
+}
+
+/* ===== LISTS ===== */
+
+ul, ol {
+    margin-bottom: var(--space-4);
+    padding-left: var(--space-5);
+}
+
+ul {
+    list-style-type: disc;
+}
+
+ol {
+    list-style-type: decimal;
+}
+
+li {
+    margin-bottom: var(--space-2);
+    color: var(--text-secondary, var(--light-grey));
+}
+
+/* Remove list styles for navigation and components */
+nav ul,
+nav ol,
+.no-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* ===== SELECTION ===== */
+
+::selection {
+    background-color: var(--accent-blue);
+    color: var(--white);
+}
+
+::-moz-selection {
+    background-color: var(--accent-blue);
+    color: var(--white);
+}
+
+/* ===== FOCUS STYLES ===== */
+
+:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+
+/* ===== SCROLLBAR STYLES ===== */
+
+/* For Webkit browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--secondary-dark);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--concrete-grey);
+    border-radius: var(--radius-full);
+    border: 2px solid var(--secondary-dark);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--mid-grey);
+}
+
+/* For Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--concrete-grey) var(--secondary-dark);
+}
+
+/* ===== ACCESSIBILITY ===== */
+
+/* Skip to main content link (for keyboard users) */
+.skip-to-main {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: var(--accent-blue);
+    color: var(--white);
+    padding: var(--space-2) var(--space-4);
+    text-decoration: none;
+    border-radius: var(--radius);
+    z-index: var(--z-tooltip);
+}
+
+.skip-to-main:focus {
+    top: var(--space-2);
+    left: var(--space-2);
+}
+
+/* Screen reader only content */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* ===== PRINT STYLES ===== */
+
+@media print {
+    body {
+        background: white;
+        color: black;
+    }
+
+    a {
+        text-decoration: underline;
+        color: black;
+    }
+
+    /* Hide non-printable elements */
+    nav,
+    .no-print,
+    button:not(.print-button) {
+        display: none !important;
+    }
+
+    /* Ensure content is visible */
+    * {
+        background: transparent !important;
+        box-shadow: none !important;
+        text-shadow: none !important;
+    }
+}
+
+/* ===== RESPONSIVE TYPOGRAPHY ===== */
+
+@media (max-width: 768px) {
+    html {
+        font-size: 14px;
+    }
+
+    h1 {
+        font-size: 2rem;
+    }
+
+    h2 {
+        font-size: 1.75rem;
+    }
+
+    h3 {
+        font-size: 1.5rem;
+    }
+
+    .text-hero {
+        font-size: 2.5rem;
+    }
+
+    .text-display {
+        font-size: 3rem;
+    }
+}
+
+@media (max-width: 480px) {
+    html {
+        font-size: 13px;
+    }
+
+    h1 {
+        font-size: 1.75rem;
+    }
+
+    h2 {
+        font-size: 1.5rem;
+    }
+
+    .text-hero {
+        font-size: 2rem;
+    }
+
+    .text-display {
+        font-size: 2.5rem;
+    }
+}

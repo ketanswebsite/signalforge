@@ -1,0 +1,279 @@
+/**
+ * SignalForge Design System
+ * Version 2.0 - Modern Design Foundation
+ *
+ * This file contains all design tokens (CSS variables) for the SignalForge application.
+ * All colors, spacing, typography, shadows, and other design values are defined here.
+ */
+
+:root {
+    /* ===== COLOR PALETTE ===== */
+
+    /* Primary Colors - Dark theme base */
+    --primary-dark: #0f0f0f;          /* Deep black - primary backgrounds */
+    --secondary-dark: #1a1a1a;        /* Charcoal - secondary backgrounds */
+    --concrete-grey: #2d2d2d;         /* Medium dark grey - elevated surfaces */
+    --mid-grey: #5a5a5a;              /* Neutral grey - disabled states */
+    --light-grey: #a0a0a0;            /* Light grey - secondary text */
+
+    /* Accent Colors */
+    --accent-blue: #3b82f6;           /* Vibrant blue - primary actions */
+    --accent-steel: #64748b;          /* Blue-grey - subtle accents */
+    --accent-gold: #f59e0b;           /* Amber/Gold - highlights */
+
+    /* Semantic Colors */
+    --success: #27ae60;               /* Success states */
+    --success-light: #2ecc71;         /* Success hover */
+    --danger: #e74c3c;                /* Error/danger states */
+    --danger-dark: #c0392b;           /* Danger hover */
+    --warning: #f39c12;               /* Warning states */
+    --warning-dark: #e67e22;          /* Warning hover */
+    --info: #4a90e2;                  /* Info states */
+
+    /* Neutral Colors */
+    --white: #ffffff;                 /* Pure white */
+    --off-white: #fafafa;            /* Light backgrounds */
+    --border-color: rgba(255, 255, 255, 0.08);  /* Subtle borders */
+    --hover-bg: rgba(255, 255, 255, 0.05);      /* Hover backgrounds */
+
+    /* ===== GRADIENTS ===== */
+
+    /* Primary Gradient (Blue to Gold) */
+    --gradient-primary: linear-gradient(135deg, var(--accent-blue), var(--accent-gold));
+
+    /* Dark Gradient */
+    --gradient-dark: linear-gradient(135deg, rgba(15, 15, 15, 0.95), rgba(26, 26, 26, 0.9));
+
+    /* Success Gradient */
+    --gradient-success: linear-gradient(135deg, #27ae60, #2ecc71);
+
+    /* Danger Gradient */
+    --gradient-danger: linear-gradient(135deg, #e74c3c, #c0392b);
+
+    /* ===== TYPOGRAPHY ===== */
+
+    /* Font Families */
+    --font-heading: 'Syne', sans-serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+    /* Font Sizes - Type Scale */
+    --text-display: 4.5rem;          /* 72px - Hero headings */
+    --text-hero: 3.5rem;             /* 56px - Page titles */
+    --text-h1: 2.5rem;               /* 40px - Main section titles */
+    --text-h2: 2rem;                 /* 32px - Subsection titles */
+    --text-h3: 1.7rem;               /* 27px - Card titles */
+    --text-h4: 1.3rem;               /* 21px - Small headings */
+    --text-large: 1.3rem;            /* 21px - Large body text */
+    --text-body: 1rem;               /* 16px - Default body */
+    --text-small: 0.95rem;           /* 15px - Secondary text */
+    --text-tiny: 0.85rem;            /* 14px - Captions */
+
+    /* Line Heights */
+    --line-tight: 1.1;               /* Hero text */
+    --line-heading: 1.3;             /* Headings */
+    --line-normal: 1.6;              /* Body text */
+    --line-relaxed: 1.9;             /* Comfortable reading */
+
+    /* Letter Spacing */
+    --tracking-tight: -2px;          /* Display text */
+    --tracking-snug: -1px;           /* Large headings */
+    --tracking-normal: 0;            /* Body text */
+    --tracking-wide: 0.5px;          /* Buttons, labels */
+    --tracking-wider: 1px;           /* Badges, tags */
+    --tracking-widest: 2px;          /* Section tags */
+
+    /* Font Weights */
+    --weight-light: 300;
+    --weight-normal: 400;
+    --weight-medium: 500;
+    --weight-semibold: 600;
+    --weight-bold: 700;
+    --weight-extrabold: 800;
+
+    /* ===== SPACING SYSTEM ===== */
+    /* Base Unit: 0.25rem (4px) */
+
+    --space-0: 0;                    /* 0px */
+    --space-1: 0.25rem;              /* 4px */
+    --space-2: 0.5rem;               /* 8px */
+    --space-3: 0.75rem;              /* 12px */
+    --space-4: 1rem;                 /* 16px */
+    --space-5: 1.5rem;               /* 24px */
+    --space-6: 2rem;                 /* 32px */
+    --space-8: 3rem;                 /* 48px */
+    --space-10: 4rem;                /* 64px */
+    --space-12: 6rem;                /* 96px */
+    --space-16: 10rem;               /* 160px */
+
+    /* ===== SHADOW SYSTEM ===== */
+
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);         /* Subtle elevation */
+    --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.12);        /* Card elevation */
+    --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.15);       /* Modal elevation */
+    --shadow-xl: 0 30px 80px rgba(0, 0, 0, 0.5);        /* Hero images */
+
+    /* Special Shadows */
+    --shadow-glow: 0 10px 40px rgba(59, 130, 246, 0.3);  /* Blue glow */
+    --shadow-glow-hover: 0 15px 50px rgba(59, 130, 246, 0.5);
+    --shadow-glow-gold: 0 10px 40px rgba(245, 158, 11, 0.3);
+    --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.04);
+
+    /* ===== BORDER RADIUS ===== */
+
+    --radius-sm: 8px;                /* Small elements (badges) */
+    --radius: 12px;                  /* Standard (inputs, buttons) */
+    --radius-md: 15px;               /* Medium (cards) */
+    --radius-lg: 20px;               /* Large (sections, images) */
+    --radius-xl: 30px;               /* Extra large (major containers) */
+    --radius-full: 50px;             /* Pill shape (CTAs) */
+    --radius-circle: 50%;            /* Perfect circles */
+
+    /* ===== ANIMATION & TRANSITIONS ===== */
+
+    /* Timing Functions */
+    --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);    /* Standard easing */
+    --ease-in: cubic-bezier(0.4, 0, 1, 1);            /* Acceleration */
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);           /* Deceleration */
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);      /* Smooth */
+
+    /* Duration Scale */
+    --duration-fast: 150ms;          /* Micro-interactions */
+    --duration-normal: 300ms;        /* Standard transitions */
+    --duration-slow: 400ms;          /* Complex animations */
+    --duration-slower: 600ms;        /* Page transitions */
+
+    /* ===== LAYOUT ===== */
+
+    /* Breakpoints (for reference in media queries) */
+    --breakpoint-sm: 640px;          /* Small devices */
+    --breakpoint-md: 768px;          /* Tablets */
+    --breakpoint-lg: 1024px;         /* Laptops */
+    --breakpoint-xl: 1280px;         /* Desktops */
+    --breakpoint-2xl: 1536px;        /* Large desktops */
+
+    /* Container Sizes */
+    --container-sm: 640px;
+    --container-md: 768px;
+    --container-lg: 1024px;
+    --container-xl: 1280px;
+    --container-2xl: 1536px;
+    --container-max: 1600px;
+
+    /* Z-Index Scale */
+    --z-base: 0;
+    --z-dropdown: 1000;
+    --z-sticky: 1100;
+    --z-fixed: 1200;
+    --z-modal-backdrop: 1300;
+    --z-modal: 1400;
+    --z-popover: 1500;
+    --z-tooltip: 1600;
+
+    /* ===== EFFECTS ===== */
+
+    /* Glass Morphism */
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-bg-dark: rgba(15, 15, 15, 0.7);
+    --glass-blur: blur(20px) saturate(180%);
+    --glass-border: 1px solid var(--border-color);
+
+    /* Backdrop Blur Amounts */
+    --blur-sm: blur(10px);
+    --blur-md: blur(20px);
+    --blur-lg: blur(40px);
+}
+
+/* ===== DARK MODE OVERRIDES ===== */
+/* (If implementing light mode in future, add those variants here) */
+
+[data-theme="light"] {
+    /* Light Mode Color Adjustments */
+    --primary-dark: #ffffff;
+    --secondary-dark: #f9fafb;
+    --concrete-grey: #e5e7eb;
+    --mid-grey: #9ca3af;
+    --light-grey: #6b7280;
+
+    --border-color: rgba(0, 0, 0, 0.08);
+    --hover-bg: rgba(0, 0, 0, 0.05);
+
+    /* Adjust shadows for light mode */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.15);
+    --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.20);
+}
+
+/* ===== UTILITY CLASSES FOR COMMON PATTERNS ===== */
+
+/* Apply gradient text */
+.gradient-text {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    display: inline-block;
+}
+
+/* Glass morphism utility */
+.glass {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    border: var(--glass-border);
+}
+
+.glass-dark {
+    background: var(--glass-bg-dark);
+    backdrop-filter: var(--glass-blur);
+}
+
+/* Common spacing utilities */
+.mt-1 { margin-top: var(--space-1); }
+.mt-2 { margin-top: var(--space-2); }
+.mt-3 { margin-top: var(--space-3); }
+.mt-4 { margin-top: var(--space-4); }
+.mt-5 { margin-top: var(--space-5); }
+.mt-6 { margin-top: var(--space-6); }
+
+.mb-1 { margin-bottom: var(--space-1); }
+.mb-2 { margin-bottom: var(--space-2); }
+.mb-3 { margin-bottom: var(--space-3); }
+.mb-4 { margin-bottom: var(--space-4); }
+.mb-5 { margin-bottom: var(--space-5); }
+.mb-6 { margin-bottom: var(--space-6); }
+
+.p-1 { padding: var(--space-1); }
+.p-2 { padding: var(--space-2); }
+.p-3 { padding: var(--space-3); }
+.p-4 { padding: var(--space-4); }
+.p-5 { padding: var(--space-5); }
+.p-6 { padding: var(--space-6); }
+
+/* Text alignment utilities */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+/* Display utilities */
+.hidden { display: none !important; }
+.block { display: block !important; }
+.inline-block { display: inline-block !important; }
+.flex { display: flex !important; }
+.inline-flex { display: inline-flex !important; }
+
+/* Flex utilities */
+.flex-col { flex-direction: column; }
+.flex-row { flex-direction: row; }
+.items-center { align-items: center; }
+.items-start { align-items: flex-start; }
+.items-end { align-items: flex-end; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.justify-end { justify-content: flex-end; }
+
+/* Gap utilities */
+.gap-1 { gap: var(--space-1); }
+.gap-2 { gap: var(--space-2); }
+.gap-3 { gap: var(--space-3); }
+.gap-4 { gap: var(--space-4); }
+.gap-5 { gap: var(--space-5); }
+.gap-6 { gap: var(--space-6); }
