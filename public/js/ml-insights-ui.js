@@ -35,8 +35,8 @@ const MLInsightsUI = (function() {
         const modal = document.createElement('div');
         modal.className = 'dialog-overlay';
         modal.id = 'ml-insights-modal';
-        modal
-        
+        modal.style.display = 'none';
+
         modal.innerHTML = `
             <div class="dialog-content ml-insights-dialog">
                 <div class="dialog-header">
@@ -60,17 +60,18 @@ const MLInsightsUI = (function() {
                 </div>
             </div>
         `;
-        
+
         // Add event listeners for closing
         modal.addEventListener('click', function(e) {
             if (e.target === modal) {
                 hideModal();
             }
         });
-        
+
         // Add escape key handler
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && modal                hideModal();
+            if (e.key === 'Escape' && modal) {
+                hideModal();
             }
         });
         
@@ -92,9 +93,9 @@ const MLInsightsUI = (function() {
      */
     function showMLInsights(symbol = null) {
         const modal = document.getElementById('ml-insights-modal');
-        modal
+        modal.style.display = 'flex';
         modal.classList.add('active');
-        
+
         // Always auto-analyze with provided symbol or current symbol
         const targetSymbol = symbol || getCurrentSymbol();
         if (targetSymbol) {
@@ -102,13 +103,13 @@ const MLInsightsUI = (function() {
             analyzeSymbol(targetSymbol);
         }
     }
-    
+
     /**
      * Hide ML insights modal
      */
     function hideModal() {
         const modal = document.getElementById('ml-insights-modal');
-        modal
+        modal.style.display = 'none';
         modal.classList.remove('active');
     }
     
@@ -950,8 +951,8 @@ const MLInsightsUI = (function() {
         const panel = document.getElementById(`explanation-${section}`);
         if (panel) {
             const isVisible = panel.style.display !== 'none';
-            panel
-            
+            panel.style.display = isVisible ? 'none' : 'block';
+
             // Animate the panel
             if (!isVisible) {
                 panel.style.opacity = '0';

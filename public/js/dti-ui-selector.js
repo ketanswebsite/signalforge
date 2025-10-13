@@ -39,19 +39,19 @@ DTIUI.StockSelector = (function() {
         // Add event listener for scan type change
         scanTypeSelect.addEventListener('change', function() {
             updateBatchButtonText();
-            
+
             // Show/hide index selector based on scan type
             const indexSelectorDiv = document.getElementById('index-selector').parentNode;
             const stockSelectorDiv = document.getElementById('stock-selector').parentNode;
-            
+
             if (this.value === 'current') {
-                indexSelectorDiv
-                stockSelectorDiv
+                indexSelectorDiv.style.display = 'block';
+                stockSelectorDiv.style.display = 'block';
             } else {
-                indexSelectorDiv
-                stockSelectorDiv
+                indexSelectorDiv.style.display = 'none';
+                stockSelectorDiv.style.display = 'none';
             }
-            
+
             // Show notification for multi-index scans
             if (this.value !== 'current') {
                 DTIBacktester.utils.showNotification(`Multi-index scan selected: ${this.options[this.selectedIndex].text}`, 'info');
@@ -240,12 +240,12 @@ DTIUI.StockSelector = (function() {
             // Show relevant content
             const indexContents = document.querySelectorAll('.index-content');
             indexContents.forEach(content => {
-                content
+                content.style.display = 'none';
             });
-            
+
             const selectedContent = document.getElementById(`${DTIBacktester.currentStockIndex}-content`);
             if (selectedContent) {
-                selectedContent
+                selectedContent.style.display = 'block';
             }
         });
         
@@ -409,14 +409,14 @@ DTIUI.StockSelector = (function() {
         
         periodDiv.appendChild(periodLabel);
         periodDiv.appendChild(periodSelect);
-        
+
         // Append elements to the Data Import section
-        const dataImportSection = document.querySelector('.parameters-section:last-child');
-        
+        const dataImportSection = document.querySelector('.sidebar-section:last-child .param-controls');
+
         // Add scan type selector first, then index selector, then stock selector
-        dataImportSection.prepend(stockSelectorDiv);
-        dataImportSection.prepend(indexSelectorDiv);
-        dataImportSection.prepend(scanTypeSelector); // New addition
+        dataImportSection.insertBefore(scanTypeSelector, dataImportSection.firstChild);
+        dataImportSection.insertBefore(indexSelectorDiv, dataImportSection.firstChild);
+        dataImportSection.insertBefore(stockSelectorDiv, dataImportSection.firstChild);
         dataImportSection.insertBefore(periodDiv, stockSelectorDiv.nextSibling);
         
         // Add batch process button
@@ -426,7 +426,7 @@ DTIUI.StockSelector = (function() {
         const statusDiv = document.createElement('div');
         statusDiv.id = 'data-fetch-status';
         statusDiv.className = 'csv-info';
-        statusDiv
+        statusDiv.style.display = 'none';
 
         dataImportSection.appendChild(statusDiv);
         
@@ -621,10 +621,10 @@ batchButton.addEventListener('click', async function() {
         const batchStatus = document.createElement('div');
         batchStatus.id = 'batch-status';
         batchStatus.className = 'batch-status';
-        batchStatus
-        
+        batchStatus.style.display = 'none';
+
         // Append button to the UI
-        const dataImportSection = document.querySelector('.parameters-section:last-child');
+        const dataImportSection = document.querySelector('.sidebar-section:last-child .param-controls');
         if (dataImportSection) {
             dataImportSection.appendChild(batchButton);
             dataImportSection.appendChild(batchStatus);
