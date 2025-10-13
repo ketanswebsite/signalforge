@@ -1972,7 +1972,7 @@ const MLInsightsUI = (function() {
                         </button>
                     </h3>
                     
-                    <div class="ml-explanation-panel" id="explanation-risk" style="display: none;">
+                    <div class="ml-explanation-panel" id="explanation-risk">
                         <h4>🤖 AI Analysis Breakdown</h4>
                         <div class="ml-explanation-factors">
                             <div class="ml-factor">
@@ -2177,7 +2177,7 @@ const MLInsightsUI = (function() {
                         </button>
                     </h3>
                     
-                    <div class="ml-explanation-panel" id="explanation-patterns" style="display: none;">
+                    <div class="ml-explanation-panel" id="explanation-patterns">
                         <h4>🤖 Pattern Detection Analysis</h4>
                         <div class="ml-explanation-content">
                             <p>Our AI analyzed <strong>${analysis.patterns.dataPoints || '500+'}</strong> price points using:</p>
@@ -2345,7 +2345,7 @@ const MLInsightsUI = (function() {
                         </button>
                     </h3>
                     
-                    <div class="ml-explanation-panel" id="explanation-sentiment" style="display: none;">
+                    <div class="ml-explanation-panel" id="explanation-sentiment">
                         <h4>🤖 Sentiment Analysis Process</h4>
                         <div class="ml-explanation-content">
                             <p>Our AI processed <strong>${analysis.sentiment.sourcesAnalyzed || '50+'}</strong> data sources including:</p>
@@ -2599,7 +2599,7 @@ const MLInsightsUI = (function() {
         return `
             <div class="ml-scenario-card" style="border-color: ${data.color}">
                 <div class="ml-scenario-icon" style="background: ${data.color}20">
-                    <span style="font-size: 24px">${data.icon}</span>
+                    <span>${data.icon}</span>
                 </div>
                 <h5 class="ml-scenario-title">${scenario}</h5>
                 <div class="ml-scenario-metrics">

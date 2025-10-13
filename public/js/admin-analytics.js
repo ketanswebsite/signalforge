@@ -204,7 +204,7 @@ const AdminAnalytics = {
                     </div>
                     <div class="admin-card-body">
                         ${Object.entries(analytics.byRegion || {}).map(([region, amount]) => `
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem;">
+                            <div>
                                 <span>${region === 'UK' ? '🇬🇧 UK' : region === 'US' ? '🇺🇸 US' : region === 'India' ? '🇮🇳 India' : '🌍 ' + region}</span>
                                 <strong>${formatCurrency(amount)}</strong>
                             </div>
@@ -219,7 +219,7 @@ const AdminAnalytics = {
                     </div>
                     <div class="admin-card-body">
                         ${Object.entries(analytics.byPlan || {}).map(([plan, amount]) => `
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem;">
+                            <div>
                                 <span>${plan}</span>
                                 <strong>${formatCurrency(amount)}</strong>
                             </div>
@@ -547,18 +547,18 @@ const AdminAnalytics = {
         const total = funnel.signups || 1;
 
         return `
-            <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <div>
                 ${stages.map(stage => {
                     const count = funnel[stage.key] || 0;
                     const percentage = ((count / total) * 100).toFixed(1);
                     return `
                         <div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <div>
                                 <span>${stage.icon} ${stage.label}</span>
                                 <strong>${count} users (${percentage}%)</strong>
                             </div>
-                            <div style="background: #e5e7eb; height: 12px; border-radius: 6px; overflow: hidden;">
-                                <div style="background: linear-gradient(to right, #3b82f6, #2563eb); height: 100%; width: ${percentage}%; transition: width 0.3s;"></div>
+                            <div>
+                                <div style="width: ${percentage}%;"></div>
                             </div>
                         </div>
                     `;

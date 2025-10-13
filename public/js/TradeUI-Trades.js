@@ -496,8 +496,8 @@ function renderActiveTrades() {
                     <span class="pl-summary-avg">Avg: ${currency}${avgPL.toFixed(2)}</span>
                 </div>
                 ${stats.totalProfit > 0 && stats.totalLoss > 0 ? `
-                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-color); font-size: 12px; color: var(--text-secondary);">
-                    <div style="display: flex; justify-content: space-between;">
+                <div>
+                    <div>
                         <span>Profits: ${currency}${stats.totalProfit.toFixed(2)} (${stats.profitTrades})</span>
                         <span>Losses: ${currency}${stats.totalLoss.toFixed(2)} (${stats.lossTrades})</span>
                     </div>

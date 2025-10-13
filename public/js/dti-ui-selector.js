@@ -280,8 +280,7 @@ DTIUI.StockSelector = (function() {
             </svg>
             Fetch Stock Data
         `;
-        fetchButton.style.marginTop = '10px';
-        
+
         // Add event listener for fetch button
         fetchButton.addEventListener('click', async function() {
             const symbol = select.value;
@@ -428,8 +427,7 @@ DTIUI.StockSelector = (function() {
         statusDiv.id = 'data-fetch-status';
         statusDiv.className = 'csv-info';
         statusDiv.style.display = 'none';
-        statusDiv.style.marginTop = '10px';
-        
+
         dataImportSection.appendChild(statusDiv);
         
         // Add spinner animation style
@@ -526,9 +524,7 @@ DTIUI.StockSelector = (function() {
             </svg>
             Scan All ${indexName}
         `;
-        batchButton.style.marginTop = '10px';
-        batchButton.style.backgroundColor = '#673ab7';
-        
+
         // Add event listener
 batchButton.addEventListener('click', async function() {
     if (DTIBacktester.isProcessing) {

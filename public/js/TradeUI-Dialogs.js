@@ -443,11 +443,11 @@ window.TradeUIModules.dialogs = (function() {
                             </svg>
                             <span>Choose File</span>
                         </label>
-                        <input type="file" id="import-file-input" accept=".json" style="display: none;">
+                        <input type="file" id="import-file-input" accept=".json">
                         <span id="selected-filename">No file selected</span>
                     </div>
-                    
-                    <div id="import-preview" class="import-preview" style="display: none;">
+
+                    <div id="import-preview" class="import-preview">
                         <h4>File Preview</h4>
                         <div class="preview-stats">
                             <div class="preview-stat">
@@ -483,13 +483,13 @@ window.TradeUIModules.dialogs = (function() {
                             <input type="radio" id="import-mode-replace" name="import-mode" value="replace">
                             <label for="import-mode-replace">Replace all trades</label>
                         </div>
-                        <div class="checkbox-option" id="keep-active-container" style="margin-left: 25px; margin-top: 8px;">
+                        <div class="checkbox-option" id="keep-active-container">
                             <input type="checkbox" id="keep-active-trades" name="keep-active-trades" checked>
                             <label for="keep-active-trades">Keep current active trades</label>
                         </div>
                     </div>
-                    
-                    <div id="import-status" class="import-status" style="display: none;">
+
+                    <div id="import-status" class="import-status">
                         <div class="status-message" id="import-status-message"></div>
                         <div class="progress-bar">
                             <div class="progress-fill" id="import-progress"></div>

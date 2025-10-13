@@ -125,22 +125,10 @@ const AlertsUI = (function() {
         const modal = document.createElement('div');
         modal.className = 'dialog-overlay';
         modal.id = 'alerts-modal';
-        modal.style.cssText = `
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 9999;
-            align-items: center;
-            justify-content: center;
-        `;
-        
+
         modal.innerHTML = `
-            <div class="dialog-content" style="max-width: 600px; background: white; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); padding: 0; margin: 20px;">
-                <div class="dialog-header" style="padding: 20px; border-bottom: 1px solid #e5e7eb;">
+            <div class="dialog-content">
+                <div class="dialog-header">
                     <h3 class="dialog-title">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
@@ -148,9 +136,9 @@ const AlertsUI = (function() {
                         </svg>
                         Configure Alerts
                     </h3>
-                    <button class="dialog-close" onclick="AlertsUI.hideAlertsModal()" style="position: absolute; right: 20px; top: 20px; background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">&times;</button>
+                    <button class="dialog-close" onclick="AlertsUI.hideAlertsModal()">&times;</button>
                 </div>
-                <div class="dialog-body" style="padding: 20px;">
+                <div class="dialog-body">
                     <!-- Telegram Setup Section -->
                     <div class="alert-section">
                         <h4>
@@ -181,7 +169,7 @@ const AlertsUI = (function() {
                             <div class="parameter-group">
                                 <label for="telegram-chat-id">Chat ID</label>
                                 <input type="text" id="telegram-chat-id" placeholder="Enter your Telegram Chat ID" value="${alertPreferences?.telegram_chat_id || ''}">
-                                <button class="btn-secondary" onclick="AlertsUI.testTelegram()" style="margin-top: 5px;">
+                                <button class="btn-secondary" onclick="AlertsUI.testTelegram()">
                                     Test Connection
                                 </button>
                             </div>
@@ -228,10 +216,10 @@ const AlertsUI = (function() {
                             </label>
                         </div>
                     </div>
-                    
-                    <div id="alert-status" class="alert-status" style="display: none; margin-top: 15px;"></div>
+
+                    <div id="alert-status" class="alert-status"></div>
                 </div>
-                <div class="dialog-actions" style="padding: 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 10px;">
+                <div class="dialog-actions">
                     <button class="btn-secondary" onclick="AlertsUI.hideAlertsModal()">Cancel</button>
                     <button class="btn-primary" onclick="AlertsUI.savePreferences()">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

@@ -495,7 +495,7 @@ const AdminDatabase = {
                 <div class="admin-card-body">
                     <div class="alert alert-info mb-2">
                         <strong>ℹ️ Backup Information:</strong>
-                        <ul style="margin: 0.5rem 0 0 1.5rem;">
+                        <ul>
                             <li>Backups include all tables and data</li>
                             <li>Automatic backups run daily at 2 AM UTC</li>
                             <li>Retention: 7 daily, 4 weekly, 12 monthly</li>

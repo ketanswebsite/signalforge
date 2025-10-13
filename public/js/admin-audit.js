@@ -31,7 +31,7 @@ const AdminAudit = {
             <div class="admin-card mb-2">
                 <div class="admin-card-header">
                     <h2 class="admin-card-title">Audit Log</h2>
-                    <div style="display: flex; gap: 0.5rem;">
+                    <div>
                         <button class="btn btn-secondary btn-sm" onclick="AdminAudit.exportLogs()">
                             📥 Export Logs
                         </button>

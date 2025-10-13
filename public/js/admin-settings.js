@@ -643,7 +643,7 @@ const AdminSettings = {
                         </select>
                     </div>
 
-                    <div id="template-editor" style="display: none;">
+                    <div id="template-editor">
                         <div class="form-group">
                             <label>Subject Line:</label>
                             <input
@@ -660,7 +660,6 @@ const AdminSettings = {
                                 id="template-body"
                                 class="form-control"
                                 rows="15"
-                                style="font-family: monospace;"
                                 placeholder="<h1>Hello {{name}}</h1>..."
                             ></textarea>
                             <small class="text-muted">
