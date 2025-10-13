@@ -776,7 +776,7 @@ const AdminAnalytics = {
 
                             <div class="form-group">
                                 <label>Email To (optional):</label>
-                                <input type="email" id="report-email" class="form-control" placeholder="admin@signalforge.com" />
+                                <input type="email" id="report-email" class="form-control" placeholder="admin@sutralgo.com" />
                             </div>
                         </form>
                     </div>

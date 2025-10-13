@@ -183,7 +183,7 @@ const AdminSettings = {
                             id="app-url"
                             class="form-control"
                             value="${settings.appUrl || ''}"
-                            placeholder="https://signalforge.com"
+                            placeholder="https://sutralgo.com"
                         />
                     </div>
 
@@ -194,7 +194,7 @@ const AdminSettings = {
                             id="support-email"
                             class="form-control"
                             value="${settings.supportEmail || ''}"
-                            placeholder="support@signalforge.com"
+                            placeholder="support@sutralgo.com"
                         />
                     </div>
 
@@ -738,7 +738,7 @@ const AdminSettings = {
                             id="smtp-from-email"
                             class="form-control"
                             value="${templates.smtp?.fromEmail || ''}"
-                            placeholder="noreply@signalforge.com"
+                            placeholder="noreply@sutralgo.com"
                         />
                     </div>
 

@@ -1,6 +1,6 @@
-# SignalForge - Technical Analysis Education Platform
+# SutrAlgo - Technical Analysis Education Platform
 
-SignalForge is an educational platform for learning technical analysis and understanding market patterns through historical data visualization. The system provides tools for exploring technical indicators and backtesting methodologies across Indian (NSE) and US markets for educational purposes only.
+SutrAlgo is an educational platform for learning technical analysis and understanding market patterns through historical data visualization. The system provides tools for exploring technical indicators and backtesting methodologies across Indian (NSE) and US markets for educational purposes only.
 
 **Important Disclaimer**: This platform is for educational and informational purposes only. It does not provide investment advice. Past performance is not a reliable indicator of future results.
 
@@ -68,8 +68,8 @@ SignalForge is an educational platform for learning technical analysis and under
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/ketanswebsite/signalforge.git
-cd signalforge
+git clone https://github.com/ketanswebsite/sutralgo.git
+cd sutralgo
 ```
 
 ### 2. Install Dependencies

@@ -1,5 +1,3 @@
 - please run deploy-to-render.bat everytime we finalise making changes to a code
-- please remember if you wish to push - just run deploy-to-render.bat
-- remember to delete the old css code one the new css is written
 - always make changes related to css in main.css only no inline css in the html or the js file
 - remember to not duplicate anything in the main.css - if there are css already defined reuse it
