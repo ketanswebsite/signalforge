@@ -41,7 +41,7 @@ function renderActiveTrades() {
     const activeTrades = TradeCore.getTrades('active');
     
     if (activeTrades.length === 0) {
-        noActiveTradesMsg.style.display = 'block';
+        noActiveTradesMsg
         // Remove any existing trade cards
         const existingCards = container.querySelectorAll('.trade-card');
         existingCards.forEach(card => card.remove());
@@ -49,7 +49,7 @@ function renderActiveTrades() {
     }
     
     // Hide empty state message
-    noActiveTradesMsg.style.display = 'none';
+    noActiveTradesMsg
     
     // Remove any existing trade cards and clean up subscriptions
     const existingCards = container.querySelectorAll('.trade-card');
@@ -109,7 +109,7 @@ function renderActiveTrades() {
             if (priceContainer) {
                 const sparklineContainer = document.createElement('div');
                 sparklineContainer.className = 'sparkline-container';
-                sparklineContainer.style.display = 'inline-block';
+                sparklineContainer
                 sparklineContainer.style.verticalAlign = 'middle';
                 priceContainer.appendChild(sparklineContainer);
                 
@@ -312,24 +312,24 @@ function renderActiveTrades() {
         const closedTrades = TradeCore.getTrades('closed');
         
         if (closedTrades.length === 0) {
-            noTradeHistory.style.display = 'block';
-            tradesHistoryTable.style.display = 'none';
+            noTradeHistory
+            tradesHistoryTable
             
             if (noWinningTrades && winningTradesTable) {
-                noWinningTrades.style.display = 'block';
-                winningTradesTable.style.display = 'none';
+                noWinningTrades
+                winningTradesTable
             }
             
             if (noLosingTrades && losingTradesTable) {
-                noLosingTrades.style.display = 'block';
-                losingTradesTable.style.display = 'none';
+                noLosingTrades
+                losingTradesTable
             }
             return;
         }
         
         // Populate all trades table
-        noTradeHistory.style.display = 'none';
-        tradesHistoryTable.style.display = 'block';
+        noTradeHistory
+        tradesHistoryTable
         
         // Show P&L summary for all trades
         renderPLSummary(closedTrades, 'pl-summary-all');
@@ -358,11 +358,11 @@ function renderActiveTrades() {
             const winningTrades = closedTrades.filter(trade => (trade.profitLossPercentage || trade.profitLoss || 0) > 0);
             
             if (winningTrades.length === 0) {
-                noWinningTrades.style.display = 'block';
-                winningTradesTable.style.display = 'none';
+                noWinningTrades
+                winningTradesTable
             } else {
-                noWinningTrades.style.display = 'none';
-                winningTradesTable.style.display = 'block';
+                noWinningTrades
+                winningTradesTable
                 
                 // Show P&L summary for winning trades
                 renderPLSummary(winningTrades, 'pl-summary-winning');
@@ -393,11 +393,11 @@ function renderActiveTrades() {
             const losingTrades = closedTrades.filter(trade => (trade.profitLossPercentage || trade.profitLoss || 0) <= 0);
             
             if (losingTrades.length === 0) {
-                noLosingTrades.style.display = 'block';
-                losingTradesTable.style.display = 'none';
+                noLosingTrades
+                losingTradesTable
             } else {
-                noLosingTrades.style.display = 'none';
-                losingTradesTable.style.display = 'block';
+                noLosingTrades
+                losingTradesTable
                 
                 // Show P&L summary for losing trades
                 renderPLSummary(losingTrades, 'pl-summary-losing');
@@ -432,7 +432,7 @@ function renderActiveTrades() {
     function renderPLSummary(trades, containerId) {
         const container = document.getElementById(containerId);
         if (!container || trades.length === 0) {
-            if (container) container.style.display = 'none';
+            if (container) container
             return;
         }
         
@@ -508,7 +508,7 @@ function renderActiveTrades() {
             container.appendChild(card);
         });
         
-        container.style.display = 'grid';
+        container
         
         // Add animations to cards
         const cards = container.querySelectorAll('.pl-summary-card');

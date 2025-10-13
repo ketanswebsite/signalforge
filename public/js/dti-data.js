@@ -618,7 +618,7 @@ async function fetchCurrentQuote(symbol) {
                         const percentComplete = Math.round((processed / total) * 100);
                         statusDiv.innerHTML = `
                             <div>Processing ${scanDisplayName} (${stockList.length} stocks): ${processed}/${total}</div>
-                            <div class="progress-bar"><div class="progress" style="width: ${percentComplete}%"></div></div>
+                            <div class="progress-bar"><div class="progress" ></div></div>
                             <div>
                                 ${successes} succeeded, ${errors} failed, ${processed} processed
                             </div>

@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Portal - SignalForge</title>
-    <link rel="stylesheet" href="/css/admin-theme.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="/js/admin-components.js"></script>
     <script src="/js/admin-dashboard.js"></script>
@@ -142,10 +141,10 @@
                     </div>
 
                     <!-- Revenue Trend Chart -->
-                    <div class="admin-card" style="margin-top: 2rem;">
+                    <div class="admin-card">
                         <div class="admin-card-header">
                             <h2 class="admin-card-title">Revenue Trend (Last 12 Months)</h2>
-                            <div style="display: flex; gap: 0.5rem;">
+                            <div>
                                 <button class="btn btn-secondary btn-sm" onclick="AdminDashboard.changeChartPeriod('month')">Month</button>
                                 <button class="btn btn-secondary btn-sm" onclick="AdminDashboard.changeChartPeriod('year')">Year</button>
                             </div>
@@ -156,7 +155,7 @@
                     </div>
 
                     <!-- Recent Activity & Quick Actions -->
-                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-top: 2rem;">
+                    <div>
                         <!-- Recent Activity -->
                         <div class="admin-card">
                             <div class="admin-card-header">
@@ -178,7 +177,7 @@
                                 <h2 class="admin-card-title">Quick Actions</h2>
                             </div>
                             <div class="admin-card-body">
-                                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <div>
                                     <button class="btn btn-primary" onclick="loadPage('users')">
                                         👥 Manage Users
                                     </button>
@@ -201,13 +200,13 @@
                 </div>
 
                 <!-- Other pages will be loaded dynamically -->
-                <div id="users-page" class="page-section" style="display: none;"></div>
-                <div id="subscriptions-page" class="page-section" style="display: none;"></div>
-                <div id="payments-page" class="page-section" style="display: none;"></div>
-                <div id="audit-page" class="page-section" style="display: none;"></div>
-                <div id="analytics-page" class="page-section" style="display: none;"></div>
-                <div id="database-page" class="page-section" style="display: none;"></div>
-                <div id="settings-page" class="page-section" style="display: none;"></div>
+                <div id="users-page" class="page-section"></div>
+                <div id="subscriptions-page" class="page-section"></div>
+                <div id="payments-page" class="page-section"></div>
+                <div id="audit-page" class="page-section"></div>
+                <div id="analytics-page" class="page-section"></div>
+                <div id="database-page" class="page-section"></div>
+                <div id="settings-page" class="page-section"></div>
             </div>
         </main>
     </div>

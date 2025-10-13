@@ -63,7 +63,7 @@ const AdminUsers = {
       </div>
 
       <!-- Bulk Actions Bar (hidden by default) -->
-      <div id="bulk-actions-bar" style="display: ${this.selectedUsers.size > 0 ? 'block' : 'none'};" class="admin-card mb-2">
+      <div id="bulk-actions-bar"  class="admin-card mb-2">
         <div class="admin-card-body flex-between">
           <div>
             <span id="selected-count">0</span> users selected
@@ -269,10 +269,10 @@ const AdminUsers = {
     const count = document.getElementById('selected-count');
 
     if (this.selectedUsers.size > 0) {
-      bar.style.display = 'block';
+      bar
       count.textContent = this.selectedUsers.size;
     } else {
-      bar.style.display = 'none';
+      bar
     }
   },
 

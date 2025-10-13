@@ -221,30 +221,4 @@ window.FormValidation = {
 };
 
 // Add validation styles
-const validationStyles = document.createElement('style');
-validationStyles.textContent = `
-    .input-error {
-        border-color: #ef4444 !important;
-        background-color: #fef2f2 !important;
-    }
 
-    .field-error-message {
-        color: #dc2626;
-        font-size: 0.875rem;
-        margin-top: 0.25rem;
-        display: block;
-    }
-
-    /* Dark mode support */
-    @media (prefers-color-scheme: dark) {
-        .input-error {
-            background-color: #450a0a !important;
-        }
-    }
-
-    [data-theme="dark"] .input-error {
-        background-color: #450a0a !important;
-    }
-`;
-
-document.head.appendChild(validationStyles);

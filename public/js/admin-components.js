@@ -243,7 +243,7 @@ const AdminComponents = {
       <div class="progress-bar-container">
         ${label ? `<div class="progress-label">${label}</div>` : ''}
         <div class="progress-bar">
-          <div class="progress-fill progress-${color}" style="width: ${percentage}%"></div>
+          <div class="progress-fill progress-${color}" ></div>
         </div>
         <div class="progress-value">${value}/${max}</div>
       </div>

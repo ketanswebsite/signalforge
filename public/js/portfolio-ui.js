@@ -69,7 +69,7 @@ const PortfolioUI = (function() {
                             <span>${progress.percent}%</span>
                         </div>
                         <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${progress.percent}%"></div>
+                            <div class="progress-fill" ></div>
                         </div>
                     `;
                 }

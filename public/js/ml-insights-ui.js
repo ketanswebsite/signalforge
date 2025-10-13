@@ -35,7 +35,7 @@ const MLInsightsUI = (function() {
         const modal = document.createElement('div');
         modal.className = 'dialog-overlay';
         modal.id = 'ml-insights-modal';
-        modal.style.display = 'none';
+        modal
         
         modal.innerHTML = `
             <div class="dialog-content ml-insights-dialog">
@@ -70,8 +70,7 @@ const MLInsightsUI = (function() {
         
         // Add escape key handler
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && modal.style.display === 'flex') {
-                hideModal();
+            if (e.key === 'Escape' && modal                hideModal();
             }
         });
         
@@ -85,1551 +84,7 @@ const MLInsightsUI = (function() {
      * Add ML-specific styles
      */
     function addMLStyles() {
-        const style = document.createElement('style');
-        style.textContent = `
-            .ml-insights-button {
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
-                margin-left: 10px;
-            }
-            
-            .ml-loading {
-                text-align: center;
-                padding: 40px 20px;
-                color: var(--text-secondary);
-                background-color: var(--primary-lightest);
-                border-radius: var(--radius);
-                border: 2px dashed var(--border-color);
-            }
-            
-            .ml-loading svg {
-                margin-bottom: 15px;
-                color: var(--primary-color);
-            }
-            
-            .ml-loading p {
-                margin: 0;
-                font-size: 16px;
-                font-weight: 500;
-            }
-            
-            .ml-spinner {
-                margin-bottom: 16px;
-            }
-            
-            .ml-spin {
-                animation: ml-spin 1s linear infinite;
-            }
-            
-            @keyframes ml-spin {
-                from { transform: rotate(0deg); }
-                to { transform: rotate(360deg); }
-            }
-            
-            .ml-section {
-                background-color: var(--card-bg);
-                border-radius: var(--radius);
-                padding: var(--card-spacing);
-                margin-bottom: 20px;
-                box-shadow: var(--shadow-sm);
-                border: 1px solid var(--border-color);
-                transition: all var(--transition-fast) ease;
-            }
-            
-            .ml-section:hover {
-                box-shadow: var(--shadow);
-                border-color: var(--border-hover);
-            }
-            
-            .ml-section h3 {
-                margin-top: 0;
-                margin-bottom: 18px;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                color: var(--primary-color);
-                font-size: 18px;
-                font-weight: 600;
-                border-bottom: 2px solid var(--primary-light);
-                padding-bottom: 12px;
-            }
-            
-            .ml-section h4 {
-                color: var(--text-color);
-                font-size: 16px;
-                font-weight: 600;
-                margin-bottom: 12px;
-                margin-top: 20px;
-            }
-            
-            .ml-risk-params {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 16px;
-            }
-            
-            .ml-param {
-                background-color: var(--primary-lightest);
-                padding: 18px;
-                border-radius: var(--radius-sm);
-                text-align: center;
-                border: 1px solid var(--primary-light);
-                transition: all var(--transition-fast) ease;
-            }
-            
-            .ml-param:hover {
-                transform: translateY(-2px);
-                box-shadow: var(--shadow-sm);
-            }
-            
-            .ml-param-value {
-                font-size: 28px;
-                font-weight: 700;
-                color: var(--primary-color);
-                margin-bottom: 5px;
-            }
-            
-            .ml-param-label {
-                font-size: 13px;
-                color: var(--text-secondary);
-                font-weight: 500;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-            }
-            
-            .ml-patterns-list {
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-            }
-            
-            .ml-pattern-item {
-                background-color: var(--bg-color);
-                padding: 16px;
-                border-radius: var(--radius-sm);
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                border: 1px solid var(--border-color);
-                transition: all var(--transition-fast) ease;
-            }
-            
-            .ml-pattern-item:hover {
-                background-color: var(--primary-lightest);
-                border-color: var(--primary-light);
-                transform: translateX(4px);
-            }
-            
-            .ml-pattern-info {
-                flex: 1;
-            }
-            
-            .ml-pattern-name {
-                font-weight: 600;
-                margin-bottom: 6px;
-                color: var(--text-color);
-                font-size: 15px;
-            }
-            
-            .ml-pattern-desc {
-                font-size: 13px;
-                color: var(--text-secondary);
-                line-height: 1.4;
-            }
-            
-            .ml-confidence {
-                font-size: 20px;
-                font-weight: 700;
-                color: var(--success-color);
-                background-color: var(--success-light);
-                padding: 8px 12px;
-                border-radius: var(--radius-sm);
-                border: 1px solid var(--success-color);
-                min-width: 70px;
-                text-align: center;
-            }
-            
-            .ml-sentiment {
-                display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 16px;
-                margin-bottom: 20px;
-            }
-            
-            .ml-sentiment-score {
-                text-align: center;
-                padding: 20px;
-                background-color: var(--bg-color);
-                border-radius: var(--radius);
-                border: 1px solid var(--border-color);
-                transition: all var(--transition-fast) ease;
-            }
-            
-            .ml-sentiment-score:hover {
-                transform: translateY(-2px);
-                box-shadow: var(--shadow-sm);
-            }
-            
-            .ml-sentiment-value {
-                font-size: 32px;
-                font-weight: 700;
-                margin-bottom: 8px;
-            }
-            
-            .ml-sentiment-positive { 
-                color: var(--success-color);
-                background-color: var(--success-light);
-                border-color: var(--success-color);
-            }
-            .ml-sentiment-negative { 
-                color: var(--danger-color);
-                background-color: var(--danger-light);
-                border-color: var(--danger-color);
-            }
-            .ml-sentiment-neutral { 
-                color: var(--text-secondary);
-            }
-            
-            .ml-combined-signal {
-                background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-                color: white;
-                padding: 32px;
-                border-radius: var(--radius-lg);
-                text-align: center;
-                margin: 24px 0;
-                box-shadow: var(--shadow-lg);
-                position: relative;
-                overflow: hidden;
-            }
-            
-            .ml-combined-signal::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
-                pointer-events: none;
-            }
-            
-            .ml-signal-action {
-                font-size: 42px;
-                font-weight: 800;
-                margin-bottom: 12px;
-                text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-                position: relative;
-                z-index: 1;
-            }
-            
-            .ml-signal-confidence {
-                font-size: 18px;
-                opacity: 0.95;
-                font-weight: 500;
-                position: relative;
-                z-index: 1;
-            }
-            
-            .ml-recommendations {
-                list-style: none;
-                padding: 0;
-                margin: 0;
-            }
-            
-            .ml-recommendation {
-                background-color: var(--bg-color);
-                padding: 18px;
-                border-radius: var(--radius-sm);
-                margin-bottom: 12px;
-                display: flex;
-                align-items: center;
-                gap: 14px;
-                border: 1px solid var(--border-color);
-                transition: all var(--transition-fast) ease;
-            }
-            
-            .ml-recommendation:hover {
-                transform: translateX(4px);
-                box-shadow: var(--shadow-sm);
-                border-color: var(--border-hover);
-            }
-            
-            .ml-rec-icon {
-                width: 44px;
-                height: 44px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                flex-shrink: 0;
-                font-size: 18px;
-                font-weight: 600;
-            }
-            
-            .ml-rec-risk { 
-                background: var(--warning-light); 
-                color: var(--warning-color);
-                border: 2px solid var(--warning-color);
-            }
-            .ml-rec-pattern { 
-                background: var(--info-light); 
-                color: var(--info-color);
-                border: 2px solid var(--info-color);
-            }
-            .ml-rec-sentiment { 
-                background: var(--secondary-light); 
-                color: var(--secondary-color);
-                border: 2px solid var(--secondary-color);
-            }
-            
-            .ml-alert {
-                background-color: var(--warning-light);
-                color: var(--warning-color);
-                padding: 16px;
-                border-radius: var(--radius-sm);
-                border-left: 4px solid var(--warning-color);
-                margin-top: 16px;
-                font-weight: 500;
-            }
-            
-            .ml-signal-info {
-                background-color: var(--info-light);
-                color: var(--info-color);
-                padding: 14px;
-                border-radius: var(--radius-sm);
-                border-left: 4px solid var(--info-color);
-                margin-top: 16px;
-                font-size: 14px;
-                font-weight: 500;
-            }
-            
-            .ml-error {
-                text-align: center;
-                padding: 40px 20px;
-                color: var(--danger-color);
-                background-color: var(--danger-light);
-                border-radius: var(--radius);
-                border: 2px solid var(--danger-color);
-            }
-            
-            /* Dark mode adjustments */
-            [data-theme="dark"] .ml-loading {
-                background-color: var(--primary-lightest);
-                border-color: var(--border-color);
-            }
-            
-            [data-theme="dark"] .ml-param {
-                background-color: var(--primary-lightest);
-                border-color: var(--primary-light);
-            }
-            
-            [data-theme="dark"] .ml-pattern-item:hover {
-                background-color: var(--primary-lightest);
-            }
-            
-            [data-theme="dark"] .ml-sentiment-score {
-                background-color: var(--card-bg);
-            }
-            
-            /* Responsive design */
-            @media (max-width: 768px) {
-                .dialog-content {
-                    max-width: 95% !important;
-                    margin: 10px !important;
-                }
-                
-                .ml-risk-params {
-                    grid-template-columns: 1fr;
-                }
-                
-                .ml-sentiment {
-                    grid-template-columns: 1fr;
-                    gap: 12px;
-                }
-                
-                .ml-signal-action {
-                    font-size: 32px;
-                }
-                
-                .ml-param-value {
-                    font-size: 24px;
-                }
-            }
-            
-            /* Company Information Styles */
-            .ml-company-section {
-                background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-                color: white;
-                padding: 24px;
-                border-radius: var(--radius);
-                margin-bottom: 24px;
-                box-shadow: var(--shadow);
-            }
-            
-            .ml-company-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 16px;
-            }
-            
-            .ml-company-name {
-                font-size: 24px;
-                font-weight: 700;
-                margin: 0;
-                color: white;
-            }
-            
-            .ml-company-symbol {
-                background-color: rgba(255, 255, 255, 0.2);
-                padding: 8px 16px;
-                border-radius: var(--radius-sm);
-                font-weight: 600;
-                font-size: 16px;
-                letter-spacing: 1px;
-            }
-            
-            .ml-company-details {
-                display: flex;
-                gap: 12px;
-                margin-bottom: 16px;
-                flex-wrap: wrap;
-            }
-            
-            .ml-industry-tag, .ml-sector-tag {
-                background-color: rgba(255, 255, 255, 0.15);
-                padding: 6px 12px;
-                border-radius: 20px;
-                font-size: 13px;
-                font-weight: 500;
-                border: 1px solid rgba(255, 255, 255, 0.2);
-            }
-            
-            .ml-company-description {
-                line-height: 1.6;
-                font-size: 15px;
-                opacity: 0.95;
-            }
-            
-            .ml-company-description p {
-                margin: 0;
-            }
-            
-            /* Enhanced Section Descriptions */
-            .ml-section-description {
-                font-size: 14px;
-                color: var(--text-secondary);
-                margin-bottom: 20px;
-                padding: 12px;
-                background-color: var(--bg-color);
-                border-radius: var(--radius-sm);
-                border-left: 4px solid var(--primary-light);
-                font-style: italic;
-            }
-            
-            /* Enhanced Parameter Help Text */
-            .ml-param-help {
-                font-size: 12px;
-                color: var(--text-tertiary);
-                margin-top: 8px;
-                line-height: 1.4;
-                font-style: italic;
-            }
-            
-            /* Pattern Explanation Styles */
-            .ml-pattern-help {
-                font-size: 13px;
-                color: var(--text-secondary);
-                margin-bottom: 16px;
-                padding: 10px;
-                background-color: var(--primary-lightest);
-                border-radius: var(--radius-sm);
-                border-left: 3px solid var(--primary-light);
-            }
-            
-            .ml-pattern-explanation {
-                font-size: 12px;
-                color: var(--text-tertiary);
-                margin-top: 8px;
-                font-style: italic;
-                line-height: 1.4;
-            }
-            
-            .ml-confidence-badge {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 4px;
-                min-width: 80px;
-            }
-            
-            .ml-confidence-label {
-                font-size: 10px;
-                color: var(--text-tertiary);
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-                font-weight: 500;
-            }
-            
-            /* Enhanced Alert Styles */
-            .ml-alert {
-                background-color: #fff3cd;
-                border: 1px solid #ffeaa7;
-                color: #856404;
-                padding: 16px;
-                border-radius: var(--radius-sm);
-                margin-top: 16px;
-                border-left: 4px solid #f39c12;
-            }
-            
-            .ml-alert-help {
-                font-size: 13px;
-                margin-top: 8px;
-                opacity: 0.8;
-                font-style: italic;
-            }
-            
-            /* Enhanced Signal Styles */
-            .ml-signal-header {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                margin-bottom: 8px;
-            }
-            
-            .ml-signal-icon {
-                font-size: 24px;
-            }
-            
-            .ml-signal-explanation {
-                font-size: 13px;
-                opacity: 0.9;
-                margin-top: 8px;
-                font-style: italic;
-            }
-            
-            .ml-signal-reason {
-                font-size: 13px;
-                margin-top: 8px;
-                opacity: 0.8;
-                font-style: italic;
-            }
-            
-            /* Dark mode adjustments for new elements */
-            @media (prefers-color-scheme: dark) {
-                .ml-alert {
-                    background-color: rgba(255, 193, 7, 0.1);
-                    border-color: rgba(255, 193, 7, 0.3);
-                    color: #ffc107;
-                }
-            }
-            
-            /* Visual Summary Styles */
-            .ml-visual-summary {
-                background: var(--card-bg);
-                border-radius: var(--radius);
-                padding: var(--card-spacing);
-                margin-bottom: 24px;
-                border: 1px solid var(--border-color);
-            }
-            
-            .ml-signal-dashboard {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 24px;
-                margin-top: 20px;
-            }
-            
-            .ml-main-signal {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 20px;
-            }
-            
-            .ml-signal-indicator {
-                width: 150px;
-                height: 150px;
-                border-radius: 50%;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-                position: relative;
-                animation: pulse 2s ease-in-out infinite;
-            }
-            
-            @keyframes pulse {
-                0% { transform: scale(1); }
-                50% { transform: scale(1.05); }
-                100% { transform: scale(1); }
-            }
-            
-            .ml-signal-icon-large {
-                font-size: 48px;
-                margin-bottom: 8px;
-            }
-            
-            .ml-signal-text {
-                font-size: 24px;
-                font-weight: 700;
-                color: white;
-                text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            }
-            
-            .ml-signal-confidence-visual {
-                text-align: center;
-            }
-            
-            .ml-gauge {
-                width: 200px;
-                height: 100px;
-            }
-            
-            .ml-gauge-label {
-                font-size: 16px;
-                font-weight: 600;
-                color: var(--text-color);
-                margin-top: 10px;
-            }
-            
-            .ml-signal-components h4 {
-                margin-bottom: 16px;
-                color: var(--text-color);
-            }
-            
-            .ml-component-bars {
-                display: flex;
-                flex-direction: column;
-                gap: 16px;
-            }
-            
-            .ml-component-bar {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-            }
-            
-            .ml-component-label {
-                flex: 0 0 150px;
-                font-size: 14px;
-                font-weight: 500;
-                color: var(--text-secondary);
-            }
-            
-            .ml-component-visual {
-                flex: 1;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-            }
-            
-            .ml-component-track {
-                flex: 1;
-                height: 24px;
-                background: var(--bg-color);
-                border-radius: 12px;
-                overflow: hidden;
-                border: 1px solid var(--border-color);
-            }
-            
-            .ml-component-fill {
-                height: 100%;
-                transition: width 0.6s ease;
-                border-radius: 12px;
-            }
-            
-            .ml-component-value {
-                font-size: 14px;
-                font-weight: 600;
-                color: var(--text-color);
-                min-width: 45px;
-                text-align: right;
-            }
-            
-            /* Enhanced Visual Styles */
-            .ml-explain-toggle {
-                background: none;
-                border: 1px solid var(--border-color);
-                color: var(--primary-color);
-                padding: 6px 12px;
-                border-radius: var(--radius-sm);
-                font-size: 12px;
-                font-weight: 500;
-                cursor: pointer;
-                margin-left: auto;
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
-                transition: all var(--transition-fast) ease;
-            }
-            
-            .ml-explain-toggle:hover {
-                background: var(--primary-lightest);
-                border-color: var(--primary-color);
-                transform: translateY(-1px);
-            }
-            
-            .ml-explanation-panel {
-                background: var(--bg-color);
-                border: 1px solid var(--border-color);
-                border-radius: var(--radius-sm);
-                padding: 20px;
-                margin: 16px 0;
-                transition: all 0.3s ease;
-            }
-            
-            .ml-explanation-panel h4 {
-                margin-top: 0;
-                color: var(--primary-color);
-                font-size: 16px;
-                margin-bottom: 16px;
-            }
-            
-            .ml-explanation-panel h5 {
-                margin-top: 16px;
-                margin-bottom: 12px;
-                color: var(--text-color);
-                font-size: 14px;
-            }
-            
-            .ml-explanation-factors {
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-                margin-bottom: 16px;
-            }
-            
-            .ml-factor {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-            }
-            
-            .ml-factor-name {
-                flex: 0 0 140px;
-                font-size: 13px;
-                font-weight: 500;
-                color: var(--text-secondary);
-            }
-            
-            .ml-factor-bar {
-                flex: 1;
-                height: 20px;
-                background: var(--bg-color);
-                border-radius: 10px;
-                overflow: hidden;
-                border: 1px solid var(--border-color);
-            }
-            
-            .ml-factor-fill {
-                height: 100%;
-                background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
-                transition: width 0.6s ease;
-            }
-            
-            .ml-factor-impact {
-                font-size: 13px;
-                font-weight: 600;
-                color: var(--text-color);
-                min-width: 45px;
-                text-align: right;
-            }
-            
-            .ml-model-accuracy {
-                background: var(--primary-lightest);
-                padding: 12px;
-                border-radius: var(--radius-sm);
-                font-size: 13px;
-            }
-            
-            .ml-model-accuracy p {
-                margin: 4px 0;
-            }
-            
-            .ml-analysis-methods {
-                list-style: none;
-                padding-left: 20px;
-                margin: 12px 0;
-            }
-            
-            .ml-analysis-methods li {
-                position: relative;
-                padding-left: 20px;
-                margin-bottom: 8px;
-                font-size: 13px;
-                color: var(--text-secondary);
-            }
-            
-            .ml-analysis-methods li:before {
-                content: "✓";
-                position: absolute;
-                left: 0;
-                color: var(--success-color);
-                font-weight: bold;
-            }
-            
-            /* Visual Parameter Styles */
-            .ml-risk-visual-params {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 20px;
-                margin-top: 20px;
-            }
-            
-            .ml-visual-param {
-                background: var(--bg-color);
-                padding: 20px;
-                border-radius: var(--radius-sm);
-                border: 1px solid var(--border-color);
-            }
-            
-            .ml-param-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 12px;
-            }
-            
-            .ml-visual-meter {
-                height: 8px;
-                background: var(--bg-color);
-                border-radius: 4px;
-                overflow: hidden;
-                border: 1px solid var(--border-color);
-                margin-bottom: 12px;
-            }
-            
-            .ml-meter-fill {
-                height: 100%;
-                transition: width 0.6s ease;
-                border-radius: 4px;
-            }
-            
-            .ml-meter-danger {
-                background: linear-gradient(90deg, #ff5252, #f44336);
-            }
-            
-            .ml-meter-success {
-                background: linear-gradient(90deg, #4caf50, #45a049);
-            }
-            
-            /* Confidence Ring Styles */
-            .ml-confidence-ring {
-                width: 120px;
-                height: 120px;
-                margin: 0 auto 12px;
-            }
-            
-            .ml-circular-chart {
-                display: block;
-                margin: 0 auto;
-                max-width: 100%;
-                max-height: 100%;
-            }
-            
-            .ml-circle-bg {
-                fill: none;
-                stroke: var(--border-color);
-                stroke-width: 2.8;
-            }
-            
-            .ml-circle {
-                fill: none;
-                stroke: var(--primary-color);
-                stroke-width: 2.8;
-                stroke-linecap: round;
-                animation: progress 1s ease-out forwards;
-            }
-            
-            @keyframes progress {
-                0% {
-                    stroke-dasharray: 0 100;
-                }
-            }
-            
-            .ml-percentage {
-                fill: var(--text-color);
-                font-size: 0.5em;
-                text-anchor: middle;
-                font-weight: 700;
-            }
-            
-            /* Pattern Visualization */
-            .ml-pattern-visual {
-                margin: 20px 0;
-                padding: 16px;
-                background: var(--bg-color);
-                border-radius: var(--radius-sm);
-                border: 1px solid var(--border-color);
-            }
-            
-            .ml-pattern-canvas {
-                width: 100%;
-                height: 200px;
-                display: block;
-            }
-            
-            /* Responsive adjustments for new visual elements */
-            @media (max-width: 768px) {
-                .ml-signal-dashboard {
-                    grid-template-columns: 1fr;
-                }
-                
-                .ml-risk-visual-params {
-                    grid-template-columns: 1fr;
-                }
-                
-                .ml-component-label {
-                    flex: 0 0 120px;
-                    font-size: 12px;
-                }
-                
-                .ml-factor-name {
-                    flex: 0 0 100px;
-                    font-size: 12px;
-                }
-            }
-            
-            /* Phase 1 Enhancement Styles */
-            
-            /* Multi-Timeframe Analysis */
-            .ml-timeframe-analysis {
-                margin-top: 24px;
-                padding-top: 24px;
-                border-top: 1px solid var(--border-color);
-            }
-            
-            .ml-timeframe-analysis h4 {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                margin-bottom: 16px;
-                color: var(--text-color);
-                font-size: 16px;
-            }
-            
-            .ml-timeframe-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                gap: 16px;
-                margin-bottom: 20px;
-            }
-            
-            .ml-timeframe-card {
-                background: var(--bg-color);
-                border: 1px solid var(--border-color);
-                border-radius: var(--radius-sm);
-                padding: 16px;
-                transition: all var(--transition-fast) ease;
-            }
-            
-            .ml-timeframe-card:hover {
-                transform: translateY(-2px);
-                box-shadow: var(--shadow-sm);
-                border-color: var(--primary-light);
-            }
-            
-            .ml-timeframe-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 12px;
-            }
-            
-            .ml-timeframe-header h5 {
-                margin: 0;
-                font-size: 15px;
-                font-weight: 600;
-                color: var(--text-color);
-            }
-            
-            .ml-volatility-badge {
-                padding: 4px 8px;
-                border-radius: 12px;
-                font-size: 11px;
-                font-weight: 600;
-                color: white;
-                text-transform: uppercase;
-            }
-            
-            .ml-timeframe-metrics {
-                display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 12px;
-                margin-bottom: 12px;
-            }
-            
-            .ml-metric {
-                text-align: center;
-            }
-            
-            .ml-metric-label {
-                display: block;
-                font-size: 11px;
-                color: var(--text-secondary);
-                margin-bottom: 4px;
-            }
-            
-            .ml-metric-value {
-                display: block;
-                font-size: 18px;
-                font-weight: 700;
-                color: var(--primary-color);
-            }
-            
-            .ml-timeframe-recommendation {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                padding: 8px;
-                background: var(--primary-lightest);
-                border-radius: var(--radius-xs);
-                font-size: 12px;
-                color: var(--text-secondary);
-                border: 1px solid var(--primary-light);
-            }
-            
-            /* Position Sizing Calculator */
-            .ml-position-sizing {
-                margin-top: 24px;
-                padding-top: 24px;
-                border-top: 1px solid var(--border-color);
-            }
-            
-            .ml-position-sizing h4 {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                margin-bottom: 16px;
-                color: var(--text-color);
-                font-size: 16px;
-            }
-            
-            .ml-sizing-inputs {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 16px;
-                margin-bottom: 20px;
-            }
-            
-            .ml-input-group {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-            
-            .ml-input-group label {
-                font-size: 13px;
-                font-weight: 500;
-                color: var(--text-secondary);
-            }
-            
-            .ml-input-group input,
-            .ml-input-group select {
-                padding: 10px;
-                border: 1px solid var(--border-color);
-                border-radius: var(--radius-sm);
-                background: var(--card-bg);
-                color: var(--text-color);
-                font-size: 14px;
-                transition: all var(--transition-fast) ease;
-            }
-            
-            .ml-input-group input:focus,
-            .ml-input-group select:focus {
-                outline: none;
-                border-color: var(--primary-color);
-                box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-            }
-            
-            .ml-sizing-results {
-                background: var(--bg-color);
-                border: 1px solid var(--border-color);
-                border-radius: var(--radius-sm);
-                padding: 20px;
-            }
-            
-            .ml-sizing-calculation {
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-            }
-            
-            .ml-calc-row {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 8px 0;
-                border-bottom: 1px solid var(--border-color);
-            }
-            
-            .ml-calc-label {
-                font-size: 14px;
-                color: var(--text-secondary);
-            }
-            
-            .ml-calc-value {
-                font-size: 16px;
-                font-weight: 600;
-                color: var(--text-color);
-            }
-            
-            .ml-calc-value.highlight {
-                font-size: 20px;
-                color: var(--primary-color);
-            }
-            
-            .ml-kelly-section {
-                margin-top: 16px;
-                padding-top: 16px;
-                border-top: 1px solid var(--border-color);
-            }
-            
-            .ml-kelly-section h5 {
-                margin: 0 0 12px 0;
-                font-size: 14px;
-                color: var(--text-color);
-            }
-            
-            .ml-kelly-meter {
-                position: relative;
-                height: 32px;
-                background: var(--bg-color);
-                border: 1px solid var(--border-color);
-                border-radius: 16px;
-                overflow: hidden;
-                margin-bottom: 8px;
-            }
-            
-            .ml-kelly-fill {
-                height: 100%;
-                background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
-                transition: width 0.6s ease;
-            }
-            
-            .ml-kelly-text {
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                font-size: 13px;
-                font-weight: 600;
-                color: var(--text-color);
-            }
-            
-            .ml-kelly-help {
-                font-size: 12px;
-                color: var(--text-secondary);
-                margin: 0;
-            }
-            
-            /* Risk Scenarios */
-            .ml-risk-scenarios {
-                margin-top: 24px;
-                padding-top: 24px;
-                border-top: 1px solid var(--border-color);
-            }
-            
-            .ml-risk-scenarios h4 {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                margin-bottom: 16px;
-                color: var(--text-color);
-                font-size: 16px;
-            }
-            
-            .ml-scenarios-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 16px;
-                margin-bottom: 20px;
-            }
-            
-            .ml-scenario-card {
-                background: var(--card-bg);
-                border: 2px solid;
-                border-radius: var(--radius);
-                padding: 20px;
-                text-align: center;
-                transition: all var(--transition-fast) ease;
-            }
-            
-            .ml-scenario-card:hover {
-                transform: translateY(-4px);
-                box-shadow: var(--shadow);
-            }
-            
-            .ml-scenario-icon {
-                width: 60px;
-                height: 60px;
-                margin: 0 auto 12px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            .ml-scenario-title {
-                margin: 0 0 16px 0;
-                font-size: 16px;
-                font-weight: 600;
-                color: var(--text-color);
-            }
-            
-            .ml-scenario-metrics {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-                margin-bottom: 12px;
-            }
-            
-            .ml-scenario-metric {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                font-size: 13px;
-            }
-            
-            .ml-impact-indicator {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                gap: 8px;
-                margin-bottom: 12px;
-                font-size: 12px;
-            }
-            
-            .ml-impact-label {
-                color: var(--text-secondary);
-            }
-            
-            .ml-impact-level {
-                font-weight: 700;
-                text-transform: uppercase;
-            }
-            
-            .ml-scenario-bar {
-                height: 6px;
-                background: var(--bg-color);
-                border-radius: 3px;
-                overflow: hidden;
-            }
-            
-            .ml-scenario-fill {
-                height: 100%;
-                transition: width 0.6s ease;
-            }
-            
-            /* Value at Risk Analysis */
-            .ml-var-analysis {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 16px;
-                padding: 16px;
-                background: var(--bg-color);
-                border-radius: var(--radius-sm);
-                border: 1px solid var(--border-color);
-            }
-            
-            .ml-var-metric {
-                text-align: center;
-                padding: 16px;
-            }
-            
-            .ml-var-label {
-                display: block;
-                font-size: 14px;
-                color: var(--text-secondary);
-                margin-bottom: 8px;
-            }
-            
-            .ml-var-value {
-                display: block;
-                font-size: 24px;
-                font-weight: 700;
-                color: var(--danger-color);
-                margin-bottom: 4px;
-            }
-            
-            .ml-var-help {
-                display: block;
-                font-size: 11px;
-                color: var(--text-tertiary);
-                font-style: italic;
-            }
-            
-            /* Dark mode adjustments for Phase 1 */
-            [data-theme="dark"] .ml-timeframe-card {
-                background: var(--card-bg);
-            }
-            
-            [data-theme="dark"] .ml-sizing-results {
-                background: var(--card-bg);
-            }
-            
-            [data-theme="dark"] .ml-var-analysis {
-                background: var(--card-bg);
-            }
-            
-            /* Responsive adjustments for Phase 1 */
-            @media (max-width: 768px) {
-                .ml-timeframe-grid {
-                    grid-template-columns: 1fr;
-                }
-                
-                .ml-scenarios-grid {
-                    grid-template-columns: 1fr;
-                }
-                
-                .ml-var-analysis {
-                    grid-template-columns: 1fr;
-                }
-            }
-            
-            /* Phase 1 Pattern Recognition Enhancements */
-            
-            /* Pattern Formation Tracking */
-            .ml-pattern-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 8px;
-            }
-            
-            .ml-pattern-formation {
-                position: relative;
-                width: 120px;
-                height: 20px;
-                background: var(--bg-color);
-                border: 1px solid var(--border-color);
-                border-radius: 10px;
-                overflow: hidden;
-            }
-            
-            .ml-formation-progress {
-                position: absolute;
-                top: 0;
-                left: 0;
-                height: 100%;
-                background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
-                transition: width 0.6s ease;
-            }
-            
-            .ml-formation-text {
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                font-size: 11px;
-                font-weight: 600;
-                color: var(--text-color);
-                white-space: nowrap;
-            }
-            
-            /* Pattern Success Rate */
-            .ml-pattern-success {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                margin-bottom: 8px;
-                font-size: 13px;
-            }
-            
-            .ml-success-rate {
-                font-weight: 600;
-                color: var(--success-color);
-            }
-            
-            .ml-success-count {
-                color: var(--text-secondary);
-            }
-            
-            .ml-best-market {
-                padding: 2px 8px;
-                background: var(--primary-lightest);
-                border-radius: 12px;
-                font-size: 11px;
-                color: var(--primary-color);
-                font-weight: 500;
-            }
-            
-            /* Critical Levels */
-            .ml-critical-levels {
-                display: flex;
-                gap: 12px;
-                margin-bottom: 8px;
-                font-size: 12px;
-            }
-            
-            .ml-critical-levels span {
-                padding: 4px 8px;
-                background: var(--bg-color);
-                border: 1px solid var(--border-color);
-                border-radius: var(--radius-xs);
-                font-weight: 500;
-            }
-            
-            /* Pattern Target */
-            .ml-pattern-target {
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
-                padding: 6px 12px;
-                background: var(--success-light);
-                color: var(--success-color);
-                border-radius: var(--radius-sm);
-                font-weight: 600;
-                font-size: 14px;
-                margin-bottom: 8px;
-            }
-            
-            /* Advanced Pattern Styles */
-            .ml-pattern-advanced {
-                border: 2px solid var(--primary-color);
-                background: var(--primary-lightest);
-            }
-            
-            .ml-pattern-advanced .ml-pattern-name {
-                color: var(--primary-color);
-            }
-            
-            /* Small Confidence Ring */
-            .ml-confidence-visual {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 4px;
-            }
-            
-            .ml-confidence-ring-small {
-                width: 80px;
-                height: 80px;
-            }
-            
-            .ml-circular-chart-small {
-                display: block;
-                margin: 0 auto;
-                max-width: 100%;
-                max-height: 100%;
-            }
-            
-            .ml-percentage-small {
-                fill: var(--text-color);
-                font-size: 0.6em;
-                text-anchor: middle;
-                font-weight: 700;
-            }
-            
-            /* Harmonic Pattern Points */
-            .ml-harmonic-points {
-                display: flex;
-                gap: 8px;
-                margin-top: 8px;
-            }
-            
-            .ml-harmonic-point {
-                padding: 4px 8px;
-                background: var(--primary-light);
-                color: var(--primary-color);
-                border-radius: var(--radius-xs);
-                font-size: 11px;
-                font-weight: 600;
-            }
-            
-            /* Elliott Wave Visualization */
-            .ml-elliott-waves {
-                display: flex;
-                align-items: center;
-                gap: 4px;
-                margin-top: 8px;
-            }
-            
-            .ml-wave-number {
-                width: 24px;
-                height: 24px;
-                background: var(--primary-color);
-                color: white;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 12px;
-                font-weight: 600;
-            }
-            
-            .ml-wave-connector {
-                width: 20px;
-                height: 2px;
-                background: var(--border-color);
-            }
-            
-            /* Volume Pattern Indicator */
-            .ml-volume-ratio {
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
-                padding: 4px 8px;
-                background: var(--warning-light);
-                color: var(--warning-color);
-                border-radius: var(--radius-xs);
-                font-weight: 600;
-                font-size: 12px;
-            }
-            
-            /* Pattern Item Hover Effects */
-            .ml-pattern-item {
-                position: relative;
-                overflow: hidden;
-            }
-            
-            .ml-pattern-item::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: -100%;
-                width: 100%;
-                height: 100%;
-                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-                transition: left 0.5s ease;
-            }
-            
-            .ml-pattern-item:hover::before {
-                left: 100%;
-            }
-            
-            /* Responsive Pattern Updates */
-            @media (max-width: 768px) {
-                .ml-pattern-header {
-                    flex-direction: column;
-                    align-items: flex-start;
-                    gap: 8px;
-                }
-                
-                .ml-pattern-formation {
-                    width: 100%;
-                }
-                
-                .ml-pattern-success {
-                    flex-wrap: wrap;
-                }
-                
-                .ml-critical-levels {
-                    flex-direction: column;
-                    gap: 6px;
-                }
-                
-                .ml-confidence-visual {
-                    position: static;
-                    margin-top: 12px;
-                }
-            }
-        `;
         
-        document.head.appendChild(style);
     }
     
     /**
@@ -1637,7 +92,7 @@ const MLInsightsUI = (function() {
      */
     function showMLInsights(symbol = null) {
         const modal = document.getElementById('ml-insights-modal');
-        modal.style.display = 'flex';
+        modal
         modal.classList.add('active');
         
         // Always auto-analyze with provided symbol or current symbol
@@ -1653,7 +108,7 @@ const MLInsightsUI = (function() {
      */
     function hideModal() {
         const modal = document.getElementById('ml-insights-modal');
-        modal.style.display = 'none';
+        modal
         modal.classList.remove('active');
     }
     
@@ -1791,7 +246,7 @@ const MLInsightsUI = (function() {
                 <h3>AI Trading Signal Overview</h3>
                 <div class="ml-signal-dashboard">
                     <div class="ml-main-signal">
-                        <div class="ml-signal-indicator" style="background: ${signalColor}">
+                        <div class="ml-signal-indicator" >
                             <div class="ml-signal-icon-large">
                                 ${signal.signal === 'BUY' ? '📈' : signal.signal === 'SELL' ? '📉' : '➡️'}
                             </div>
@@ -1832,7 +287,7 @@ const MLInsightsUI = (function() {
                 <div class="ml-component-label">${label}</div>
                 <div class="ml-component-visual">
                     <div class="ml-component-track">
-                        <div class="ml-component-fill" style="width: ${value}%; background: ${color}"></div>
+                        <div class="ml-component-fill" ></div>
                     </div>
                     <span class="ml-component-value">${value}%</span>
                 </div>
@@ -1978,21 +433,21 @@ const MLInsightsUI = (function() {
                             <div class="ml-factor">
                                 <span class="ml-factor-name">Historical Volatility:</span>
                                 <div class="ml-factor-bar">
-                                    <div class="ml-factor-fill" style="width: ${analysis.risk.volatilityScore || 65}%"></div>
+                                    <div class="ml-factor-fill" ></div>
                                 </div>
                                 <span class="ml-factor-impact">${analysis.risk.volatilityScore || 65}% impact</span>
                             </div>
                             <div class="ml-factor">
                                 <span class="ml-factor-name">Market Conditions:</span>
                                 <div class="ml-factor-bar">
-                                    <div class="ml-factor-fill" style="width: ${analysis.risk.marketScore || 45}%"></div>
+                                    <div class="ml-factor-fill" ></div>
                                 </div>
                                 <span class="ml-factor-impact">${analysis.risk.marketScore || 45}% impact</span>
                             </div>
                             <div class="ml-factor">
                                 <span class="ml-factor-name">Technical Indicators:</span>
                                 <div class="ml-factor-bar">
-                                    <div class="ml-factor-fill" style="width: ${analysis.risk.technicalScore || 80}%"></div>
+                                    <div class="ml-factor-fill" ></div>
                                 </div>
                                 <span class="ml-factor-impact">${analysis.risk.technicalScore || 80}% impact</span>
                             </div>
@@ -2014,7 +469,7 @@ const MLInsightsUI = (function() {
                                 <span class="ml-param-value">${analysis.risk.stopLoss}%</span>
                             </div>
                             <div class="ml-visual-meter">
-                                <div class="ml-meter-fill ml-meter-danger" style="width: ${Math.min(analysis.risk.stopLoss * 10, 100)}%"></div>
+                                <div class="ml-meter-fill ml-meter-danger" ></div>
                             </div>
                             <div class="ml-param-help">🛡️ Suggested maximum loss threshold to limit downside risk</div>
                         </div>
@@ -2025,7 +480,7 @@ const MLInsightsUI = (function() {
                                 <span class="ml-param-value">${analysis.risk.takeProfit}%</span>
                             </div>
                             <div class="ml-visual-meter">
-                                <div class="ml-meter-fill ml-meter-success" style="width: ${Math.min(analysis.risk.takeProfit * 5, 100)}%"></div>
+                                <div class="ml-meter-fill ml-meter-success" ></div>
                             </div>
                             <div class="ml-param-help">🎯 Optimal profit-taking level based on volatility analysis</div>
                         </div>
@@ -2192,14 +647,14 @@ const MLInsightsUI = (function() {
                                 <div class="ml-factor">
                                     <span class="ml-factor-name">Pattern Clarity:</span>
                                     <div class="ml-factor-bar">
-                                        <div class="ml-factor-fill" style="width: ${analysis.patterns.clarityScore || 78}%"></div>
+                                        <div class="ml-factor-fill" ></div>
                                     </div>
                                     <span class="ml-factor-impact">${analysis.patterns.clarityScore || 78}%</span>
                                 </div>
                                 <div class="ml-factor">
                                     <span class="ml-factor-name">Historical Success:</span>
                                     <div class="ml-factor-bar">
-                                        <div class="ml-factor-fill" style="width: ${analysis.patterns.historicalScore || 85}%"></div>
+                                        <div class="ml-factor-fill" ></div>
                                     </div>
                                     <span class="ml-factor-impact">${analysis.patterns.historicalScore || 85}%</span>
                                 </div>
@@ -2230,7 +685,7 @@ const MLInsightsUI = (function() {
                                     <div class="ml-pattern-name">${formatPatternName(pattern.type)}</div>
                                     ${pattern.formation ? `
                                         <div class="ml-pattern-formation">
-                                            <div class="ml-formation-progress" style="width: ${pattern.formation.completion}%"></div>
+                                            <div class="ml-formation-progress" ></div>
                                             <span class="ml-formation-text">${pattern.formation.completion}% formed</span>
                                         </div>
                                     ` : ''}
@@ -2360,21 +815,21 @@ const MLInsightsUI = (function() {
                                 <div class="ml-factor">
                                     <span class="ml-factor-name">News Media:</span>
                                     <div class="ml-factor-bar">
-                                        <div class="ml-factor-fill" style="width: ${analysis.sentiment.newsScore || 70}%; background: ${getScoreColor(analysis.sentiment.newsScore || 70)}"></div>
+                                        <div class="ml-factor-fill" ></div>
                                     </div>
                                     <span class="ml-factor-impact">${analysis.sentiment.newsScore || 70}% positive</span>
                                 </div>
                                 <div class="ml-factor">
                                     <span class="ml-factor-name">Social Media:</span>
                                     <div class="ml-factor-bar">
-                                        <div class="ml-factor-fill" style="width: ${analysis.sentiment.socialScore || 65}%; background: ${getScoreColor(analysis.sentiment.socialScore || 65)}"></div>
+                                        <div class="ml-factor-fill" ></div>
                                     </div>
                                     <span class="ml-factor-impact">${analysis.sentiment.socialScore || 65}% positive</span>
                                 </div>
                                 <div class="ml-factor">
                                     <span class="ml-factor-name">Analyst Views:</span>
                                     <div class="ml-factor-bar">
-                                        <div class="ml-factor-fill" style="width: ${analysis.sentiment.analystScore || 80}%; background: ${getScoreColor(analysis.sentiment.analystScore || 80)}"></div>
+                                        <div class="ml-factor-fill" ></div>
                                     </div>
                                     <span class="ml-factor-impact">${analysis.sentiment.analystScore || 80}% positive</span>
                                 </div>
@@ -2421,7 +876,7 @@ const MLInsightsUI = (function() {
             const signalIcon = signal.signal === 'BUY' ? '📈' : signal.signal === 'SELL' ? '📉' : '➡️';
             
             html += `
-                <div class="ml-combined-signal" style="background: ${signalColor}">
+                <div class="ml-combined-signal" >
                     <div class="ml-signal-header">
                         <div class="ml-signal-icon">${signalIcon}</div>
                         <div class="ml-signal-action">${signal.signal}</div>
@@ -2495,7 +950,7 @@ const MLInsightsUI = (function() {
         const panel = document.getElementById(`explanation-${section}`);
         if (panel) {
             const isVisible = panel.style.display !== 'none';
-            panel.style.display = isVisible ? 'none' : 'block';
+            panel
             
             // Animate the panel
             if (!isVisible) {
@@ -2520,7 +975,7 @@ const MLInsightsUI = (function() {
             <div class="ml-timeframe-card">
                 <div class="ml-timeframe-header">
                     <h5>${timeframe}</h5>
-                    <span class="ml-volatility-badge" style="background: ${volatilityColor}">
+                    <span class="ml-volatility-badge" >
                         ${data.volatility} volatility
                     </span>
                 </div>
@@ -2583,7 +1038,7 @@ const MLInsightsUI = (function() {
                 <div class="ml-kelly-section">
                     <h5>Kelly Criterion Suggestion</h5>
                     <div class="ml-kelly-meter">
-                        <div class="ml-kelly-fill" style="width: ${(kellySize/portfolioValue*100).toFixed(1)}%"></div>
+                        <div class="ml-kelly-fill" ></div>
                         <span class="ml-kelly-text">${(kellySize/portfolioValue*100).toFixed(1)}%</span>
                     </div>
                     <p class="ml-kelly-help">Optimal position size based on win rate and risk/reward</p>
@@ -2597,15 +1052,15 @@ const MLInsightsUI = (function() {
      */
     function createRiskScenario(scenario, data) {
         return `
-            <div class="ml-scenario-card" style="border-color: ${data.color}">
-                <div class="ml-scenario-icon" style="background: ${data.color}20">
+            <div class="ml-scenario-card" >
+                <div class="ml-scenario-icon" >
                     <span>${data.icon}</span>
                 </div>
                 <h5 class="ml-scenario-title">${scenario}</h5>
                 <div class="ml-scenario-metrics">
                     <div class="ml-scenario-metric">
                         <span class="ml-metric-label">Market Drop</span>
-                        <span class="ml-metric-value" style="color: ${data.color}">-${data.drop}%</span>
+                        <span class="ml-metric-value" >-${data.drop}%</span>
                     </div>
                     <div class="ml-scenario-metric">
                         <span class="ml-metric-label">Probability</span>
@@ -2614,10 +1069,10 @@ const MLInsightsUI = (function() {
                 </div>
                 <div class="ml-impact-indicator">
                     <span class="ml-impact-label">Impact:</span>
-                    <span class="ml-impact-level" style="color: ${data.color}">${data.impact}</span>
+                    <span class="ml-impact-level" >${data.impact}</span>
                 </div>
                 <div class="ml-scenario-bar">
-                    <div class="ml-scenario-fill" style="width: ${data.probability}%; background: ${data.color}"></div>
+                    <div class="ml-scenario-fill" ></div>
                 </div>
             </div>
         `;

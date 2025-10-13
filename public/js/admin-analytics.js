@@ -380,7 +380,7 @@ const AdminAnalytics = {
                                     <strong>${percentage}%</strong>
                                 </div>
                                 <div class="progress-bar-container">
-                                    <div class="progress-bar-fill" style="width: ${percentage}%;"></div>
+                                    <div class="progress-bar-fill" ></div>
                                 </div>
                             </div>
                         `).join('')}
@@ -558,7 +558,7 @@ const AdminAnalytics = {
                                 <strong>${count} users (${percentage}%)</strong>
                             </div>
                             <div>
-                                <div style="width: ${percentage}%;"></div>
+                                <div ></div>
                             </div>
                         </div>
                     `;

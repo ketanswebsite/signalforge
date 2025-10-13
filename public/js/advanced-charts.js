@@ -629,7 +629,7 @@ class SynchronizedCrosshair {
         this.charts.forEach(chart => {
             const overlay = chart.canvas.parentElement.querySelector('.crosshair-overlay');
             if (overlay) {
-                overlay.style.display = 'none';
+                overlay
             }
         });
     }
@@ -648,7 +648,7 @@ class SynchronizedCrosshair {
             chart.canvas.parentElement.appendChild(overlay);
         }
         
-        overlay.style.display = 'block';
+        overlay
         
         // Calculate pixel position for the data value
         const x = chart.scales.x.getPixelForValue(dataX);

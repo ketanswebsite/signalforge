@@ -312,7 +312,7 @@ class RealTimePriceService {
         const statusElement = document.getElementById('price-update-status');
         if (statusElement) {
             if (isUpdating) {
-                statusElement.style.display = 'block';
+                statusElement
                 statusElement.innerHTML = '<span class="price-updating-indicator">Updating prices...</span>';
             } else {
                 // Show market closed status if applicable
@@ -326,14 +326,14 @@ class RealTimePriceService {
                 }
                 
                 if (hasClosedMarkets) {
-                    statusElement.style.display = 'block';
+                    statusElement
                     statusElement.innerHTML = '<span class="market-closed-indicator">Some markets closed - prices update less frequently</span>';
                     // Hide after 3 seconds
                     setTimeout(() => {
-                        statusElement.style.display = 'none';
+                        statusElement
                     }, 3000);
                 } else {
-                    statusElement.style.display = 'none';
+                    statusElement
                 }
             }
         }

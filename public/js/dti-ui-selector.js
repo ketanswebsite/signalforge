@@ -45,11 +45,11 @@ DTIUI.StockSelector = (function() {
             const stockSelectorDiv = document.getElementById('stock-selector').parentNode;
             
             if (this.value === 'current') {
-                indexSelectorDiv.style.display = 'block';
-                stockSelectorDiv.style.display = 'block';
+                indexSelectorDiv
+                stockSelectorDiv
             } else {
-                indexSelectorDiv.style.display = 'block';
-                stockSelectorDiv.style.display = 'none';
+                indexSelectorDiv
+                stockSelectorDiv
             }
             
             // Show notification for multi-index scans
@@ -240,12 +240,12 @@ DTIUI.StockSelector = (function() {
             // Show relevant content
             const indexContents = document.querySelectorAll('.index-content');
             indexContents.forEach(content => {
-                content.style.display = 'none';
+                content
             });
             
             const selectedContent = document.getElementById(`${DTIBacktester.currentStockIndex}-content`);
             if (selectedContent) {
-                selectedContent.style.display = 'block';
+                selectedContent
             }
         });
         
@@ -426,22 +426,12 @@ DTIUI.StockSelector = (function() {
         const statusDiv = document.createElement('div');
         statusDiv.id = 'data-fetch-status';
         statusDiv.className = 'csv-info';
-        statusDiv.style.display = 'none';
+        statusDiv
 
         dataImportSection.appendChild(statusDiv);
         
         // Add spinner animation style
-        const spinnerStyle = document.createElement('style');
-        spinnerStyle.textContent = `
-            @keyframes rotate {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-            .spinner {
-                animation: rotate 1s linear infinite;
-            }
-        `;
-        document.head.appendChild(spinnerStyle);
+        
     }
 
     /**
@@ -631,7 +621,7 @@ batchButton.addEventListener('click', async function() {
         const batchStatus = document.createElement('div');
         batchStatus.id = 'batch-status';
         batchStatus.className = 'batch-status';
-        batchStatus.style.display = 'none';
+        batchStatus
         
         // Append button to the UI
         const dataImportSection = document.querySelector('.parameters-section:last-child');

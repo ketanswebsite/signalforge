@@ -7,10 +7,6 @@
     <meta name="description" content="Educational platform for learning technical analysis and backtesting methodologies. Explore historical market patterns and technical indicators for educational purposes only.">
     <meta name="keywords" content="technical analysis education, backtesting learning, market patterns, educational trading tools, historical data analysis">
     <title>SignalForge - Technical Analysis Education Platform</title>
-    <!-- Import Google Fonts (Syne for headings + Inter for body) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Chart.js and PapaParse -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -29,22 +25,6 @@
     
     <!-- Advanced Chart Features - Removed to prevent duplicate charts -->
     <!-- <script src="js/advanced-charts.js" defer></script> -->
-
-    <!-- New Design System (v2.0) - Load first for modern UI -->
-    <link rel="stylesheet" href="css/design-system.css">
-    <link rel="stylesheet" href="css/animations.css">
-    <link rel="stylesheet" href="css/base.css">
-    <link rel="stylesheet" href="css/components.css">
-    <link rel="stylesheet" href="css/layouts.css">
-
-    <!-- Main Stylesheet (existing styles) -->
-    <link rel="stylesheet" href="styles.css">
-
-    <!-- Accessibility Color Overrides (WCAG Compliant) -->
-    <link rel="stylesheet" href="css/accessibility-colors.css">
-
-    <!-- Unified Navigation Bar -->
-    <link rel="stylesheet" href="css/unified-navbar.css">
 
     <!-- XSS Protection (load first for security) -->
     <script src="js/xss-protection.js"></script>
@@ -225,8 +205,8 @@
                             </svg>
                             Run Backtest
                         </button>
-                        <div id="csv-info" class="csv-info" style="display:none;"></div>
-                        <div id="data-fetch-status" class="csv-info" style="display:none;"></div>
+                        <div id="csv-info" class="csv-info"></div>
+                        <div id="data-fetch-status" class="csv-info"></div>
                         <!-- Batch process button will be added here by JavaScript -->
                         <!-- Batch status indicator will be added here by JavaScript -->
                     </div>

@@ -536,7 +536,7 @@ window.TradeUIModules.dialogs = (function() {
                 const file = event.target.files[0];
                 if (!file) {
                     selectedFilename.textContent = 'No file selected';
-                    importPreview.style.display = 'none';
+                    importPreview
                     confirmBtn.disabled = true;
                     return;
                 }
@@ -566,11 +566,11 @@ window.TradeUIModules.dialogs = (function() {
                             exportDate.toLocaleString();
                         
                         // Show preview and enable import button
-                        importPreview.style.display = 'block';
+                        importPreview
                         confirmBtn.disabled = false;
                     } catch (error) {
                         selectedFilename.textContent = 'Error: Invalid JSON file format';
-                        importPreview.style.display = 'none';
+                        importPreview
                         confirmBtn.disabled = true;
                     }
                 };
@@ -584,7 +584,7 @@ window.TradeUIModules.dialogs = (function() {
         radioButtons.forEach(radio => {
             radio.addEventListener('change', function() {
                 // Only show keep active trades option for replace mode
-                keepActiveContainer.style.display = this.value === 'replace' ? 'block' : 'none';
+                keepActiveContainer
             });
         });
         
@@ -648,8 +648,8 @@ window.TradeUIModules.dialogs = (function() {
         if (selectedFilename) selectedFilename.textContent = 'No file selected';
         
         // Hide preview and status
-        if (importPreview) importPreview.style.display = 'none';
-        if (importStatus) importStatus.style.display = 'none';
+        if (importPreview) importPreview
+        if (importStatus) importStatus
         
         // Reset progress
         if (progress) progress.style.width = '0%';
@@ -673,7 +673,7 @@ window.TradeUIModules.dialogs = (function() {
         
         // Hide keep active option by default
         const keepActiveContainer = document.getElementById('keep-active-container');
-        if (keepActiveContainer) keepActiveContainer.style.display = 'none';
+        if (keepActiveContainer) keepActiveContainer
         
         // Check the keep active checkbox by default
         const keepActive = document.getElementById('keep-active-trades');
@@ -1006,7 +1006,7 @@ window.TradeUIModules.dialogs = (function() {
         const keepActive = keepActiveElement ? keepActiveElement.checked : true;
         
         // Show import status
-        importStatus.style.display = 'block';
+        importStatus
         statusMessage.textContent = 'Reading import file...';
         progress.style.width = '10%';
         

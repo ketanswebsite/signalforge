@@ -8,15 +8,12 @@
     <title>SignalForge - Data Management</title>
     
     <!-- Import Google Font (Inter) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    
     
     <!-- Main Stylesheet -->
-    <link rel="stylesheet" href="styles.css">
 
     <!-- Unified Navigation Bar -->
-    <link rel="stylesheet" href="css/unified-navbar.css">
 
     <!-- Theme Toggle Script (load early to prevent flash) -->
     <script src="js/theme-toggle.js"></script>
@@ -24,147 +21,7 @@
     <!-- Cookie Consent (load early for GDPR compliance) -->
     <script src="js/cookie-consent.js"></script>
     
-    <style>
-        .data-container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        .data-section {
-            background-color: var(--background-secondary);
-            border-radius: var(--radius);
-            padding: 25px;
-            margin-bottom: 20px;
-        }
-        
-        .data-section h3 {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 0;
-            margin-bottom: 20px;
-            color: var(--primary-color);
-        }
-        
-        .data-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        
-        .data-card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            padding: 20px;
-        }
-        
-        .data-card h4 {
-            margin: 0 0 12px 0;
-            color: var(--text-color);
-            font-size: 16px;
-        }
-        
-        .data-card p {
-            margin: 0 0 16px 0;
-            color: var(--text-secondary);
-            font-size: 14px;
-            line-height: 1.5;
-        }
-        
-        .rights-box {
-            background-color: var(--primary-lightest);
-            border-left: 4px solid var(--primary-color);
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: var(--radius-sm);
-        }
-        
-        .rights-box h4 {
-            margin-top: 0;
-            color: var(--primary-color);
-        }
-        
-        .rights-box ul {
-            margin: 0;
-            padding-left: 20px;
-        }
-        
-        .rights-box li {
-            margin: 8px 0;
-            line-height: 1.6;
-        }
-        
-        .warning-box {
-            background-color: var(--danger-light);
-            border-left: 4px solid var(--danger-color);
-            padding: 16px 20px;
-            margin: 20px 0;
-            border-radius: var(--radius-sm);
-        }
-        
-        .warning-box p {
-            margin: 0;
-            color: var(--text-color);
-        }
-        
-        .action-buttons {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-        
-        .data-info {
-            background-color: var(--background-color);
-            padding: 16px;
-            border-radius: var(--radius-sm);
-            margin-bottom: 20px;
-        }
-        
-        .data-info-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .data-info-row:last-child {
-            border-bottom: none;
-        }
-        
-        .data-label {
-            font-weight: 500;
-            color: var(--text-color);
-        }
-        
-        .data-value {
-            color: var(--text-secondary);
-        }
-        
-        .data-retention-info {
-            background-color: var(--info-light);
-            border-left: 4px solid var(--info-color);
-            padding: 16px 20px;
-            margin: 20px 0;
-            border-radius: var(--radius-sm);
-        }
-        
-        .data-retention-info h4 {
-            margin-top: 0;
-            color: var(--info-color);
-        }
-        
-        .data-retention-info ul {
-            margin: 0;
-            padding-left: 20px;
-        }
-        
-        .data-retention-info li {
-            margin: 8px 0;
-        }
-    </style>
+    
 </head>
 <body>
     <div class="app-container">
@@ -367,7 +224,7 @@
                     </div>
                 </div>
                 
-                <div class="rights-box" style="margin-top: 20px;">
+                <div class="rights-box">
                     <h4>Lodge a Complaint</h4>
                     <p>If you're unhappy with how we handle your data, you have the right to complain to:</p>
                     <ul>
@@ -380,7 +237,7 @@
         </div>
         
         <!-- Delete Account Dialog -->
-        <div class="dialog-overlay" id="delete-account-dialog" style="display: none;">
+        <div class="dialog-overlay" id="delete-account-dialog">
             <div class="dialog-content">
                 <div class="dialog-header">
                     <h3 class="dialog-title">
@@ -405,8 +262,8 @@
                         <li>Some data may be retained for legal compliance (6 years for financial records)</li>
                     </ul>
                     
-                    <p style="margin-top: 20px;">To confirm deletion, please type <strong>DELETE</strong> below:</p>
-                    <input type="text" id="delete-confirmation" placeholder="Type DELETE to confirm" style="width: 100%; padding: 10px; margin-top: 10px;">
+                    <p>To confirm deletion, please type <strong>DELETE</strong> below:</p>
+                    <input type="text" id="delete-confirmation" placeholder="Type DELETE to confirm">
                 </div>
                 <div class="dialog-actions">
                     <button class="btn-secondary" onclick="hideDeleteAccountDialog()">Cancel</button>
@@ -597,38 +454,7 @@
     </script>
     
     <!-- Notification styles -->
-    <style>
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 12px 20px;
-            border-radius: var(--radius-sm);
-            box-shadow: var(--shadow-md);
-            transform: translateX(400px);
-            transition: transform 0.3s ease;
-            z-index: 10000;
-        }
-        
-        .notification.show {
-            transform: translateX(0);
-        }
-        
-        .notification-success {
-            background-color: var(--success-color);
-            color: white;
-        }
-        
-        .notification-error {
-            background-color: var(--danger-color);
-            color: white;
-        }
-        
-        .notification-info {
-            background-color: var(--info-color);
-            color: white;
-        }
-    </style>
+    
 
 <!-- Unified Navigation Bar -->
 <script src="js/unified-navbar.js"></script>

@@ -1068,7 +1068,7 @@ const AdminSettings = {
      */
     selectTemplate(templateId) {
         if (!templateId) {
-            document.getElementById('template-editor').style.display = 'none';
+            document.getElementById('template-editor')
             return;
         }
 
@@ -1079,7 +1079,7 @@ const AdminSettings = {
                 if (data.success) {
                     document.getElementById('template-subject').value = data.data.subject || '';
                     document.getElementById('template-body').value = data.data.body || '';
-                    document.getElementById('template-editor').style.display = 'block';
+                    document.getElementById('template-editor')
                     this.currentTemplate = templateId;
                 }
             });

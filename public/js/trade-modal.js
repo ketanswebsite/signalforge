@@ -616,24 +616,7 @@ function calculateTradeDetails() {
     }
     
     // Add a small animation for the spinner
-    const spinnerStyle = document.createElement('style');
-    spinnerStyle.textContent = `
-        @keyframes rotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .spinner {
-            animation: rotate 1s linear infinite;
-        }
-        .error {
-            border-color: var(--danger-color) !important;
-            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
-        }
-        .error-hint {
-            color: var(--danger-color) !important;
-        }
-    `;
-    document.head.appendChild(spinnerStyle);
+    
     
     // Public methods
     return {

@@ -431,7 +431,7 @@ const AdminDatabase = {
             </div>
 
             <!-- Query Results -->
-            <div class="admin-card" id="query-results-card" style="display: ${this.currentResults ? 'block' : 'none'};">
+            <div class="admin-card" id="query-results-card" >
                 <div class="admin-card-header">
                     <h3>Query Results</h3>
                     <button class="btn btn-secondary btn-sm" onclick="AdminDatabase.exportResults()">
@@ -722,7 +722,7 @@ const AdminDatabase = {
         const card = document.getElementById('query-results-card');
         const container = document.getElementById('query-results');
 
-        card.style.display = 'block';
+        card
 
         if (!results.rows || results.rows.length === 0) {
             container.innerHTML = '<p class="text-muted">Query returned no results.</p>';

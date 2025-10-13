@@ -140,7 +140,7 @@ window.TradeUIModules.filters = (function() {
                 // Show/hide clear button based on whether there's a search query
                 const clearButton = document.getElementById('clear-search');
                 if (clearButton) {
-                    clearButton.style.display = searchQuery ? 'flex' : 'none';
+                    clearButton
                 }
             });
             
@@ -154,7 +154,7 @@ window.TradeUIModules.filters = (function() {
                     
                     const clearButton = document.getElementById('clear-search');
                     if (clearButton) {
-                        clearButton.style.display = 'none';
+                        clearButton
                     }
                 }
             });
@@ -163,7 +163,7 @@ window.TradeUIModules.filters = (function() {
         // Clear search button
         const clearButton = document.getElementById('clear-search');
         if (clearButton) {
-            clearButton.style.display = 'none'; // Initially hidden
+            clearButton // Initially hidden
             clearButton.addEventListener('click', function() {
                 const searchInput = document.getElementById('trade-search');
                 if (searchInput) {
@@ -171,7 +171,7 @@ window.TradeUIModules.filters = (function() {
                     searchQuery = '';
                     applyFiltersAndSort();
                     updateFilterSummary();
-                    this.style.display = 'none';
+                    this
                 }
             });
         }
@@ -306,7 +306,7 @@ window.TradeUIModules.filters = (function() {
             // Show a custom message for when no trades match the filter
             if (currentFilter !== 'all' || searchQuery) {
                 // Custom message for when filters are applied but no matches
-                noActiveTradesMsg.style.display = 'block';
+                noActiveTradesMsg
                 noActiveTradesMsg.querySelector('.empty-state-message').textContent = 'No trades match your filters';
                 const emptyStateDesc = noActiveTradesMsg.querySelector('p');
                 if (emptyStateDesc) {
@@ -314,7 +314,7 @@ window.TradeUIModules.filters = (function() {
                 }
             } else {
                 // Default message when there are genuinely no active trades
-                noActiveTradesMsg.style.display = 'block';
+                noActiveTradesMsg
                 noActiveTradesMsg.querySelector('.empty-state-message').textContent = 'No active trades';
                 const emptyStateDesc = noActiveTradesMsg.querySelector('p');
                 if (emptyStateDesc) {
@@ -329,7 +329,7 @@ window.TradeUIModules.filters = (function() {
         }
         
         // Hide empty state message
-        noActiveTradesMsg.style.display = 'none';
+        noActiveTradesMsg
         
         // Remove any existing trade cards
         const existingCards = container.querySelectorAll('.trade-card');
@@ -559,7 +559,7 @@ window.TradeUIModules.filters = (function() {
                 
                 // Hide clear search button
                 const clearSearchBtn = document.getElementById('clear-search');
-                if (clearSearchBtn) clearSearchBtn.style.display = 'none';
+                if (clearSearchBtn) clearSearchBtn
                 
                 // Re-apply (now reset) filters
                 applyFiltersAndSort();

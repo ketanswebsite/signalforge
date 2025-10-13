@@ -126,7 +126,7 @@ const AdminAudit = {
             </div>
 
             <!-- Analytics Panel (hidden by default) -->
-            <div id="audit-analytics-panel" style="display: ${this.showAnalytics ? 'block' : 'none'};"></div>
+            <div id="audit-analytics-panel" ></div>
         `;
     },
 
@@ -449,7 +449,7 @@ const AdminAudit = {
      */
     renderAnalytics(analytics) {
         const panel = document.getElementById('audit-analytics-panel');
-        panel.style.display = 'block';
+        panel
 
         const activityHTML = analytics.mostActiveUsers.map((user, index) => `
             <div class="flex-between mb-1">
@@ -469,8 +469,7 @@ const AdminAudit = {
             <div class="admin-card">
                 <div class="admin-card-header">
                     <h2 class="admin-card-title">Audit Analytics</h2>
-                    <button class="btn btn-secondary btn-sm" onclick="document.getElementById('audit-analytics-panel').style.display='none'">
-                        Close
+                    <button class="btn btn-secondary btn-sm" onclick="document.getElementById('audit-analytics-panel')                        Close
                     </button>
                 </div>
                 <div class="admin-card-body">

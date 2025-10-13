@@ -236,143 +236,21 @@ const AlertsUI = (function() {
         document.body.appendChild(modal);
         
         // Add styles
-        const style = document.createElement('style');
-        style.textContent = `
-            .telegram-button {
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
-                background: linear-gradient(135deg, #0088cc 0%, #24A1DE 100%);
-                color: white !important;
-                border: none;
-                text-decoration: none !important;
-                font-weight: 500;
-                transition: all 0.3s ease;
-                box-shadow: 0 2px 8px rgba(0, 136, 204, 0.2);
-            }
-            
-            .telegram-button:hover {
-                background: linear-gradient(135deg, #0077b5 0%, #1f8bc7 100%);
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(0, 136, 204, 0.3);
-                color: white !important;
-                text-decoration: none !important;
-            }
-            
-            .alert-section {
-                background-color: var(--background-secondary);
-                border-radius: var(--radius);
-                padding: 20px;
-                margin-bottom: 20px;
-            }
-            
-            .alert-section h4 {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                margin-top: 0;
-                margin-bottom: 15px;
-                color: var(--primary-color);
-            }
-            
-            .setup-steps {
-                background-color: var(--primary-lightest);
-                border-left: 3px solid var(--primary-color);
-                padding: 15px;
-                margin-bottom: 20px;
-                border-radius: var(--radius-sm);
-            }
-            
-            .setup-steps h5 {
-                margin-top: 0;
-                margin-bottom: 10px;
-                color: var(--primary-color);
-            }
-            
-            .setup-steps ol {
-                margin: 0;
-                padding-left: 20px;
-            }
-            
-            .setup-steps li {
-                margin-bottom: 8px;
-                line-height: 1.5;
-            }
-            
-            .setup-steps code {
-                background-color: var(--background-color);
-                padding: 2px 6px;
-                border-radius: 3px;
-                font-family: monospace;
-                font-size: 14px;
-            }
-            
-            .alert-types {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 12px;
-            }
-            
-            .alert-types label {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                cursor: pointer;
-                padding: 8px;
-                border-radius: var(--radius-sm);
-                transition: background-color 0.2s ease;
-            }
-            
-            .alert-types label:hover {
-                background-color: var(--background-color);
-            }
-            
-            .alert-types input[type="checkbox"] {
-                cursor: pointer;
-            }
-            
-            .alert-status {
-                padding: 12px 16px;
-                border-radius: var(--radius-sm);
-                font-size: 14px;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            
-            .alert-status.success {
-                background-color: #d4edda;
-                color: #155724;
-                border-left: 3px solid #28a745;
-            }
-            
-            .alert-status.error {
-                background-color: #f8d7da;
-                color: #721c24;
-                border-left: 3px solid #dc3545;
-            }
-            
-            .alert-status.info {
-                background-color: #d1ecf1;
-                color: #0c5460;
-                border-left: 3px solid #17a2b8;
-            }
-        `;
-        document.head.appendChild(style);
+        
     }
     
     // Show the alerts modal
     function showAlertsModal() {
         const modal = document.getElementById('alerts-modal');
         if (modal) {
-            modal.style.display = 'flex';
+            modal
             loadPreferences(); // Reload preferences when opening
         } else {
             createAlertsModal();
             // Try again
             const newModal = document.getElementById('alerts-modal');
             if (newModal) {
-                newModal.style.display = 'flex';
+                newModal
                 loadPreferences();
             }
         }
@@ -382,7 +260,7 @@ const AlertsUI = (function() {
     function hideAlertsModal() {
         const modal = document.getElementById('alerts-modal');
         if (modal) {
-            modal.style.display = 'none';
+            modal
         }
     }
     
@@ -459,7 +337,7 @@ const AlertsUI = (function() {
         
         statusDiv.textContent = message;
         statusDiv.className = `alert-status ${type}`;
-        statusDiv.style.display = 'block';
+        statusDiv
     }
     
     // Public API

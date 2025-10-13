@@ -155,9 +155,9 @@ class CheckoutPage {
         const isFree = plan.plan_code === 'FREE';
 
         if (isFree) {
-            document.querySelector('.billing-period-options').style.display = 'none';
-            document.querySelector('.payment-section').style.display = 'none';
-            document.getElementById('trial-notice').style.display = 'flex';
+            document.querySelector('.billing-period-options')
+            document.querySelector('.payment-section')
+            document.getElementById('trial-notice')
 
             // Show "Start Free Trial" button instead
             const form = document.getElementById('payment-form');
@@ -246,7 +246,7 @@ class CheckoutPage {
                     Your card will not be charged today. Billing starts after your trial ends.
                 </div>
             `;
-            trialNotice.style.display = 'flex';
+            trialNotice
         }
     }
 

@@ -48,7 +48,7 @@ const AdminPayments = {
       </div>
 
       <!-- Transactions Tab -->
-      <div id="transactions-tab" style="display: ${this.currentTab === 'transactions' ? 'block' : 'none'};">
+      <div id="transactions-tab" >
         <div class="admin-card">
           <div class="admin-card-header flex-between">
             <h2 class="admin-card-title">Payment Transactions</h2>
@@ -81,7 +81,7 @@ const AdminPayments = {
       </div>
 
       <!-- Verification Queue Tab -->
-      <div id="verification-tab" style="display: ${this.currentTab === 'verification' ? 'block' : 'none'};">
+      <div id="verification-tab" >
         <div class="admin-card">
           <div class="admin-card-header">
             <h2 class="admin-card-title">Payment Verification Queue</h2>
@@ -95,7 +95,7 @@ const AdminPayments = {
       </div>
 
       <!-- Refunds Tab -->
-      <div id="refunds-tab" style="display: ${this.currentTab === 'refunds' ? 'block' : 'none'};">
+      <div id="refunds-tab" >
         <div class="admin-card">
           <div class="admin-card-header">
             <h2 class="admin-card-title">Refund Management</h2>
@@ -109,7 +109,7 @@ const AdminPayments = {
       </div>
 
       <!-- Analytics Tab -->
-      <div id="analytics-tab" style="display: ${this.currentTab === 'analytics' ? 'block' : 'none'};">
+      <div id="analytics-tab" >
         <div class="metrics-grid" id="payment-metrics">
           ${AdminComponents.spinner({ text: 'Loading analytics...' })}
         </div>
@@ -143,11 +143,11 @@ const AdminPayments = {
 
     // Hide all tabs
     ['transactions', 'verification', 'refunds', 'analytics'].forEach(t => {
-      document.getElementById(`${t}-tab`).style.display = 'none';
+      document.getElementById(`${t}-tab`)
     });
 
     // Show selected tab
-    document.getElementById(`${tab}-tab`).style.display = 'block';
+    document.getElementById(`${tab}-tab`)
 
     // Update buttons
     document.querySelectorAll('#payments-page .btn').forEach(btn => {

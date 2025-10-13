@@ -336,12 +336,12 @@
 
                 if (navBadge) {
                     navBadge.textContent = count;
-                    navBadge.style.display = count > 0 ? 'flex' : 'none';
+                    navBadge
                 }
 
                 if (drawerBadge) {
                     drawerBadge.textContent = count;
-                    drawerBadge.style.display = count > 0 ? 'flex' : 'none';
+                    drawerBadge
                 }
             }
         } catch (error) {

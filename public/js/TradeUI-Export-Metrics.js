@@ -1828,7 +1828,7 @@ function showTooltip(e) {
     tooltip.style.left = `${rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2) + window.scrollX}px`;
     
     // Show tooltip
-    tooltip.style.display = 'block';
+    tooltip
 }
     
     /**
@@ -1837,7 +1837,7 @@ function showTooltip(e) {
     function hideTooltip() {
         const tooltip = document.getElementById('heatmap-tooltip');
         if (tooltip) {
-            tooltip.style.display = 'none';
+            tooltip
         }
     }
     

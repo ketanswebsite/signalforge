@@ -262,7 +262,7 @@ const DTIBacktester = {
                         </svg>
                         ${fileName}
                     `;
-                    fileNameDisplay.style.display = 'flex';
+                    fileNameDisplay
                     fileNameDisplay.style.opacity = '0';
                     fileNameDisplay.style.transform = 'translateY(10px)';
                     
@@ -327,16 +327,7 @@ const DTIBacktester = {
             `;
             
             // Add CSS for the warm-up note
-            const style = document.createElement('style');
-            style.textContent = `
-                .warmup-note {
-                    display: block;
-                    margin-top: 5px;
-                    font-style: italic;
-                    color: #64748b;
-                }
-            `;
-            document.head.appendChild(style);
+            
         }
     },
     
@@ -351,7 +342,7 @@ const DTIBacktester = {
             if (typeof TradeAPI !== 'undefined') {
                 const activeTrades = await TradeAPI.getActiveTrades();
                 badge.textContent = activeTrades.length;
-                badge.style.display = activeTrades.length > 0 ? 'inline-flex' : 'none';
+                badge
             } else {
                 // Fallback to localStorage if API not available yet
                 const storedTrades = localStorage.getItem('dti_backtester_trades');
@@ -361,16 +352,16 @@ const DTIBacktester = {
                         const activeTrades = trades.filter(trade => trade.status === 'active');
                         
                         badge.textContent = activeTrades.length;
-                        badge.style.display = activeTrades.length > 0 ? 'inline-flex' : 'none';
+                        badge
                     } catch (e) {
-                        badge.style.display = 'none';
+                        badge
                     }
                 } else {
-                    badge.style.display = 'none';
+                    badge
                 }
             }
         } catch (error) {
-            badge.style.display = 'none';
+            badge
         }
     }
 };
@@ -384,34 +375,7 @@ document.addEventListener('DOMContentLoaded', function() {
     DTIBacktester.init();
     
     // Add file name display style
-    const fileNameStyle = document.createElement('style');
-    fileNameStyle.textContent = `
-        .file-name-display {
-            margin-top: 8px;
-            font-size: 14px;
-            color: var(--primary-color);
-            background-color: var(--primary-light);
-            padding: 6px 10px;
-            border-radius: var(--radius-sm);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            animation: fadeIn 0.3s ease;
-        }
-        
-        .active-trade-info {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 500;
-        }
-        
-        @keyframes fadeIn {
-            0% { opacity: 0; }
-            100% { opacity: 1; }
-        }
-    `;
-    document.head.appendChild(fileNameStyle);
+    
 });
 
 // Global function to show notifications, making it accessible from outside

@@ -104,9 +104,9 @@
             
             // Hide badge if count is 0
             if (drawerTradeCount.textContent === '0') {
-                drawerTradeCount.style.display = 'none';
+                drawerTradeCount
             } else {
-                drawerTradeCount.style.display = 'inline-flex';
+                drawerTradeCount
             }
         }
     }
@@ -143,9 +143,9 @@
             if (mainCount && mobileCount) {
                 mobileCount.textContent = mainCount.textContent;
                 if (mobileCount.textContent === '0') {
-                    mobileCount.style.display = 'none';
+                    mobileCount
                 } else {
-                    mobileCount.style.display = 'inline-flex';
+                    mobileCount
                 }
             }
         });

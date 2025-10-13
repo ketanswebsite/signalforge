@@ -44,7 +44,7 @@ const AdminSubscriptions = {
       </div>
 
       <!-- Plans Tab -->
-      <div id="plans-tab" style="display: ${this.currentTab === 'plans' ? 'block' : 'none'};">
+      <div id="plans-tab" >
         <div class="admin-card">
           <div class="admin-card-header flex-between">
             <h2 class="admin-card-title">Subscription Plans</h2>
@@ -61,7 +61,7 @@ const AdminSubscriptions = {
       </div>
 
       <!-- Subscriptions Tab -->
-      <div id="subscriptions-tab" style="display: ${this.currentTab === 'subscriptions' ? 'block' : 'none'};">
+      <div id="subscriptions-tab" >
         <div class="admin-card">
           <div class="admin-card-header flex-between">
             <h2 class="admin-card-title">Active Subscriptions</h2>
@@ -85,7 +85,7 @@ const AdminSubscriptions = {
       </div>
 
       <!-- Analytics Tab -->
-      <div id="analytics-tab" style="display: ${this.currentTab === 'analytics' ? 'block' : 'none'};">
+      <div id="analytics-tab" >
         <div class="metrics-grid" id="sub-metrics">
           ${AdminComponents.spinner({ text: 'Loading analytics...' })}
         </div>
@@ -120,12 +120,12 @@ const AdminSubscriptions = {
     this.currentTab = tab;
 
     // Hide all tabs
-    document.getElementById('plans-tab').style.display = 'none';
-    document.getElementById('subscriptions-tab').style.display = 'none';
-    document.getElementById('analytics-tab').style.display = 'none';
+    document.getElementById('plans-tab')
+    document.getElementById('subscriptions-tab')
+    document.getElementById('analytics-tab')
 
     // Show selected tab
-    document.getElementById(`${tab}-tab`).style.display = 'block';
+    document.getElementById(`${tab}-tab`)
 
     // Update buttons
     document.querySelectorAll('#subscriptions-page .btn').forEach(btn => {
@@ -189,7 +189,7 @@ const AdminSubscriptions = {
     const plansHTML = `
       <div class="metrics-grid">
         ${plans.map(plan => `
-          <div class="admin-card plan-card" style="border: 2px solid ${plan.is_active ? '#10b981' : '#d1d5db'};">
+          <div class="admin-card plan-card" >
             <div class="admin-card-header flex-between">
               <h3 class="admin-card-title">${plan.plan_name}</h3>
               ${plan.is_active ?
