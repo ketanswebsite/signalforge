@@ -1560,9 +1560,11 @@ app.use('/lib', express.static(path.join(__dirname, 'lib')));
 // Protect static files except login page and lib directory
 app.use((req, res, next) => {
   // Allow access to login page, lib directory, and specific assets without authentication
-  if (req.path === '/login.html' || 
-      req.path === '/styles.css' || 
-      req.path.startsWith('/js/theme-toggle.js') ||
+  if (req.path === '/login.html' ||
+      req.path === '/styles.css' ||
+      req.path === '/css/main.css' ||
+      req.path === '/js/modern-effects.js' ||
+      req.path === '/js/theme-toggle.js' ||
       req.path.startsWith('/lib/')) {
     return next();
   }
