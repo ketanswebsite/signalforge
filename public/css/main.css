@@ -54,6 +54,7 @@
     /* === Transparency === */
     --border-color: rgba(212, 175, 55, 0.15);
     --border-color-light: rgba(0, 0, 0, 0.1);
+    --border-color-hover: rgba(212, 175, 55, 0.3);
     --overlay-dark: rgba(0, 0, 0, 0.95);
     --overlay-light: rgba(255, 255, 255, 0.95);
     --glass-bg: rgba(28, 28, 28, 0.6);
@@ -466,7 +467,7 @@ table {
 .card:hover {
     transform: translateY(-5px);
     box-shadow: var(--shadow-lg);
-    border-color: rgba(212, 175, 55, 0.2);
+    border-color: var(--glass-border);
 }
 
 /* === Card with Gradient Top Border === */
@@ -628,6 +629,7 @@ table {
     font-size: 2rem;
     font-weight: 800;
     color: var(--text-primary);
+    font-family: var(--font-mono);
     letter-spacing: -0.02em;
 }
 
@@ -1069,6 +1071,7 @@ tbody td {
     font-size: 2.5rem;
     font-weight: 800;
     color: var(--text-primary);
+    font-family: var(--font-mono);
     letter-spacing: -0.02em;
     background: var(--gradient-primary);
     -webkit-background-clip: text;
@@ -1186,7 +1189,7 @@ tbody td {
 .status-info {
     background: rgba(212, 175, 55, 0.1);
     color: var(--info);
-    border: 1px solid rgba(212, 175, 55, 0.2);
+    border: 1px solid var(--glass-border);
 }
 
 .status-info .status-dot {
@@ -1423,7 +1426,7 @@ tbody td {
     padding: 3rem;
     max-width: 480px;
     width: 100%;
-    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-xl);
     animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -1438,7 +1441,7 @@ tbody td {
     padding: 3rem;
     max-width: 480px;
     width: 100%;
-    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-xl);
     animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1);
     margin: 2rem auto;
 }
@@ -1480,7 +1483,7 @@ tbody td {
     font-weight: 600;
     cursor: pointer;
     transition: all var(--transition-base);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-md);
     text-decoration: none;
     position: relative;
     overflow: hidden;
@@ -1517,7 +1520,7 @@ tbody td {
     margin-top: 2.5rem;
     padding: 1.5rem;
     background: rgba(212, 175, 55, 0.1);
-    border: 1px solid rgba(212, 175, 55, 0.2);
+    border: 1px solid var(--glass-border);
     border-radius: var(--radius-md);
     color: var(--grey-300);
     font-size: 0.9rem;
@@ -1648,7 +1651,7 @@ tbody td {
 
 .sidebar:hover {
     box-shadow: var(--shadow-gold-hover);
-    border-color: rgba(212, 175, 55, 0.3);
+    border-color: var(--border-color-hover);
 }
 
 .sidebar-title {
@@ -1882,7 +1885,7 @@ tbody td {
 .chart-card:hover {
     transform: translateY(-5px);
     box-shadow: var(--shadow-lg);
-    border-color: rgba(212, 175, 55, 0.3);
+    border-color: var(--border-color-hover);
 }
 
 .chart-card:hover::before {
@@ -2274,7 +2277,7 @@ tbody td {
 .badge-gold {
     background: rgba(212, 175, 55, 0.15);
     color: var(--accent-gold);
-    border: 1px solid rgba(212, 175, 55, 0.3);
+    border: 1px solid var(--border-color-hover);
 }
 
 /* Notification Badge (for counters) */
