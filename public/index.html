@@ -146,211 +146,238 @@
         
         <div class="dashboard">
             <div class="sidebar">
-                <div class="card">
-                    <h3 class="card-title">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="3"></circle>
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                        </svg>
-                        Strategy Parameters
-                    </h3>
-                    
-                    <!-- Hidden inputs for fixed parameters -->
-                    <input type="hidden" id="r" value="14">
-                    <input type="hidden" id="s" value="10">
-                    <input type="hidden" id="u" value="5">
-                    <input type="hidden" id="enable-weekly-dti" value="true">
-                    
-                    <div class="parameters-section">
-                        <h4 class="parameters-title">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-                                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-                                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
-                            </svg>
-                            Backtest Parameters
-                        </h4>
-                        <div class="parameter-group">
-                            <label for="entry-threshold">Entry Threshold</label>
-                            <input type="number" id="entry-threshold" value="0" max="0">
-                            <span class="form-hint">Historical entry point when indicator below this value</span>
+                <h3 class="sidebar-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    Strategy Parameters
+                </h3>
+
+                <!-- Hidden inputs for fixed parameters -->
+                <input type="hidden" id="r" value="14">
+                <input type="hidden" id="s" value="10">
+                <input type="hidden" id="u" value="5">
+                <input type="hidden" id="enable-weekly-dti" value="true">
+
+                <div class="sidebar-section">
+                    <h4 class="sidebar-section-title">Backtest Parameters</h4>
+                    <div class="param-controls">
+                        <div class="param-group">
+                            <label for="entry-threshold" class="param-label">Entry Threshold</label>
+                            <input type="number" id="entry-threshold" value="0" max="0" class="param-input">
+                            <span class="param-hint">Historical entry point when indicator below this value</span>
                         </div>
-                        <div class="parameter-group">
-                            <label for="take-profit">Take Profit (%)</label>
-                            <input type="number" id="take-profit" value="8" min="0" step="0.1">
-                            <span class="form-hint">Historical exit point at this percentage gain</span>
+                        <div class="param-group">
+                            <label for="take-profit" class="param-label">Take Profit (%)</label>
+                            <input type="number" id="take-profit" value="8" min="0" step="0.1" class="param-input">
+                            <span class="param-hint">Historical exit point at this percentage gain</span>
                         </div>
-                        <div class="parameter-group">
-                            <label for="stop-loss">Stop Loss (%)</label>
-                            <input type="number" id="stop-loss" value="5" min="0" step="0.1">
-                            <span class="form-hint">Historical exit point at this percentage loss</span>
+                        <div class="param-group">
+                            <label for="stop-loss" class="param-label">Stop Loss (%)</label>
+                            <input type="number" id="stop-loss" value="5" min="0" step="0.1" class="param-input">
+                            <span class="param-hint">Historical exit point at this percentage loss</span>
                         </div>
-                        <div class="parameter-group">
-                            <label for="max-days">Max Holding Period (days)</label>
-                            <input type="number" id="max-days" value="30" min="1">
-                            <span class="form-hint">Historical position duration limit for analysis</span>
+                        <div class="param-group">
+                            <label for="max-days" class="param-label">Max Holding Period (days)</label>
+                            <input type="number" id="max-days" value="30" min="1" class="param-input">
+                            <span class="param-hint">Historical position duration limit for analysis</span>
                         </div>
                     </div>
-                    
-                    <div class="parameters-section">
-                        <h4 class="parameters-title">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                <polyline points="7 10 12 15 17 10"></polyline>
-                                <line x1="12" y1="15" x2="12" y2="3"></line>
-                            </svg>
-                            Data Import
-                        </h4>
+                </div>
+
+                <div class="sidebar-section">
+                    <h4 class="sidebar-section-title">Data Import</h4>
+                    <div class="param-controls">
                         <!-- Stock index and selector will be added here by JavaScript -->
-                        <div class="parameter-group">
-                            <label for="csv-upload">Upload Historical Data</label>
-                            <input type="file" id="csv-upload" accept=".csv">
-                            <span class="form-hint">Supports multiple CSV formats</span>
+                        <div class="param-group">
+                            <label for="csv-upload" class="param-label">Upload Historical Data</label>
+                            <input type="file" id="csv-upload" accept=".csv" class="param-input">
+                            <span class="param-hint">Supports multiple CSV formats</span>
                         </div>
-                        <button id="process-btn">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M5 12h14"></path>
-                                <path d="M12 5v14"></path>
-                            </svg>
-                            Run Backtest
-                        </button>
-                        <div id="csv-info" class="csv-info"></div>
-                        <div id="data-fetch-status" class="csv-info"></div>
+                        <div class="param-buttons">
+                            <button id="process-btn" class="btn btn-primary">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M5 12h14"></path>
+                                    <path d="M12 5v14"></path>
+                                </svg>
+                                Run Backtest
+                            </button>
+                        </div>
+                        <div id="csv-info" class="param-hint"></div>
+                        <div id="data-fetch-status" class="param-hint"></div>
                         <!-- Batch process button will be added here by JavaScript -->
                         <!-- Batch status indicator will be added here by JavaScript -->
                     </div>
                 </div>
             </div>
             
-            <div class="main-content">
-                <div class="charts-container">
-                    <div class="card">
-                        <h3 class="card-title">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="18" y1="20" x2="18" y2="10"></line>
-                                <line x1="12" y1="20" x2="12" y2="4"></line>
-                                <line x1="6" y1="20" x2="6" y2="14"></line>
-                            </svg>
-                            Price Chart
-                        </h3>
-                        
-                        <div class="chart-compliance-notice">
-                            <p><strong>Educational Chart:</strong> Past performance is not a reliable indicator of future results. This chart is for educational analysis only.</p>
+            <div class="main-content-wrapper">
+                <div class="disclaimer disclaimer-warning">
+                    <div class="disclaimer-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        Educational Charts - Risk Warning
+                    </div>
+                    <div class="disclaimer-content">
+                        <p>Past performance is not a reliable indicator of future results. Technical indicators may produce false signals. All information is for educational purposes only, not investment advice.</p>
+                    </div>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="chart-card scroll-reveal">
+                        <div class="chart-header">
+                            <div>
+                                <h3 class="chart-title">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="18" y1="20" x2="18" y2="10"></line>
+                                        <line x1="12" y1="20" x2="12" y2="4"></line>
+                                        <line x1="6" y1="20" x2="6" y2="14"></line>
+                                    </svg>
+                                    Price Chart
+                                </h3>
+                                <p class="chart-subtitle">Historical price movement</p>
+                            </div>
                         </div>
-                        
-                        <div class="chart-wrapper">
+                        <div class="chart-container">
                             <canvas id="price-chart"></canvas>
                         </div>
                     </div>
-                    
-                    <div class="card">
-                        <h3 class="card-title">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-                            </svg>
-                            Primary Indicator
-                        </h3>
-                        
-                        <div class="chart-compliance-notice">
-                            <p><strong>Technical Analysis:</strong> Indicators may produce false signals. Traders often interpret signals differently. For educational purposes only.</p>
+
+                    <div class="chart-card scroll-reveal">
+                        <div class="chart-header">
+                            <div>
+                                <h3 class="chart-title">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                                    </svg>
+                                    Primary Indicator
+                                </h3>
+                                <p class="chart-subtitle">Daily technical signals</p>
+                            </div>
                         </div>
-                        
-                        <div class="chart-wrapper">
+                        <div class="chart-container">
                             <canvas id="dti-chart"></canvas>
                         </div>
                     </div>
-                    
-                    <div class="card">
-                        <h3 class="card-title">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                                <line x1="8" y1="21" x2="16" y2="21"></line>
-                                <line x1="12" y1="17" x2="12" y2="21"></line>
-                            </svg>
-                            Secondary Indicator
-                        </h3>
-                        
-                        <div class="chart-compliance-notice">
-                            <p><strong>Technical Analysis:</strong> Indicators may produce false signals. Traders often interpret signals differently. For educational purposes only.</p>
+
+                    <div class="chart-card scroll-reveal">
+                        <div class="chart-header">
+                            <div>
+                                <h3 class="chart-title">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                                        <line x1="8" y1="21" x2="16" y2="21"></line>
+                                        <line x1="12" y1="17" x2="12" y2="21"></line>
+                                    </svg>
+                                    Secondary Indicator
+                                </h3>
+                                <p class="chart-subtitle">Weekly technical signals</p>
+                            </div>
                         </div>
-                        
-                        <div class="chart-wrapper">
+                        <div class="chart-container">
                             <canvas id="weekly-dti-chart"></canvas>
                         </div>
                     </div>
                 </div>
                 
-                <div class="card">
-                    <h3 class="card-title">
+                <div class="disclaimer disclaimer-info">
+                    <div class="disclaimer-title">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="12" cy="7" r="4"></circle>
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
                         </svg>
-                        Backtest Results
-                    </h3>
-                    
-                    <div class="backtest-disclaimer">
-                        <p><strong>Simulated Performance Warning:</strong> Figures refer to simulated past performance and past performance is not a reliable indicator of future performance. Results may not reflect actual trading due to factors including market impact, slippage, and fees.</p>
+                        Simulated Performance Warning
                     </div>
-                    
-                    <div class="statistics-card" id="statistics">
-                        <div class="stat-item">
-                            <div class="stat-value">0</div>
-                            <div class="stat-label">Total Trades</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value">0%</div>
-                            <div class="stat-label">Win Rate</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value">0%</div>
-                            <div class="stat-label">Avg. Profit/Trade</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value">0%</div>
-                            <div class="stat-label">Total Return</div>
+                    <div class="disclaimer-content">
+                        <p>Figures refer to simulated past performance and past performance is not a reliable indicator of future performance. Results may not reflect actual trading due to factors including market impact, slippage, and fees.</p>
+                    </div>
+                </div>
+
+                <div class="statistics scroll-reveal" id="statistics">
+                    <div class="metric-card">
+                        <div class="metric-content">
+                            <div class="metric-title">Total Trades</div>
+                            <div class="metric-value data-value">0</div>
                         </div>
                     </div>
-                    
-<div class="trades-table-container">
-    <table id="trades-table">
-        <thead>
-            <tr>
-                <th>Entry Date</th>
-                <th>Entry Price</th>
-                <th>Primary Signal</th>
-                <th>Secondary Signal</th>
-                <th>Exit Date</th>
-                <th>Exit Price</th>
-                <th>Holding Days</th>
-                <th>P/L %</th>
-                <th>Exit Reason</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td colspan="9" class="no-data">Upload CSV data to see trade results</td>
-            </tr>
-        </tbody>
-    </table>
-</div>
+                    <div class="metric-card">
+                        <div class="metric-content">
+                            <div class="metric-title">Win Rate</div>
+                            <div class="metric-value data-value">0%</div>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-content">
+                            <div class="metric-title">Avg. Profit/Trade</div>
+                            <div class="metric-value data-value">0%</div>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-content">
+                            <div class="metric-title">Total Return</div>
+                            <div class="metric-value data-value">0%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="trades-section scroll-reveal">
+                    <div class="trades-header">
+                        <h3 class="trades-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            Trade History
+                        </h3>
+                    </div>
+                    <div class="table-container">
+                        <table id="trades-table">
+                            <thead>
+                                <tr>
+                                    <th>Entry Date</th>
+                                    <th>Entry Price</th>
+                                    <th>Primary Signal</th>
+                                    <th>Secondary Signal</th>
+                                    <th>Exit Date</th>
+                                    <th>Exit Price</th>
+                                    <th>Holding Days</th>
+                                    <th>P/L %</th>
+                                    <th>Exit Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="9" class="no-data">Upload CSV data to see trade results</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
                 
                 <!-- Technical Analysis Patterns Section (will be populated by JavaScript) -->
-                <div class="card buying-opportunities-section" id="buying-opportunities">
-                    <h3 class="card-title">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polygon points="14 2 18 6 7 17 3 17 3 13 14 2"></polygon>
-                            <line x1="3" y1="22" x2="21" y2="22"></line>
-                        </svg>
-                        Current Technical Patterns
-                    </h3>
-                    
-                    <div class="pattern-disclaimer">
-                        <p><strong>Educational Information:</strong> Technical patterns shown below are for educational analysis only. Traders often interpret these patterns differently. Past patterns do not guarantee future results.</p>
+                <div class="opportunities-section scroll-reveal" id="buying-opportunities">
+                    <div class="opportunities-header">
+                        <h3 class="opportunities-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="14 2 18 6 7 17 3 17 3 13 14 2"></polygon>
+                                <line x1="3" y1="22" x2="21" y2="22"></line>
+                            </svg>
+                            Current Technical Patterns
+                        </h3>
                     </div>
-                    
-                    <p class="no-opportunities">No active technical patterns found. Try adjusting parameters or running a full scan.</p>
+
+                    <div class="disclaimer">
+                        <div class="disclaimer-content">
+                            <p><strong>Educational Information:</strong> Technical patterns shown below are for educational analysis only. Traders often interpret these patterns differently. Past patterns do not guarantee future results.</p>
+                        </div>
+                    </div>
+
+                    <p class="opportunities-empty">No active technical patterns found. Try adjusting parameters or running a full scan.</p>
                 </div>
             </div>
         </div>
