@@ -450,6 +450,8 @@ table {
 /* ========================================
    7. CARDS & CONTAINERS
    ======================================== */
+
+/* === Base Card Component === */
 .card {
     background: var(--bg-secondary);
     border-radius: var(--radius-xl);
@@ -485,7 +487,40 @@ table {
     transform: scaleX(1);
 }
 
-/* === Card Variants === */
+/* === Card Modifier Classes === */
+.card--glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+}
+
+.card--elevated {
+    box-shadow: var(--shadow-md);
+}
+
+.card--interactive {
+    cursor: pointer;
+}
+
+.card--interactive::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: radial-gradient(circle, rgba(212, 175, 55, 0.1), transparent);
+    transform: translate(-50%, -50%);
+    transition: all 0.6s ease;
+    border-radius: 50%;
+}
+
+.card--interactive:hover::after {
+    width: 500px;
+    height: 500px;
+}
+
+/* === Legacy variant classes (for backward compatibility) === */
 .card-glass {
     background: var(--glass-bg);
     backdrop-filter: blur(20px) saturate(180%);
@@ -498,7 +533,6 @@ table {
 
 .card-interactive {
     cursor: pointer;
-    position: relative;
 }
 
 .card-interactive::after {
@@ -519,7 +553,7 @@ table {
     height: 500px;
 }
 
-/* === Card Header === */
+/* === Card Structural Elements === */
 .card-header {
     display: flex;
     justify-content: space-between;
@@ -543,13 +577,18 @@ table {
     color: var(--text-secondary);
 }
 
-/* === Metric Cards === */
+/* === Metric Card Component === */
+/* Extends base card with metric-specific styling */
 .metric-card {
+    /* Base styles from .card */
     background: var(--bg-secondary);
     border-radius: var(--radius-lg);
     padding: var(--spacing-lg);
     border: 1px solid var(--border);
     transition: all var(--transition-base);
+    position: relative;
+    overflow: hidden;
+    /* Metric-specific styles */
     cursor: pointer;
 }
 
@@ -1014,11 +1053,10 @@ tbody td {
 /* ========================================
    13. STATISTICS & METRICS
    ======================================== */
+/* Statistics card extends base .card - use <div class="card statistics-card"> or just .card */
 .statistics-card {
-    background: var(--bg-secondary);
-    border-radius: var(--radius-xl);
-    padding: var(--spacing-xl);
-    border: 1px solid var(--border);
+    /* Inherits all styles from .card when used together */
+    /* No additional unique styles needed - this exists for semantic clarity */
 }
 
 .stat-item {
@@ -1815,7 +1853,9 @@ tbody td {
     margin-bottom: var(--spacing-2xl);
 }
 
+/* Chart card extends base .card with thinner top border */
 .chart-card {
+    /* Base styles inherited from .card */
     background: var(--bg-secondary);
     border: 1px solid var(--border);
     border-radius: var(--radius-xl);
@@ -1825,6 +1865,7 @@ tbody td {
     overflow: hidden;
 }
 
+/* Override base card's ::before to use 3px height instead of 4px */
 .chart-card::before {
     content: '';
     position: absolute;
@@ -2382,17 +2423,21 @@ tbody td {
     gap: var(--spacing-lg);
 }
 
+/* Opportunity card extends base card with left-side accent border */
 .opportunity-card {
+    /* Base styles from .card */
     background: var(--bg-surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     padding: var(--spacing-lg);
     transition: all var(--transition-base);
-    cursor: pointer;
     position: relative;
     overflow: hidden;
+    /* Opportunity-specific styles */
+    cursor: pointer;
 }
 
+/* Override ::before to use left-side 4px vertical border instead of top horizontal */
 .opportunity-card::before {
     content: '';
     position: absolute;
@@ -2616,7 +2661,7 @@ tbody td {
 
 @media (max-width: 1024px) {
     .app-container {
-        padding-top: 70px;
+        padding-top: 80px;  /* Consistent with desktop and mobile */
     }
 
     .statistics {
@@ -2626,7 +2671,7 @@ tbody td {
 
 @media (max-width: 640px) {
     .app-container {
-        padding-top: 65px;
+        padding-top: 80px;
     }
 
     .nav-bar {
@@ -2639,5 +2684,281 @@ tbody td {
 
     .statistics {
         grid-template-columns: 1fr;
+    }
+}
+
+/* ========================================
+   29. MODAL COMPONENTS (JavaScript-generated)
+   ======================================== */
+
+/* Modal Overlay - Full screen backdrop */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    z-index: var(--z-modal-backdrop);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-lg);
+    animation: fadeIn 0.3s ease;
+    overflow-y: auto;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+/* Modal Content Container */
+.modal-content {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-xl);
+    max-width: 900px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: scaleIn 0.3s var(--transition-base);
+    position: relative;
+}
+
+/* Larger modal variant for performance reports */
+.modal-content.performance-modal {
+    max-width: 1200px;
+}
+
+/* Modal Header */
+.modal-header {
+    padding: var(--spacing-xl);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-lg);
+    flex-wrap: wrap;
+}
+
+.modal-header h2,
+.modal-header h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.modal-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* Modal Close Button */
+.modal-close {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: 50%;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.modal-close:hover {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    transform: rotate(90deg);
+}
+
+/* Modal Body - Scrollable content */
+.modal-body {
+    padding: var(--spacing-xl);
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+/* Modal Footer - Action buttons */
+.modal-footer {
+    padding: var(--spacing-xl);
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+/* ========================================
+   30. TRADE CARD COMPONENTS
+   ======================================== */
+
+/* Trade card extends base card with left-side accent border */
+/* Similar pattern to opportunity-card - used for displaying trade information */
+.trade-card {
+    /* Base styles from .card */
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    transition: all var(--transition-base);
+    position: relative;
+    overflow: hidden;
+    /* Trade-specific styles */
+    cursor: pointer;
+}
+
+/* Override ::before to use left-side 4px vertical border instead of top horizontal */
+.trade-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--gradient-primary);
+    transform: scaleY(0);
+    transform-origin: top;
+    transition: transform var(--transition-base);
+}
+
+.trade-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--accent-gold);
+}
+
+.trade-card:hover::before {
+    transform: scaleY(1);
+}
+
+/* Trade card status variants */
+.trade-card.active {
+    border-left-color: var(--accent-gold);
+}
+
+.trade-card.profitable {
+    border-left-color: var(--success);
+}
+
+.trade-card.loss {
+    border-left-color: var(--error);
+}
+
+/* Trade card header */
+.trade-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-md);
+}
+
+.trade-symbol {
+    font-size: 1.125rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+}
+
+.trade-status-badge {
+    padding: 0.25rem 0.625rem;
+    border-radius: var(--radius-full);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.trade-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.trade-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+}
+
+.trade-info-label {
+    color: var(--text-muted);
+}
+
+.trade-info-value {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-family: var(--font-mono);
+}
+
+/* Trade grid layout */
+.trades-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+/* Responsive adjustments for modals and trade cards */
+@media (max-width: 768px) {
+    .modal-content {
+        max-width: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+
+    .modal-content.performance-modal {
+        max-width: 100%;
+    }
+
+    .modal-header {
+        padding: var(--spacing-lg);
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .modal-body {
+        padding: var(--spacing-lg);
+    }
+
+    .modal-footer {
+        padding: var(--spacing-lg);
+        flex-direction: column;
+    }
+
+    .modal-footer .btn {
+        width: 100%;
+    }
+
+    .trades-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .modal-header h2,
+    .modal-header h3,
+    .modal-title {
+        font-size: 1.25rem;
+    }
+
+    .trade-card {
+        padding: var(--spacing-md);
     }
 }
