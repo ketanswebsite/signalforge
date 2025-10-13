@@ -7,67 +7,68 @@
    1. CSS VARIABLES & DESIGN TOKENS
    ======================================== */
 :root {
-    /* === Core Colors === */
-    --primary-dark: #0f172a;
-    --secondary-dark: #1e293b;
-    --surface: #334155;
-    --surface-light: #475569;
+    /* === Core Colors (Black & Gold Theme) === */
+    --primary-dark: #000000;
+    --secondary-dark: #1C1C1C;
+    --surface: #2B2B2B;
+    --surface-light: #3A3A3A;
 
     /* === Accent Colors === */
-    --accent-blue: #3b82f6;
-    --accent-green: #10b981;
-    --accent-red: #ef4444;
-    --accent-gold: #f59e0b;
-    --accent-purple: #8b5cf6;
+    --accent-gold: #D4AF37;
+    --accent-amber: #FFA500;
+    --accent-bronze: #8B6914;
+    --accent-cream: #FFF8DC;
+    --accent-green: #22C55E;
+    --accent-red: #DC2626;
 
-    /* === Greys === */
-    --grey-50: #f8fafc;
-    --grey-100: #f1f5f9;
-    --grey-200: #e2e8f0;
-    --grey-300: #cbd5e1;
-    --grey-400: #94a3b8;
-    --grey-500: #64748b;
-    --grey-600: #475569;
-    --grey-700: #334155;
-    --grey-800: #1e293b;
-    --grey-900: #0f172a;
+    /* === Greys (Black & Gold Theme) === */
+    --grey-50: #E5E5E5;
+    --grey-100: #D1D1D1;
+    --grey-200: #AFAFAF;
+    --grey-300: #8B8B8B;
+    --grey-400: #737373;
+    --grey-500: #525252;
+    --grey-600: #3A3A3A;
+    --grey-700: #2B2B2B;
+    --grey-800: #1C1C1C;
+    --grey-900: #000000;
 
     /* === Light Theme Colors === */
     --white: #ffffff;
-    --off-white: #fafafa;
-    --light-bg: #f8fafc;
+    --off-white: #E5E5E5;
+    --light-bg: #f5f5f5;
 
     /* === Semantic Colors === */
-    --success: #10b981;
-    --error: #ef4444;
-    --warning: #f59e0b;
-    --info: #3b82f6;
+    --success: #22C55E;
+    --error: #DC2626;
+    --warning: #F59E0B;
+    --info: #3B82F6;
 
-    /* === Gradients === */
-    --gradient-primary: linear-gradient(135deg, #3b82f6, #8b5cf6);
-    --gradient-success: linear-gradient(135deg, #10b981, #059669);
-    --gradient-danger: linear-gradient(135deg, #ef4444, #dc2626);
-    --gradient-premium: linear-gradient(135deg, #3b82f6, #f59e0b);
-    --gradient-dark: linear-gradient(135deg, #0f172a, #1e293b);
+    /* === Gradients (Gold-based) === */
+    --gradient-primary: linear-gradient(135deg, #D4AF37, #FFA500);
+    --gradient-success: linear-gradient(135deg, #22C55E, #16A34A);
+    --gradient-danger: linear-gradient(135deg, #DC2626, #B91C1C);
+    --gradient-premium: linear-gradient(135deg, #D4AF37, #8B6914);
+    --gradient-dark: linear-gradient(135deg, #000000, #1C1C1C);
 
     /* === Transparency === */
-    --border-color: rgba(255, 255, 255, 0.08);
-    --border-color-light: rgba(0, 0, 0, 0.08);
-    --overlay-dark: rgba(15, 23, 42, 0.95);
+    --border-color: rgba(212, 175, 55, 0.15);
+    --border-color-light: rgba(0, 0, 0, 0.1);
+    --overlay-dark: rgba(0, 0, 0, 0.95);
     --overlay-light: rgba(255, 255, 255, 0.95);
-    --glass-bg: rgba(255, 255, 255, 0.05);
-    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-bg: rgba(28, 28, 28, 0.6);
+    --glass-border: rgba(212, 175, 55, 0.2);
 
-    /* === Shadows === */
-    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
-    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
-    --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.12);
-    --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.15);
-    --shadow-xl: 0 30px 80px rgba(0, 0, 0, 0.20);
-    --shadow-blue: 0 10px 40px rgba(59, 130, 246, 0.3);
-    --shadow-blue-hover: 0 15px 50px rgba(59, 130, 246, 0.5);
-    --shadow-green: 0 10px 40px rgba(16, 185, 129, 0.3);
-    --shadow-red: 0 10px 40px rgba(239, 68, 68, 0.3);
+    /* === Shadows (Gold-enhanced) === */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.6);
+    --shadow-xl: 0 30px 80px rgba(0, 0, 0, 0.7);
+    --shadow-gold: 0 10px 40px rgba(212, 175, 55, 0.3);
+    --shadow-gold-hover: 0 15px 50px rgba(212, 175, 55, 0.5);
+    --shadow-green: 0 10px 40px rgba(34, 197, 94, 0.3);
+    --shadow-red: 0 10px 40px rgba(220, 38, 38, 0.3);
 
     /* === Spacing === */
     --spacing-xs: 0.5rem;
@@ -194,13 +195,13 @@ p {
 }
 
 a {
-    color: var(--accent-blue);
+    color: var(--accent-gold);
     text-decoration: none;
     transition: color var(--transition-fast);
 }
 
 a:hover {
-    color: var(--accent-purple);
+    color: var(--accent-amber);
 }
 
 strong {
@@ -345,7 +346,7 @@ table {
 .cursor {
     width: 20px;
     height: 20px;
-    border: 2px solid var(--accent-blue);
+    border: 2px solid var(--accent-gold);
     border-radius: 50%;
     position: fixed;
     pointer-events: none;
@@ -363,7 +364,7 @@ table {
 
 .cursor.hover {
     transform: scale(1.8);
-    background: rgba(59, 130, 246, 0.1);
+    background: rgba(212, 175, 55, 0.1);
     border-color: var(--accent-gold);
 }
 
@@ -443,7 +444,7 @@ table {
 .card:hover {
     transform: translateY(-5px);
     box-shadow: var(--shadow-lg);
-    border-color: rgba(59, 130, 246, 0.2);
+    border-color: rgba(212, 175, 55, 0.2);
 }
 
 /* === Card with Gradient Top Border === */
@@ -487,7 +488,7 @@ table {
     left: 50%;
     width: 0;
     height: 0;
-    background: radial-gradient(circle, rgba(59, 130, 246, 0.1), transparent);
+    background: radial-gradient(circle, rgba(212, 175, 55, 0.1), transparent);
     transform: translate(-50%, -50%);
     transition: all 0.6s ease;
     border-radius: 50%;
@@ -535,7 +536,7 @@ table {
 .metric-card:hover {
     transform: translateY(-8px);
     box-shadow: var(--shadow-lg);
-    border-color: var(--accent-blue);
+    border-color: var(--accent-gold);
 }
 
 .metric-icon {
@@ -547,7 +548,7 @@ table {
     align-items: center;
     justify-content: center;
     margin-bottom: var(--spacing-md);
-    box-shadow: var(--shadow-blue);
+    box-shadow: var(--shadow-gold);
 }
 
 .metric-content {
@@ -638,12 +639,12 @@ table {
 .btn-primary {
     background: var(--gradient-primary);
     color: var(--white);
-    box-shadow: var(--shadow-blue);
+    box-shadow: var(--shadow-gold);
 }
 
 .btn-primary:hover {
     transform: translateY(-3px);
-    box-shadow: var(--shadow-blue-hover);
+    box-shadow: var(--shadow-gold-hover);
 }
 
 .btn-success {
@@ -676,18 +677,18 @@ table {
 
 .btn-secondary:hover {
     background: var(--glass-bg);
-    border-color: var(--accent-blue);
+    border-color: var(--accent-gold);
     transform: translateY(-3px);
 }
 
 .btn-ghost {
     background: transparent;
-    color: var(--accent-blue);
+    color: var(--accent-gold);
     padding: 0.5rem 1rem;
 }
 
 .btn-ghost:hover {
-    background: rgba(59, 130, 246, 0.1);
+    background: rgba(212, 175, 55, 0.1);
 }
 
 /* === Button Sizes === */
@@ -743,9 +744,9 @@ table {
 .form-textarea:focus,
 .form-select:focus {
     outline: none;
-    border-color: var(--accent-blue);
+    border-color: var(--accent-gold);
     background: var(--bg-secondary);
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1);
     transform: translateY(-2px);
 }
 
@@ -1038,7 +1039,7 @@ tbody td {
     background: var(--gradient-primary);
     border: none;
     cursor: pointer;
-    box-shadow: var(--shadow-blue);
+    box-shadow: var(--shadow-gold);
     z-index: var(--z-fixed);
     display: flex;
     align-items: center;
@@ -1048,7 +1049,7 @@ tbody td {
 
 .theme-toggle:hover {
     transform: translateY(-4px);
-    box-shadow: var(--shadow-blue-hover);
+    box-shadow: var(--shadow-gold-hover);
 }
 
 .theme-toggle svg {
@@ -1125,9 +1126,9 @@ tbody td {
 }
 
 .status-info {
-    background: rgba(59, 130, 246, 0.1);
+    background: rgba(212, 175, 55, 0.1);
     color: var(--info);
-    border: 1px solid rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(212, 175, 55, 0.2);
 }
 
 .status-info .status-dot {
@@ -1141,7 +1142,7 @@ tbody td {
     width: 40px;
     height: 40px;
     border: 4px solid var(--border);
-    border-top-color: var(--accent-blue);
+    border-top-color: var(--accent-gold);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
 }
@@ -1324,7 +1325,7 @@ tbody td {
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    background: linear-gradient(135deg, #000000 0%, #1C1C1C 50%, #000000 100%);
     background-size: 200% 200%;
     animation: gradientShift 15s ease infinite;
 }
@@ -1347,8 +1348,8 @@ tbody td {
     right: 0;
     bottom: 0;
     background-image:
-        linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+        linear-gradient(rgba(212, 175, 55, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(212, 175, 55, 0.03) 1px, transparent 1px);
     background-size: 50px 50px;
     animation: movePattern 20s linear infinite;
 }
@@ -1382,14 +1383,6 @@ tbody td {
     box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
     animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1);
     margin: 2rem auto;
-}
-
-/* Login logo with gradient */
-.login-logo {
-    font-size: 4rem;
-    text-align: center;
-    margin-bottom: 1.5rem;
-    animation: float 6s ease-in-out infinite;
 }
 
 /* Login title with gradient text */
@@ -1442,7 +1435,7 @@ tbody td {
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.2), transparent);
+    background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.2), transparent);
     transition: left 0.5s ease;
 }
 
@@ -1452,7 +1445,7 @@ tbody td {
 
 .google-login-btn:hover {
     transform: translateY(-4px);
-    box-shadow: 0 15px 40px rgba(59, 130, 246, 0.4);
+    box-shadow: 0 15px 40px rgba(212, 175, 55, 0.4);
 }
 
 .google-icon {
@@ -1465,8 +1458,8 @@ tbody td {
 .security-note {
     margin-top: 2.5rem;
     padding: 1.5rem;
-    background: rgba(59, 130, 246, 0.1);
-    border: 1px solid rgba(59, 130, 246, 0.2);
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px solid rgba(212, 175, 55, 0.2);
     border-radius: var(--radius-md);
     color: var(--grey-300);
     font-size: 0.9rem;
@@ -1475,7 +1468,7 @@ tbody td {
 }
 
 .security-note strong {
-    color: var(--accent-blue);
+    color: var(--accent-gold);
     font-size: 1rem;
 }
 
@@ -1516,7 +1509,7 @@ tbody td {
 /* Floating decorative elements */
 .floating-element {
     position: absolute;
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(245, 158, 11, 0.1));
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(245, 158, 11, 0.1));
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 20px;
     backdrop-filter: blur(10px);
@@ -1556,10 +1549,6 @@ tbody td {
 
     .login-title {
         font-size: 1.75rem;
-    }
-
-    .login-logo {
-        font-size: 3rem;
     }
 
     .floating-element {
