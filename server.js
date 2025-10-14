@@ -456,6 +456,402 @@ app.post('/api/user/unlink-telegram', ensureAuthenticatedAPI, async (req, res) =
   }
 });
 
+// ===== GDPR DATA MANAGEMENT ENDPOINTS =====
+
+// Get user data summary (GDPR Article 15 - Right of Access)
+app.get('/api/user/data-summary', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const email = req.user.email;
+    const { Pool } = require('pg');
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    });
+
+    // Get user basic info
+    const userResult = await pool.query(
+      'SELECT created_at, email, name FROM users WHERE email = $1',
+      [email]
+    );
+
+    if (userResult.rows.length === 0) {
+      await pool.end();
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = userResult.rows[0];
+
+    // Get trade counts
+    const tradesResult = await pool.query(
+      `SELECT
+        COUNT(*) as total_trades,
+        MAX(created_at) as last_trade_date
+       FROM trades
+       WHERE user_id = $1`,
+      [email]
+    );
+
+    // Get active signals (alert preferences count)
+    const alertsResult = await pool.query(
+      `SELECT COUNT(*) as active_signals
+       FROM alert_preferences
+       WHERE user_id = $1 AND (telegram_enabled = true OR email_enabled = true)`,
+      [email]
+    );
+
+    await pool.end();
+
+    // Determine last activity
+    const lastActivity = user.last_login || tradesResult.rows[0]?.last_trade_date || user.created_at;
+
+    res.json({
+      created_at: user.created_at,
+      email: user.email,
+      name: user.name,
+      total_trades: parseInt(tradesResult.rows[0]?.total_trades || 0),
+      active_signals: parseInt(alertsResult.rows[0]?.active_signals || 0),
+      last_activity: lastActivity
+    });
+
+  } catch (error) {
+    console.error('Error fetching user data summary:', error);
+    res.status(500).json({ error: 'Failed to fetch user data summary' });
+  }
+});
+
+// Download all user data (GDPR Article 20 - Right to Data Portability)
+app.get('/api/user/download-data', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const email = req.user.email;
+    const { Pool } = require('pg');
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    });
+
+    // Get all user data
+    const userData = {};
+
+    // 1. User profile
+    const userResult = await pool.query(
+      'SELECT * FROM users WHERE email = $1',
+      [email]
+    );
+    userData.profile = userResult.rows[0] || {};
+
+    // 2. All trades
+    const tradesResult = await pool.query(
+      'SELECT * FROM trades WHERE user_id = $1 ORDER BY created_at DESC',
+      [email]
+    );
+    userData.trades = tradesResult.rows;
+
+    // 3. Alert preferences
+    const alertsResult = await pool.query(
+      'SELECT * FROM alert_preferences WHERE user_id = $1',
+      [email]
+    );
+    userData.alertPreferences = alertsResult.rows[0] || null;
+
+    // 4. Subscription info
+    try {
+      const subsResult = await pool.query(
+        'SELECT * FROM user_subscriptions WHERE user_email = $1',
+        [email]
+      );
+      userData.subscription = subsResult.rows[0] || null;
+    } catch (e) {
+      userData.subscription = null;
+    }
+
+    // 5. Payment history (anonymized sensitive data)
+    try {
+      const paymentsResult = await pool.query(
+        `SELECT
+          transaction_id, amount, currency, status, payment_method,
+          payment_date, created_at, updated_at
+         FROM payment_transactions
+         WHERE user_email = $1
+         ORDER BY created_at DESC`,
+        [email]
+      );
+      userData.paymentHistory = paymentsResult.rows;
+    } catch (e) {
+      userData.paymentHistory = [];
+    }
+
+    await pool.end();
+
+    // Add metadata
+    userData.exportDate = new Date().toISOString();
+    userData.exportedBy = email;
+    userData.dataRetentionPolicy = {
+      accountData: "Until deletion requested + 30 days",
+      financialRecords: "6 years (UK financial regulations)",
+      usageLogs: "12 months maximum",
+      supportCommunications: "3 years"
+    };
+
+    // Set headers for download
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="sutralgo-data-${email}-${Date.now()}.json"`);
+    res.json(userData);
+
+  } catch (error) {
+    console.error('Error downloading user data:', error);
+    res.status(500).json({ error: 'Failed to download user data' });
+  }
+});
+
+// Export trade history as CSV
+app.get('/api/trades/export', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const email = req.user.email;
+    const { Pool } = require('pg');
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    });
+
+    // Get all trades
+    const result = await pool.query(
+      `SELECT
+        symbol, name, entry_date, entry_price, exit_date, exit_price,
+        shares, status, profit_loss, profit_loss_percentage,
+        entry_reason, exit_reason, target_price, stop_loss_percent,
+        investment_amount, currency_symbol, created_at
+       FROM trades
+       WHERE user_id = $1
+       ORDER BY entry_date DESC`,
+      [email]
+    );
+
+    await pool.end();
+
+    // Build CSV
+    const csvHeader = 'Symbol,Name,Entry Date,Entry Price,Exit Date,Exit Price,Shares,Status,Profit/Loss,Profit/Loss %,Entry Reason,Exit Reason,Target Price,Stop Loss %,Investment Amount,Currency,Created At\n';
+
+    const csvRows = result.rows.map(row => {
+      return [
+        row.symbol || '',
+        `"${(row.name || '').replace(/"/g, '""')}"`,
+        row.entry_date ? new Date(row.entry_date).toISOString().split('T')[0] : '',
+        row.entry_price || '',
+        row.exit_date ? new Date(row.exit_date).toISOString().split('T')[0] : '',
+        row.exit_price || '',
+        row.shares || '',
+        row.status || '',
+        row.profit_loss || '',
+        row.profit_loss_percentage || '',
+        `"${(row.entry_reason || '').replace(/"/g, '""')}"`,
+        `"${(row.exit_reason || '').replace(/"/g, '""')}"`,
+        row.target_price || '',
+        row.stop_loss_percent || '',
+        row.investment_amount || '',
+        row.currency_symbol || '',
+        row.created_at ? new Date(row.created_at).toISOString() : ''
+      ].join(',');
+    }).join('\n');
+
+    const csv = csvHeader + csvRows;
+
+    // Set headers for download
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="sutralgo-trades-${email}-${Date.now()}.csv"`);
+    res.send(csv);
+
+  } catch (error) {
+    console.error('Error exporting trades:', error);
+    res.status(500).json({ error: 'Failed to export trades' });
+  }
+});
+
+// Delete user account (GDPR Article 17 - Right to Erasure)
+app.delete('/api/user/delete-account', ensureAuthenticatedAPI, async (req, res) => {
+  const { Pool } = require('pg');
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  });
+  const client = await pool.connect();
+
+  try {
+    const email = req.user.email;
+
+    await client.query('BEGIN');
+
+    // 1. Create audit log entry BEFORE deletion
+    try {
+      await client.query(`
+        INSERT INTO admin_activity_log (admin_email, activity_type, description, target_type, target_id, metadata, ip_address, success)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `, [
+        email,
+        'account_deletion',
+        'User requested account deletion',
+        'user',
+        email,
+        JSON.stringify({
+          reason: 'User requested account deletion via data management page',
+          timestamp: new Date().toISOString()
+        }),
+        req.ip || req.connection.remoteAddress,
+        true
+      ]);
+    } catch (auditError) {
+      // Log but don't fail if audit table doesn't exist
+      console.error('Failed to create audit log:', auditError);
+    }
+
+    // 2. Archive financial records (REQUIRED for 6 years per UK law)
+    // Create archive table if it doesn't exist
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS deleted_user_financial_records (
+        id SERIAL PRIMARY KEY,
+        user_email VARCHAR(255) NOT NULL,
+        deletion_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        retention_until TIMESTAMP NOT NULL,
+        financial_data JSONB NOT NULL,
+        deletion_requested_by VARCHAR(255),
+        deletion_ip_address INET,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Get financial records
+    const financialRecords = {
+      paymentTransactions: [],
+      paymentRefunds: [],
+      subscriptions: []
+    };
+
+    try {
+      const paymentsResult = await client.query(
+        'SELECT * FROM payment_transactions WHERE user_email = $1',
+        [email]
+      );
+      financialRecords.paymentTransactions = paymentsResult.rows;
+    } catch (e) {}
+
+    try {
+      const refundsResult = await client.query(
+        'SELECT * FROM payment_refunds WHERE user_email = $1',
+        [email]
+      );
+      financialRecords.paymentRefunds = refundsResult.rows;
+    } catch (e) {}
+
+    try {
+      const subsResult = await client.query(
+        'SELECT * FROM user_subscriptions WHERE user_email = $1',
+        [email]
+      );
+      financialRecords.subscriptions = subsResult.rows;
+    } catch (e) {}
+
+    // Archive financial records for 6 years
+    if (financialRecords.paymentTransactions.length > 0 ||
+        financialRecords.paymentRefunds.length > 0 ||
+        financialRecords.subscriptions.length > 0) {
+
+      const retentionDate = new Date();
+      retentionDate.setFullYear(retentionDate.getFullYear() + 6);
+
+      await client.query(`
+        INSERT INTO deleted_user_financial_records (user_email, retention_until, financial_data, deletion_requested_by, deletion_ip_address)
+        VALUES ($1, $2, $3, $4, $5)
+      `, [
+        email,
+        retentionDate,
+        JSON.stringify(financialRecords),
+        email,
+        req.ip || req.connection.remoteAddress
+      ]);
+    }
+
+    // 3. Delete user data (in order to respect foreign key constraints)
+
+    // Delete alert preferences
+    await client.query('DELETE FROM alert_preferences WHERE user_id = $1', [email]);
+
+    // Delete all trades
+    await client.query('DELETE FROM trades WHERE user_id = $1', [email]);
+
+    // Unlink Telegram (but keep telegram subscriber record for their chat)
+    const telegramResult = await client.query(
+      'SELECT telegram_chat_id FROM users WHERE email = $1',
+      [email]
+    );
+
+    if (telegramResult.rows.length > 0 && telegramResult.rows[0].telegram_chat_id) {
+      const chatId = telegramResult.rows[0].telegram_chat_id;
+      await client.query(
+        'UPDATE telegram_subscribers SET user_id = NULL WHERE chat_id = $1',
+        [chatId]
+      );
+    }
+
+    // Mark subscriptions as deleted (don't actually delete for financial records)
+    try {
+      await client.query(`
+        UPDATE user_subscriptions
+        SET status = 'deleted',
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_email = $1
+      `, [email]);
+    } catch (e) {}
+
+    // Delete payment transactions (already archived)
+    try {
+      await client.query('DELETE FROM payment_transactions WHERE user_email = $1', [email]);
+    } catch (e) {}
+
+    try {
+      await client.query('DELETE FROM payment_refunds WHERE user_email = $1', [email]);
+    } catch (e) {}
+
+    // 4. Finally, delete the user record
+    await client.query('DELETE FROM users WHERE email = $1', [email]);
+
+    await client.query('COMMIT');
+
+    // 5. Logout the user (destroy session)
+    if (req.logout) {
+      req.logout((err) => {
+        if (err) console.error('Error during logout:', err);
+      });
+    }
+
+    if (req.session) {
+      req.session.destroy();
+    }
+
+    res.json({
+      success: true,
+      message: 'Account successfully deleted',
+      details: {
+        email: email,
+        deletionDate: new Date().toISOString(),
+        financialRecordsRetained: financialRecords.paymentTransactions.length > 0 ||
+                                   financialRecords.paymentRefunds.length > 0 ||
+                                   financialRecords.subscriptions.length > 0,
+        retentionPeriod: '6 years as required by UK financial regulations'
+      }
+    });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error deleting account:', error);
+    res.status(500).json({
+      error: 'Failed to delete account',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  } finally {
+    client.release();
+    await pool.end();
+  }
+});
+
 // Admin-only: Manually link Telegram to OAuth user
 app.post('/api/admin/manual-link', ensureAuthenticatedAPI, async (req, res) => {
   // Check if user is admin
