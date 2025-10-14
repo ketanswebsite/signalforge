@@ -1285,15 +1285,21 @@ if (!DTIUI.displayTrades) {
     /**
      * Add chart type toggle button to chart controls
      */
-    function addChartTypeToggle() {
+    function addChartTypeToggle(retryCount = 0) {
+        const MAX_RETRIES = 10; // Maximum 5 seconds of retries (10 * 500ms)
+
         // Check if chart controls exist
         const chartControls = document.querySelector('.chart-controls .button-controls');
         if (!chartControls) {
-            // If no controls yet, wait and try again
-            setTimeout(addChartTypeToggle, 500);
+            // If no controls yet, wait and try again (up to max retries)
+            if (retryCount < MAX_RETRIES) {
+                setTimeout(() => addChartTypeToggle(retryCount + 1), 500);
+            } else {
+                console.warn('[CHART FEATURE] Chart controls not found after maximum retries');
+            }
             return;
         }
-        
+
         // Check if toggle already exists
         if (chartControls.querySelector('.chart-type-toggle')) return;
         
@@ -1371,28 +1377,31 @@ if (!DTIUI.displayTrades) {
         chartContainers.forEach(({ id, title }) => {
             const canvas = document.getElementById(id);
             if (!canvas) return;
-            
-            // Find the chart wrapper
-            let container = canvas.parentElement;
-            
-            // If the parent isn't the chart-wrapper, look for it
-            if (!container.classList.contains('chart-wrapper')) {
-                const wrapper = container.closest('.chart-wrapper');
-                if (wrapper) {
-                    container = wrapper;
-                } else {
-                    // If no wrapper exists, wrap the canvas
+
+            // Check if canvas is already wrapped by looking up the DOM tree
+            let container = canvas.closest('.chart-wrapper');
+
+            // If not wrapped, check immediate parent
+            if (!container) {
+                container = canvas.parentElement;
+
+                // Only wrap if not already inside a chart-wrapper
+                if (!container.classList.contains('chart-wrapper')) {
+                    // If no wrapper exists, wrap the canvas ONLY ONCE
                     const newWrapper = document.createElement('div');
                     newWrapper.className = 'chart-wrapper';
+                    newWrapper.setAttribute('data-chart-id', id); // Mark wrapper to prevent re-wrapping
                     canvas.parentNode.insertBefore(newWrapper, canvas);
                     newWrapper.appendChild(canvas);
                     container = newWrapper;
                 }
             }
-            
-            // Remove any existing export buttons to prevent duplicates
-            const existingButtons = container.querySelectorAll('.export-chart-btn:not(.control-btn)');
-            existingButtons.forEach(btn => btn.remove());
+
+            // Check if export button already exists - skip if it does
+            const existingButton = container.querySelector('.export-chart-btn.chart-export-btn');
+            if (existingButton) {
+                return; // Skip this chart, button already exists
+            }
             
             const exportBtn = document.createElement('button');
             exportBtn.className = 'export-chart-btn chart-export-btn'; // Add unique class
