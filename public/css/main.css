@@ -5633,3 +5633,445 @@ button .spinner {
         max-height: 600px;
     }
 }
+
+/* ========================================
+   ACCOUNT PAGE STYLING
+   ======================================== */
+
+/* ===== 1. Page Layout & Container ===== */
+.account-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--spacing-2xl) var(--spacing-lg);
+}
+
+.account-header {
+    text-align: center;
+    margin-bottom: var(--spacing-2xl);
+}
+
+.account-header h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.account-header p {
+    font-size: 1.125rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+.account-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xl);
+}
+
+/* ===== 2. Account Sections ===== */
+.account-section {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-xl);
+    border: 1px solid var(--border);
+    transition: all var(--transition-base);
+}
+
+.account-section:hover {
+    box-shadow: var(--shadow-lg);
+    border-color: var(--glass-border);
+}
+
+.account-section.full-width {
+    grid-column: 1 / -1;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent-gold);
+    margin: 0;
+}
+
+.section-title svg {
+    color: var(--accent-gold);
+}
+
+/* ===== 3. Status Badges ===== */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-full);
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+}
+
+.status-badge svg {
+    width: 16px;
+    height: 16px;
+}
+
+.status-badge.active {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+    border: 1px solid var(--success);
+}
+
+.status-badge.active svg {
+    fill: var(--success);
+}
+
+.status-badge.trial {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    border: 1px solid #3b82f6;
+}
+
+.status-badge.trial svg {
+    fill: #3b82f6;
+}
+
+.status-badge.cancelled {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning);
+    border: 1px solid var(--warning);
+}
+
+.status-badge.cancelled svg {
+    fill: var(--warning);
+}
+
+.status-badge.expired {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--error);
+    border: 1px solid var(--error);
+}
+
+.status-badge.expired svg {
+    fill: var(--error);
+}
+
+/* ===== 4. Alert Components ===== */
+.alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-lg);
+    border-left: 4px solid;
+    margin-bottom: var(--spacing-lg);
+    background: var(--bg-primary);
+}
+
+.alert svg {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+}
+
+.alert div {
+    flex: 1;
+    line-height: 1.6;
+}
+
+.alert strong {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-weight: 600;
+}
+
+.alert small {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    opacity: 0.8;
+}
+
+.alert-info {
+    border-left-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.05);
+    color: #3b82f6;
+}
+
+.alert-info svg {
+    stroke: #3b82f6;
+}
+
+.alert-warning {
+    border-left-color: var(--warning);
+    background: rgba(245, 158, 11, 0.05);
+    color: var(--warning);
+}
+
+.alert-warning svg {
+    stroke: var(--warning);
+}
+
+.alert-danger {
+    border-left-color: var(--error);
+    background: rgba(239, 68, 68, 0.05);
+    color: var(--error);
+}
+
+.alert-danger svg {
+    stroke: var(--error);
+}
+
+/* ===== 5. Subscription Card ===== */
+.subscription-card {
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    border: 1px solid var(--border);
+}
+
+.plan-name-large {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.plan-price-large {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--accent-gold);
+    margin-bottom: var(--spacing-lg);
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+}
+
+.btn-group {
+    display: flex;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+    margin-top: var(--spacing-lg);
+}
+
+.btn-group .btn {
+    flex: 1;
+    min-width: 200px;
+}
+
+/* ===== 6. Payment History Table ===== */
+.payment-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: var(--spacing-md);
+}
+
+.payment-table thead {
+    background: var(--bg-primary);
+    border-bottom: 2px solid var(--border);
+}
+
+.payment-table th {
+    padding: 1rem;
+    text-align: left;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--accent-gold);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.payment-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background var(--transition-base);
+}
+
+.payment-table tbody tr:hover {
+    background: var(--bg-primary);
+}
+
+.payment-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.payment-table td {
+    padding: 1rem;
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+}
+
+.payment-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.payment-status.completed,
+.payment-status.success {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+}
+
+.payment-status.pending {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning);
+}
+
+.payment-status.failed {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--error);
+}
+
+.payment-status.refunded {
+    background: rgba(148, 163, 184, 0.1);
+    color: var(--text-muted);
+}
+
+.font-mono {
+    font-family: var(--font-mono);
+}
+
+.text-sm {
+    font-size: 0.875rem;
+}
+
+.text-muted {
+    color: var(--text-muted);
+}
+
+/* ===== 7. Utility Classes ===== */
+.mt-2 {
+    margin-top: var(--spacing-md);
+}
+
+/* ===== 8. Responsive Design ===== */
+@media (max-width: 768px) {
+    .account-container {
+        padding: var(--spacing-lg) var(--spacing-md);
+    }
+
+    .account-header h1 {
+        font-size: 2rem;
+    }
+
+    .account-header p {
+        font-size: 1rem;
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+    }
+
+    .plan-name-large {
+        font-size: 1.5rem;
+    }
+
+    .plan-price-large {
+        font-size: 1.25rem;
+    }
+
+    .btn-group {
+        flex-direction: column;
+    }
+
+    .btn-group .btn {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Payment table responsive wrapper */
+    .payment-table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .payment-table thead,
+    .payment-table tbody,
+    .payment-table th,
+    .payment-table td,
+    .payment-table tr {
+        display: block;
+    }
+
+    .payment-table thead tr {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+
+    .payment-table tbody tr {
+        margin-bottom: var(--spacing-md);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+    }
+
+    .payment-table td {
+        border: none;
+        position: relative;
+        padding-left: 50%;
+        text-align: right;
+    }
+
+    .payment-table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: var(--spacing-md);
+        width: 45%;
+        padding-right: var(--spacing-sm);
+        text-align: left;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .account-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .btn-group .btn {
+        min-width: 150px;
+    }
+}
+
+@media (min-width: 1025px) {
+    .account-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .detail-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
