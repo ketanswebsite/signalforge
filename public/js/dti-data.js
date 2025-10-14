@@ -171,27 +171,27 @@ if (period === '5y') {
         
         // Local proxy URL for historical data
         const proxyUrl = `/yahoo/history?symbol=${symbol}&period1=${startDate}&period2=${endDate}&interval=${interval}`;
-        
-        // Update status element
-        const statusElement = document.getElementById('data-fetch-status');
-        if (statusElement) {
-            statusElement.innerHTML = `
-                <div class="data-fetch-loading">
-                    <svg class="spinner" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="12" y1="2" x2="12" y2="6"></line>
-                        <line x1="12" y1="18" x2="12" y2="22"></line>
-                        <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
-                        <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
-                        <line x1="2" y1="12" x2="6" y2="12"></line>
-                        <line x1="18" y1="12" x2="22" y2="12"></line>
-                        <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
-                        <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
-                    </svg>
-                    Fetching data for ${symbol}...
-                </div>
-            `;
-            statusElement.classList.remove('hidden');
-        }
+
+        // Status messages disabled - they cluttered the UI during batch scans
+        // const statusElement = document.getElementById('data-fetch-status');
+        // if (statusElement) {
+        //     statusElement.innerHTML = `
+        //         <div class="data-fetch-loading">
+        //             <svg class="spinner" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        //                 <line x1="12" y1="2" x2="12" y2="6"></line>
+        //                 <line x1="12" y1="18" x2="12" y2="22"></line>
+        //                 <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+        //                 <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+        //                 <line x1="2" y1="12" x2="6" y2="12"></line>
+        //                 <line x1="18" y1="12" x2="22" y2="12"></line>
+        //                 <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+        //                 <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+        //             </svg>
+        //             Fetching data for ${symbol}...
+        //         </div>
+        //     `;
+        //     statusElement.classList.remove('hidden');
+        // }
 
         // Use AbortManager for cancellable requests
         const operationId = `fetch-historical-${symbol}-${period}-${interval}`;
@@ -238,44 +238,44 @@ if (period === '5y') {
             error.message;
         failedStocks.set(symbol, { reason, error: error.message, timestamp: new Date() });
 
-        // Update status on error
-        const statusElement = document.getElementById('data-fetch-status');
-        if (statusElement) {
-            const isServerError = error.message.includes('500');
-            const errorClass = isServerError ? 'data-fetch-warning' : 'data-fetch-error';
-            const errorMessage = isServerError ?
-                `Stock ${symbol} may be delisted or renamed (500 error)` :
-                `Error fetching data for ${symbol}: ${error.message}`;
+        // Status messages disabled - they cluttered the UI during batch scans
+        // const statusElement = document.getElementById('data-fetch-status');
+        // if (statusElement) {
+        //     const isServerError = error.message.includes('500');
+        //     const errorClass = isServerError ? 'data-fetch-warning' : 'data-fetch-error';
+        //     const errorMessage = isServerError ?
+        //         `Stock ${symbol} may be delisted or renamed (500 error)` :
+        //         `Error fetching data for ${symbol}: ${error.message}`;
 
-            statusElement.innerHTML = `
-                <div class="${errorClass}">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        ${isServerError ?
-                            '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>' :
-                            '<circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>'
-                        }
-                    </svg>
-                    ${errorMessage}
-                </div>
-            `;
-        }
-        
+        //     statusElement.innerHTML = `
+        //         <div class="${errorClass}">
+        //             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        //                 ${isServerError ?
+        //                     '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>' :
+        //                     '<circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>'
+        //                 }
+        //             </svg>
+        //             ${errorMessage}
+        //         </div>
+        //     `;
+        // }
+
         // Implement retry logic
         if (retryCount < MAX_RETRIES) {
-            
-            // Update status to show retry
-            if (statusElement) {
-                statusElement.innerHTML = `
-                    <div class="data-fetch-warning">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                            <line x1="12" y1="9" x2="12" y2="13"></line>
-                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                        </svg>
-                        Retrying data fetch for ${symbol} (${retryCount + 1}/${MAX_RETRIES})...
-                    </div>
-                `;
-            }
+
+            // Status messages disabled - they cluttered the UI during batch scans
+            // if (statusElement) {
+            //     statusElement.innerHTML = `
+            //         <div class="data-fetch-warning">
+            //             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            //                 <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            //                 <line x1="12" y1="9" x2="12" y2="13"></line>
+            //                 <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            //             </svg>
+            //             Retrying data fetch for ${symbol} (${retryCount + 1}/${MAX_RETRIES})...
+            //         </div>
+            //     `;
+            // }
             
             // Exponential backoff
             const delay = Math.pow(2, retryCount) * 1000;
