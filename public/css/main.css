@@ -804,6 +804,30 @@ button .spinner,
     animation: spin 0.8s linear infinite;
 }
 
+/* SVG icons inside buttons */
+.btn svg,
+.btn-primary svg,
+.btn-secondary svg,
+.btn-danger svg,
+.btn-success svg,
+button svg {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    transition: transform var(--transition-base);
+}
+
+.btn:hover svg,
+.btn-primary:hover svg,
+.btn-secondary:hover svg,
+.btn-success:hover svg {
+    transform: translateY(-2px);
+}
+
+.btn-danger:hover svg {
+    transform: scale(1.1);
+}
+
 /* ========================================
    9. FORMS & INPUTS
    ======================================== */
