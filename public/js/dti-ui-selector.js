@@ -272,6 +272,7 @@ DTIUI.StockSelector = (function() {
         // Create fetch button
         const fetchButton = document.createElement('button');
         fetchButton.id = 'fetch-data-btn';
+        fetchButton.className = 'btn btn-primary';
         fetchButton.innerHTML = `
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -497,6 +498,7 @@ DTIUI.StockSelector = (function() {
         // Create button
         const batchButton = document.createElement('button');
         batchButton.id = 'batch-process-btn';
+        batchButton.className = 'btn btn-primary';
         const indexName = 
             DTIBacktester.currentStockIndex === 'nifty50' ? 'Nifty 50' : 
             DTIBacktester.currentStockIndex === 'niftyNext50' ? 'Nifty Next 50' : 
