@@ -91,16 +91,9 @@ DTIUI.Charts = (function() {
             const canvas = document.getElementById(chartId);
             if (!canvas) return;
 
-            // Remove export buttons
+            // Unwrap canvas from chart-wrapper if it exists (chart wrappers no longer used for export buttons)
             const wrapper = canvas.closest('.chart-wrapper');
             if (wrapper) {
-                const exportBtn = wrapper.querySelector('.export-chart-btn');
-                if (exportBtn) {
-                    exportBtn.remove();
-                    console.log(`[CHART FIX] Removed export button for ${chartId}`);
-                }
-
-                // Unwrap canvas from chart-wrapper if it exists
                 const parent = wrapper.parentNode;
                 if (parent) {
                     parent.insertBefore(canvas, wrapper);
@@ -933,9 +926,6 @@ DTIUI.Charts = (function() {
             }
         });
 
-        // Add export buttons to charts - AFTER all charts are created to prevent wrapper accumulation
-        addExportButtons();
-
         // Add chart sync for zoom and pan
         syncChartsZoom([DTIBacktester.priceChart, DTIBacktester.dtiChart, DTIBacktester.sevenDayDTIChart]);
         
@@ -1463,95 +1453,6 @@ if (!DTIUI.displayTrades) {
             chartControls.appendChild(toggleBtn);
         }
     }
-    
-    /**
-     * Add export buttons to each chart
-     */
-    function addExportButtons() {
-        const chartContainers = [
-            { id: 'price-chart', title: 'Price Chart' },
-            { id: 'dti-chart', title: 'Primary Indicator' },
-            { id: 'weekly-dti-chart', title: 'Secondary Indicator' }
-        ];
-        
-        chartContainers.forEach(({ id, title }) => {
-            const canvas = document.getElementById(id);
-            if (!canvas) return;
-
-            // Check if canvas is already wrapped by looking up the DOM tree
-            let container = canvas.closest('.chart-wrapper');
-
-            // If not wrapped, check immediate parent
-            if (!container) {
-                container = canvas.parentElement;
-
-                // Only wrap if not already inside a chart-wrapper
-                if (!container.classList.contains('chart-wrapper')) {
-                    // If no wrapper exists, wrap the canvas ONLY ONCE
-                    const newWrapper = document.createElement('div');
-                    newWrapper.className = 'chart-wrapper';
-                    newWrapper.setAttribute('data-chart-id', id); // Mark wrapper to prevent re-wrapping
-                    canvas.parentNode.insertBefore(newWrapper, canvas);
-                    newWrapper.appendChild(canvas);
-                    container = newWrapper;
-                }
-            }
-
-            // Check if export button already exists - skip if it does
-            const existingButton = container.querySelector('.export-chart-btn.chart-export-btn');
-            if (existingButton) {
-                return; // Skip this chart, button already exists
-            }
-            
-            const exportBtn = document.createElement('button');
-            exportBtn.className = 'export-chart-btn chart-export-btn'; // Add unique class
-            exportBtn.innerHTML = `
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="7 10 12 15 17 10"></polyline>
-                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                <span>Export</span>
-            `;
-            exportBtn.title = `Export ${title}`;
-            
-            exportBtn.addEventListener('click', () => {
-                console.log('[CHART FEATURE] Export button clicked for:', title);
-                const chart = Chart.getChart(canvas);
-                if (chart) {
-                    console.log('[CHART FEATURE] Exporting chart:', id);
-                    // Use the existing export function
-                    exportChartAsImage(chart, `${title.toLowerCase().replace(/\s+/g, '-')}_${new Date().toISOString().slice(0,10)}`);
-                } else {
-                    console.warn('[CHART FEATURE] Chart not found for export:', id);
-                }
-            });
-            
-            container.style.position = 'relative';
-            container.appendChild(exportBtn);
-        });
-    }
-    
-    /**
-     * Export chart as image
-     */
-    function exportChartAsImage(chart, filename = 'chart') {
-        if (!chart) return;
-        
-        // Create a temporary link element
-        const link = document.createElement('a');
-        link.download = `${filename}.png`;
-        link.href = chart.toBase64Image('image/png', 1.0);
-        
-        // Trigger download
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        if (typeof DTIBacktester !== 'undefined' && DTIBacktester.utils) {
-            DTIBacktester.utils.showNotification('Chart exported as image', 'success');
-        }
-    }
 
     // Export functions for external use
     return {
@@ -1559,7 +1460,6 @@ if (!DTIUI.displayTrades) {
         updateChartsAfterParameterChange,
         initParameterChangeListeners,
         restoreAnnotations,
-        addExportButtons,
         addChartTypeToggle
     };
 })();

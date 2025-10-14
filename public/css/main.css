@@ -400,7 +400,7 @@ table {
 }
 
 .container {
-    max-width: 1600px;
+    max-width: min(95%, 2400px);
     margin: 0 auto;
     padding: 0 var(--spacing-2xl);
     width: 100%;
@@ -1038,7 +1038,7 @@ input[type="file"].param-input {
 }
 
 .nav-container {
-    max-width: 1600px;
+    max-width: min(95%, 2400px);
     margin: 0 auto;
     padding: 0 var(--spacing-2xl);
     display: flex;
@@ -1103,7 +1103,7 @@ input[type="file"].param-input {
 }
 
 .navbar-container {
-    max-width: 1600px;
+    max-width: min(95%, 2400px);
     margin: 0 auto;
     padding: 0.75rem var(--spacing-2xl);
     display: flex;
@@ -4842,5 +4842,30 @@ tbody td {
     .performance-trades-table th,
     .performance-trades-table td {
         padding: 0.5rem;
+    }
+}
+
+/* ===== Ultra-Wide Display Optimization (2560px+) ===== */
+@media (min-width: 2560px) {
+    /* Increase max-width for ultra-wide displays */
+    .container,
+    .nav-container,
+    .navbar-container {
+        max-width: min(90%, 3200px);
+    }
+
+    /* Increase base font size for better readability on large displays */
+    :root {
+        --font-size-base: 1.125rem;
+    }
+
+    /* Add more generous spacing */
+    .charts-grid {
+        gap: var(--spacing-2xl);
+    }
+
+    /* Optimize chart heights for ultra-wide displays */
+    .chart-container canvas {
+        max-height: 600px;
     }
 }
