@@ -82,47 +82,34 @@
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
-                    entry.target.classList.add('visible');
+                    entry.target.classList.add('revealed');
                 }
             });
         }, observerOptions);
 
-        // Observe sections and cards
-        const elementsToAnimate = document.querySelectorAll('section, .card, .metric-card');
+        // Observe elements with .scroll-reveal class
+        // These elements should have opacity and transform set in CSS
+        const elementsToAnimate = document.querySelectorAll('.scroll-reveal');
         elementsToAnimate.forEach(el => {
-            el.style.opacity = '0';
-            el.style.transform = 'translateY(30px)';
-            el.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
             observer.observe(el);
         });
-
-        // Make visible class actually visible
-        const style = document.createElement('style');
-        style.textContent = `
-            .visible {
-                opacity: 1 !important;
-                transform: translateY(0) !important;
-            }
-        `;
-        document.head.appendChild(style);
     }
 
     // ========================================
     // STAGGER ANIMATION FOR CARDS
     // ========================================
     function initStaggerAnimation() {
-        const cardGroups = document.querySelectorAll('.grid-2, .grid-3, .grid-4');
+        const cardGroups = document.querySelectorAll('.grid-2, .grid-3, .grid-4, .charts-grid, .statistics');
 
         cardGroups.forEach(group => {
-            const cards = group.querySelectorAll('.card, .metric-card');
+            const cards = group.querySelectorAll('.card, .metric-card, .chart-card');
 
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
                         cards.forEach((card, index) => {
                             setTimeout(() => {
-                                card.style.opacity = '1';
-                                card.style.transform = 'translateY(0)';
+                                card.classList.add('revealed');
                             }, index * 100); // 100ms delay between each card
                         });
                         observer.unobserve(entry.target);
