@@ -309,10 +309,10 @@ function displayBuyingOpportunities() {
                 setTimeout(() => {
                     DTIUI.isViewingOpportunityDetails = false;
                 }, 1000);
-                
+
                 // Find which index this stock belongs to
                 const indexIdentifier = DTIUI.getIndexIdentifierFromSymbol(symbol);
-                
+
                 // Set the index selector to the correct index
                 const indexSelector = document.getElementById('index-selector');
                 if (indexSelector && indexIdentifier) {
@@ -320,67 +320,77 @@ function displayBuyingOpportunities() {
                     // Trigger the change event to update the stock selector
                     const event = new Event('change');
                     indexSelector.dispatchEvent(event);
-                    
+
                     // Wait for the stock selector to update before continuing
                     setTimeout(async () => {
                         // Now find the selected stock in the updated dropdown
                         const stockSelector = document.getElementById('stock-selector');
                         if (stockSelector) {
                             stockSelector.value = symbol;
-                            
-                            // Instead of clicking the button which causes full page refresh,
-                            // directly fetch and display the data
+
+                            // Direct data processing without CSV simulation
                             try {
                                 // Show loading state
                                 DTIBacktester.utils.showNotification(`Loading data for ${symbol}...`, 'info');
-                                
+
                                 // Get period from selector
                                 const periodSelector = document.getElementById('period-selector');
                                 const period = periodSelector ? periodSelector.value : '5y';
-                                
+
+                                // Find the selected stock object
+                                const selectedStock = DTIUI.getCurrentStockList().find(s => s.symbol === symbol);
+                                if (!selectedStock) {
+                                    throw new Error('Stock not found in list');
+                                }
+
                                 // Fetch stock data
                                 const data = await DTIData.fetchStockData(symbol, period);
-                                
+
                                 if (!data) {
                                     throw new Error('Failed to fetch stock data');
                                 }
-                                
-                                // Convert to CSV
-                                const csvString = DTIData.arrayToCSV(data);
-                                
-                                // Create a Blob and File object
-                                const blob = new Blob([csvString], { type: 'text/csv' });
-                                const file = new File([blob], `${symbol}.csv`, { type: 'text/csv' });
-                                
-                                // Create a FileList-like object
-                                const dataTransfer = new DataTransfer();
-                                dataTransfer.items.add(file);
-                                
-                                // Set the file input's files
-                                const fileInput = document.getElementById('csv-upload');
-                                fileInput.files = dataTransfer.files;
-                                
-                                // Trigger the file change event
-                                const changeEvent = new Event('change');
-                                fileInput.dispatchEvent(changeEvent);
-                                
-                                // Run the backtest directly without clicking button
-                                // This avoids iOS Safari navigation issues
-                                if (typeof DTIBacktester !== 'undefined' && DTIBacktester.handleProcessButtonClick) {
-                                    DTIBacktester.handleProcessButtonClick();
-                                } else {
-                                    // Fallback to button click if direct method not available
-                                    const processBtn = document.getElementById('process-btn');
-                                    if (processBtn) {
-                                        processBtn.click();
-                                    }
+
+                                // Process data directly
+                                const processedData = DTIData.processStockCSV(data, selectedStock);
+
+                                if (!processedData) {
+                                    throw new Error('Failed to process stock data');
                                 }
-                                
+
+                                // Combine all trades (completed + active)
+                                const allTrades = [...processedData.trades];
+                                if (processedData.activeTrade) {
+                                    allTrades.push(processedData.activeTrade);
+                                }
+
+                                // Store OHLC data globally for chart access
+                                DTIBacktester.ohlcData = {
+                                    dates: processedData.dates,
+                                    open: processedData.close,
+                                    high: processedData.close,
+                                    low: processedData.close,
+                                    close: processedData.close
+                                };
+
+                                // Display results
+                                DTIUI.createCharts(
+                                    processedData.dates,
+                                    processedData.close,
+                                    processedData.dti,
+                                    processedData.sevenDayDTIData,
+                                    {}
+                                );
+                                DTIUI.displayStatistics(allTrades);
+                                DTIUI.displayTrades(allTrades);
+
+                                // Show success notification
+                                DTIBacktester.utils.showNotification(`Loaded ${symbol} successfully`, 'success');
+
                                 // Scroll to top on mobile to see the results
                                 if (window.innerWidth <= 768) {
                                     window.scrollTo({ top: 0, behavior: 'smooth' });
                                 }
-                                
+
                             } catch (error) {
                                 DTIBacktester.utils.showNotification(`Error: ${error.message}`, 'error');
                             }
