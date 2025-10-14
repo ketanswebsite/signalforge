@@ -5326,7 +5326,7 @@ button .spinner {
 
 .conviction-metrics-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
     gap: var(--spacing-sm);
 }
 
@@ -5361,7 +5361,6 @@ button .spinner {
 }
 
 .conviction-metrics-grid .metric-item.total {
-    grid-column: 1 / -1;
     background: var(--bg-primary);
     border: 1px solid var(--border);
 }
