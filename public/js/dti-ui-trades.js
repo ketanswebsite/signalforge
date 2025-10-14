@@ -294,21 +294,24 @@ function displayBuyingOpportunities() {
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation(); // Extra prevention for iOS Safari
-                
+
                 // Additional iOS Safari fix
                 if (e.target && e.target.closest('a')) {
                     return false;
                 }
-                
+
                 const symbol = this.getAttribute('data-symbol');
-                
-                // Set flag to prevent clearing opportunities
+
+                console.log('[VIEW DETAILS FIX] View Details clicked for symbol:', symbol);
+
+                // Set flag to prevent clearing opportunities - increased timeout for reliability
                 DTIUI.isViewingOpportunityDetails = true;
-                
-                // Set timeout to clear flag after the operation is complete
-                setTimeout(() => {
+
+                // Set timeout to clear flag after operation completes - increased to 5 seconds
+                const clearFlagTimer = setTimeout(() => {
                     DTIUI.isViewingOpportunityDetails = false;
-                }, 1000);
+                    console.log('[VIEW DETAILS FIX] View details flag cleared');
+                }, 5000);
 
                 // Find which index this stock belongs to
                 const indexIdentifier = DTIUI.getIndexIdentifierFromSymbol(symbol);
@@ -329,6 +332,13 @@ function displayBuyingOpportunities() {
                             stockSelector.value = symbol;
 
                             // Direct data processing without CSV simulation
+                            // Wrap everything in a timeout handler to catch stuck operations
+                            const operationTimeout = setTimeout(() => {
+                                console.error('[VIEW DETAILS FIX] Operation timed out after 30 seconds');
+                                DTIBacktester.utils.showNotification(`Operation timed out for ${symbol}. Please try again.`, 'error');
+                                DTIUI.isViewingOpportunityDetails = false;
+                            }, 30000); // 30 second timeout
+
                             try {
                                 console.log('[VIEW DETAILS DEBUG] Starting View Details workflow for symbol:', symbol);
 
@@ -434,6 +444,9 @@ function displayBuyingOpportunities() {
                                 DTIUI.displayTrades(allTrades);
                                 console.log('[VIEW DETAILS DEBUG] Trades table displayed');
 
+                                // Clear the timeout since operation completed successfully
+                                clearTimeout(operationTimeout);
+
                                 // Show success notification
                                 console.log('[VIEW DETAILS DEBUG] Showing success notification');
                                 DTIBacktester.utils.showNotification(`Loaded ${symbol} successfully`, 'success');
@@ -447,10 +460,28 @@ function displayBuyingOpportunities() {
                                 console.log('[VIEW DETAILS DEBUG] View Details workflow completed successfully');
 
                             } catch (error) {
+                                // Clear the timeout on error
+                                clearTimeout(operationTimeout);
+
                                 console.error('[VIEW DETAILS DEBUG] Error caught:', error);
                                 console.error('[VIEW DETAILS DEBUG] Error message:', error.message);
                                 console.error('[VIEW DETAILS DEBUG] Error stack:', error.stack);
-                                DTIBacktester.utils.showNotification(`Error: ${error.message}`, 'error');
+
+                                // Provide more specific error messages
+                                let errorMessage = error.message;
+                                if (error.message.includes('Stock not found')) {
+                                    errorMessage = `Stock ${symbol} not found in the list. Please try scanning again.`;
+                                } else if (error.message.includes('Failed to fetch')) {
+                                    errorMessage = `Failed to fetch data for ${symbol}. Please check your connection and try again.`;
+                                } else if (error.message.includes('Failed to process')) {
+                                    errorMessage = `Failed to process data for ${symbol}. The data may be incomplete or invalid.`;
+                                }
+
+                                DTIBacktester.utils.showNotification(`Error: ${errorMessage}`, 'error');
+
+                                // Clear the flag on error to allow future operations
+                                DTIUI.isViewingOpportunityDetails = false;
+                                clearTimeout(clearFlagTimer);
                             }
                         }
                     }, 100); // Short delay to ensure the stock selector has updated

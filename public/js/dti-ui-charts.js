@@ -5,6 +5,10 @@
 
 // Create Charts namespace
 DTIUI.Charts = (function() {
+    // Add debounce timer and flag to prevent concurrent operations
+    let chartCreationTimer = null;
+    let isCreatingCharts = false;
+
     /**
      * Create and update charts with enhanced interactive features
      * @param {Array} dates - Array of date strings
@@ -14,37 +18,121 @@ DTIUI.Charts = (function() {
      * @param {Object} ohlcData - Object containing open, high, low arrays (optional)
      */
     function createCharts(dates, prices, dti, sevenDayDTIData, ohlcData = null) {
-        // Clear existing charts with proper cleanup
-        if (DTIBacktester.priceChart) {
-            DTIBacktester.priceChart.destroy();
-            DTIBacktester.priceChart = null;
+        // Prevent concurrent chart creation
+        if (isCreatingCharts) {
+            console.log('[CHART FIX] Chart creation already in progress, queuing...');
+            // Cancel previous timer if exists
+            if (chartCreationTimer) {
+                clearTimeout(chartCreationTimer);
+            }
+            // Debounce: wait 300ms before creating charts
+            chartCreationTimer = setTimeout(() => {
+                createCharts(dates, prices, dti, sevenDayDTIData, ohlcData);
+            }, 300);
+            return;
         }
-        if (DTIBacktester.dtiChart) {
-            DTIBacktester.dtiChart.destroy();
-            DTIBacktester.dtiChart = null;
+
+        isCreatingCharts = true;
+        console.log('[CHART FIX] Starting chart creation...');
+
+        try {
+            // Enhanced cleanup: destroy all existing charts
+            console.log('[CHART FIX] Destroying existing charts...');
+            if (DTIBacktester.priceChart) {
+                DTIBacktester.priceChart.destroy();
+                DTIBacktester.priceChart = null;
+            }
+            if (DTIBacktester.dtiChart) {
+                DTIBacktester.dtiChart.destroy();
+                DTIBacktester.dtiChart = null;
+            }
+            if (DTIBacktester.sevenDayDTIChart) {
+                DTIBacktester.sevenDayDTIChart.destroy();
+                DTIBacktester.sevenDayDTIChart = null;
+            }
+
+            // Clear any existing Chart instances on the canvases
+            const priceCanvas = document.getElementById('price-chart');
+            const dtiCanvas = document.getElementById('dti-chart');
+            const weeklyCanvas = document.getElementById('weekly-dti-chart');
+
+            if (priceCanvas) {
+                const existingChart = Chart.getChart(priceCanvas);
+                if (existingChart) existingChart.destroy();
+            }
+            if (dtiCanvas) {
+                const existingChart = Chart.getChart(dtiCanvas);
+                if (existingChart) existingChart.destroy();
+            }
+            if (weeklyCanvas) {
+                const existingChart = Chart.getChart(weeklyCanvas);
+                if (existingChart) existingChart.destroy();
+            }
+
+            // Enhanced cleanup: remove all chart wrappers, export buttons, and controls
+            console.log('[CHART FIX] Cleaning up chart wrappers and buttons...');
+            cleanupChartElements();
+        } catch (error) {
+            console.error('[CHART FIX] Error during chart cleanup:', error);
+        } finally {
+            // Continue with chart creation regardless of cleanup errors
+            createChartsInternal(dates, prices, dti, sevenDayDTIData, ohlcData);
         }
-        if (DTIBacktester.sevenDayDTIChart) {
-            DTIBacktester.sevenDayDTIChart.destroy();
-            DTIBacktester.sevenDayDTIChart = null;
+    }
+
+    /**
+     * Enhanced cleanup function to remove all chart-related elements
+     */
+    function cleanupChartElements() {
+        // Get all chart containers
+        const chartIds = ['price-chart', 'dti-chart', 'weekly-dti-chart'];
+
+        chartIds.forEach(chartId => {
+            const canvas = document.getElementById(chartId);
+            if (!canvas) return;
+
+            // Remove export buttons
+            const wrapper = canvas.closest('.chart-wrapper');
+            if (wrapper) {
+                const exportBtn = wrapper.querySelector('.export-chart-btn');
+                if (exportBtn) {
+                    exportBtn.remove();
+                    console.log(`[CHART FIX] Removed export button for ${chartId}`);
+                }
+
+                // Unwrap canvas from chart-wrapper if it exists
+                const parent = wrapper.parentNode;
+                if (parent) {
+                    parent.insertBefore(canvas, wrapper);
+                    wrapper.remove();
+                    console.log(`[CHART FIX] Unwrapped ${chartId} from chart-wrapper`);
+                }
+            }
+        });
+
+        // Remove duplicate chart controls
+        const controlsContainers = document.querySelectorAll('.chart-controls-container');
+        if (controlsContainers.length > 1) {
+            console.log(`[CHART FIX] Found ${controlsContainers.length} chart controls, keeping only one`);
+            // Keep the first one, remove others
+            for (let i = 1; i < controlsContainers.length; i++) {
+                controlsContainers[i].remove();
+            }
         }
-        
-        // Clear any existing Chart instances on the canvases
-        const priceCanvas = document.getElementById('price-chart');
-        const dtiCanvas = document.getElementById('dti-chart');
-        const weeklyCanvas = document.getElementById('weekly-dti-chart');
-        
-        if (priceCanvas) {
-            const existingChart = Chart.getChart(priceCanvas);
-            if (existingChart) existingChart.destroy();
-        }
-        if (dtiCanvas) {
-            const existingChart = Chart.getChart(dtiCanvas);
-            if (existingChart) existingChart.destroy();
-        }
-        if (weeklyCanvas) {
-            const existingChart = Chart.getChart(weeklyCanvas);
-            if (existingChart) existingChart.destroy();
-        }
+
+        // Remove chart type toggle buttons from the DOM (they'll be recreated)
+        const existingToggles = document.querySelectorAll('.chart-type-toggle');
+        existingToggles.forEach(toggle => {
+            toggle.remove();
+            console.log('[CHART FIX] Removed existing chart type toggle');
+        });
+    }
+
+    /**
+     * Internal chart creation logic (separated for better error handling)
+     */
+    function createChartsInternal(dates, prices, dti, sevenDayDTIData, ohlcData) {
+        try {
         
         const daily7DayDTI = sevenDayDTIData.daily7DayDTI;
         
@@ -890,6 +978,18 @@ DTIUI.Charts = (function() {
 
         // Restore any saved annotations
         restoreAnnotations();
+
+        console.log('[CHART FIX] Chart creation completed successfully');
+        } catch (error) {
+            console.error('[CHART FIX] Error during chart creation:', error);
+            if (typeof DTIBacktester !== 'undefined' && DTIBacktester.utils) {
+                DTIBacktester.utils.showNotification('Error creating charts: ' + error.message, 'error');
+            }
+        } finally {
+            // Always reset the flag to allow future chart creations
+            isCreatingCharts = false;
+            console.log('[CHART FIX] Chart creation flag reset');
+        }
     }
     
     /**
