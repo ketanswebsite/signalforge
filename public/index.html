@@ -134,24 +134,9 @@
                 </div>
 
                 <div class="sidebar-section">
-                    <h4 class="sidebar-section-title">Data Import</h4>
+                    <h4 class="sidebar-section-title">Data Source</h4>
                     <div class="param-controls">
                         <!-- Stock index and selector will be added here by JavaScript -->
-                        <div class="param-group">
-                            <label for="csv-upload" class="param-label">Upload Historical Data</label>
-                            <input type="file" id="csv-upload" accept=".csv" class="param-input">
-                            <span class="param-hint">Supports multiple CSV formats</span>
-                        </div>
-                        <div class="param-buttons">
-                            <button id="process-btn" class="btn btn-primary">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M5 12h14"></path>
-                                    <path d="M12 5v14"></path>
-                                </svg>
-                                Run Backtest
-                            </button>
-                        </div>
-                        <div id="csv-info" class="param-hint"></div>
                         <div id="data-fetch-status" class="param-hint"></div>
                         <!-- Batch process button will be added here by JavaScript -->
                         <!-- Batch status indicator will be added here by JavaScript -->
@@ -318,7 +303,7 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td colspan="9" class="no-data">Upload CSV data to see trade results</td>
+                                    <td colspan="9" class="no-data">Select a stock and fetch data to see trade results</td>
                                 </tr>
                             </tbody>
                         </table>

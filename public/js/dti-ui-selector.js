@@ -325,37 +325,44 @@ DTIUI.StockSelector = (function() {
                 const selectedStock = stockList.find(stock => stock.symbol === symbol);
                 const stockName = selectedStock ? selectedStock.name : symbol;
                 
-                // Fetch stock data 
+                // Fetch stock data
                 const data = await DTIData.fetchStockData(symbol, period);
-                
+
                 if (!data) {
                     throw new Error('Failed to fetch stock data');
                 }
-                
-                // Convert to CSV
-                const csvString = DTIData.arrayToCSV(data);
-                
-                // Create a Blob and File object
-                const blob = new Blob([csvString], { type: 'text/csv' });
-                const file = new File([blob], `${symbol}.csv`, { type: 'text/csv' });
-                
-                // Create a FileList-like object
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(file);
-                
-                // Set the file input's files
-                const fileInput = document.getElementById('csv-upload');
-                fileInput.files = dataTransfer.files;
-                
-                // Trigger the file change event
-                const event = new Event('change');
-                fileInput.dispatchEvent(event);
-                
-                // Run the backtest
-                document.getElementById('process-btn').click();
-                
+
+                // Process the stock data directly
+                const processedData = DTIData.processStockCSV(data, selectedStock);
+
+                if (!processedData) {
+                    throw new Error('Failed to process stock data');
+                }
+
+                // Display the results
+                if (typeof DTIUI !== 'undefined') {
+                    const allTrades = [...processedData.trades];
+                    if (processedData.activeTrade) {
+                        allTrades.push(processedData.activeTrade);
+                    }
+
+                    // Store OHLC data for chart access
+                    DTIBacktester.ohlcData = {
+                        dates: processedData.dates,
+                        open: processedData.close, // Using close for now
+                        high: processedData.close,
+                        low: processedData.close,
+                        close: processedData.close
+                    };
+
+                    // Create charts and display results
+                    DTIUI.createCharts(processedData.dates, processedData.close, processedData.dti, processedData.sevenDayDTIData, {});
+                    DTIUI.displayStatistics(allTrades);
+                    DTIUI.displayTrades(allTrades);
+                }
+
                 // Show success notification
-                DTIBacktester.utils.showNotification(`Data for ${stockName} loaded successfully`, 'success');
+                DTIBacktester.utils.showNotification(`Data for ${stockName} loaded and processed successfully`, 'success');
                 
             } catch (error) {
                 DTIBacktester.utils.showNotification(`Error: ${error.message}`, 'error');

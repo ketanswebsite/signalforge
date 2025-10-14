@@ -146,37 +146,25 @@ const DTIBacktester = {
     
     // Application initialization
     init: function() {
-        
+
         // Add page load animations
         this.addPageLoadAnimations();
-        
+
         // Initialize stock selector
         this.initStockSelector();
-        
+
         // Create buying opportunities section
         this.createBuyingOpportunitiesSection();
-        
+
         // Update app description with warm-up period info
         this.updateAppDescription();
-        
-        // Add event listener for the process button (only if it exists)
-        const processBtn = document.getElementById('process-btn');
-        if (processBtn) {
-            processBtn.addEventListener('click', this.handleProcessButtonClick.bind(this));
-        }
-        
-        // Add animation to CSV file input
-        this.setupFileInputAnimation();
-        
-        // Set up parameter change handlers
-        this.setupParameterChangeHandlers();
-        
+
         // Update active trades count in navigation on page load
         this.updateActiveTradesCount();
-        
+
         // Set up periodic updates of active trades count
         setInterval(this.updateActiveTradesCount.bind(this), 30000); // Update every 30 seconds
-        
+
     },
     
     // Add page load animations
@@ -209,101 +197,7 @@ const DTIBacktester = {
             });
         }
     },
-    
-    // Handle the process button click
-    handleProcessButtonClick: function() {
-        const fileInput = document.getElementById('csv-upload');
-        const file = fileInput.files[0];
-        
-        if (file) {
-            Papa.parse(file, {
-                complete: (results) => {
-                    // We'll import the data processing function from dti-data.js
-                    if (typeof DTIData !== 'undefined' && DTIData.processCSV) {
-                        DTIData.processCSV(results);
-                    } else {
-                        this.utils.showNotification('Error: Data processing module not loaded', 'error');
-                    }
-                },
-                error: function(error) {
-                    DTIBacktester.utils.showNotification('Error parsing CSV file: ' + error.message, 'error');
-                }
-            });
-        } else {
-            this.utils.showNotification('Please select a CSV file', 'warning');
-        }
-    },
-    
-    // Set up file input animation
-    setupFileInputAnimation: function() {
-        const fileInput = document.getElementById('csv-upload');
-        if (fileInput) {
-            fileInput.addEventListener('change', function() {
-                if (this.files.length > 0) {
-                    // Get the file name
-                    const fileName = this.files[0].name;
-                    
-                    // Find or create a file name display element
-                    let fileNameDisplay = this.nextElementSibling;
-                    if (!fileNameDisplay || !fileNameDisplay.classList.contains('file-name-display')) {
-                        fileNameDisplay = document.createElement('div');
-                        fileNameDisplay.className = 'file-name-display';
-                        this.parentNode.insertBefore(fileNameDisplay, this.nextSibling);
-                    }
-                    
-                    // Display the file name with animation
-                    fileNameDisplay.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14 2 14 8 20 8"></polyline>
-                            <line x1="16" y1="13" x2="8" y2="13"></line>
-                            <line x1="16" y1="17" x2="8" y2="17"></line>
-                            <polyline points="10 9 9 9 8 9"></polyline>
-                        </svg>
-                        ${fileName}
-                    `;
-                    fileNameDisplay
-                    fileNameDisplay.style.opacity = '0';
-                    fileNameDisplay.style.transform = 'translateY(10px)';
-                    
-                    setTimeout(() => {
-                        fileNameDisplay.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-                        fileNameDisplay.style.opacity = '1';
-                        fileNameDisplay.style.transform = 'translateY(0)';
-                    }, 10);
-                }
-            });
-        }
-    },
-    
-    // Set up parameter change handlers
-    setupParameterChangeHandlers: function() {
-        const paramInputs = document.querySelectorAll('input[type="number"], input[type="checkbox"]');
-        paramInputs.forEach(input => {
-            input.addEventListener('change', function() {
-                const fileInput = document.getElementById('csv-upload');
-                if (!fileInput) return; // Skip if file input doesn't exist
-                const file = fileInput.files[0];
-                
-                if (file) {
-                    Papa.parse(file, {
-                        complete: (results) => {
-                            // We'll import the data processing function from dti-data.js
-                            if (typeof DTIData !== 'undefined' && DTIData.processCSV) {
-                                DTIData.processCSV(results);
-                            } else {
-                                DTIBacktester.utils.showNotification('Error: Data processing module not loaded', 'error');
-                            }
-                        },
-                        error: function(error) {
-                            DTIBacktester.utils.showNotification('Error parsing CSV file: ' + error.message, 'error');
-                        }
-                    });
-                }
-            });
-        });
-    },
-    
+
     // Initialize stock selector UI
     initStockSelector: function() {
         // This will be fully implemented in dti-ui.js
