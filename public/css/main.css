@@ -42,7 +42,7 @@
     --success: #22C55E;
     --error: #DC2626;
     --warning: #F59E0B;
-    --info: #3B82F6;
+    --info: #D4AF37;
 
     /* === Gradients (Gold-based) === */
     --gradient-primary: linear-gradient(135deg, #D4AF37, #FFA500);
@@ -3908,5 +3908,415 @@ tbody td {
 
     .trade-card {
         padding: var(--spacing-md);
+    }
+}
+
+/* ========================================
+   PERFORMANCE MODAL SPECIFIC STYLING
+   ======================================== */
+
+/* Month Navigation */
+.month-navigation {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+}
+
+.month-nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.month-nav-btn:hover {
+    background: var(--bg-secondary);
+    border-color: var(--accent-gold);
+    color: var(--accent-gold);
+}
+
+.month-nav-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.current-month-label {
+    font-weight: 600;
+    color: var(--accent-gold);
+    font-size: 1rem;
+}
+
+.month-nav-spacer {
+    width: 120px;
+}
+
+/* Performance Summary */
+.performance-summary {
+    margin-bottom: var(--spacing-xl);
+}
+
+.summary-intro {
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: var(--spacing-lg);
+    color: var(--text-secondary);
+}
+
+.summary-intro strong {
+    color: var(--accent-gold);
+    font-weight: 600;
+}
+
+/* Performance Metrics Grid */
+.performance-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.performance-metrics .metric-card {
+    text-align: center;
+    padding: var(--spacing-lg);
+}
+
+.performance-metrics .metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent-gold);
+    margin-bottom: 0.5rem;
+}
+
+.performance-metrics .metric-label {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.performance-metrics .metric-card.profit .metric-value {
+    color: var(--success);
+}
+
+.performance-metrics .metric-card.loss .metric-value {
+    color: var(--error);
+}
+
+.performance-metrics .metric-card.active .metric-value {
+    color: var(--accent-gold);
+}
+
+/* Performance Details */
+.performance-details {
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+}
+
+.detail-row.total {
+    font-weight: 600;
+    padding-top: var(--spacing-md);
+    margin-top: var(--spacing-sm);
+    border-top: 2px solid var(--border);
+}
+
+.detail-row .profit {
+    color: var(--success);
+    font-weight: 600;
+}
+
+.detail-row .loss {
+    color: var(--error);
+    font-weight: 600;
+}
+
+/* Analysis Sections */
+.analysis-sections {
+    margin-top: var(--spacing-2xl);
+}
+
+/* Conviction Performance Analysis */
+.conviction-performance-analysis {
+    margin-bottom: var(--spacing-2xl);
+}
+
+.conviction-performance-analysis h4 {
+    color: var(--accent-gold);
+    margin-bottom: var(--spacing-lg);
+    font-size: 1.25rem;
+}
+
+.conviction-performance-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.conviction-perf-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+}
+
+.conviction-perf-card h5 {
+    margin-bottom: var(--spacing-md);
+    font-size: 1.125rem;
+    color: var(--text-primary);
+}
+
+.conviction-perf-card.high-conviction {
+    border-left: 4px solid var(--success);
+}
+
+.conviction-perf-card.moderate-conviction {
+    border-left: 4px solid var(--warning);
+}
+
+.conviction-perf-card.low-conviction {
+    border-left: 4px solid var(--error);
+}
+
+.conviction-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-sm);
+}
+
+.conviction-metrics-grid .metric-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+}
+
+.conviction-metrics-grid .metric-label {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.conviction-metrics-grid .metric-value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.conviction-metrics-grid .metric-value.profit {
+    color: var(--success);
+}
+
+.conviction-metrics-grid .metric-value.loss {
+    color: var(--error);
+}
+
+.conviction-metrics-grid .metric-value.active {
+    color: var(--accent-gold);
+}
+
+.conviction-metrics-grid .metric-item.total {
+    grid-column: 1 / -1;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+}
+
+/* Exit Timeline & Reasons */
+.exit-timeline,
+.exit-reasons {
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+}
+
+.exit-timeline h4,
+.exit-reasons h4 {
+    color: var(--accent-gold);
+    margin-bottom: var(--spacing-md);
+    font-size: 1.125rem;
+}
+
+.timeline-breakdown,
+.reasons-breakdown {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--spacing-sm);
+}
+
+.timeline-item,
+.reason-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+}
+
+.timeline-month,
+.reason-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.timeline-count,
+.reason-count {
+    color: var(--accent-gold);
+    font-weight: 600;
+}
+
+/* Performance Trades List */
+.performance-trades-list {
+    margin-top: var(--spacing-xl);
+    overflow-x: auto;
+}
+
+.performance-trades-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.performance-trades-table thead {
+    background: var(--bg-primary);
+    border-bottom: 2px solid var(--border);
+}
+
+.performance-trades-table th {
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--accent-gold);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+}
+
+.performance-trades-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background var(--transition-fast);
+}
+
+.performance-trades-table tbody tr:hover {
+    background: var(--bg-primary);
+}
+
+.performance-trades-table td {
+    padding: 1rem;
+    color: var(--text-secondary);
+}
+
+.performance-trades-table .profit {
+    color: var(--success);
+    font-weight: 600;
+}
+
+.performance-trades-table .loss {
+    color: var(--error);
+    font-weight: 600;
+}
+
+.performance-trades-table .neutral {
+    color: var(--text-muted);
+}
+
+.performance-trades-table .exit-month {
+    font-weight: 500;
+}
+
+.performance-trades-table .high-conviction {
+    color: var(--success);
+    font-weight: 600;
+}
+
+.performance-trades-table .moderate-conviction {
+    color: var(--warning);
+    font-weight: 600;
+}
+
+.performance-trades-table .low-conviction {
+    color: var(--error);
+    font-weight: 600;
+}
+
+.performance-trades-table .status-still-active {
+    color: var(--accent-gold);
+    font-weight: 500;
+}
+
+.performance-trades-table .status-closed {
+    color: var(--text-muted);
+}
+
+/* No Trades Message */
+.no-trades-message {
+    text-align: center;
+    padding: var(--spacing-2xl);
+    color: var(--text-muted);
+}
+
+.no-trades-message p {
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+/* Mobile Responsiveness for Performance Modal */
+@media (max-width: 768px) {
+    .month-navigation {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+
+    .month-nav-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .month-nav-spacer {
+        display: none;
+    }
+
+    .performance-metrics {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .conviction-performance-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .conviction-metrics-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .timeline-breakdown,
+    .reasons-breakdown {
+        grid-template-columns: 1fr;
+    }
+
+    .performance-trades-table {
+        font-size: 0.75rem;
+    }
+
+    .performance-trades-table th,
+    .performance-trades-table td {
+        padding: 0.5rem;
     }
 }
