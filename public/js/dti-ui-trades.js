@@ -593,10 +593,21 @@ function displayBuyingOpportunities() {
      * @param {Array} trades - Array of trade objects
      */
     function displayTrades(trades) {
+        console.log('[DEBUG] displayTrades called with trades:', trades);
+        console.log('[DEBUG] trades length:', trades ? trades.length : 'undefined');
+
         // Filter out active trades for the table
         const completedTrades = trades.filter(trade => trade.exitDate && trade.exitReason);
-        
+        console.log('[DEBUG] completedTrades length:', completedTrades.length);
+
         const tbody = document.querySelector('#trades-table tbody');
+        console.log('[DEBUG] tbody element:', tbody);
+
+        if (!tbody) {
+            console.error('[DEBUG] tbody element not found!');
+            return;
+        }
+
         tbody.innerHTML = '';
         
         if (completedTrades.length === 0) {

@@ -213,8 +213,8 @@ DTIUI.Charts = (function() {
                         mode: 'x',
                         drag: {
                             enabled: true,
-                            backgroundColor: 'rgba(37, 99, 235, 0.2)',
-                            borderColor: 'rgba(37, 99, 235, 0.4)',
+                            backgroundColor: 'rgba(212, 175, 55, 0.2)',
+                            borderColor: 'rgba(212, 175, 55, 0.4)',
                             borderWidth: 1
                         }
                     },
@@ -230,12 +230,14 @@ DTIUI.Charts = (function() {
                         dashPattern: [5, 5]
                     },
                     sync: {
-                        enabled: true,
-                        group: 'dti-charts',
-                        suppressTooltips: false
+                        enabled: false  // Disable to avoid state errors
                     },
                     zoom: {
                         enabled: false
+                    },
+                    callbacks: {
+                        beforeZoom: () => true,
+                        afterZoom: () => {}
                     }
                 },
                 tooltip: {
@@ -412,7 +414,7 @@ DTIUI.Charts = (function() {
                 },
                 // Enhanced annotation plugin configuration
                 annotation: {
-                    annotations: warmupInfo.enabled ? {
+                    annotations: (warmupInfo && warmupInfo.enabled) ? {
                         warmupBox: {
                             type: 'box',
                             xMin: 0,
@@ -452,10 +454,10 @@ DTIUI.Charts = (function() {
         
         // Create gradient for price chart fill
         const priceGradientFill = priceCtx.createLinearGradient(0, 300, 0, 0);
-        priceGradientFill.addColorStop(0, 'rgba(37, 99, 235, 0.01)');
-        priceGradientFill.addColorStop(0.3, 'rgba(37, 99, 235, 0.1)');
-        priceGradientFill.addColorStop(0.6, 'rgba(37, 99, 235, 0.18)');
-        priceGradientFill.addColorStop(1, 'rgba(37, 99, 235, 0.25)');
+        priceGradientFill.addColorStop(0, 'rgba(212, 175, 55, 0.01)');
+        priceGradientFill.addColorStop(0.3, 'rgba(212, 175, 55, 0.1)');
+        priceGradientFill.addColorStop(0.6, 'rgba(212, 175, 55, 0.18)');
+        priceGradientFill.addColorStop(1, 'rgba(212, 175, 55, 0.25)');
         
         // Check if we should use candlestick chart
         const useCandlestick = ohlcData && ohlcData.open && ohlcData.high && ohlcData.low && 
@@ -566,12 +568,12 @@ DTIUI.Charts = (function() {
             priceDatasets.push({
                 label: 'Price',
                 data: prices,
-                borderColor: 'rgba(37, 99, 235, 1)',
+                borderColor: 'rgba(212, 175, 55, 1)',
                 backgroundColor: priceGradientFill,
                 borderWidth: window.innerWidth <= 768 ? 1.5 : 2.5,
                 pointRadius: 0,
                 pointHoverRadius: window.innerWidth <= 768 ? 4 : 6,
-                pointHoverBackgroundColor: 'rgba(37, 99, 235, 1)',
+                pointHoverBackgroundColor: 'rgba(212, 175, 55, 1)',
                 pointHoverBorderColor: 'white',
                 pointHoverBorderWidth: window.innerWidth <= 768 ? 1 : 2,
                 fill: true,
@@ -685,11 +687,14 @@ DTIUI.Charts = (function() {
                             dashPattern: [5, 5]
                         },
                         sync: {
-                            enabled: true,
-                            group: 'dti-charts'
+                            enabled: false  // Disable to avoid state errors
                         },
                         zoom: {
                             enabled: false
+                        },
+                        callbacks: {
+                            beforeZoom: () => true,
+                            afterZoom: () => {}
                         }
                     },
                     legend: {
