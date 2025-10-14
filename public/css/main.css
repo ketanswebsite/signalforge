@@ -3053,14 +3053,29 @@ tbody td {
     background: rgba(245, 158, 11, 0.05);
 }
 
+.disclaimer-warning .disclaimer-title svg {
+    color: var(--warning);
+    stroke: var(--warning);
+}
+
 .disclaimer-error {
     border-left-color: var(--error);
     background: rgba(220, 38, 38, 0.05);
 }
 
+.disclaimer-error .disclaimer-title svg {
+    color: var(--error);
+    stroke: var(--error);
+}
+
 .disclaimer-info {
     border-left-color: var(--info);
     background: rgba(59, 130, 246, 0.05);
+}
+
+.disclaimer-info .disclaimer-title svg {
+    color: var(--info);
+    stroke: var(--info);
 }
 
 .disclaimer-title {
@@ -3073,8 +3088,19 @@ tbody td {
     gap: 0.5rem;
 }
 
+.disclaimer-title svg {
+    flex-shrink: 0;
+    stroke: currentColor;
+    color: var(--text-primary);
+}
+
 .disclaimer-content {
     margin-bottom: 0;
+}
+
+.disclaimer-content p {
+    margin: 0;
+    line-height: 1.6;
 }
 
 .disclaimer-list {
