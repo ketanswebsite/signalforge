@@ -1752,6 +1752,46 @@ tbody td {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    position: relative;
+    overflow: hidden;
+    transition: all var(--transition-base);
+}
+
+/* Gold accent bar on top */
+.stat-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--gradient-primary);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--transition-slow);
+}
+
+.stat-item:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--border-color-hover);
+}
+
+.stat-item:hover::before {
+    transform: scaleX(1);
+}
+
+/* Success variant with green accent */
+.stat-item.success::before {
+    background: var(--gradient-success);
+}
+
+.stat-item.success:hover {
+    box-shadow: var(--shadow-green);
 }
 
 .stat-value {
@@ -1766,12 +1806,38 @@ tbody td {
     background-clip: text;
 }
 
+/* Positive/Negative overrides - use solid colors instead of gradient */
+.stat-value.positive {
+    background: none;
+    -webkit-text-fill-color: var(--success);
+    color: var(--success);
+}
+
+.stat-value.negative {
+    background: none;
+    -webkit-text-fill-color: var(--error);
+    color: var(--error);
+}
+
 .stat-label {
     font-size: 0.875rem;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     font-weight: 600;
+}
+
+/* Nested positive/negative spans in labels */
+.stat-label .positive,
+.stat-label span.positive {
+    color: var(--success);
+    font-weight: 700;
+}
+
+.stat-label .negative,
+.stat-label span.negative {
+    color: var(--error);
+    font-weight: 700;
 }
 
 /* ========================================
@@ -3262,6 +3328,21 @@ tbody td {
         margin-bottom: var(--spacing-sm); /* Reduced spacing */
     }
 
+    /* Optimize statistics grid for laptop */
+    .statistics {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--spacing-md);
+    }
+
+    /* Optimize stat item sizing */
+    .stat-item {
+        padding: var(--spacing-md); /* Reduced from lg */
+    }
+
+    .stat-value {
+        font-size: 2rem; /* Slightly smaller for laptop */
+    }
+
     /* Optimize stat card sizing */
     .stat-card {
         padding: var(--spacing-md); /* Reduced from lg */
@@ -4073,10 +4154,10 @@ tbody td {
     padding-top: 70px;
 }
 
-/* Statistics grid */
+/* Statistics grid - Responsive layout */
 .statistics {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: var(--spacing-lg);
     margin-bottom: var(--spacing-2xl);
 }
@@ -4126,16 +4207,43 @@ tbody td {
 .scroll-reveal:nth-child(5) { transition-delay: 0.5s; }
 .scroll-reveal:nth-child(6) { transition-delay: 0.6s; }
 
-@media (max-width: 1024px) {
+/* Tablet optimization (769px - 1023px) */
+@media (max-width: 1023px) and (min-width: 769px) {
     .app-container {
         padding-top: 70px;
     }
 
     .statistics {
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--spacing-md);
+    }
+
+    .stat-item {
+        padding: var(--spacing-md);
     }
 }
 
+/* Mobile/small tablet optimization */
+@media (max-width: 768px) {
+    .app-container {
+        padding-top: 70px;
+    }
+
+    .statistics {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: var(--spacing-sm);
+    }
+
+    .stat-item {
+        padding: var(--spacing-sm);
+    }
+
+    .stat-value {
+        font-size: 1.75rem;
+    }
+}
+
+/* Mobile optimization (small screens) */
 @media (max-width: 640px) {
     .app-container {
         padding-top: 70px;
@@ -4143,6 +4251,19 @@ tbody td {
 
     .statistics {
         grid-template-columns: 1fr;
+        gap: var(--spacing-sm);
+    }
+
+    .stat-item {
+        padding: var(--spacing-md);
+    }
+
+    .stat-value {
+        font-size: 2rem;
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
     }
 }
 
