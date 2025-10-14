@@ -2846,14 +2846,15 @@ tbody td {
     position: relative;
     background: var(--bg-surface);
     border-radius: var(--radius-md);
-    padding: var(--spacing-md);
-    overflow: hidden; /* Prevent content from overflowing */
+    padding: var(--spacing-md) var(--spacing-md) var(--spacing-lg) var(--spacing-md); /* Extra bottom padding for x-axis labels */
+    overflow: visible; /* Changed from hidden to visible to show x-axis labels */
 }
 
 /* Ensure canvas elements respect container height */
 .chart-container canvas {
     max-height: 100% !important;
     max-width: 100% !important;
+    margin-bottom: 0.5rem; /* Add small margin at bottom for x-axis labels */
 }
 
 .chart-loading {
@@ -2893,6 +2894,210 @@ tbody td {
     border-radius: 2px;
 }
 
+/* ========================================
+   CHART CONTROLS
+   ======================================== */
+
+/* Chart Controls Container */
+.chart-controls-container {
+    margin-bottom: var(--spacing-lg);
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md);
+    border: 1px solid var(--border);
+}
+
+.chart-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+    align-items: center;
+}
+
+/* Control Group Base */
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding-right: var(--spacing-md);
+    border-right: 1px solid var(--border);
+}
+
+.control-group:last-child {
+    border-right: none;
+    padding-right: 0;
+}
+
+.control-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-right: var(--spacing-xs);
+    white-space: nowrap;
+}
+
+/* Date Range Controls */
+.date-range-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.range-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.range-btn:hover {
+    color: var(--text-primary);
+    border-color: var(--border-color-hover);
+    background: var(--bg-primary);
+    transform: translateY(-1px);
+}
+
+.range-btn:active {
+    transform: translateY(0);
+}
+
+.range-btn.active {
+    color: var(--white);
+    background: linear-gradient(135deg, rgba(212, 175, 55, 1) 0%, rgba(212, 175, 55, 0.8) 100%);
+    border-color: rgba(212, 175, 55, 1);
+    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+}
+
+.range-btn.active:hover {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.9) 0%, rgba(212, 175, 55, 0.7) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
+}
+
+/* Visibility Controls (Checkboxes) */
+.visibility-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.toggle-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.toggle-control input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-secondary);
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.toggle-control input[type="checkbox"]:hover {
+    border-color: var(--border-color-hover);
+    background: var(--bg-primary);
+}
+
+.toggle-control input[type="checkbox"]:checked {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 1) 0%, rgba(212, 175, 55, 0.8) 100%);
+    border-color: rgba(212, 175, 55, 1);
+}
+
+.toggle-control input[type="checkbox"]:checked::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--white);
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.toggle-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.toggle-control:hover .toggle-label {
+    color: var(--text-primary);
+}
+
+/* Button Controls */
+.button-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.control-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.control-btn svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+}
+
+.control-btn:hover {
+    color: var(--text-primary);
+    border-color: var(--border-color-hover);
+    background: var(--bg-primary);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.control-btn:active {
+    transform: translateY(0);
+}
+
+.control-btn.active {
+    color: var(--white);
+    background: linear-gradient(135deg, rgba(212, 175, 55, 1) 0%, rgba(212, 175, 55, 0.8) 100%);
+    border-color: rgba(212, 175, 55, 1);
+}
+
+/* Button text - hide on mobile */
+.btn-text {
+    display: inline;
+}
+
 /* Mobile: Single column charts */
 @media (max-width: 768px) {
     .charts-grid {
@@ -2903,6 +3108,7 @@ tbody td {
         height: 300px !important;
         min-height: 250px !important;
         max-height: 350px !important;
+        padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-md) var(--spacing-sm);
     }
 
     .chart-header {
@@ -2915,6 +3121,77 @@ tbody td {
         flex-direction: column;
         align-items: flex-start;
         gap: var(--spacing-sm);
+    }
+
+    /* Chart Controls - Mobile Responsive */
+    .chart-controls-container {
+        padding: var(--spacing-sm);
+    }
+
+    .chart-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--spacing-sm);
+    }
+
+    .control-group {
+        flex-wrap: wrap;
+        border-right: none;
+        padding-right: 0;
+        padding-bottom: var(--spacing-sm);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .control-group:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    .control-label {
+        width: 100%;
+        margin-bottom: var(--spacing-xs);
+    }
+
+    .date-range-controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .range-btn {
+        flex: 1;
+        padding: 0.625rem 0.5rem;
+        font-size: 0.8125rem;
+        min-width: 44px; /* Ensure touch-friendly size */
+    }
+
+    .visibility-controls {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .button-controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .control-btn {
+        flex: 1;
+        padding: 0.625rem 0.75rem;
+        font-size: 0.8125rem;
+        min-width: 44px; /* Ensure touch-friendly size */
+    }
+
+    /* Hide button text on mobile to save space */
+    .btn-text {
+        display: none;
+    }
+
+    .control-btn {
+        justify-content: center;
+    }
+
+    .control-btn svg {
+        margin: 0;
     }
 }
 
