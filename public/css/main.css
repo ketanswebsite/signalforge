@@ -2775,7 +2775,7 @@ tbody td {
 
 .charts-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    grid-template-columns: 1fr; /* Single column - each chart gets full width for optimal time-series display */
     gap: var(--spacing-lg);
     margin-bottom: 0; /* Remove bottom margin since chart-section has it */
 }
@@ -3215,7 +3215,6 @@ tbody td {
 
     /* Optimize charts grid for laptop screens */
     .charts-grid {
-        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); /* Reduced from 500px */
         gap: var(--spacing-md); /* Reduced from lg */
     }
 
