@@ -442,11 +442,16 @@ DTIUI.Charts = (function() {
         priceGradientFill.addColorStop(1, 'rgba(212, 175, 55, 0.25)');
         
         // Check if we should use candlestick chart
-        const useCandlestick = ohlcData && ohlcData.open && ohlcData.high && ohlcData.low && 
-                               ohlcData.open.length === dates.length && 
-                               ohlcData.high.length === dates.length && 
+        const useCandlestick = ohlcData && ohlcData.open && ohlcData.high && ohlcData.low &&
+                               ohlcData.open.length === dates.length &&
+                               ohlcData.high.length === dates.length &&
                                ohlcData.low.length === dates.length;
         const chartType = useCandlestick && DTIBacktester.chartType === 'candlestick' ? 'candlestick' : 'line';
+
+        console.log('[CHART FEATURE] Chart creation - OHLC data available:', !!ohlcData);
+        console.log('[CHART FEATURE] Chart creation - Use candlestick:', useCandlestick);
+        console.log('[CHART FEATURE] Chart creation - Chart type:', chartType);
+        console.log('[CHART FEATURE] Chart creation - Requested chart type:', DTIBacktester.chartType);
         
         // Prepare datasets based on chart type
         let priceDatasets = [];
@@ -854,12 +859,35 @@ DTIUI.Charts = (function() {
         chartCanvases.forEach(canvas => {
             canvas.classList.add('chart-shadow');
         });
-        
-        // Add chart controls if not already added
-        if (!document.querySelector('.chart-controls-container') && typeof DTIChartControls !== 'undefined') {
+
+        // Clean up any existing chart controls to prevent duplication
+        const existingControlsContainer = document.querySelector('.chart-controls-container');
+        if (existingControlsContainer) {
+            // Remove event listeners by cloning and replacing
+            const newControlsContainer = existingControlsContainer.cloneNode(false);
+            existingControlsContainer.parentNode.replaceChild(newControlsContainer, existingControlsContainer);
+        }
+
+        // Reset zoom state for all charts
+        console.log('[CHART FEATURE] Resetting zoom state for all charts');
+        if (DTIBacktester.priceChart && DTIBacktester.priceChart.resetZoom) {
+            DTIBacktester.priceChart.resetZoom();
+            console.log('[CHART FEATURE] Price chart zoom reset');
+        }
+        if (DTIBacktester.dtiChart && DTIBacktester.dtiChart.resetZoom) {
+            DTIBacktester.dtiChart.resetZoom();
+            console.log('[CHART FEATURE] DTI chart zoom reset');
+        }
+        if (DTIBacktester.sevenDayDTIChart && DTIBacktester.sevenDayDTIChart.resetZoom) {
+            DTIBacktester.sevenDayDTIChart.resetZoom();
+            console.log('[CHART FEATURE] 7-Day DTI chart zoom reset');
+        }
+
+        // Add chart controls - they will be freshly created
+        if (typeof DTIChartControls !== 'undefined') {
             DTIChartControls.addChartControls();
         }
-        
+
         // Restore any saved annotations
         restoreAnnotations();
     }
@@ -1282,8 +1310,11 @@ if (!DTIUI.displayTrades) {
         
         // Add click handler
         toggleBtn.addEventListener('click', () => {
+            console.log('[CHART FEATURE] Chart type toggle clicked - switching from', DTIBacktester.chartType);
+
             // Toggle chart type
             DTIBacktester.chartType = DTIBacktester.chartType === 'candlestick' ? 'line' : 'candlestick';
+            console.log('[CHART FEATURE] Chart type switched to:', DTIBacktester.chartType);
             
             // Update button
             toggleBtn.innerHTML = `
@@ -1376,10 +1407,14 @@ if (!DTIUI.displayTrades) {
             exportBtn.title = `Export ${title}`;
             
             exportBtn.addEventListener('click', () => {
+                console.log('[CHART FEATURE] Export button clicked for:', title);
                 const chart = Chart.getChart(canvas);
                 if (chart) {
+                    console.log('[CHART FEATURE] Exporting chart:', id);
                     // Use the existing export function
                     exportChartAsImage(chart, `${title.toLowerCase().replace(/\s+/g, '-')}_${new Date().toISOString().slice(0,10)}`);
+                } else {
+                    console.warn('[CHART FEATURE] Chart not found for export:', id);
                 }
             });
             

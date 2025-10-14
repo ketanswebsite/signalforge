@@ -389,26 +389,38 @@ function displayBuyingOpportunities() {
 
                                 // Store OHLC data globally for chart access
                                 console.log('[VIEW DETAILS DEBUG] Storing OHLC data');
+                                console.log('[VIEW DETAILS DEBUG] Checking for real OHLC data - open:', processedData.open ? 'available' : 'not available');
+
+                                // Use real OHLC data if available, otherwise fall back to close prices
                                 DTIBacktester.ohlcData = {
                                     dates: processedData.dates,
-                                    open: processedData.close,
-                                    high: processedData.close,
-                                    low: processedData.close,
+                                    open: processedData.open || processedData.close,
+                                    high: processedData.high || processedData.close,
+                                    low: processedData.low || processedData.close,
                                     close: processedData.close
                                 };
                                 console.log('[VIEW DETAILS DEBUG] OHLC data stored, dates count:', processedData.dates?.length);
+                                console.log('[VIEW DETAILS DEBUG] Using real OHLC data:', processedData.open ? 'YES' : 'NO (fallback to close)');
 
                                 // Display results
                                 console.log('[VIEW DETAILS DEBUG] Creating charts');
                                 console.log('[VIEW DETAILS DEBUG] DTIUI available:', typeof DTIUI !== 'undefined');
                                 console.log('[VIEW DETAILS DEBUG] DTIUI.createCharts available:', typeof DTIUI?.createCharts === 'function');
 
+                                // Prepare OHLC data object for chart creation
+                                const ohlcDataForCharts = {
+                                    open: processedData.open || processedData.close,
+                                    high: processedData.high || processedData.close,
+                                    low: processedData.low || processedData.close
+                                };
+                                console.log('[VIEW DETAILS DEBUG] Passing OHLC data to createCharts:', ohlcDataForCharts.open ? 'with real OHLC data' : 'with close prices');
+
                                 DTIUI.createCharts(
                                     processedData.dates,
                                     processedData.close,
                                     processedData.dti,
                                     processedData.sevenDayDTIData,
-                                    {}
+                                    ohlcDataForCharts
                                 );
                                 console.log('[VIEW DETAILS DEBUG] Charts created successfully');
 

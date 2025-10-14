@@ -346,17 +346,24 @@ DTIUI.StockSelector = (function() {
                         allTrades.push(processedData.activeTrade);
                     }
 
-                    // Store OHLC data for chart access
+                    // Store OHLC data for chart access - use real OHLC if available
                     DTIBacktester.ohlcData = {
                         dates: processedData.dates,
-                        open: processedData.close, // Using close for now
-                        high: processedData.close,
-                        low: processedData.close,
+                        open: processedData.open || processedData.close,
+                        high: processedData.high || processedData.close,
+                        low: processedData.low || processedData.close,
                         close: processedData.close
                     };
 
+                    // Prepare OHLC data for chart creation
+                    const ohlcDataForCharts = {
+                        open: processedData.open || processedData.close,
+                        high: processedData.high || processedData.close,
+                        low: processedData.low || processedData.close
+                    };
+
                     // Create charts and display results
-                    DTIUI.createCharts(processedData.dates, processedData.close, processedData.dti, processedData.sevenDayDTIData, {});
+                    DTIUI.createCharts(processedData.dates, processedData.close, processedData.dti, processedData.sevenDayDTIData, ohlcDataForCharts);
                     DTIUI.displayStatistics(allTrades);
                     DTIUI.displayTrades(allTrades);
                 }

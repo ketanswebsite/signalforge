@@ -448,6 +448,9 @@ async function fetchCurrentQuote(symbol) {
             return {
                 stock: stock,
                 dates: dates,
+                open: open,
+                high: high,
+                low: low,
                 close: close,
                 dti: dti,
                 sevenDayDTIData: sevenDayDTIData,
