@@ -211,10 +211,7 @@ DTIUI.Charts = (function() {
             DTIBacktester.chartType = 'line';
             DTIBacktester.hasLoadedOnce = true;
         }
-        
-        // Add export buttons to charts if not already present
-        addExportButtons();
-        
+
         // Add chart type toggle button
         setTimeout(() => {
             addChartTypeToggle();
@@ -935,7 +932,10 @@ DTIUI.Charts = (function() {
                 }
             }
         });
-        
+
+        // Add export buttons to charts - AFTER all charts are created to prevent wrapper accumulation
+        addExportButtons();
+
         // Add chart sync for zoom and pan
         syncChartsZoom([DTIBacktester.priceChart, DTIBacktester.dtiChart, DTIBacktester.sevenDayDTIChart]);
         
