@@ -58,13 +58,15 @@
         const hoverElements = 'a, button, .card-interactive, .btn, input[type="button"], input[type="submit"], .metric-card, [role="button"]';
 
         document.addEventListener('mouseenter', (e) => {
-            if (e.target.matches(hoverElements)) {
+            // Check if e.target is an Element before calling .matches()
+            if (e.target instanceof Element && e.target.matches && e.target.matches(hoverElements)) {
                 cursor.classList.add('hover');
             }
         }, true);
 
         document.addEventListener('mouseleave', (e) => {
-            if (e.target.matches(hoverElements)) {
+            // Check if e.target is an Element before calling .matches()
+            if (e.target instanceof Element && e.target.matches && e.target.matches(hoverElements)) {
                 cursor.classList.remove('hover');
             }
         }, true);
