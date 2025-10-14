@@ -338,7 +338,7 @@ function displayBuyingOpportunities() {
                                 const period = periodSelector ? periodSelector.value : '5y';
 
                                 // Find the selected stock object
-                                const selectedStock = DTIUI.getCurrentStockList().find(s => s.symbol === symbol);
+                                const selectedStock = DTIData.getCurrentStockList().find(s => s.symbol === symbol);
                                 if (!selectedStock) {
                                     throw new Error('Stock not found in list');
                                 }
