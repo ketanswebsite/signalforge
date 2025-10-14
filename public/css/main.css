@@ -6649,3 +6649,580 @@ button .spinner {
 .pricing-card:nth-child(3) {
     animation-delay: 0.3s;
 }
+
+/* ========================================
+   LEGAL PAGES STYLES (Terms, Privacy, Data Management)
+   ======================================== */
+
+/* ===== 1. Legal Container ===== */
+.legal-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: var(--spacing-2xl) var(--spacing-lg);
+    animation: fadeInUp 0.6s var(--transition-base);
+}
+
+.data-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: var(--spacing-2xl) var(--spacing-lg);
+    animation: fadeInUp 0.6s var(--transition-base);
+}
+
+/* ===== 2. Legal Sections ===== */
+.legal-section,
+.data-section {
+    margin-bottom: var(--spacing-3xl);
+    padding-bottom: var(--spacing-xl);
+    border-bottom: 1px solid var(--border);
+}
+
+.legal-section:last-child,
+.data-section:last-child {
+    border-bottom: none;
+}
+
+/* ===== 3. Legal Typography ===== */
+.legal-container h2,
+.data-container h3 {
+    font-family: var(--font-heading);
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-lg);
+    margin-top: var(--spacing-xl);
+    position: relative;
+    padding-left: var(--spacing-md);
+}
+
+.legal-container h2::before,
+.data-container h3::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--gradient-primary);
+    border-radius: var(--radius-sm);
+}
+
+.legal-container h3,
+.data-container h4 {
+    font-family: var(--font-heading);
+    font-size: clamp(1.25rem, 2.5vw, 1.5rem);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+}
+
+.legal-container h4 {
+    font-size: clamp(1.125rem, 2vw, 1.25rem);
+    font-weight: 600;
+    color: var(--accent-gold);
+    margin-top: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+}
+
+.legal-container p,
+.data-container p {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-md);
+}
+
+.legal-container strong,
+.data-container strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* ===== 4. Legal Lists ===== */
+.legal-container ul,
+.legal-container ol,
+.data-container ul,
+.data-container ol {
+    margin-left: var(--spacing-xl);
+    margin-bottom: var(--spacing-lg);
+    line-height: 1.8;
+}
+
+.legal-container li,
+.data-container li {
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-secondary);
+}
+
+.legal-container li strong,
+.data-container li strong {
+    color: var(--text-primary);
+}
+
+/* ===== 5. Callout Boxes ===== */
+.highlight-box,
+.warning-box,
+.rights-box {
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    margin: var(--spacing-xl) 0;
+    border-left: 4px solid;
+    background: var(--bg-secondary);
+}
+
+.highlight-box {
+    border-left-color: var(--accent-gold);
+    background: rgba(212, 175, 55, 0.05);
+}
+
+.warning-box {
+    border-left-color: var(--warning);
+    background: rgba(245, 158, 11, 0.05);
+}
+
+.rights-box {
+    border-left-color: var(--info);
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.highlight-box p,
+.warning-box p,
+.rights-box p {
+    margin-bottom: var(--spacing-sm);
+}
+
+.highlight-box p:last-child,
+.warning-box p:last-child,
+.rights-box p:last-child {
+    margin-bottom: 0;
+}
+
+.highlight-box ul,
+.warning-box ul,
+.rights-box ul {
+    margin-left: var(--spacing-lg);
+    margin-top: var(--spacing-sm);
+}
+
+/* ===== 6. Effective Date & Back Link ===== */
+.effective-date {
+    font-size: 0.9375rem;
+    color: var(--text-muted);
+    margin-bottom: var(--spacing-xl);
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--accent-gold);
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    color: var(--accent-gold);
+    font-weight: 500;
+    margin-bottom: var(--spacing-xl);
+    transition: all var(--transition-fast);
+}
+
+.back-link:hover {
+    color: var(--accent-amber);
+    transform: translateX(-4px);
+}
+
+.back-link svg {
+    flex-shrink: 0;
+}
+
+/* ===== 7. Contact Info Section ===== */
+.contact-info {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    margin-top: var(--spacing-2xl);
+}
+
+.contact-info h2 {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    margin-top: 0;
+    margin-bottom: var(--spacing-lg);
+}
+
+.contact-info p {
+    margin-bottom: var(--spacing-md);
+}
+
+.contact-info ul {
+    list-style: none;
+    margin-left: 0;
+}
+
+.contact-info li {
+    padding: var(--spacing-sm) 0;
+}
+
+.contact-info a {
+    color: var(--accent-gold);
+    text-decoration: underline;
+}
+
+.contact-info a:hover {
+    color: var(--accent-amber);
+}
+
+/* ===== 8. Data Management Specific Styles ===== */
+.data-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+    margin: var(--spacing-xl) 0;
+}
+
+.data-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    transition: all var(--transition-base);
+    display: flex;
+    flex-direction: column;
+}
+
+.data-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--accent-gold);
+}
+
+.data-card h4 {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-top: 0;
+    margin-bottom: var(--spacing-sm);
+}
+
+.data-card p {
+    flex-grow: 1;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-lg);
+}
+
+.data-card button {
+    margin-top: auto;
+}
+
+/* Data Info Rows */
+.data-info {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    margin: var(--spacing-lg) 0;
+}
+
+.data-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.data-info-row:last-child {
+    border-bottom: none;
+}
+
+.data-label {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.data-value {
+    font-family: var(--font-mono);
+    color: var(--text-secondary);
+}
+
+.data-value a {
+    color: var(--accent-gold);
+    text-decoration: none;
+}
+
+.data-value a:hover {
+    text-decoration: underline;
+}
+
+/* Data Retention Info */
+.data-retention-info {
+    background: rgba(59, 130, 246, 0.05);
+    border-left: 4px solid var(--info);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+}
+
+.data-retention-info h4 {
+    margin-top: 0;
+    margin-bottom: var(--spacing-md);
+    color: var(--text-primary);
+}
+
+.data-retention-info ul {
+    margin-left: var(--spacing-lg);
+    margin-bottom: 0;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+    margin-top: var(--spacing-lg);
+}
+
+/* ===== 9. Dialog Overlay (for delete confirmation) ===== */
+.dialog-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--overlay-dark);
+    z-index: var(--z-modal-backdrop);
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s var(--transition-base);
+}
+
+.dialog-overlay.active {
+    display: flex;
+}
+
+.dialog-content {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-xl);
+    animation: scaleIn 0.3s var(--transition-base);
+}
+
+.dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-lg) var(--spacing-xl);
+    border-bottom: 1px solid var(--border);
+}
+
+.dialog-title {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin: 0;
+}
+
+.dialog-title svg {
+    color: var(--accent-gold);
+}
+
+.dialog-close {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    line-height: 1;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color var(--transition-fast);
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dialog-close:hover {
+    color: var(--accent-gold);
+}
+
+.dialog-body {
+    padding: var(--spacing-xl);
+}
+
+.dialog-body input[type="text"] {
+    width: 100%;
+    padding: var(--spacing-md);
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    margin-top: var(--spacing-sm);
+}
+
+.dialog-body input[type="text"]:focus {
+    outline: none;
+    border-color: var(--accent-gold);
+}
+
+.dialog-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg) var(--spacing-xl);
+    border-top: 1px solid var(--border);
+    justify-content: flex-end;
+}
+
+/* ===== 10. Tables (for Privacy Policy) ===== */
+.data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: var(--spacing-xl) 0;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.data-table thead {
+    background: var(--surface);
+}
+
+.data-table th {
+    padding: var(--spacing-lg);
+    text-align: left;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-primary);
+    border-bottom: 2px solid var(--accent-gold);
+}
+
+.data-table tbody tr {
+    transition: background-color var(--transition-fast);
+}
+
+.data-table tbody tr:nth-child(even) {
+    background: rgba(212, 175, 55, 0.03);
+}
+
+.data-table tbody tr:hover {
+    background: rgba(212, 175, 55, 0.08);
+}
+
+.data-table td {
+    padding: var(--spacing-lg);
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.data-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* ===== 11. Responsive Design ===== */
+@media (max-width: 768px) {
+    .legal-container,
+    .data-container {
+        padding: var(--spacing-xl) var(--spacing-md);
+    }
+
+    .legal-container h2,
+    .data-container h3 {
+        font-size: 1.5rem;
+        padding-left: var(--spacing-sm);
+    }
+
+    .legal-container h2::before,
+    .data-container h3::before {
+        width: 3px;
+    }
+
+    .legal-container ul,
+    .legal-container ol,
+    .data-container ul,
+    .data-container ol {
+        margin-left: var(--spacing-lg);
+    }
+
+    .highlight-box,
+    .warning-box,
+    .rights-box {
+        padding: var(--spacing-md);
+    }
+
+    .data-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .data-table {
+        font-size: 0.875rem;
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: var(--spacing-md) var(--spacing-sm);
+    }
+
+    /* Make table scrollable on mobile */
+    .data-table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .dialog-content {
+        width: 95%;
+        max-height: 85vh;
+    }
+
+    .dialog-header {
+        padding: var(--spacing-md) var(--spacing-lg);
+    }
+
+    .dialog-title {
+        font-size: 1.25rem;
+    }
+
+    .dialog-body {
+        padding: var(--spacing-lg);
+    }
+
+    .dialog-actions {
+        flex-direction: column;
+        padding: var(--spacing-md) var(--spacing-lg);
+    }
+
+    .dialog-actions button {
+        width: 100%;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .action-buttons button {
+        width: 100%;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .data-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
