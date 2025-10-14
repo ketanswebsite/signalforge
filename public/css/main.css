@@ -816,6 +816,76 @@ table {
     min-height: 120px;
 }
 
+/* File Input Custom Styling */
+input[type="file"] {
+    width: 100%;
+    padding: 0;
+    border: none;
+    background: transparent;
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+input[type="file"]::file-selector-button {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    margin-right: var(--spacing-md);
+}
+
+input[type="file"]::file-selector-button:hover {
+    background: rgba(212, 175, 55, 0.1);
+    border-color: var(--accent-gold);
+    color: var(--text-primary);
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+input[type="file"]::-webkit-file-upload-button {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    margin-right: var(--spacing-md);
+}
+
+input[type="file"]::-webkit-file-upload-button:hover {
+    background: rgba(212, 175, 55, 0.1);
+    border-color: var(--accent-gold);
+    color: var(--text-primary);
+}
+
+input[type="file"]:focus {
+    outline: none;
+}
+
+input[type="file"]:focus::file-selector-button,
+input[type="file"]:focus::-webkit-file-upload-button {
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+}
+
+/* Style for param-input class when applied to file input */
+input[type="file"].param-input {
+    padding: 0.5rem 0;
+    background: var(--bg-surface);
+    border-radius: var(--radius-md);
+}
+
 .form-hint {
     display: block;
     font-size: 0.8125rem;
@@ -2143,6 +2213,117 @@ tbody td {
 }
 
 /* ========================================
+   20B. INDEX PAGE GEOMETRIC BACKGROUND
+   ======================================== */
+
+/* Background container */
+.page-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+/* Subtle animated gradient background */
+.background-gradient {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg,
+        rgba(0, 0, 0, 0.02) 0%,
+        rgba(28, 28, 28, 0.03) 50%,
+        rgba(0, 0, 0, 0.02) 100%);
+    background-size: 200% 200%;
+    animation: gradientShift 20s ease infinite;
+}
+
+/* Subtle grid pattern overlay */
+.background-gradient::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image:
+        linear-gradient(rgba(212, 175, 55, 0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(212, 175, 55, 0.015) 1px, transparent 1px);
+    background-size: 60px 60px;
+    animation: movePattern 30s linear infinite;
+}
+
+/* Floating geometric elements - more subtle than login */
+.page-background .floating-element {
+    position: absolute;
+    background: linear-gradient(135deg,
+        rgba(212, 175, 55, 0.04),
+        rgba(245, 158, 11, 0.04));
+    border: 1px solid rgba(212, 175, 55, 0.08);
+    border-radius: 20px;
+    backdrop-filter: blur(5px);
+}
+
+.page-background .floating-element-1 {
+    width: 120px;
+    height: 120px;
+    top: 15%;
+    right: 10%;
+    animation: float 10s ease-in-out infinite;
+}
+
+.page-background .floating-element-2 {
+    width: 90px;
+    height: 90px;
+    bottom: 20%;
+    left: 8%;
+    animation: float 8s ease-in-out infinite 2s;
+}
+
+.page-background .floating-element-3 {
+    width: 70px;
+    height: 70px;
+    top: 50%;
+    right: 15%;
+    animation: float 9s ease-in-out infinite 1s;
+}
+
+.page-background .floating-element-4 {
+    width: 100px;
+    height: 100px;
+    bottom: 35%;
+    left: 20%;
+    animation: float 11s ease-in-out infinite 3s;
+    opacity: 0.7;
+}
+
+/* Ensure app-container stays above background */
+.app-container {
+    position: relative;
+    z-index: 10;
+}
+
+/* Hide geometric background on mobile for performance */
+@media (max-width: 768px) {
+    .page-background .floating-element {
+        display: none;
+    }
+
+    .background-gradient {
+        animation: none;
+    }
+
+    .background-gradient::before {
+        animation: none;
+    }
+}
+
+/* ========================================
    21. DASHBOARD LAYOUT
    ======================================== */
 .dashboard {
@@ -2692,6 +2873,10 @@ tbody td {
     border-top: 1px solid var(--border);
     padding: var(--spacing-2xl) 0;
     margin-top: var(--spacing-3xl);
+    position: relative;
+    z-index: 1;
+    clear: both;
+    width: 100%;
 }
 
 .footer-content {
@@ -3177,6 +3362,11 @@ tbody td {
    29. MODAL COMPONENTS (JavaScript-generated)
    ======================================== */
 
+/* Modal Placeholder - Ensure no visual impact */
+#trade-modal-placeholder {
+    display: contents; /* Makes placeholder transparent in layout */
+}
+
 /* Modal Overlay - Full screen backdrop */
 .modal-overlay {
     position: fixed;
@@ -3187,16 +3377,22 @@ tbody td {
     background: rgba(0, 0, 0, 0.75);
     backdrop-filter: blur(8px);
     z-index: var(--z-modal-backdrop);
-    display: none;
+    display: none !important; /* Force hidden state */
     align-items: center;
     justify-content: center;
     padding: var(--spacing-lg);
     animation: fadeIn 0.3s ease;
     overflow-y: auto;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
 }
 
 .modal-overlay.active {
-    display: flex;
+    display: flex !important; /* Override hidden state when active */
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
 }
 
 /* Modal Content Container */
