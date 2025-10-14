@@ -222,24 +222,6 @@ DTIUI.Charts = (function() {
                         x: {min: 'original', max: 'original'}
                     }
                 },
-                // Crosshair plugin configuration
-                crosshair: {
-                    line: {
-                        color: 'rgba(100, 116, 139, 0.3)',
-                        width: 1,
-                        dashPattern: [5, 5]
-                    },
-                    sync: {
-                        enabled: false  // Disable to avoid state errors
-                    },
-                    zoom: {
-                        enabled: false
-                    },
-                    callbacks: {
-                        beforeZoom: () => true,
-                        afterZoom: () => {}
-                    }
-                },
                 tooltip: {
                     enabled: true,
                     backgroundColor: 'rgba(17, 24, 39, 0.85)',
@@ -414,7 +396,7 @@ DTIUI.Charts = (function() {
                 },
                 // Enhanced annotation plugin configuration
                 annotation: {
-                    annotations: (warmupInfo && warmupInfo.enabled) ? {
+                    annotations: (warmupInfo && warmupInfo.enabled && warmupInfo.endDate) ? {
                         warmupBox: {
                             type: 'box',
                             xMin: 0,
@@ -679,24 +661,6 @@ DTIUI.Charts = (function() {
                 },
                 plugins: {
                     ...commonOptions.plugins,
-                    // Custom crosshair
-                    crosshair: {
-                        line: {
-                            color: 'rgba(100, 116, 139, 0.3)',
-                            width: 1,
-                            dashPattern: [5, 5]
-                        },
-                        sync: {
-                            enabled: false  // Disable to avoid state errors
-                        },
-                        zoom: {
-                            enabled: false
-                        },
-                        callbacks: {
-                            beforeZoom: () => true,
-                            afterZoom: () => {}
-                        }
-                    },
                     legend: {
                         ...commonOptions.plugins.legend,
                         position: 'top',
