@@ -386,23 +386,23 @@ document.addEventListener('DOMContentLoaded', function() {
 <!-- API Client -->
 <script src="js/api-client.js"></script>
 <script src="js/dti-core.js"></script>
-<!-- UI modules -->
-<script src="js/dti-ui-core.js"></script>
-<script src="js/dti-ui-charts.js"></script>
-<script src="js/dti-ui-controls.js"></script>
-<script src="js/dti-ui-trades.js"></script>
-<script src="js/dti-ui-selector.js"></script>
-
 
 <!-- Shared modules (SINGLE SOURCE OF TRUTH) -->
 <script src="../lib/shared/stock-data.js"></script>
 <script src="../lib/shared/dti-calculator.js"></script>
 <script src="../lib/shared/backtest-calculator.js"></script>
 
-<!-- Core data processing and algorithms -->
+<!-- Core data processing and algorithms (load BEFORE UI modules) -->
 <script src="js/dti-data.js"></script>
 <script src="js/dti-indicators.js"></script>
 <script src="js/dti-backtest.js"></script>
+
+<!-- UI modules (depend on core modules above) -->
+<script src="js/dti-ui-core.js"></script>
+<script src="js/dti-ui-charts.js"></script>
+<script src="js/dti-ui-controls.js"></script>
+<script src="js/dti-ui-trades.js"></script>
+<script src="js/dti-ui-selector.js"></script>
 
 <!-- Performance Modal -->
 <script src="js/dti-performance-modal.js"></script>
