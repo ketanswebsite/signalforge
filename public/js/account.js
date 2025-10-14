@@ -236,7 +236,7 @@ class AccountPage {
                     ${this.payments.map(payment => `
                         <tr>
                             <td>${new Date(payment.payment_date).toLocaleDateString()}</td>
-                            <td>${payment.plan_name || 'SignalForge Subscription'}</td>
+                            <td>${payment.plan_name || 'SutrAlgo Subscription'}</td>
                             <td>${this.getCurrencySymbol(payment.currency)}${payment.amount.toFixed(2)}</td>
                             <td>
                                 <span class="payment-status ${payment.status}">

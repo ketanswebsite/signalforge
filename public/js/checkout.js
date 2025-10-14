@@ -448,7 +448,7 @@ class CheckoutPage {
 
     getPlanDescription(plan) {
         const descriptions = {
-            'FREE': 'Perfect for trying out SignalForge',
+            'FREE': 'Perfect for trying out SutrAlgo',
             'BASIC_UK': 'Essential features for individual traders',
             'PRO_UK': 'Advanced features for serious traders',
             'BASIC_US': 'Essential features for individual traders',
@@ -456,7 +456,7 @@ class CheckoutPage {
             'BASIC_IN': 'Essential features for individual traders',
             'PRO_IN': 'Advanced features for serious traders'
         };
-        return descriptions[plan.plan_code] || 'Get started with SignalForge';
+        return descriptions[plan.plan_code] || 'Get started with SutrAlgo';
     }
 
     getPlanFeatures(plan) {

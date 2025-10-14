@@ -164,7 +164,7 @@ class CookieConsent {
                 </div>
                 
                 <div class="cookie-settings-body">
-                    <p>Manage your cookie preferences for SignalForge. Essential cookies cannot be disabled as they are required for the platform to function.</p>
+                    <p>Manage your cookie preferences for SutrAlgo. Essential cookies cannot be disabled as they are required for the platform to function.</p>
                     
                     <div class="cookie-setting-item">
                         <div class="cookie-setting-header">

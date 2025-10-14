@@ -909,7 +909,7 @@ class ChartExporter {
         ctx.font = '14px Inter';
         ctx.fillStyle = '#6b7280';
         ctx.textAlign = 'left';
-        ctx.fillText('SignalForge Trading Platform', 20, height - 20);
+        ctx.fillText('SutrAlgo Trading Platform', 20, height - 20);
 
         // Convert to blob and download
         canvas.toBlob((blob) => {

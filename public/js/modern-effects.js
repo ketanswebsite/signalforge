@@ -1,5 +1,5 @@
 /* ========================================
-   SignalForge - Modern Effects JavaScript
+   SutrAlgo - Modern Effects JavaScript
    Custom Cursor, Scroll Progress, Animations
    ======================================== */
 

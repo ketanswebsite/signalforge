@@ -171,8 +171,8 @@ const AdminSettings = {
                             type="text"
                             id="app-name"
                             class="form-control"
-                            value="${settings.appName || 'SignalForge'}"
-                            placeholder="SignalForge"
+                            value="${settings.appName || 'SutrAlgo'}"
+                            placeholder="SutrAlgo"
                         />
                     </div>
 
@@ -621,7 +621,7 @@ const AdminSettings = {
         const content = document.getElementById('settings-tab-content');
 
         const templateList = templates.templates || [
-            { id: 'welcome', name: 'Welcome Email', subject: 'Welcome to SignalForge!' },
+            { id: 'welcome', name: 'Welcome Email', subject: 'Welcome to SutrAlgo!' },
             { id: 'trial-start', name: 'Trial Started', subject: 'Your trial has started' },
             { id: 'trial-ending', name: 'Trial Ending Soon', subject: 'Your trial ends in 3 days' },
             { id: 'subscription-confirmed', name: 'Subscription Confirmed', subject: 'Subscription confirmed' },
@@ -748,8 +748,8 @@ const AdminSettings = {
                             type="text"
                             id="smtp-from-name"
                             class="form-control"
-                            value="${templates.smtp?.fromName || 'SignalForge'}"
-                            placeholder="SignalForge"
+                            value="${templates.smtp?.fromName || 'SutrAlgo'}"
+                            placeholder="SutrAlgo"
                         />
                     </div>
 

@@ -128,7 +128,7 @@ class PricingPage {
 
     getPlanDescription(plan) {
         const descriptions = {
-            'FREE': 'Perfect for trying out SignalForge',
+            'FREE': 'Perfect for trying out SutrAlgo',
             'BASIC_UK': 'Essential features for individual traders',
             'PRO_UK': 'Advanced features for serious traders',
             'BASIC_US': 'Essential features for individual traders',
@@ -137,7 +137,7 @@ class PricingPage {
             'PRO_IN': 'Advanced features for serious traders'
         };
 
-        return descriptions[plan.plan_code] || 'Get started with SignalForge';
+        return descriptions[plan.plan_code] || 'Get started with SutrAlgo';
     }
 
     getPlanFeatures(plan) {
@@ -201,7 +201,7 @@ class PricingPage {
         container.innerHTML = `
             <div class="pricing-card">
                 <div class="plan-name">Free Trial</div>
-                <div class="plan-description">Perfect for trying out SignalForge</div>
+                <div class="plan-description">Perfect for trying out SutrAlgo</div>
                 <div class="plan-price">
                     <div class="price-amount">Free</div>
                     <div class="trial-badge">90-Day Trial</div>
