@@ -116,8 +116,8 @@ body {
     --bg-secondary: var(--secondary-dark);
     --bg-surface: var(--surface);
     --text-primary: var(--white);
-    --text-secondary: var(--grey-300);
-    --text-muted: var(--grey-500);
+    --text-secondary: var(--grey-200);
+    --text-muted: var(--grey-400);
     --border: var(--border-color);
 }
 
@@ -448,6 +448,42 @@ table {
     }
 }
 
+/* Responsive Container & Layout Styles */
+@media (max-width: 1024px) {
+    .container {
+        padding: 0 var(--spacing-lg);
+    }
+
+    .main-content {
+        padding: var(--spacing-lg) 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 0 var(--spacing-md);
+    }
+
+    .main-content {
+        padding: var(--spacing-md) 0;
+    }
+
+    .dashboard {
+        gap: var(--spacing-md);
+    }
+}
+
+@media (max-width: 640px) {
+    .container {
+        max-width: 100%;
+        padding: 0 var(--spacing-sm);
+    }
+
+    .app-container {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+}
+
 /* ========================================
    7. CARDS & CONTAINERS
    ======================================== */
@@ -461,6 +497,7 @@ table {
     transition: all var(--transition-base);
     position: relative;
     overflow: hidden;
+    margin-bottom: var(--spacing-xl);
 }
 
 /* === Card Hover Effect === */
@@ -568,10 +605,11 @@ table {
     font-size: 1.5rem;
     font-weight: 700;
     color: var(--text-primary);
-    margin: 0;
+    margin: 0 0 var(--spacing-lg) 0;
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    line-height: 1.3;
 }
 
 .card-body {
@@ -647,6 +685,52 @@ table {
 
 .metric-change-negative {
     color: var(--error);
+}
+
+/* Responsive Card Styles */
+@media (max-width: 1024px) {
+    .card {
+        padding: var(--spacing-lg);
+    }
+
+    .card-title {
+        font-size: 1.375rem;
+    }
+
+    .metric-value {
+        font-size: 1.75rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .card {
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .card-title {
+        font-size: 1.25rem;
+    }
+
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+    }
+
+    .metric-value {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .card {
+        border-radius: var(--radius-lg);
+    }
+
+    .card-title {
+        font-size: 1.125rem;
+    }
 }
 
 /* ========================================
@@ -1631,12 +1715,38 @@ body.menu-open {
 /* ========================================
    11. TABLES
    ======================================== */
-.table-container {
+.table-container,
+.trades-table-container {
     width: 100%;
     overflow-x: auto;
     border-radius: var(--radius-lg);
     background: var(--bg-secondary);
     border: 1px solid var(--border);
+    margin-top: var(--spacing-lg);
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+}
+
+.trades-table-container {
+    box-shadow: var(--shadow-sm);
+}
+
+.trades-table-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.trades-table-container::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+    border-radius: var(--radius-sm);
+}
+
+.trades-table-container::-webkit-scrollbar-thumb {
+    background: var(--accent-gold);
+    border-radius: var(--radius-sm);
+}
+
+.trades-table-container::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-amber);
 }
 
 table {
@@ -1647,23 +1757,31 @@ table {
 
 thead {
     background: var(--bg-surface);
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 thead th {
-    padding: 1rem 1.5rem;
+    padding: 1.25rem 1.75rem;
     text-align: left;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-weight: 700;
-    color: var(--text-muted);
+    color: var(--accent-gold);
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
 }
 
 tbody tr {
     transition: all var(--transition-fast);
     border-bottom: 1px solid var(--border);
     cursor: pointer;
+}
+
+tbody tr:nth-child(even) {
+    background: rgba(43, 43, 43, 0.3);
 }
 
 tbody tr:hover {
@@ -1677,9 +1795,10 @@ tbody tr:last-child {
 }
 
 tbody td {
-    padding: 1rem 1.5rem;
-    color: var(--text-secondary);
-    font-size: 0.9375rem;
+    padding: 1.25rem 1.75rem;
+    color: var(--text-primary);
+    font-size: 1rem;
+    line-height: 1.5;
 }
 
 /* Table cell color variants */
@@ -1698,6 +1817,48 @@ tbody td.negative {
     padding: 3rem;
     color: var(--text-muted);
     font-style: italic;
+}
+
+/* Responsive Table Styles */
+@media (max-width: 1024px) {
+    thead th {
+        padding: 1rem 1.25rem;
+        font-size: 0.8125rem;
+    }
+
+    tbody td {
+        padding: 1rem 1.25rem;
+        font-size: 0.9375rem;
+    }
+}
+
+@media (max-width: 768px) {
+    thead th {
+        padding: 0.875rem 1rem;
+        font-size: 0.75rem;
+    }
+
+    tbody td {
+        padding: 0.875rem 1rem;
+        font-size: 0.875rem;
+    }
+
+    .table-container,
+    .trades-table-container {
+        border-radius: var(--radius-md);
+    }
+}
+
+@media (max-width: 640px) {
+    thead th {
+        padding: 0.75rem 0.875rem;
+        font-size: 0.6875rem;
+    }
+
+    tbody td {
+        padding: 0.75rem 0.875rem;
+        font-size: 0.8125rem;
+    }
 }
 
 /* ========================================
@@ -5677,19 +5838,24 @@ button .spinner {
 .trade-statistics {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
-    gap: var(--spacing-md);
-    margin-bottom: var(--spacing-lg);
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
 }
 
 .statistic-card {
     background: var(--bg-surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    padding: var(--spacing-lg);
+    padding: var(--spacing-xl);
     text-align: center;
     transition: all var(--transition-base);
     position: relative;
     overflow: hidden;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 .statistic-card::before {
@@ -5698,7 +5864,7 @@ button .spinner {
     top: 0;
     left: 0;
     width: 100%;
-    height: 3px;
+    height: 4px;
     background: var(--gradient-primary);
     transform: scaleX(0);
     transform-origin: left;
@@ -5706,8 +5872,8 @@ button .spinner {
 }
 
 .statistic-card:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow-md);
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-lg);
     border-color: var(--accent-gold);
 }
 
@@ -5716,25 +5882,46 @@ button .spinner {
 }
 
 .statistic-value {
-    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    font-size: clamp(1.875rem, 3.5vw, 2.5rem);
     font-weight: 700;
     color: var(--accent-gold);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
     font-family: var(--font-mono);
+    line-height: 1.2;
 }
 
 .statistic-label {
-    font-size: 0.875rem;
-    color: var(--text-muted);
+    font-size: clamp(0.8125rem, 1.5vw, 0.9375rem);
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     font-weight: 600;
+    line-height: 1.4;
 }
 
 /* Responsive Statistics Grid */
+@media (max-width: 1440px) {
+    .trade-statistics {
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--spacing-md);
+    }
+}
+
 @media (max-width: 1024px) {
     .trade-statistics {
         grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .trade-statistics {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-md);
+    }
+
+    .statistic-card {
+        padding: var(--spacing-lg);
+        min-height: 100px;
     }
 }
 
@@ -5746,14 +5933,16 @@ button .spinner {
 
     .statistic-card {
         padding: var(--spacing-md);
+        min-height: 90px;
     }
 
     .statistic-value {
-        font-size: 1.5rem;
+        font-size: 1.625rem;
+        margin-bottom: 0.5rem;
     }
 
     .statistic-label {
-        font-size: 0.75rem;
+        font-size: 0.8125rem;
     }
 }
 
@@ -5874,8 +6063,9 @@ button .spinner {
     background: var(--bg-primary);
     border-radius: var(--radius-sm);
     margin-bottom: var(--spacing-md);
-    font-size: 0.875rem;
-    color: var(--text-secondary);
+    font-size: 0.9375rem;
+    color: var(--text-primary);
+    font-weight: 500;
 }
 
 .trade-timer svg {
@@ -5982,8 +6172,9 @@ button .spinner {
 }
 
 .empty-state p {
-    color: var(--text-muted);
+    color: var(--text-secondary);
     margin-bottom: var(--spacing-lg);
+    font-size: 1rem;
 }
 
 /* === P&L Summary Container === */
