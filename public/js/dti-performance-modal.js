@@ -440,67 +440,86 @@ DTIUI.PerformanceModal = (function() {
             </div>
         ` : '';
 
-        // Build trades list HTML
+        // Build trades list HTML split by conviction level
         let tradesListHTML = '';
         if (entryMonthTrades.length > 0) {
+            // Group trades by conviction level
+            const highConvictionTrades = [];
+            const moderateConvictionTrades = [];
+            const lowConvictionTrades = [];
+
+            entryMonthTrades.forEach(({ stock, trade }) => {
+                // Calculate stock win rate from historical trades
+                const stockData = allStocksData.find(data => data.stock.name === stock.name);
+                let winRate = 0;
+
+                if (stockData && stockData.trades && stockData.trades.length > 0) {
+                    const completedTrades = stockData.trades.filter(t => t.exitDate);
+                    if (completedTrades.length > 0) {
+                        const winningTrades = completedTrades.filter(t => t.plPercent > 0).length;
+                        winRate = (winningTrades / completedTrades.length) * 100;
+                    }
+                }
+
+                // Categorize by conviction level
+                const tradeWithWinRate = { stock, trade, winRate };
+                if (winRate > 75) {
+                    highConvictionTrades.push(tradeWithWinRate);
+                } else if (winRate >= 50) {
+                    moderateConvictionTrades.push(tradeWithWinRate);
+                } else {
+                    lowConvictionTrades.push(tradeWithWinRate);
+                }
+            });
+
+            // Helper function to generate table HTML for a conviction level
+            const generateConvictionTable = (trades, convictionClass, convictionTitle) => {
+                if (trades.length === 0) return '';
+
+                return `
+                    <div class="performance-section ${convictionClass}">
+                        <h4 class="performance-section-title">${convictionTitle} (${trades.length})</h4>
+                        <table class="performance-trades-table">
+                            <thead>
+                                <tr>
+                                    <th>Stock</th>
+                                    <th>Entry Date</th>
+                                    <th>Exit Date</th>
+                                    <th>Days Held</th>
+                                    <th>Exit Month</th>
+                                    <th>P/L %</th>
+                                    <th>Exit Reason</th>
+                                    <th>Status</th>
+                                    <th>Win Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${trades.map(({ stock, trade, winRate }) => {
+                                    return `
+                                    <tr class="${trade.plPercent >= 0 ? 'profit' : (trade.plPercent < 0 ? 'loss' : 'neutral')} ${trade.exitMonthClass}">
+                                        <td>${stock.name}</td>
+                                        <td>${DTIBacktester.utils.formatDate(trade.entryDate)}</td>
+                                        <td>${trade.exitDate ? DTIBacktester.utils.formatDate(trade.exitDate) : '-'}</td>
+                                        <td>${trade.holdingDays} days</td>
+                                        <td class="exit-month ${trade.exitMonthClass}">${trade.exitMonth}</td>
+                                        <td class="${trade.plPercent >= 0 ? 'profit' : (trade.plPercent < 0 ? 'loss' : 'neutral')}">${trade.plPercent ? trade.plPercent.toFixed(2) + '%' : '-'}</td>
+                                        <td>${trade.exitReason || 'Still Active'}</td>
+                                        <td class="status-${trade.status.toLowerCase().replace(' ', '-')}">${trade.status}</td>
+                                        <td>${winRate.toFixed(1)}%</td>
+                                    </tr>`;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            };
+
+            // Generate HTML for each conviction level
             tradesListHTML = `
-                <div class="performance-trades-list">
-                    <table class="performance-trades-table">
-                        <thead>
-                            <tr>
-                                <th>Stock</th>
-                                <th>Entry Date</th>
-                                <th>Exit Date</th>
-                                <th>Days Held</th>
-                                <th>Exit Month</th>
-                                <th>P/L %</th>
-                                <th>Exit Reason</th>
-                                <th>Status</th>
-                                <th>Win Rate</th>
-                                ${!isAllGlobalIndices ? '<th>Conviction</th>' : ''}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${entryMonthTrades.map(({ stock, trade }) => {
-                                // Calculate stock win rate from historical trades
-                                const stockData = allStocksData.find(data => data.stock.name === stock.name);
-                                let winRate = 0;
-                                
-                                if (stockData && stockData.trades && stockData.trades.length > 0) {
-                                    const completedTrades = stockData.trades.filter(t => t.exitDate);
-                                    if (completedTrades.length > 0) {
-                                        const winningTrades = completedTrades.filter(t => t.plPercent > 0).length;
-                                        winRate = (winningTrades / completedTrades.length) * 100;
-                                    }
-                                }
-                                
-                                // Determine conviction level
-                                let convictionLevel = 'Low';
-                                let convictionClass = 'low-conviction';
-                                if (winRate > 75) {
-                                    convictionLevel = 'High';
-                                    convictionClass = 'high-conviction';
-                                } else if (winRate >= 50) {
-                                    convictionLevel = 'Moderate';
-                                    convictionClass = 'moderate-conviction';
-                                }
-                                
-                                return `
-                                <tr class="${trade.plPercent >= 0 ? 'profit' : (trade.plPercent < 0 ? 'loss' : 'neutral')} ${trade.exitMonthClass}">
-                                    <td>${stock.name}</td>
-                                    <td>${DTIBacktester.utils.formatDate(trade.entryDate)}</td>
-                                    <td>${trade.exitDate ? DTIBacktester.utils.formatDate(trade.exitDate) : '-'}</td>
-                                    <td>${trade.holdingDays} days</td>
-                                    <td class="exit-month ${trade.exitMonthClass}">${trade.exitMonth}</td>
-                                    <td class="${trade.plPercent >= 0 ? 'profit' : (trade.plPercent < 0 ? 'loss' : 'neutral')}">${trade.plPercent ? trade.plPercent.toFixed(2) + '%' : '-'}</td>
-                                    <td>${trade.exitReason || 'Still Active'}</td>
-                                    <td class="status-${trade.status.toLowerCase().replace(' ', '-')}">${trade.status}</td>
-                                    <td>${winRate.toFixed(1)}%</td>
-                                    ${!isAllGlobalIndices ? `<td class="${convictionClass}">${convictionLevel}</td>` : ''}
-                                </tr>`;
-                            }).join('')}
-                        </tbody>
-                    </table>
+                <div class="performance-trades-sections">
+                    ${generateConvictionTable(highConvictionTrades, 'high-conviction', 'High Conviction Trades')}
+                    ${generateConvictionTable(moderateConvictionTrades, 'moderate-conviction', 'Moderate Conviction Trades')}
+                    ${generateConvictionTable(lowConvictionTrades, 'low-conviction', 'Low Conviction Trades')}
                 </div>
             `;
         } else {
