@@ -91,10 +91,10 @@ DTIUI.Charts = (function() {
         // Create horizontal line at zero for DTI and entry threshold line
         const zeroLine = Array(dates.length).fill(0);
         const entryThresholdLine = Array(dates.length).fill(parseFloat(document.getElementById('entry-threshold').value));
-        
-        // Get warm-up period info
-        const warmupInfo = DTIBacktester.warmupInfo || { enabled: false };
-        
+
+        // Get warm-up period info from DTIBacktest module (which calculates it during backtest)
+        const warmupInfo = DTIBacktest.warmupInfo || { enabled: false, startDate: null, endDate: null };
+
         // Calculate price percentage changes to enhance visualization
         const pricePercentageChange = prices.map((price, i) => {
             if (i === 0) return 0;

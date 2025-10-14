@@ -10,12 +10,7 @@ const DTIBacktester = {
     allStocksData: [],
     activeTradeOpportunities: [],
     currentStockIndex: 'nifty50', // Default to Nifty 50
-    warmupInfo: {
-        startDate: null,
-        endDate: null,
-        enabled: true
-    },
-    
+
     // Charts
     priceChart: null,
     dtiChart: null,
