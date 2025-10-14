@@ -275,4 +275,30 @@ class PricingPage {
 // Initialize pricing page when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     new PricingPage();
+    initFAQAccordion();
 });
+
+/**
+ * FAQ Accordion Functionality
+ * Handles expanding/collapsing FAQ items
+ */
+function initFAQAccordion() {
+    const faqItems = document.querySelectorAll('.faq-item');
+
+    faqItems.forEach(item => {
+        const question = item.querySelector('.faq-question');
+
+        question.addEventListener('click', () => {
+            // Toggle active state
+            const isActive = item.classList.contains('active');
+
+            // Close all FAQ items
+            faqItems.forEach(faq => faq.classList.remove('active'));
+
+            // If this item wasn't active, open it
+            if (!isActive) {
+                item.classList.add('active');
+            }
+        });
+    });
+}
