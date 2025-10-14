@@ -70,13 +70,13 @@ const TradeModal = (function() {
                         <div class="price-label">Current Market Price</div>
                         <div id="trade-current-price" class="price-value">0.00</div>
                     </div>
-                    
-<div class="parameter-group">
-    <label for="trade-investment-amount">Investment Amount</label>
-    <input type="number" id="trade-investment-amount" min="1" step="1" placeholder="Enter investment amount">
-    <span class="form-hint">Minimum investment varies by currency</span>
-</div>
-                    
+
+                    <div class="parameter-group">
+                        <label for="trade-investment-amount">Investment Amount</label>
+                        <input type="number" id="trade-investment-amount" min="1" step="1" placeholder="Enter investment amount">
+                        <span class="form-hint">Minimum investment varies by currency</span>
+                    </div>
+
                     <div class="trade-details">
                         <div class="detail-row">
                             <div class="detail-label">
