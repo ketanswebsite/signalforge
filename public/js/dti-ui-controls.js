@@ -73,15 +73,22 @@ DTIUI.Controls = (function() {
             </div>
         `;
         
-        // Add the control panel to the page
-        const chartContainer = document.querySelector('.chart-section');
-        if (chartContainer) {
-            chartContainer.prepend(controlsContainer);
+        // Add the control panel to the page - prioritize .chart-section
+        const chartSection = document.querySelector('.chart-section');
+        if (chartSection) {
+            // Insert at the top of chart-section (before charts-grid)
+            chartSection.prepend(controlsContainer);
         } else {
-            // Fallback: Add to the first chart wrapper
-            const firstChartWrapper = document.querySelector('.chart-wrapper');
-            if (firstChartWrapper) {
-                firstChartWrapper.parentNode.insertBefore(controlsContainer, firstChartWrapper);
+            // Fallback: Try charts-grid parent
+            const chartsGrid = document.querySelector('.charts-grid');
+            if (chartsGrid && chartsGrid.parentNode) {
+                chartsGrid.parentNode.insertBefore(controlsContainer, chartsGrid);
+            } else {
+                // Last resort: Add to the first chart wrapper
+                const firstChartWrapper = document.querySelector('.chart-wrapper');
+                if (firstChartWrapper) {
+                    firstChartWrapper.parentNode.insertBefore(controlsContainer, firstChartWrapper);
+                }
             }
         }
         

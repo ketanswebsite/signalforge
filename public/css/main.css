@@ -2768,11 +2768,16 @@ tbody td {
 /* ========================================
    23. CHART CONTAINERS
    ======================================== */
+/* Chart Section Wrapper */
+.chart-section {
+    margin-bottom: var(--spacing-2xl);
+}
+
 .charts-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
     gap: var(--spacing-lg);
-    margin-bottom: var(--spacing-2xl);
+    margin-bottom: 0; /* Remove bottom margin since chart-section has it */
 }
 
 /* Chart card extends base .card with thinner top border */
@@ -2898,19 +2903,19 @@ tbody td {
    CHART CONTROLS
    ======================================== */
 
-/* Chart Controls Container */
+/* Chart Controls Container - Compact Design */
 .chart-controls-container {
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--spacing-md); /* Reduced from lg */
     background: var(--bg-surface);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-md);
+    border-radius: var(--radius-md); /* Reduced from lg */
+    padding: var(--spacing-sm); /* Reduced from md */
     border: 1px solid var(--border);
 }
 
 .chart-controls {
     display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-md);
+    flex-wrap: nowrap; /* Prevent wrapping on desktop for compact layout */
+    gap: var(--spacing-sm); /* Reduced from md */
     align-items: center;
 }
 
@@ -2918,8 +2923,8 @@ tbody td {
 .control-group {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
-    padding-right: var(--spacing-md);
+    gap: 0.5rem; /* Tighter gap */
+    padding-right: var(--spacing-sm); /* Reduced from md */
     border-right: 1px solid var(--border);
 }
 
@@ -2947,13 +2952,13 @@ tbody td {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
+    padding: 0.4rem 0.75rem; /* Reduced from 0.5rem 1rem */
+    font-size: 0.8125rem; /* Reduced from 0.875rem (13px) */
     font-weight: 600;
     color: var(--text-secondary);
     background: var(--bg-secondary);
     border: 1px solid var(--border);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-sm); /* Reduced from md */
     cursor: pointer;
     transition: all 0.2s ease;
     position: relative;
@@ -3055,14 +3060,14 @@ tbody td {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
+    gap: 0.4rem; /* Reduced from 0.5rem */
+    padding: 0.4rem 0.75rem; /* Reduced from 0.5rem 1rem */
+    font-size: 0.8125rem; /* Reduced from 0.875rem (13px) */
     font-weight: 600;
     color: var(--text-secondary);
     background: var(--bg-secondary);
     border: 1px solid var(--border);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-sm); /* Reduced from md */
     cursor: pointer;
     transition: all 0.2s ease;
     position: relative;
