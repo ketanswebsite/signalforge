@@ -3201,6 +3201,81 @@ tbody td {
 }
 
 /* ========================================
+   LAPTOP OPTIMIZATION (13-inch displays: 1024px - 1440px)
+   ======================================== */
+@media (min-width: 1024px) and (max-width: 1440px) {
+    /* Reduce container padding for more usable width */
+    .container,
+    .nav-container,
+    .navbar-container {
+        padding-left: var(--spacing-lg);
+        padding-right: var(--spacing-lg);
+        max-width: min(98%, 2400px); /* Increase from 95% to 98% */
+    }
+
+    /* Optimize charts grid for laptop screens */
+    .charts-grid {
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); /* Reduced from 500px */
+        gap: var(--spacing-md); /* Reduced from lg */
+    }
+
+    /* Reduce chart card padding */
+    .chart-card {
+        padding: var(--spacing-lg); /* Reduced from xl (48px to 32px) */
+    }
+
+    /* Reduce chart section spacing */
+    .chart-section {
+        margin-bottom: var(--spacing-lg); /* Reduced from 2xl */
+    }
+
+    /* Allow chart controls to wrap on smaller laptops */
+    .chart-controls {
+        flex-wrap: wrap; /* Changed from nowrap */
+        gap: var(--spacing-xs); /* Tighter gap when wrapping */
+    }
+
+    /* Optimize chart container padding */
+    .chart-container {
+        padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-md) var(--spacing-sm);
+    }
+
+    /* Reduce control group spacing */
+    .control-group {
+        gap: 0.375rem; /* Slightly tighter */
+        padding-right: var(--spacing-xs);
+    }
+
+    /* Optimize button sizing */
+    .range-btn {
+        padding: 0.375rem 0.625rem; /* Slightly smaller */
+        font-size: 0.8125rem;
+    }
+
+    .control-btn {
+        padding: 0.375rem 0.625rem;
+        font-size: 0.8125rem;
+    }
+
+    /* Reduce chart header/footer padding */
+    .chart-header,
+    .chart-footer {
+        margin-bottom: var(--spacing-sm); /* Reduced spacing */
+    }
+
+    /* Optimize stat card sizing */
+    .stat-card {
+        padding: var(--spacing-md); /* Reduced from lg */
+    }
+
+    /* Reduce table padding */
+    .trades-table th,
+    .trades-table td {
+        padding: var(--spacing-sm) var(--spacing-xs);
+    }
+}
+
+/* ========================================
    24. MOBILE NAVIGATION DRAWER
    ======================================== */
 .hamburger-menu {
