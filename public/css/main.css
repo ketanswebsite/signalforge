@@ -1639,10 +1639,13 @@ thead th {
 tbody tr {
     transition: all var(--transition-fast);
     border-bottom: 1px solid var(--border);
+    cursor: pointer;
 }
 
 tbody tr:hover {
     background: var(--bg-surface);
+    transform: translateX(4px);
+    box-shadow: -4px 0 0 var(--accent-gold);
 }
 
 tbody tr:last-child {
@@ -1653,6 +1656,17 @@ tbody td {
     padding: 1rem 1.5rem;
     color: var(--text-secondary);
     font-size: 0.9375rem;
+}
+
+/* Table cell color variants */
+tbody td.positive {
+    color: var(--success);
+    font-weight: 600;
+}
+
+tbody td.negative {
+    color: var(--error);
+    font-weight: 600;
 }
 
 .no-data {
@@ -3348,10 +3362,41 @@ tbody td {
         padding: var(--spacing-md); /* Reduced from lg */
     }
 
+    /* Optimize trades section for laptop */
+    .trades-section {
+        padding: var(--spacing-lg);
+    }
+
+    .trades-header {
+        margin-bottom: var(--spacing-md);
+        padding-bottom: var(--spacing-sm);
+    }
+
+    .trades-title {
+        font-size: 1.25rem;
+    }
+
     /* Reduce table padding */
-    .trades-table th,
-    .trades-table td {
-        padding: var(--spacing-sm) var(--spacing-xs);
+    thead th {
+        padding: 0.75rem 1rem;
+        font-size: 0.75rem;
+    }
+
+    tbody td {
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+    }
+
+    /* Smaller exit tags */
+    .exit-tag {
+        padding: 0.2rem 0.5rem;
+        font-size: 0.6875rem;
+    }
+
+    /* Compact active trade info */
+    .active-trade-info {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
     }
 }
 
@@ -4185,6 +4230,119 @@ tbody td {
     font-weight: 700;
     color: var(--text-primary);
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.trades-title svg {
+    color: var(--accent-gold);
+    flex-shrink: 0;
+}
+
+/* Exit reason badge tags */
+.exit-tag {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+}
+
+/* Take Profit tag - Green */
+.tp-tag {
+    background: rgba(34, 197, 94, 0.15);
+    color: var(--success);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.tp-tag:hover {
+    background: rgba(34, 197, 94, 0.25);
+    border-color: var(--success);
+}
+
+/* Time Exit tag - Blue/Info */
+.time-tag {
+    background: rgba(212, 175, 55, 0.15);
+    color: var(--accent-gold);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.time-tag:hover {
+    background: rgba(212, 175, 55, 0.25);
+    border-color: var(--accent-gold);
+}
+
+/* Stop Loss tag - Red */
+.sl-tag {
+    background: rgba(220, 38, 38, 0.15);
+    color: var(--error);
+    border: 1px solid rgba(220, 38, 38, 0.3);
+}
+
+.sl-tag:hover {
+    background: rgba(220, 38, 38, 0.25);
+    border-color: var(--error);
+}
+
+/* Active trade row styling */
+.active-trade-row {
+    background: rgba(34, 197, 94, 0.05) !important;
+    border-left: 4px solid var(--success);
+    animation: pulse-green 2s ease-in-out infinite;
+}
+
+.active-trade-row:hover {
+    background: rgba(34, 197, 94, 0.1) !important;
+}
+
+@keyframes pulse-green {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+    }
+}
+
+.active-trade-cell {
+    text-align: center;
+    font-weight: 600;
+}
+
+.active-trade-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+}
+
+.active-trade-info svg {
+    color: var(--success);
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.active-trade-info .positive {
+    color: var(--success);
+    font-weight: 700;
+    margin-left: 0.25rem;
 }
 
 /* Scroll reveal animations (applied by JS) */
@@ -4241,6 +4399,59 @@ tbody td {
     .stat-value {
         font-size: 1.75rem;
     }
+
+    /* Optimize trades section for tablet/mobile */
+    .trades-section {
+        padding: var(--spacing-md);
+    }
+
+    .trades-header {
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .trades-title {
+        font-size: 1.125rem;
+    }
+
+    .trades-title svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    /* Make table scrollable */
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    thead th {
+        padding: 0.625rem 0.75rem;
+        font-size: 0.6875rem;
+    }
+
+    tbody td {
+        padding: 0.625rem 0.75rem;
+        font-size: 0.8125rem;
+    }
+
+    /* Smaller exit tags */
+    .exit-tag {
+        padding: 0.2rem 0.5rem;
+        font-size: 0.625rem;
+    }
+
+    /* Compact active trade info */
+    .active-trade-info {
+        flex-direction: column;
+        padding: 0.5rem;
+        font-size: 0.8125rem;
+        text-align: center;
+    }
+
+    .active-trade-info svg {
+        width: 14px;
+        height: 14px;
+    }
 }
 
 /* Mobile optimization (small screens) */
@@ -4264,6 +4475,58 @@ tbody td {
 
     .stat-label {
         font-size: 0.75rem;
+    }
+
+    /* Mobile table optimizations */
+    .trades-section {
+        padding: var(--spacing-sm);
+        border-radius: var(--radius-md);
+    }
+
+    .trades-header {
+        margin-bottom: var(--spacing-xs);
+        padding-bottom: var(--spacing-xs);
+    }
+
+    .trades-title {
+        font-size: 1rem;
+    }
+
+    /* Very compact table for small screens */
+    thead th {
+        padding: 0.5rem;
+        font-size: 0.625rem;
+        white-space: nowrap;
+    }
+
+    tbody td {
+        padding: 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    /* Disable hover transform on mobile */
+    tbody tr:hover {
+        transform: none;
+    }
+
+    /* Smaller exit tags for mobile */
+    .exit-tag {
+        padding: 0.15rem 0.4rem;
+        font-size: 0.5625rem;
+        letter-spacing: 0.02em;
+    }
+
+    /* Stack active trade info on mobile */
+    .active-trade-info {
+        flex-direction: column;
+        gap: 0.25rem;
+        padding: 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    .active-trade-info svg {
+        width: 12px;
+        height: 12px;
     }
 }
 
