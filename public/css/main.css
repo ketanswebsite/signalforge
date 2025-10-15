@@ -8266,3 +8266,107 @@ button .spinner {
         grid-template-columns: repeat(2, 1fr);
     }
 }
+/* ========================================
+   MARKET STATUS CONTAINER
+   ======================================== */
+.market-status-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-md);
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+}
+
+.market-status-container:empty {
+    display: none;
+}
+
+/* ========================================
+   CHART ZOOM CONTROLS
+   ======================================== */
+.chart-zoom-controls {
+    position: absolute;
+    top: var(--spacing-md);
+    right: var(--spacing-md);
+    display: flex;
+    gap: var(--spacing-xs);
+    background: var(--bg-surface);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-xs);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+    z-index: 10;
+}
+
+.chart-zoom-controls .zoom-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.chart-zoom-controls .zoom-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.chart-zoom-controls .zoom-btn:active {
+    transform: scale(0.95);
+}
+
+.chart-zoom-controls .zoom-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Zoom Indicator */
+.zoom-indicator {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    padding: var(--spacing-lg) var(--spacing-xl);
+    border-radius: var(--radius-lg);
+    font-size: 2rem;
+    font-weight: 700;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border);
+    z-index: 9999;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    font-family: var(--font-mono);
+}
+
+/* Dark mode adjustments */
+body.dark .chart-zoom-controls {
+    background: var(--bg-card);
+    border-color: var(--border-dark);
+}
+
+body.dark .chart-zoom-controls .zoom-btn {
+    color: var(--text-secondary);
+}
+
+body.dark .chart-zoom-controls .zoom-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+}
+
+body.dark .zoom-indicator {
+    background: var(--bg-card);
+    border-color: var(--border-dark);
+}

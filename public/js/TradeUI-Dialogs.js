@@ -371,8 +371,8 @@ window.TradeUIModules.dialogs = (function() {
                 `;
                 
                 // Small delay for better UX
-                setTimeout(() => {
-                    TradeCore.clearTradeHistory();
+                setTimeout(async () => {
+                    await TradeCore.deleteAllTrades();
                     dialog.classList.remove('active');
                     
                     // Reset button state

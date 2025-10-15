@@ -39,17 +39,17 @@ function renderActiveTrades() {
     
     // Fallback to original implementation if filters aren't available
     const activeTrades = TradeCore.getTrades('active');
-    
+
     if (activeTrades.length === 0) {
-        noActiveTradesMsg
+        noActiveTradesMsg.style.display = 'block';
         // Remove any existing trade cards
         const existingCards = container.querySelectorAll('.trade-card');
         existingCards.forEach(card => card.remove());
         return;
     }
-    
+
     // Hide empty state message
-    noActiveTradesMsg
+    noActiveTradesMsg.style.display = 'none';
     
     // Remove any existing trade cards and clean up subscriptions
     const existingCards = container.querySelectorAll('.trade-card');
@@ -109,7 +109,7 @@ function renderActiveTrades() {
             if (priceContainer) {
                 const sparklineContainer = document.createElement('div');
                 sparklineContainer.className = 'sparkline-container';
-                sparklineContainer
+                sparklineContainer.style.display = 'inline-block';
                 sparklineContainer.style.verticalAlign = 'middle';
                 priceContainer.appendChild(sparklineContainer);
                 
@@ -310,26 +310,26 @@ function renderActiveTrades() {
         }
         
         const closedTrades = TradeCore.getTrades('closed');
-        
+
         if (closedTrades.length === 0) {
-            noTradeHistory
-            tradesHistoryTable
-            
+            noTradeHistory.style.display = 'block';
+            tradesHistoryTable.style.display = 'none';
+
             if (noWinningTrades && winningTradesTable) {
-                noWinningTrades
-                winningTradesTable
+                noWinningTrades.style.display = 'block';
+                winningTradesTable.style.display = 'none';
             }
-            
+
             if (noLosingTrades && losingTradesTable) {
-                noLosingTrades
-                losingTradesTable
+                noLosingTrades.style.display = 'block';
+                losingTradesTable.style.display = 'none';
             }
             return;
         }
-        
+
         // Populate all trades table
-        noTradeHistory
-        tradesHistoryTable
+        noTradeHistory.style.display = 'none';
+        tradesHistoryTable.style.display = 'block';
         
         // Show P&L summary for all trades
         renderPLSummary(closedTrades, 'pl-summary-all');
@@ -356,13 +356,13 @@ function renderActiveTrades() {
         // Populate winning trades table
         if (noWinningTrades && winningTradesTable) {
             const winningTrades = closedTrades.filter(trade => (trade.profitLossPercentage || trade.profitLoss || 0) > 0);
-            
+
             if (winningTrades.length === 0) {
-                noWinningTrades
-                winningTradesTable
+                noWinningTrades.style.display = 'block';
+                winningTradesTable.style.display = 'none';
             } else {
-                noWinningTrades
-                winningTradesTable
+                noWinningTrades.style.display = 'none';
+                winningTradesTable.style.display = 'block';
                 
                 // Show P&L summary for winning trades
                 renderPLSummary(winningTrades, 'pl-summary-winning');
@@ -391,13 +391,13 @@ function renderActiveTrades() {
         // Populate losing trades table
         if (noLosingTrades && losingTradesTable) {
             const losingTrades = closedTrades.filter(trade => (trade.profitLossPercentage || trade.profitLoss || 0) <= 0);
-            
+
             if (losingTrades.length === 0) {
-                noLosingTrades
-                losingTradesTable
+                noLosingTrades.style.display = 'block';
+                losingTradesTable.style.display = 'none';
             } else {
-                noLosingTrades
-                losingTradesTable
+                noLosingTrades.style.display = 'none';
+                losingTradesTable.style.display = 'block';
                 
                 // Show P&L summary for losing trades
                 renderPLSummary(losingTrades, 'pl-summary-losing');
@@ -432,7 +432,7 @@ function renderActiveTrades() {
     function renderPLSummary(trades, containerId) {
         const container = document.getElementById(containerId);
         if (!container || trades.length === 0) {
-            if (container) container
+            if (container) container.style.display = 'none';
             return;
         }
         
@@ -507,8 +507,8 @@ function renderActiveTrades() {
             
             container.appendChild(card);
         });
-        
-        container
+
+        container.style.display = 'grid';
         
         // Add animations to cards
         const cards = container.querySelectorAll('.pl-summary-card');
