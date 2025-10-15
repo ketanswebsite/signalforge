@@ -8441,32 +8441,17 @@ body.dark .zoom-indicator {
 }
 
 #run-simulation-btn {
-    margin-top: var(--spacing-lg);
-    padding: 1rem 2rem;
-    font-size: 1rem;
-    font-weight: 600;
-    min-width: 200px;
+    min-width: 160px;
     position: relative;
-    overflow: hidden;
-}
-
-#run-simulation-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 40px rgba(234, 179, 8, 0.4);
-}
-
-#run-simulation-btn:active {
-    transform: translateY(-1px);
-}
-
-#run-simulation-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
 }
 
 #run-simulation-btn svg {
-    margin-right: var(--spacing-sm);
+    flex-shrink: 0;
+    transition: transform var(--transition-base);
+}
+
+#run-simulation-btn:not(:disabled):hover svg {
+    transform: translateY(-2px);
 }
 
 .simulation-status {
