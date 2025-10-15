@@ -6080,23 +6080,18 @@ button .spinner {
     flex-wrap: wrap;
 }
 
+/* Trade card buttons - specialized sizing and layout */
 .btn-close-trade,
 .btn-edit-trade,
 .btn-delete-trade {
     flex: 1;
     min-width: 120px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
     padding: 0.625rem 1rem;
     border-radius: var(--radius-md);
     font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--transition-base);
 }
 
+/* Color variants for trade buttons */
 .btn-close-trade {
     background: var(--accent-gold);
     color: var(--primary-dark);
@@ -6105,7 +6100,6 @@ button .spinner {
 
 .btn-close-trade:hover {
     background: var(--accent-amber);
-    transform: translateY(-2px);
     box-shadow: var(--shadow-gold);
 }
 
