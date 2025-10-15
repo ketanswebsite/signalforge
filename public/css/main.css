@@ -9804,3 +9804,223 @@ body.dark .signal-stats {
     }
 }
 
+
+/* ============================================
+   SETTINGS PAGE STYLES (Phase 6)
+   ============================================ */
+
+/* Settings Container */
+.settings-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 0;
+}
+
+/* Settings Section */
+.settings-section {
+    margin-bottom: 2rem;
+    padding: 2rem;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 1.5rem 0;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.section-title svg {
+    color: var(--primary-color);
+}
+
+/* Setting Item */
+.setting-item {
+    margin-bottom: 1.5rem;
+}
+
+.setting-item label {
+    display: block;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.setting-item input[type="number"],
+.settings-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+
+.setting-item input[type="number"]:focus,
+.settings-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.settings-input.invalid {
+    border-color: var(--error-color);
+}
+
+.settings-input.invalid:focus {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.setting-help {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 0.4rem;
+    font-style: italic;
+}
+
+/* Checkbox Labels */
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    padding: 0.5rem 0;
+    user-select: none;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--primary-color);
+}
+
+.checkbox-label:hover {
+    color: var(--primary-color);
+}
+
+/* Checkbox Group */
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding-left: 0.5rem;
+}
+
+/* Settings Actions */
+.settings-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-start;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 2px solid var(--border-color);
+}
+
+.settings-actions .btn {
+    min-width: 150px;
+}
+
+/* Page Title */
+.page-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+}
+
+.page-title svg {
+    color: var(--primary-color);
+}
+
+.page-description {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    margin: 0 0 2rem 0;
+}
+
+/* Notification Styles (inline fallback) */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 10000;
+    animation: slideInRight 0.3s ease-out;
+}
+
+.notification.success {
+    background: var(--success-color, #10b981);
+    color: white;
+}
+
+.notification.error {
+    background: var(--error-color, #ef4444);
+    color: white;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .settings-container {
+        padding: 1rem;
+    }
+
+    .settings-section {
+        padding: 1.5rem;
+    }
+
+    .settings-actions {
+        flex-direction: column;
+    }
+
+    .settings-actions .btn {
+        width: 100%;
+    }
+
+    .page-title {
+        font-size: 1.5rem;
+    }
+
+    .checkbox-group {
+        gap: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .settings-section {
+        padding: 1rem;
+    }
+
+    .section-title {
+        font-size: 1.1rem;
+    }
+
+    .page-title {
+        font-size: 1.25rem;
+    }
+}

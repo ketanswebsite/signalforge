@@ -243,6 +243,36 @@ async function initializeDatabase() {
       )
     `);
 
+    // Create user_settings table for user preferences (Phase 6)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_settings (
+        id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL DEFAULT 'default',
+        setting_key VARCHAR(100) NOT NULL,
+        setting_value TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, setting_key)
+      )
+    `);
+
+    // Initialize default settings for default user
+    await pool.query(`
+      INSERT INTO user_settings (user_id, setting_key, setting_value) VALUES
+      ('default', 'default_stop_loss_percent', '5'),
+      ('default', 'default_target_percent', '8'),
+      ('default', 'max_positions_total', '30'),
+      ('default', 'max_positions_per_market', '10'),
+      ('default', 'telegram_alerts_enabled', 'true'),
+      ('default', 'telegram_alert_types', 'target,stoploss,manual,conviction'),
+      ('default', 'auto_add_signals', 'false'),
+      ('default', 'min_dti_threshold', '-40'),
+      ('default', 'initial_capital_india', '500000'),
+      ('default', 'initial_capital_uk', '4000'),
+      ('default', 'initial_capital_us', '5000')
+      ON CONFLICT (user_id, setting_key) DO NOTHING
+    `);
+
     // Add new columns to trades table for signal tracking
     try {
       await pool.query(`ALTER TABLE trades ADD COLUMN IF NOT EXISTS win_rate DECIMAL(8, 4)`);
@@ -275,6 +305,7 @@ async function initializeDatabase() {
     await pool.query('CREATE INDEX IF NOT EXISTS idx_pending_signals_symbol ON pending_signals(symbol)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_portfolio_capital_market ON portfolio_capital(market)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_exit_checks_trade ON trade_exit_checks(trade_id, check_time DESC)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_user_settings_user_key ON user_settings(user_id, setting_key)');
 
     // Migrate existing users from trades table
     await migrateExistingUsers();
@@ -1795,6 +1826,70 @@ const TradeDB = {
         exitReason: exitData.exitReason,
         status: 'closed'
       }, userId);
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // ===== USER SETTINGS FUNCTIONS (Phase 6) =====
+
+  // Get a single user setting
+  async getUserSetting(userId, settingKey) {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        SELECT setting_value FROM user_settings
+        WHERE user_id = $1 AND setting_key = $2
+      `, [userId, settingKey]);
+      return result.rows.length > 0 ? result.rows[0] : null;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  // Get all user settings
+  async getAllUserSettings(userId) {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        SELECT setting_key, setting_value
+        FROM user_settings
+        WHERE user_id = $1
+      `, [userId]);
+      return result.rows;
+    } catch (error) {
+      return [];
+    }
+  },
+
+  // Update or insert a user setting
+  async updateUserSetting(userId, settingKey, settingValue) {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        INSERT INTO user_settings (user_id, setting_key, setting_value, updated_at)
+        VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+        ON CONFLICT (user_id, setting_key)
+        DO UPDATE SET
+          setting_value = $3,
+          updated_at = CURRENT_TIMESTAMP
+        RETURNING *
+      `, [userId, settingKey, settingValue]);
+      return result.rows[0];
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Delete a user setting
+  async deleteUserSetting(userId, settingKey) {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        DELETE FROM user_settings
+        WHERE user_id = $1 AND setting_key = $2
+      `, [userId, settingKey]);
+      return result.rowCount > 0;
     } catch (error) {
       throw error;
     }

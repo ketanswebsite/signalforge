@@ -1942,6 +1942,57 @@ app.post('/api/exit-monitor/check-trade/:tradeId', ensureAuthenticatedAPI, async
   }
 });
 
+// ===== SETTINGS API ENDPOINTS (Phase 6) =====
+
+const SettingsManager = require('./lib/settings/settings-manager');
+
+// Get user settings
+app.get('/api/settings', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const userId = req.user?.email || 'default';
+    const settings = await SettingsManager.getAllSettings(userId);
+    res.json(settings);
+  } catch (error) {
+    console.error('Error getting settings:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update user settings
+app.put('/api/settings', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const userId = req.user?.email || 'default';
+    const settings = req.body;
+
+    // Validate all settings
+    for (const [key, value] of Object.entries(settings)) {
+      if (!SettingsManager.validateSetting(key, value)) {
+        return res.status(400).json({ error: `Invalid value for ${key}` });
+      }
+    }
+
+    // Update settings
+    await SettingsManager.updateSettings(userId, settings);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error updating settings:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Reset settings to defaults
+app.post('/api/settings/reset', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const userId = req.user?.email || 'default';
+    await SettingsManager.resetToDefaults(userId);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error resetting settings:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Yahoo Finance proxy - Historical data
 app.get('/yahoo/history', async (req, res) => {
   try {
