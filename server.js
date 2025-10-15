@@ -1527,7 +1527,293 @@ app.post('/api/trades/bulk', ensureAuthenticatedAPI, ensureSubscriptionActive, a
   }
 });
 
+// ===== PORTFOLIO CAPITAL ENDPOINTS =====
 
+// Initialize portfolio capital
+app.post('/api/portfolio/initialize-capital', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const { india, uk, us } = req.body;
+
+    // Validate inputs
+    if (!india || !uk || !us || india < 0 || uk < 0 || us < 0) {
+      return res.status(400).json({ error: 'Invalid capital amounts' });
+    }
+
+    // Update capital for each market
+    await TradeDB.updatePortfolioCapital('India', 'INR', india);
+    await TradeDB.updatePortfolioCapital('UK', 'GBP', uk);
+    await TradeDB.updatePortfolioCapital('US', 'USD', us);
+
+    // Get updated capital status
+    const capital = await TradeDB.getPortfolioCapital();
+
+    res.json({ success: true, capital });
+  } catch (error) {
+    console.error('Error initializing capital:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get portfolio capital status
+app.get('/api/portfolio/capital', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const capital = await TradeDB.getPortfolioCapital();
+
+    // Calculate totals
+    const totals = {
+      totalPositions: Object.values(capital).reduce((sum, m) => sum + m.positions, 0),
+      maxTotalPositions: 30,
+      utilizationPercent: 0
+    };
+    totals.utilizationPercent = ((totals.totalPositions / totals.maxTotalPositions) * 100).toFixed(1);
+
+    res.json({ success: true, capital, totals });
+  } catch (error) {
+    console.error('Error getting capital:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Check exit conditions for all active trades
+app.post('/api/portfolio/check-exits', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const userId = req.user ? req.user.email : 'default';
+    const activeTrades = await TradeDB.getActiveTrades(userId);
+
+    const exits = [];
+    let checked = 0;
+
+    for (const trade of activeTrades) {
+      checked++;
+
+      // Calculate days held
+      const entryDate = new Date(trade.entryDate);
+      const today = new Date();
+      const daysHeld = Math.floor((today - entryDate) / (1000 * 60 * 60 * 24));
+
+      // Get current price (would need real-time price feed)
+      // For now, skip the actual exit check implementation
+      // This would be implemented in Phase 5
+    }
+
+    res.json({
+      success: true,
+      checked,
+      exitsTriggered: exits.length,
+      exits
+    });
+  } catch (error) {
+    console.error('Error checking exits:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== SIGNALS ENDPOINTS =====
+
+// Store signals from scan (called by scanner)
+app.post('/api/signals/from-scan', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const { signals } = req.body;
+
+    if (!signals || !Array.isArray(signals)) {
+      return res.status(400).json({ error: 'Invalid signals data' });
+    }
+
+    const stored = [];
+    const duplicates = [];
+
+    for (const signal of signals) {
+      try {
+        // Check if signal already exists
+        const existing = await TradeDB.getPendingSignal(signal.symbol, signal.signalDate);
+
+        if (existing) {
+          duplicates.push({
+            symbol: signal.symbol,
+            reason: 'Signal already exists for today'
+          });
+          continue;
+        }
+
+        // Check if user already has active position
+        const activePosition = await TradeDB.getActiveTradeBySymbol(signal.symbol);
+        if (activePosition) {
+          duplicates.push({
+            symbol: signal.symbol,
+            reason: 'Already have active position'
+          });
+          continue;
+        }
+
+        // Store signal
+        const result = await TradeDB.storePendingSignal(signal);
+        stored.push({ id: result.id, symbol: signal.symbol });
+      } catch (error) {
+        duplicates.push({
+          symbol: signal.symbol,
+          reason: error.message
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      stored: stored.length,
+      duplicates: duplicates.length,
+      details: {
+        storedSignals: stored,
+        duplicateSignals: duplicates
+      }
+    });
+  } catch (error) {
+    console.error('Error storing signals:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get pending signals
+app.get('/api/signals/pending', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const { market, status } = req.query;
+    const signals = await TradeDB.getPendingSignals(status || 'pending', market);
+
+    // Enhance signals with additional info
+    const enhancedSignals = signals.map(signal => ({
+      id: signal.id,
+      symbol: signal.symbol,
+      signalDate: signal.signal_date,
+      entryPrice: parseFloat(signal.entry_price),
+      targetPrice: parseFloat(signal.target_price),
+      stopLoss: parseFloat(signal.stop_loss),
+      squareOffDate: signal.square_off_date,
+      market: signal.market,
+      winRate: parseFloat(signal.win_rate),
+      historicalSignalCount: signal.historical_signal_count,
+      status: signal.status,
+      createdAt: signal.created_at,
+      entryDTI: signal.entry_dti ? parseFloat(signal.entry_dti) : null,
+      entry7DayDTI: signal.entry_7day_dti ? parseFloat(signal.entry_7day_dti) : null,
+      canAdd: signal.status === 'pending',
+      canAddReason: signal.status !== 'pending' ? `Status is ${signal.status}` : null
+    }));
+
+    res.json({
+      success: true,
+      signals: enhancedSignals,
+      count: enhancedSignals.length
+    });
+  } catch (error) {
+    console.error('Error getting pending signals:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Add signal to portfolio
+app.post('/api/signals/add-to-portfolio/:signalId', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const { signalId } = req.params;
+    const { notes } = req.body;
+    const userId = req.user ? req.user.email : 'default';
+
+    // Get signal
+    const signal = await TradeDB.getPendingSignal(null, null);
+    const allSignals = await TradeDB.getPendingSignals('pending');
+    const selectedSignal = allSignals.find(s => s.id == signalId);
+
+    if (!selectedSignal) {
+      return res.status(404).json({ error: 'Signal not found' });
+    }
+
+    // Determine market and trade size
+    const marketSizes = {
+      'India': 50000,
+      'UK': 400,
+      'US': 500
+    };
+    const tradeSize = marketSizes[selectedSignal.market];
+
+    // Check if can add position
+    const canAdd = await TradeDB.canAddPosition(selectedSignal.market, tradeSize);
+    if (!canAdd.canAdd) {
+      return res.status(400).json({
+        success: false,
+        error: canAdd.reason
+      });
+    }
+
+    // Get capital before
+    const capitalBefore = await TradeDB.getPortfolioCapital(selectedSignal.market);
+    const marketCapBefore = capitalBefore[selectedSignal.market];
+
+    // Create trade
+    const trade = {
+      symbol: selectedSignal.symbol,
+      entryDate: new Date(),
+      entryPrice: selectedSignal.entry_price,
+      targetPrice: selectedSignal.target_price,
+      stopLossPercent: 5,
+      status: 'active',
+      notes: notes || `Auto-added from 7 AM signal - Win Rate: ${selectedSignal.win_rate}%`,
+      market: selectedSignal.market,
+      tradeSize: tradeSize,
+      signalDate: selectedSignal.signal_date,
+      winRate: selectedSignal.win_rate,
+      historicalSignalCount: selectedSignal.historical_signal_count,
+      autoAdded: true,
+      entryDTI: selectedSignal.entry_dti,
+      entry7DayDTI: selectedSignal.entry_7day_dti
+    };
+
+    const newTrade = await TradeDB.insertTrade(trade, userId);
+
+    // Allocate capital
+    await TradeDB.allocateCapital(selectedSignal.market, tradeSize);
+
+    // Update signal status
+    await TradeDB.updateSignalStatus(signalId, 'added', newTrade.id);
+
+    // Get capital after
+    const capitalAfter = await TradeDB.getPortfolioCapital(selectedSignal.market);
+    const marketCapAfter = capitalAfter[selectedSignal.market];
+
+    res.json({
+      success: true,
+      trade: newTrade,
+      capital: {
+        market: selectedSignal.market,
+        availableBefore: marketCapBefore.available,
+        allocated: tradeSize,
+        availableAfter: marketCapAfter.available,
+        positions: marketCapAfter.positions
+      }
+    });
+  } catch (error) {
+    console.error('Error adding signal to portfolio:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Dismiss signal
+app.post('/api/signals/dismiss/:signalId', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const { signalId } = req.params;
+
+    const result = await TradeDB.updateSignalStatus(signalId, 'dismissed');
+
+    if (!result) {
+      return res.status(404).json({ error: 'Signal not found' });
+    }
+
+    res.json({
+      success: true,
+      signalId: parseInt(signalId),
+      status: 'dismissed'
+    });
+  } catch (error) {
+    console.error('Error dismissing signal:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Yahoo Finance proxy - Historical data
 app.get('/yahoo/history', async (req, res) => {

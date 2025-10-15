@@ -172,15 +172,109 @@ async function initializeDatabase() {
       )
     `);
 
+    // Create pending_signals table for 7 AM signal integration
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS pending_signals (
+        id SERIAL PRIMARY KEY,
+        symbol VARCHAR(50) NOT NULL,
+        signal_date DATE NOT NULL,
+        entry_price DECIMAL(12, 4) NOT NULL,
+        target_price DECIMAL(12, 4) NOT NULL,
+        stop_loss DECIMAL(12, 4) NOT NULL,
+        square_off_date DATE NOT NULL,
+        market VARCHAR(50) NOT NULL CHECK(market IN ('India', 'UK', 'US')),
+        win_rate DECIMAL(8, 4) NOT NULL CHECK(win_rate >= 0 AND win_rate <= 100),
+        historical_signal_count INTEGER NOT NULL CHECK(historical_signal_count >= 0),
+        entry_dti DECIMAL(8, 4),
+        entry_7day_dti DECIMAL(8, 4),
+        prev_dti DECIMAL(8, 4),
+        prev_7day_dti DECIMAL(8, 4),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        status VARCHAR(20) DEFAULT 'pending' CHECK(status IN ('pending', 'added', 'dismissed', 'expired')),
+        dismissed_at TIMESTAMP,
+        added_to_trade_id BIGINT REFERENCES trades(id) ON DELETE SET NULL,
+        UNIQUE(symbol, signal_date)
+      )
+    `);
+
+    // Create portfolio_capital table for capital tracking
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS portfolio_capital (
+        id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255),
+        market VARCHAR(50) NOT NULL CHECK(market IN ('India', 'UK', 'US')),
+        currency VARCHAR(10) NOT NULL CHECK(currency IN ('INR', 'GBP', 'USD')),
+        initial_capital DECIMAL(12, 4) NOT NULL CHECK(initial_capital >= 0),
+        realized_pl DECIMAL(12, 4) DEFAULT 0,
+        allocated_capital DECIMAL(12, 4) DEFAULT 0,
+        available_capital DECIMAL(12, 4) DEFAULT 0,
+        active_positions INTEGER DEFAULT 0 CHECK(active_positions >= 0),
+        max_positions INTEGER DEFAULT 10 CHECK(max_positions > 0),
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, market)
+      )
+    `);
+
+    // Initialize default capital for single user
+    await pool.query(`
+      INSERT INTO portfolio_capital (user_id, market, currency, initial_capital, available_capital)
+      VALUES
+        (NULL, 'India', 'INR', 1000000, 1000000),
+        (NULL, 'UK', 'GBP', 10000, 10000),
+        (NULL, 'US', 'USD', 15000, 15000)
+      ON CONFLICT (user_id, market) DO NOTHING
+    `);
+
+    // Create trade_exit_checks table for exit condition tracking
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS trade_exit_checks (
+        id SERIAL PRIMARY KEY,
+        trade_id BIGINT NOT NULL REFERENCES trades(id) ON DELETE CASCADE,
+        check_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        current_price DECIMAL(12, 4) NOT NULL,
+        pl_percent DECIMAL(8, 4) NOT NULL,
+        days_held INTEGER NOT NULL,
+        target_reached BOOLEAN DEFAULT false,
+        stop_loss_hit BOOLEAN DEFAULT false,
+        max_days_reached BOOLEAN DEFAULT false,
+        dti_exit_triggered BOOLEAN DEFAULT false,
+        alert_sent BOOLEAN DEFAULT false,
+        alert_type VARCHAR(50)
+      )
+    `);
+
+    // Add new columns to trades table for signal tracking
+    try {
+      await pool.query(`ALTER TABLE trades ADD COLUMN IF NOT EXISTS win_rate DECIMAL(8, 4)`);
+      await pool.query(`ALTER TABLE trades ADD COLUMN IF NOT EXISTS historical_signal_count INTEGER`);
+      await pool.query(`ALTER TABLE trades ADD COLUMN IF NOT EXISTS signal_date DATE`);
+      await pool.query(`ALTER TABLE trades ADD COLUMN IF NOT EXISTS market VARCHAR(50) CHECK(market IN ('India', 'UK', 'US'))`);
+      await pool.query(`ALTER TABLE trades ADD COLUMN IF NOT EXISTS auto_added BOOLEAN DEFAULT false`);
+      await pool.query(`ALTER TABLE trades ADD COLUMN IF NOT EXISTS trade_size DECIMAL(12, 4)`);
+      await pool.query(`ALTER TABLE trades ADD COLUMN IF NOT EXISTS prev_dti DECIMAL(8, 4)`);
+      await pool.query(`ALTER TABLE trades ADD COLUMN IF NOT EXISTS entry_dti DECIMAL(8, 4)`);
+      await pool.query(`ALTER TABLE trades ADD COLUMN IF NOT EXISTS prev_7day_dti DECIMAL(8, 4)`);
+      await pool.query(`ALTER TABLE trades ADD COLUMN IF NOT EXISTS entry_7day_dti DECIMAL(8, 4)`);
+    } catch (err) {
+      // Columns might already exist
+    }
+
     // Create index on user_id for better performance
     await pool.query('CREATE INDEX IF NOT EXISTS idx_trades_user_id ON trades(user_id)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_trades_status ON trades(status)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_trades_symbol ON trades(symbol)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_trades_market ON trades(market)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_trades_signal_date ON trades(signal_date)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_telegram_subscribers_chat_id ON telegram_subscribers(chat_id)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_telegram_subscribers_active ON telegram_subscribers(is_active)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_high_conviction_symbol ON high_conviction_portfolio(symbol)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_high_conviction_status ON high_conviction_portfolio(status)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_high_conviction_signal_date ON high_conviction_portfolio(signal_date)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_pending_signals_status ON pending_signals(status)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_pending_signals_date ON pending_signals(signal_date DESC)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_pending_signals_symbol ON pending_signals(symbol)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_portfolio_capital_market ON portfolio_capital(market)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_exit_checks_trade ON trade_exit_checks(trade_id, check_time DESC)');
 
     // Migrate existing users from trades table
     await migrateExistingUsers();
@@ -1415,6 +1509,278 @@ const TradeDB = {
       return result.rows.length > 0;
     } catch (error) {
       return false;
+    }
+  },
+
+  // ===== TRADING SIGNALS INTEGRATION FUNCTIONS =====
+
+  // Store a pending signal
+  async storePendingSignal(signal) {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        INSERT INTO pending_signals
+        (symbol, signal_date, entry_price, target_price, stop_loss,
+         square_off_date, market, win_rate, historical_signal_count,
+         entry_dti, entry_7day_dti, prev_dti, prev_7day_dti)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        RETURNING *
+      `, [
+        signal.symbol,
+        signal.signalDate,
+        signal.entryPrice,
+        signal.targetPrice,
+        signal.stopLoss,
+        signal.squareOffDate,
+        signal.market,
+        signal.winRate,
+        signal.historicalSignalCount,
+        signal.entryDTI || null,
+        signal.entry7DayDTI || null,
+        signal.prevDTI || null,
+        signal.prev7DayDTI || null
+      ]);
+      return result.rows[0];
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Check if signal already exists
+  async getPendingSignal(symbol, signalDate) {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        SELECT * FROM pending_signals
+        WHERE symbol = $1 AND signal_date = $2
+      `, [symbol, signalDate]);
+      return result.rows.length > 0 ? result.rows[0] : null;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  // Get all pending signals
+  async getPendingSignals(status = 'pending', market = null) {
+    checkConnection();
+    try {
+      let query = `
+        SELECT * FROM pending_signals
+        WHERE status = $1
+      `;
+      const params = [status];
+
+      if (market) {
+        query += ' AND market = $2';
+        params.push(market);
+      }
+
+      query += ' ORDER BY signal_date DESC, win_rate DESC';
+
+      const result = await pool.query(query, params);
+      return result.rows;
+    } catch (error) {
+      return [];
+    }
+  },
+
+  // Update signal status
+  async updateSignalStatus(signalId, status, tradeId = null) {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        UPDATE pending_signals
+        SET status = $1,
+            dismissed_at = CASE WHEN $2 = 'dismissed' THEN CURRENT_TIMESTAMP ELSE dismissed_at END,
+            added_to_trade_id = COALESCE($3, added_to_trade_id)
+        WHERE id = $4
+        RETURNING *
+      `, [status, status, tradeId, signalId]);
+      return result.rows.length > 0 ? result.rows[0] : null;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get portfolio capital
+  async getPortfolioCapital(market = null, userId = null) {
+    checkConnection();
+    try {
+      let query = 'SELECT * FROM portfolio_capital WHERE user_id IS NULL';
+      const params = [];
+
+      if (userId) {
+        query = 'SELECT * FROM portfolio_capital WHERE user_id = $1';
+        params.push(userId);
+      }
+
+      if (market) {
+        query += params.length > 0 ? ' AND market = $2' : ' AND market = $1';
+        params.push(market);
+      }
+
+      const result = await pool.query(query, params);
+
+      // Format as object keyed by market
+      const capital = {};
+      for (const row of result.rows) {
+        capital[row.market] = {
+          currency: row.currency,
+          initial: parseFloat(row.initial_capital),
+          realized: parseFloat(row.realized_pl),
+          allocated: parseFloat(row.allocated_capital),
+          available: parseFloat(row.available_capital),
+          positions: parseInt(row.active_positions),
+          maxPositions: parseInt(row.max_positions)
+        };
+      }
+
+      return capital;
+    } catch (error) {
+      return {};
+    }
+  },
+
+  // Update portfolio capital
+  async updatePortfolioCapital(market, currency, initialCapital, userId = null) {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        INSERT INTO portfolio_capital (user_id, market, currency, initial_capital, available_capital)
+        VALUES ($1, $2, $3, $4, $4)
+        ON CONFLICT (user_id, market) DO UPDATE SET
+          initial_capital = $4,
+          available_capital = portfolio_capital.initial_capital + portfolio_capital.realized_pl - portfolio_capital.allocated_capital,
+          updated_at = CURRENT_TIMESTAMP
+        RETURNING *
+      `, [userId, market, currency, initialCapital]);
+      return result.rows[0];
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Allocate capital for new trade
+  async allocateCapital(market, amount, userId = null) {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        UPDATE portfolio_capital
+        SET allocated_capital = allocated_capital + $1,
+            available_capital = initial_capital + realized_pl - (allocated_capital + $1),
+            active_positions = active_positions + 1,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE market = $2 AND user_id IS NULL
+        RETURNING *
+      `, [amount, market]);
+      return result.rows.length > 0;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Release capital when trade closes
+  async releaseCapital(market, allocatedAmount, plAmount, userId = null) {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        UPDATE portfolio_capital
+        SET allocated_capital = allocated_capital - $1,
+            realized_pl = realized_pl + $2,
+            available_capital = initial_capital + (realized_pl + $2) - (allocated_capital - $1),
+            active_positions = active_positions - 1,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE market = $3 AND user_id IS NULL
+        RETURNING *
+      `, [allocatedAmount, plAmount, market]);
+      return result.rows.length > 0;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Check if can add position
+  async canAddPosition(market, requiredCapital, userId = null) {
+    checkConnection();
+    try {
+      const capital = await this.getPortfolioCapital(market, userId);
+      const marketCap = capital[market];
+
+      if (!marketCap) {
+        return { canAdd: false, reason: 'Market not found' };
+      }
+
+      // Check position limit for market
+      if (marketCap.positions >= marketCap.maxPositions) {
+        return {
+          canAdd: false,
+          reason: `Market limit reached (${marketCap.positions}/${marketCap.maxPositions})`
+        };
+      }
+
+      // Check total position limit
+      const totalPositions = Object.values(capital).reduce((sum, m) => sum + m.positions, 0);
+      if (totalPositions >= 30) {
+        return {
+          canAdd: false,
+          reason: `Total portfolio limit reached (${totalPositions}/30)`
+        };
+      }
+
+      // Check capital availability
+      if (marketCap.available < requiredCapital) {
+        return {
+          canAdd: false,
+          reason: `Insufficient capital (need ${requiredCapital}, have ${marketCap.available})`
+        };
+      }
+
+      return { canAdd: true };
+    } catch (error) {
+      return { canAdd: false, reason: error.message };
+    }
+  },
+
+  // Get active trade by symbol
+  async getActiveTradeBySymbol(symbol, userId = 'default') {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        SELECT * FROM trades
+        WHERE symbol = $1 AND user_id = $2 AND status = 'active'
+        LIMIT 1
+      `, [symbol, userId]);
+      return result.rows.length > 0 ? result.rows[0] : null;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  // Store exit check
+  async storeExitCheck(checkData) {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        INSERT INTO trade_exit_checks
+        (trade_id, current_price, pl_percent, days_held, target_reached,
+         stop_loss_hit, max_days_reached, dti_exit_triggered, alert_sent, alert_type)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING *
+      `, [
+        checkData.tradeId,
+        checkData.currentPrice,
+        checkData.plPercent,
+        checkData.daysHeld,
+        checkData.targetReached || false,
+        checkData.stopLossHit || false,
+        checkData.maxDaysReached || false,
+        checkData.dtiExitTriggered || false,
+        checkData.alertSent || false,
+        checkData.alertType || null
+      ]);
+      return result.rows[0];
+    } catch (error) {
+      throw error;
     }
   },
 
