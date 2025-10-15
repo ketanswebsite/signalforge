@@ -8370,3 +8370,499 @@ body.dark .zoom-indicator {
     background: var(--bg-card);
     border-color: var(--border-dark);
 }
+
+/* ========================================
+   PORTFOLIO BACKTEST PAGE STYLES
+   ======================================== */
+
+/* === Simulation Configuration === */
+.simulation-config {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xl);
+}
+
+.config-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.config-info {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    border: 1px solid var(--border);
+}
+
+.config-info h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-md);
+}
+
+.investment-display {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.investment-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-surface);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+}
+
+.currency-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.investment-item .amount {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+}
+
+.config-note {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-top: var(--spacing-sm);
+    padding-left: var(--spacing-md);
+    border-left: 2px solid var(--accent-gold);
+}
+
+.simulation-status {
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.simulation-status:not(:empty) {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+}
+
+.simulation-status.loading {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: #3b82f6;
+    color: #3b82f6;
+}
+
+.simulation-status.success {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: var(--success);
+    color: var(--success);
+}
+
+.simulation-status.error {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: var(--error);
+    color: var(--error);
+}
+
+/* Form Input Variants */
+.date-input,
+.currency-select {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.date-input:focus,
+.currency-select:focus {
+    outline: none;
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+}
+
+.currency-select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 16px;
+    padding-right: 2.5rem;
+}
+
+/* === Portfolio Metrics === */
+.portfolio-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.portfolio-metrics .metric-card {
+    text-align: center;
+    padding: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.portfolio-metrics .metric-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.portfolio-metrics .metric-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+}
+
+.portfolio-metrics .metric-card.highlight {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(212, 175, 55, 0.05));
+    border-color: var(--accent-gold);
+}
+
+.portfolio-metrics .metric-card.highlight .metric-value {
+    color: var(--accent-gold);
+}
+
+/* === Simulation Info Grid === */
+.simulation-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+}
+
+.info-section {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    border: 1px solid var(--border);
+}
+
+.info-section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 2px solid var(--border);
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm) 0;
+    gap: var(--spacing-md);
+}
+
+.info-item:not(:last-child) {
+    border-bottom: 1px solid var(--border);
+}
+
+.info-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    flex: 1;
+}
+
+.info-value {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    text-align: right;
+}
+
+/* === Analytics Dashboard === */
+.analytics-metrics {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+    padding: var(--spacing-lg);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+}
+
+.analytics-metric {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm) 0;
+}
+
+.analytics-metric:not(:last-child) {
+    border-bottom: 1px solid var(--border);
+}
+
+.metric-name {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.metric-result {
+    font-size: 1.125rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+}
+
+.metric-result.positive {
+    color: var(--success);
+}
+
+.metric-result.negative {
+    color: var(--error);
+}
+
+.metric-result.neutral {
+    color: var(--text-muted);
+}
+
+/* === Table Filters and Actions === */
+.trade-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.filter-select {
+    min-width: 200px;
+    padding: 0.625rem 0.875rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    font-family: inherit;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 16px;
+    padding-right: 2.5rem;
+    transition: all 0.2s ease;
+}
+
+.filter-select:hover {
+    border-color: var(--accent-gold);
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+}
+
+.table-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-left: auto;
+}
+
+.position-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 var(--spacing-xs);
+    background: var(--accent-gold);
+    color: #000;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    margin-left: var(--spacing-sm);
+}
+
+.table-container.scrollable {
+    max-height: 600px;
+    overflow-y: auto;
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+}
+
+.table-container.scrollable::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.table-container.scrollable::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+}
+
+.table-container.scrollable::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: var(--radius-md);
+}
+
+.table-container.scrollable::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* Sticky table header in scrollable container */
+.table-container.scrollable table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--bg-surface);
+}
+
+/* === Responsive Breakpoints === */
+@media (max-width: 1024px) {
+    .simulation-info-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .portfolio-metrics {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .config-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .simulation-info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .portfolio-metrics {
+        grid-template-columns: 1fr;
+    }
+    
+    .investment-display {
+        grid-template-columns: 1fr;
+    }
+    
+    .trade-filters {
+        flex-direction: column;
+    }
+    
+    .filter-select {
+        width: 100%;
+        min-width: auto;
+    }
+    
+    .table-actions {
+        margin-left: 0;
+        width: 100%;
+        justify-content: stretch;
+    }
+    
+    .table-actions .btn-secondary {
+        flex: 1;
+    }
+    
+    .analytics-metric {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-xs);
+    }
+    
+    .metric-result {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .portfolio-metrics .metric-value {
+        font-size: 1.5rem;
+    }
+    
+    .info-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-xs);
+    }
+    
+    .info-value {
+        text-align: left;
+    }
+    
+    .investment-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-xs);
+    }
+}
+
+/* === Dark Mode Support === */
+body.dark .config-info,
+body.dark .info-section,
+body.dark .analytics-metrics {
+    background: var(--bg-card);
+    border-color: var(--border-dark);
+}
+
+body.dark .investment-item {
+    background: var(--bg-secondary);
+    border-color: var(--border-dark);
+}
+
+body.dark .date-input,
+body.dark .currency-select,
+body.dark .filter-select {
+    background: var(--bg-secondary);
+    border-color: var(--border-dark);
+    color: var(--text-primary);
+}
+
+body.dark .currency-select,
+body.dark .filter-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+}
+
+body.dark .table-container.scrollable {
+    border-color: var(--border-dark);
+}
+
+body.dark .table-container.scrollable::-webkit-scrollbar-track {
+    background: var(--bg-card);
+}
+
+body.dark .table-container.scrollable::-webkit-scrollbar-thumb {
+    background: var(--border-dark);
+}
+
+body.dark .table-container.scrollable table thead {
+    background: var(--bg-card);
+}
+
+body.dark .simulation-status:not(:empty) {
+    background: var(--bg-card);
+    border-color: var(--border-dark);
+}
+
+body.dark .position-count {
+    background: var(--accent-gold);
+    color: #000;
+}
