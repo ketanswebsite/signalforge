@@ -10038,3 +10038,489 @@ body.dark .signal-stats {
         font-size: 1.25rem;
     }
 }
+
+/* ========================================
+   TELEGRAM SUBSCRIBE PAGE STYLES
+   ======================================== */
+
+.telegram-page-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: var(--spacing-xl);
+    min-height: 100vh;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.875rem;
+    margin-bottom: var(--spacing-xl);
+    transition: all var(--transition-base);
+}
+
+.back-link:hover {
+    color: var(--accent-gold);
+    transform: translateX(-4px);
+}
+
+.back-link svg {
+    transition: transform var(--transition-base);
+}
+
+.telegram-header {
+    text-align: center;
+    margin-bottom: var(--spacing-xxl);
+}
+
+.telegram-icon {
+    font-size: 4rem;
+    margin-bottom: var(--spacing-lg);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.telegram-header h1 {
+    font-family: var(--font-primary);
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-md);
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.telegram-header .subtitle {
+    font-size: 1.125rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.benefits-section h2,
+.steps-section h2,
+.subscription-types h2 {
+    font-family: var(--font-primary);
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xl);
+    text-align: center;
+}
+
+.benefits-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-xl);
+}
+
+.benefit-card {
+    background: var(--bg-secondary);
+    padding: var(--spacing-xl);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    text-align: center;
+    transition: all var(--transition-base);
+}
+
+.benefit-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent-gold);
+    box-shadow: var(--shadow-gold);
+}
+
+.benefit-icon {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: var(--spacing-md);
+}
+
+.benefit-card h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.benefit-card p {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.steps-section {
+    margin-top: var(--spacing-xxl);
+}
+
+.steps-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-xl);
+}
+
+.step-card {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-lg);
+    background: var(--bg-secondary);
+    padding: var(--spacing-xl);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    transition: all var(--transition-base);
+}
+
+.step-card:hover {
+    border-color: var(--accent-gold);
+    box-shadow: var(--shadow-md);
+}
+
+.step-number {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gradient-primary);
+    color: var(--white);
+    font-size: 1.5rem;
+    font-weight: 700;
+    border-radius: 50%;
+    box-shadow: var(--shadow-gold);
+}
+
+.step-content h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.step-content p {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.cta-section {
+    text-align: center;
+    margin: var(--spacing-xxl) 0;
+}
+
+.cta-button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: 1.25rem 3rem;
+    background: var(--gradient-primary);
+    color: var(--white);
+    font-size: 1.125rem;
+    font-weight: 600;
+    border-radius: var(--radius-lg);
+    text-decoration: none;
+    box-shadow: var(--shadow-gold);
+    transition: all var(--transition-base);
+}
+
+.cta-button:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-gold-hover);
+}
+
+.cta-button svg {
+    flex-shrink: 0;
+}
+
+.subscription-types {
+    margin-top: var(--spacing-xxl);
+}
+
+.subscription-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-xl);
+}
+
+.subscription-card {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    border: 1px solid var(--border);
+    transition: all var(--transition-base);
+}
+
+.subscription-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent-gold);
+    box-shadow: var(--shadow-gold);
+}
+
+.subscription-card h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-md);
+}
+
+.subscription-card p {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-lg);
+    line-height: 1.6;
+}
+
+.subscription-card .link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    color: var(--accent-gold);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    transition: all var(--transition-base);
+}
+
+.subscription-card .link:hover {
+    gap: var(--spacing-md);
+    color: var(--accent-gold-light);
+}
+
+.subscription-card .link svg {
+    flex-shrink: 0;
+    transition: transform var(--transition-base);
+}
+
+.alternative-section {
+    text-align: center;
+    margin: var(--spacing-xxl) 0;
+    padding: var(--spacing-xl);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+}
+
+.alternative-section h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-md);
+}
+
+.alternative-section p {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-md);
+}
+
+.bot-username {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--accent-gold);
+    background: var(--bg-primary);
+    padding: var(--spacing-md) var(--spacing-xl);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    margin: var(--spacing-md) 0;
+}
+
+.help-text {
+    text-align: center;
+    margin-top: var(--spacing-xxl);
+    padding: var(--spacing-lg);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+}
+
+.help-text p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.8;
+}
+
+.help-text strong {
+    color: var(--accent-gold);
+    font-family: var(--font-mono);
+}
+
+.oauth-linking-section {
+    display: none;
+    margin-top: var(--spacing-xxl);
+    padding: var(--spacing-xl);
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    border: 2px solid var(--border);
+}
+
+.oauth-content h2 {
+    font-family: var(--font-primary);
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-md);
+    text-align: center;
+}
+
+.oauth-content > p {
+    text-align: center;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-xl);
+}
+
+.oauth-card {
+    background: var(--bg-secondary);
+    padding: var(--spacing-xl);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    margin-bottom: var(--spacing-lg);
+}
+
+.benefits-list {
+    list-style: none;
+    padding: 0;
+    margin: var(--spacing-md) 0;
+}
+
+.benefits-list li {
+    padding: var(--spacing-sm) 0;
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+}
+
+.oauth-button,
+.secondary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    padding: 0.875rem 1.75rem;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 0.9375rem;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.oauth-button {
+    background: var(--gradient-primary);
+    color: var(--white);
+    box-shadow: var(--shadow-gold);
+}
+
+.oauth-button:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-gold-hover);
+}
+
+.secondary-button {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+}
+
+.secondary-button:hover {
+    border-color: var(--accent-gold);
+    color: var(--accent-gold);
+}
+
+#deep-link-display {
+    display: none;
+}
+
+.linked-state {
+    display: none;
+    text-align: center;
+}
+
+.success-icon {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-md);
+}
+
+.linked-state h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--success);
+    margin-bottom: var(--spacing-md);
+}
+
+.linked-state p {
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.linked-state strong {
+    color: var(--accent-gold);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .telegram-page-container {
+        padding: var(--spacing-lg);
+    }
+
+    .telegram-header h1 {
+        font-size: 2rem;
+    }
+
+    .telegram-header .subtitle {
+        font-size: 1rem;
+    }
+
+    .benefits-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .subscription-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .step-card {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .cta-button {
+        padding: 1rem 2rem;
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .telegram-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .telegram-icon {
+        font-size: 3rem;
+    }
+
+    .benefits-section h2,
+    .steps-section h2,
+    .subscription-types h2 {
+        font-size: 1.5rem;
+    }
+
+    .cta-button {
+        padding: 0.875rem 1.5rem;
+        font-size: 0.9375rem;
+    }
+}
