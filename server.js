@@ -53,6 +53,20 @@ try {
 } catch (err) {
 }
 
+// Load Trade Executor for automated 1 PM execution
+let tradeExecutor;
+try {
+  tradeExecutor = require('./lib/scheduler/trade-executor');
+
+  // Initialize automated execution
+  tradeExecutor.initialize();
+
+  console.log('✅ Trade Executor loaded successfully');
+} catch (err) {
+  console.error('⚠️  Failed to load Trade Executor:', err.message);
+  tradeExecutor = null;
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -1811,6 +1825,54 @@ app.post('/api/signals/dismiss/:signalId', ensureAuthenticatedAPI, async (req, r
     });
   } catch (error) {
     console.error('Error dismissing signal:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Manual execution trigger (for testing)
+app.post('/api/executor/manual-execute/:market', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const { market } = req.params;
+
+    // Validate market
+    if (!['India', 'UK', 'US'].includes(market)) {
+      return res.status(400).json({ error: 'Invalid market. Must be India, UK, or US' });
+    }
+
+    if (!tradeExecutor) {
+      return res.status(503).json({ error: 'Trade Executor not available' });
+    }
+
+    console.log(`🔧 Manual execution triggered for ${market} by ${req.user?.email || 'user'}`);
+
+    // Execute market signals
+    const result = await tradeExecutor.manualExecute(market);
+
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    console.error('Error in manual execution:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get execution logs
+app.get('/api/executor/logs', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    if (!tradeExecutor) {
+      return res.status(503).json({ error: 'Trade Executor not available' });
+    }
+
+    const logs = tradeExecutor.getExecutionLogs();
+
+    res.json({
+      success: true,
+      logs
+    });
+  } catch (error) {
+    console.error('Error getting execution logs:', error);
     res.status(500).json({ error: error.message });
   }
 });
