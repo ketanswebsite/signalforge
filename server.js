@@ -1031,6 +1031,270 @@ app.get('/api/admin/stats', ensureAuthenticatedAPI, async (req, res) => {
   }
 });
 
+// System Health Check API endpoint
+app.get('/api/admin/system/health', ensureAuthenticatedAPI, async (req, res) => {
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+  }
+
+  try {
+    const { performance } = require('perf_hooks');
+
+    const healthStatus = {
+      timestamp: new Date().toISOString(),
+      overall: 'healthy',
+      checks: [],
+      warnings: []
+    };
+
+    // Check 1: Database Connection
+    try {
+      const start = performance.now();
+      const isConnected = TradeDB.isConnected();
+      const duration = performance.now() - start;
+
+      if (isConnected) {
+        await TradeDB.getAllUserSettings('default');
+        healthStatus.checks.push({
+          name: 'Database Connection',
+          status: 'pass',
+          message: 'Connected and responsive',
+          duration: `${duration.toFixed(2)}ms`
+        });
+      } else {
+        throw new Error('Not connected');
+      }
+    } catch (error) {
+      healthStatus.checks.push({
+        name: 'Database Connection',
+        status: 'fail',
+        message: error.message
+      });
+      healthStatus.overall = 'unhealthy';
+    }
+
+    // Check 2: Database Tables
+    try {
+      const tables = ['trades', 'pending_signals', 'user_settings'];
+      for (const table of tables) {
+        await TradeDB.pool.query(`SELECT COUNT(*) FROM ${table}`);
+      }
+      healthStatus.checks.push({
+        name: 'Database Tables',
+        status: 'pass',
+        message: 'All required tables exist'
+      });
+    } catch (error) {
+      healthStatus.checks.push({
+        name: 'Database Tables',
+        status: 'fail',
+        message: error.message
+      });
+      healthStatus.overall = 'unhealthy';
+    }
+
+    // Check 3: Portfolio Capital Calculation
+    try {
+      const start = performance.now();
+      const capital = await TradeDB.getPortfolioCapital();
+      const duration = performance.now() - start;
+
+      if (!capital.India || !capital.UK || !capital.US) {
+        throw new Error('Missing market data');
+      }
+
+      healthStatus.checks.push({
+        name: 'Portfolio Capital',
+        status: 'pass',
+        message: `All markets calculated in ${duration.toFixed(2)}ms`,
+        duration: `${duration.toFixed(2)}ms`
+      });
+    } catch (error) {
+      healthStatus.checks.push({
+        name: 'Portfolio Capital',
+        status: 'fail',
+        message: error.message
+      });
+      healthStatus.overall = 'unhealthy';
+    }
+
+    // Check 4: Settings System
+    try {
+      const start = performance.now();
+      const settings = await TradeDB.getAllUserSettings('default');
+      const duration = performance.now() - start;
+
+      healthStatus.checks.push({
+        name: 'Settings System',
+        status: 'pass',
+        message: `${settings.length} settings loaded in ${duration.toFixed(2)}ms`,
+        duration: `${duration.toFixed(2)}ms`
+      });
+    } catch (error) {
+      healthStatus.checks.push({
+        name: 'Settings System',
+        status: 'fail',
+        message: error.message
+      });
+      healthStatus.overall = 'unhealthy';
+    }
+
+    // Check 5: Memory Usage
+    const usage = process.memoryUsage();
+    const heapUsedMB = (usage.heapUsed / 1024 / 1024).toFixed(2);
+    const heapTotalMB = (usage.heapTotal / 1024 / 1024).toFixed(2);
+    const percentUsed = ((usage.heapUsed / usage.heapTotal) * 100).toFixed(2);
+
+    healthStatus.checks.push({
+      name: 'Memory Usage',
+      status: 'pass',
+      message: `Heap: ${heapUsedMB}/${heapTotalMB} MB (${percentUsed}%)`
+    });
+
+    if (percentUsed > 80) {
+      healthStatus.warnings.push('High memory usage detected');
+    }
+
+    // Check 6: Environment Variables
+    const requiredVars = ['DATABASE_URL', 'NODE_ENV'];
+    const missing = requiredVars.filter(varName => !process.env[varName]);
+
+    if (missing.length > 0) {
+      healthStatus.checks.push({
+        name: 'Environment Variables',
+        status: 'fail',
+        message: `Missing: ${missing.join(', ')}`
+      });
+      healthStatus.overall = 'unhealthy';
+    } else {
+      healthStatus.checks.push({
+        name: 'Environment Variables',
+        status: 'pass',
+        message: 'All required variables present'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: healthStatus
+    });
+  } catch (error) {
+    console.error('Health check error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Run Database Tests API endpoint
+app.post('/api/admin/tests/database', ensureAuthenticatedAPI, async (req, res) => {
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+  }
+
+  try {
+    const { spawn } = require('child_process');
+    const path = require('path');
+
+    const testProcess = spawn('node', [path.join(__dirname, 'tests/database.test.js')]);
+
+    let output = '';
+    let errors = '';
+
+    testProcess.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+
+    testProcess.stderr.on('data', (data) => {
+      errors += data.toString();
+    });
+
+    testProcess.on('close', (code) => {
+      res.json({
+        success: code === 0,
+        exitCode: code,
+        output: output,
+        errors: errors
+      });
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Run Performance Tests API endpoint
+app.post('/api/admin/tests/performance', ensureAuthenticatedAPI, async (req, res) => {
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+  }
+
+  try {
+    const { spawn } = require('child_process');
+    const path = require('path');
+
+    const testProcess = spawn('node', [path.join(__dirname, 'tests/performance.test.js')]);
+
+    let output = '';
+    let errors = '';
+
+    testProcess.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+
+    testProcess.stderr.on('data', (data) => {
+      errors += data.toString();
+    });
+
+    testProcess.on('close', (code) => {
+      res.json({
+        success: code === 0,
+        exitCode: code,
+        output: output,
+        errors: errors
+      });
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Run System Verification API endpoint
+app.post('/api/admin/tests/verify-system', ensureAuthenticatedAPI, async (req, res) => {
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+  }
+
+  try {
+    const { spawn } = require('child_process');
+    const path = require('path');
+
+    const quick = req.body.quick || false;
+    const args = quick ? ['--quick'] : [];
+
+    const testProcess = spawn('node', [path.join(__dirname, 'scripts/verify-system.js'), ...args]);
+
+    let output = '';
+    let errors = '';
+
+    testProcess.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+
+    testProcess.stderr.on('data', (data) => {
+      errors += data.toString();
+    });
+
+    testProcess.on('close', (code) => {
+      res.json({
+        success: code === 0,
+        exitCode: code,
+        output: output,
+        errors: errors
+      });
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // User analytics endpoint - basic user statistics (no admin required)
 app.get('/api/user-analytics', ensureAuthenticatedAPI, async (req, res) => {
   try {

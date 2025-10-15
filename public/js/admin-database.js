@@ -125,7 +125,7 @@ const AdminDatabase = {
      * Load database health monitor
      */
     async loadHealthMonitor() {
-        const response = await fetch('/api/admin/database/health');
+        const response = await fetch('/api/admin/system/health');
         const data = await response.json();
 
         if (!data.success) {
@@ -141,100 +141,112 @@ const AdminDatabase = {
     renderHealthMonitor(health) {
         const content = document.getElementById('database-tab-content');
 
-        const formatSize = (bytes) => {
-            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-            if (bytes === 0) return '0 Bytes';
-            const i = Math.floor(Math.log(bytes) / Math.log(1024));
-            return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
-        };
+        const passCount = health.checks.filter(c => c.status === 'pass').length;
+        const failCount = health.checks.filter(c => c.status === 'fail').length;
 
         content.innerHTML = `
-            <!-- Connection Status -->
+            <!-- Overall Health Status -->
             <div class="admin-card mb-2">
                 <div class="admin-card-header">
-                    <h3>Connection Status</h3>
+                    <h3>System Health Status</h3>
+                    <div class="status-indicator">
+                        <span class="status-dot ${health.overall === 'healthy' ? 'status-success' : 'status-danger'}"></span>
+                        <span class="status-text">${health.overall.toUpperCase()}</span>
+                    </div>
                 </div>
                 <div class="admin-card-body">
-                    <div class="metrics-grid">
+                    <div class="metrics-grid mb-2">
                         <div class="metric-card">
-                            <div class="metric-icon">🔌</div>
+                            <div class="metric-icon">✅</div>
                             <div class="metric-content">
-                                <div class="metric-title">Status</div>
-                                <div class="metric-value">${health.connected ? '✓ Online' : '✗ Offline'}</div>
+                                <div class="metric-title">Checks Passed</div>
+                                <div class="metric-value">${passCount}</div>
                             </div>
                         </div>
                         <div class="metric-card">
-                            <div class="metric-icon">⏱️</div>
+                            <div class="metric-icon">❌</div>
                             <div class="metric-content">
-                                <div class="metric-title">Latency</div>
-                                <div class="metric-value">${health.latency || 0}ms</div>
+                                <div class="metric-title">Checks Failed</div>
+                                <div class="metric-value">${failCount}</div>
                             </div>
                         </div>
                         <div class="metric-card">
-                            <div class="metric-icon">🔗</div>
+                            <div class="metric-icon">⚠️</div>
                             <div class="metric-content">
-                                <div class="metric-title">Active Connections</div>
-                                <div class="metric-value">${health.activeConnections || 0} / ${health.maxConnections || 10}</div>
+                                <div class="metric-title">Warnings</div>
+                                <div class="metric-value">${health.warnings.length}</div>
                             </div>
                         </div>
                         <div class="metric-card">
-                            <div class="metric-icon">⏰</div>
+                            <div class="metric-icon">🕐</div>
                             <div class="metric-content">
-                                <div class="metric-title">Uptime</div>
-                                <div class="metric-value">${Math.floor((health.uptime || 0) / 86400)} days</div>
+                                <div class="metric-title">Last Check</div>
+                                <div class="metric-value">${new Date(health.timestamp).toLocaleTimeString()}</div>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button class="btn btn-primary" onclick="AdminDatabase.refreshHealthCheck()">
+                            🔄 Refresh Health Check
+                        </button>
+                        <button class="btn btn-secondary" onclick="AdminDatabase.showTestRunner()">
+                            🧪 Run Tests
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Database Size -->
+            <!-- Health Checks Results -->
             <div class="admin-card mb-2">
                 <div class="admin-card-header">
-                    <h3>Database Size</h3>
+                    <h3>Health Check Results</h3>
                 </div>
                 <div class="admin-card-body">
-                    <div class="flex-between">
-                        <span><strong>Total Database Size:</strong></span>
-                        <strong class="text-lg">${formatSize(health.databaseSize || 0)}</strong>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Table Statistics -->
-            <div class="admin-card">
-                <div class="admin-card-header">
-                    <h3>Table Statistics</h3>
-                </div>
-                <div class="admin-card-body">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Table Name</th>
-                                <th>Row Count</th>
-                                <th>Size</th>
-                                <th>Indexes</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${(health.tables || []).map(table => `
+                    ${health.checks.length > 0 ? `
+                        <table class="table">
+                            <thead>
                                 <tr>
-                                    <td><strong>${table.tablename}</strong></td>
-                                    <td>${(table.row_count || 0).toLocaleString()}</td>
-                                    <td>${table.size || 'N/A'}</td>
-                                    <td>${table.indexes || 0}</td>
-                                    <td>
-                                        <button class="btn btn-sm btn-secondary" onclick="AdminDatabase.analyzeTable('${table.tablename}')">
-                                            Analyze
-                                        </button>
-                                    </td>
+                                    <th>Check</th>
+                                    <th>Status</th>
+                                    <th>Message</th>
+                                    <th>Duration</th>
                                 </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                ${health.checks.map(check => `
+                                    <tr>
+                                        <td><strong>${check.name}</strong></td>
+                                        <td>
+                                            ${check.status === 'pass'
+                                                ? '<span class="badge badge-success">✓ Pass</span>'
+                                                : '<span class="badge badge-danger">✗ Fail</span>'}
+                                        </td>
+                                        <td>${check.message}</td>
+                                        <td>${check.duration || '-'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    ` : '<p class="text-muted">No health checks available</p>'}
                 </div>
             </div>
+
+            <!-- Warnings -->
+            ${health.warnings.length > 0 ? `
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3>⚠️ Warnings</h3>
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="alert alert-warning">
+                            <ul class="mb-0">
+                                ${health.warnings.map(warning => `<li>${warning}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
         `;
     },
 
@@ -1215,6 +1227,278 @@ LIMIT 10;`
                 message: `Analysis failed: ${error.message}`,
                 autoDismiss: 3000
             });
+        }
+    },
+
+    /**
+     * Refresh health check
+     */
+    async refreshHealthCheck() {
+        try {
+            AdminComponents.alert({
+                type: 'info',
+                message: 'Refreshing health check...',
+                autoDismiss: 2000
+            });
+
+            await this.loadHealthMonitor();
+
+            AdminComponents.alert({
+                type: 'success',
+                message: 'Health check refreshed',
+                autoDismiss: 2000
+            });
+        } catch (error) {
+            AdminComponents.alert({
+                type: 'error',
+                message: `Failed to refresh: ${error.message}`,
+                autoDismiss: 3000
+            });
+        }
+    },
+
+    /**
+     * Show test runner modal
+     */
+    showTestRunner() {
+        const content = document.getElementById('database-tab-content');
+
+        content.innerHTML = `
+            <div class="admin-card mb-2">
+                <div class="admin-card-header">
+                    <h3>Test Suite Runner</h3>
+                    <button class="btn btn-secondary btn-sm" onclick="AdminDatabase.loadHealthMonitor()">
+                        ← Back to Health Monitor
+                    </button>
+                </div>
+                <div class="admin-card-body">
+                    <div class="alert alert-info mb-2">
+                        <strong>ℹ️ Test Suite Information:</strong>
+                        <ul class="mb-0">
+                            <li>Database Tests: Verify database integrity and operations</li>
+                            <li>Performance Tests: Measure system performance and benchmarks</li>
+                            <li>System Verification: Run complete system health check</li>
+                        </ul>
+                    </div>
+
+                    <!-- Test Options -->
+                    <div class="grid-3col mb-2">
+                        <div>
+                            <button class="btn btn-primary btn-full" onclick="AdminDatabase.runDatabaseTests()">
+                                🗄️ Run Database Tests
+                            </button>
+                            <p class="text-muted text-sm mt-1">
+                                Tests database connections, queries, and data integrity
+                            </p>
+                        </div>
+                        <div>
+                            <button class="btn btn-primary btn-full" onclick="AdminDatabase.runPerformanceTests()">
+                                ⚡ Run Performance Tests
+                            </button>
+                            <p class="text-muted text-sm mt-1">
+                                Tests system performance and response times
+                            </p>
+                        </div>
+                        <div>
+                            <button class="btn btn-success btn-full" onclick="AdminDatabase.runSystemVerification()">
+                                ✓ Full System Verification
+                            </button>
+                            <p class="text-muted text-sm mt-1">
+                                Comprehensive verification of all components
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test Output -->
+            <div class="admin-card" id="test-output-card" style="display: none;">
+                <div class="admin-card-header">
+                    <h3>Test Results</h3>
+                    <button class="btn btn-secondary btn-sm" onclick="AdminDatabase.clearTestOutput()">
+                        Clear Output
+                    </button>
+                </div>
+                <div class="admin-card-body">
+                    <div id="test-output-status" class="mb-2"></div>
+                    <div id="test-output-content" class="code-block" style="max-height: 500px; overflow-y: auto; background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 4px; font-family: 'Roboto Mono', monospace; font-size: 12px; white-space: pre-wrap;"></div>
+                </div>
+            </div>
+        `;
+    },
+
+    /**
+     * Run database tests
+     */
+    async runDatabaseTests() {
+        this.showTestOutput();
+        this.setTestStatus('Running database tests...', 'info');
+
+        try {
+            const response = await fetch('/api/admin/tests/database', {
+                method: 'POST'
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.setTestStatus('✅ Database tests passed!', 'success');
+            } else {
+                this.setTestStatus(`❌ Database tests failed (exit code: ${data.exitCode})`, 'error');
+            }
+
+            this.appendTestOutput(data.output);
+            if (data.errors) {
+                this.appendTestOutput('\n--- ERRORS ---\n' + data.errors);
+            }
+
+            AdminComponents.alert({
+                type: data.success ? 'success' : 'error',
+                message: data.success ? 'Database tests passed' : 'Database tests failed',
+                autoDismiss: 5000
+            });
+        } catch (error) {
+            this.setTestStatus('❌ Error running tests', 'error');
+            this.appendTestOutput('Error: ' + error.message);
+
+            AdminComponents.alert({
+                type: 'error',
+                message: `Test error: ${error.message}`,
+                autoDismiss: 5000
+            });
+        }
+    },
+
+    /**
+     * Run performance tests
+     */
+    async runPerformanceTests() {
+        this.showTestOutput();
+        this.setTestStatus('Running performance tests... (this may take a while)', 'info');
+
+        try {
+            const response = await fetch('/api/admin/tests/performance', {
+                method: 'POST'
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.setTestStatus('✅ Performance tests passed!', 'success');
+            } else {
+                this.setTestStatus(`❌ Performance tests failed (exit code: ${data.exitCode})`, 'error');
+            }
+
+            this.appendTestOutput(data.output);
+            if (data.errors) {
+                this.appendTestOutput('\n--- ERRORS ---\n' + data.errors);
+            }
+
+            AdminComponents.alert({
+                type: data.success ? 'success' : 'error',
+                message: data.success ? 'Performance tests passed' : 'Performance tests failed',
+                autoDismiss: 5000
+            });
+        } catch (error) {
+            this.setTestStatus('❌ Error running tests', 'error');
+            this.appendTestOutput('Error: ' + error.message);
+
+            AdminComponents.alert({
+                type: 'error',
+                message: `Test error: ${error.message}`,
+                autoDismiss: 5000
+            });
+        }
+    },
+
+    /**
+     * Run system verification
+     */
+    async runSystemVerification(quick = false) {
+        this.showTestOutput();
+        this.setTestStatus('Running system verification... (this may take a few minutes)', 'info');
+
+        try {
+            const response = await fetch('/api/admin/tests/verify-system', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ quick })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.setTestStatus('✅ System verification passed!', 'success');
+            } else {
+                this.setTestStatus(`⚠️ System verification completed with warnings (exit code: ${data.exitCode})`, 'warning');
+            }
+
+            this.appendTestOutput(data.output);
+            if (data.errors) {
+                this.appendTestOutput('\n--- ERRORS ---\n' + data.errors);
+            }
+
+            AdminComponents.alert({
+                type: data.success ? 'success' : 'warning',
+                message: data.success ? 'System verification passed' : 'System verification completed with warnings',
+                autoDismiss: 5000
+            });
+        } catch (error) {
+            this.setTestStatus('❌ Error running verification', 'error');
+            this.appendTestOutput('Error: ' + error.message);
+
+            AdminComponents.alert({
+                type: 'error',
+                message: `Verification error: ${error.message}`,
+                autoDismiss: 5000
+            });
+        }
+    },
+
+    /**
+     * Show test output card
+     */
+    showTestOutput() {
+        const card = document.getElementById('test-output-card');
+        if (card) {
+            card.style.display = 'block';
+            const content = document.getElementById('test-output-content');
+            if (content) content.textContent = '';
+        }
+    },
+
+    /**
+     * Set test status
+     */
+    setTestStatus(message, type) {
+        const statusEl = document.getElementById('test-output-status');
+        if (!statusEl) return;
+
+        const alertClass = type === 'success' ? 'alert-success' :
+                          type === 'error' ? 'alert-danger' :
+                          type === 'warning' ? 'alert-warning' : 'alert-info';
+
+        statusEl.innerHTML = `<div class="alert ${alertClass}">${message}</div>`;
+    },
+
+    /**
+     * Append test output
+     */
+    appendTestOutput(text) {
+        const outputEl = document.getElementById('test-output-content');
+        if (outputEl) {
+            outputEl.textContent += text;
+            outputEl.scrollTop = outputEl.scrollHeight;
+        }
+    },
+
+    /**
+     * Clear test output
+     */
+    clearTestOutput() {
+        const card = document.getElementById('test-output-card');
+        if (card) {
+            card.style.display = 'none';
         }
     }
 };
