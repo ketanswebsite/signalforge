@@ -67,6 +67,20 @@ try {
   tradeExecutor = null;
 }
 
+// Load Exit Monitor for automated exit alerts
+let exitMonitor;
+try {
+  exitMonitor = require('./lib/portfolio/exit-monitor');
+
+  // Initialize exit monitoring
+  exitMonitor.initialize();
+
+  console.log('✅ Exit Monitor loaded successfully');
+} catch (err) {
+  console.error('⚠️  Failed to load Exit Monitor:', err.message);
+  exitMonitor = null;
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -1873,6 +1887,57 @@ app.get('/api/executor/logs', ensureAuthenticatedAPI, async (req, res) => {
     });
   } catch (error) {
     console.error('Error getting execution logs:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Manual exit check trigger (for testing)
+app.post('/api/exit-monitor/check-exits', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    if (!exitMonitor) {
+      return res.status(503).json({ error: 'Exit Monitor not available' });
+    }
+
+    console.log(`🔧 Manual exit check triggered by ${req.user?.email || 'user'}`);
+
+    // Check all exits
+    const result = await exitMonitor.checkAllExits();
+
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    console.error('Error in manual exit check:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Check single trade for exit
+app.post('/api/exit-monitor/check-trade/:tradeId', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    if (!exitMonitor) {
+      return res.status(503).json({ error: 'Exit Monitor not available' });
+    }
+
+    const { tradeId } = req.params;
+    const userId = req.user?.email || 'default';
+    const trade = await TradeDB.getTradeById(tradeId, userId);
+
+    if (!trade) {
+      return res.status(404).json({ error: 'Trade not found' });
+    }
+
+    console.log(`🔧 Manual exit check for trade ${tradeId} (${trade.symbol})`);
+
+    const result = await exitMonitor.checkTradeExit(trade);
+
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    console.error('Error checking trade exit:', error);
     res.status(500).json({ error: error.message });
   }
 });

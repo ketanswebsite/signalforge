@@ -1784,6 +1784,22 @@ const TradeDB = {
     }
   },
 
+  // Close trade (wrapper around updateTrade)
+  async closeTrade(tradeId, exitData, userId = 'default') {
+    checkConnection();
+    try {
+      return await this.updateTrade(tradeId, {
+        exitDate: exitData.exitDate,
+        exitPrice: exitData.exitPrice,
+        profitLossPercentage: exitData.profitLossPercent,
+        exitReason: exitData.exitReason,
+        status: 'closed'
+      }, userId);
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Close connection
   async close() {
     await pool.end();
