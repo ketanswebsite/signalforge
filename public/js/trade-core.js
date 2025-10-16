@@ -260,7 +260,12 @@ const TradeCore = (function() {
                 
                 // API now always returns standardized 'shares' field
                 trade.shares = parseFloat(trade.shares) || 0;
-                
+
+                // Calculate shares from investmentAmount if shares is missing or zero
+                if ((!trade.shares || trade.shares === 0) && trade.investmentAmount && trade.entryPrice) {
+                    trade.shares = trade.investmentAmount / trade.entryPrice;
+                }
+
                 // For UK stocks, check if shares need adjustment
                 // If the calculated investment is 100x too small, adjust shares
                 if (trade.symbol && trade.symbol.endsWith('.L') && trade.shares > 0 && trade.shares < 1) {
