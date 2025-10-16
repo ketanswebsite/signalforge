@@ -12785,3 +12785,443 @@ img.lazy-loaded {
         transform: none !important;
     }
 }
+
+/* ================================================
+   Phase 5: RBAC & 2FA Styles
+   ================================================ */
+
+/* RBAC Styles */
+.rbac-container {
+    padding: 20px;
+}
+
+.rbac-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.roles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+}
+
+.role-card {
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.role-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.role-card-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.role-name {
+    margin: 0 0 8px 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.role-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+    margin-right: 8px;
+}
+
+.role-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.role-card-body {
+    padding: 16px;
+}
+
+.role-description {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-bottom: 16px;
+}
+
+.role-permissions {
+    margin-bottom: 16px;
+}
+
+.permission-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.permission-tag {
+    display: inline-block;
+    padding: 4px 10px;
+    background: var(--surface-light);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-family: 'Roboto Mono', monospace;
+}
+
+.role-stats {
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.role-form .form-group {
+    margin-bottom: 20px;
+}
+
+.permissions-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 12px;
+}
+
+.permission-checkbox {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    border-radius: 4px;
+}
+
+.permission-checkbox:hover {
+    background: var(--surface-hover);
+}
+
+.permission-checkbox input {
+    margin-right: 10px;
+}
+
+.user-roles-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.current-roles h4,
+.available-roles h4 {
+    margin: 0 0 12px 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.role-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-bottom: 12px;
+    transition: all 0.2s ease;
+}
+
+.role-option:hover {
+    background: var(--surface-hover);
+}
+
+.role-option.assigned {
+    background: var(--surface-light);
+    border-color: var(--success);
+}
+
+.role-option-info {
+    flex: 1;
+}
+
+.role-option-name {
+    font-weight: 600;
+    padding-left: 12px;
+    margin-bottom: 4px;
+}
+
+.role-option-description {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+/* 2FA Styles */
+.twofa-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.twofa-intro {
+    margin-bottom: 32px;
+}
+
+.twofa-intro p {
+    margin-bottom: 12px;
+}
+
+.authenticator-apps {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0;
+}
+
+.authenticator-apps li {
+    padding: 8px 0;
+    font-size: 0.875rem;
+}
+
+.twofa-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+.twofa-step {
+    display: flex;
+    gap: 20px;
+    padding: 24px;
+    background: var(--surface);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.twofa-step.active {
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+}
+
+.step-number {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary);
+    color: white;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 1.125rem;
+}
+
+.step-content {
+    flex: 1;
+}
+
+.step-content h3 {
+    margin: 0 0 12px 0;
+    font-size: 1.125rem;
+}
+
+.step-content p {
+    margin-bottom: 16px;
+    color: var(--text-secondary);
+}
+
+.qr-code-container {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.qr-code-image {
+    max-width: 250px;
+    height: auto;
+}
+
+.manual-entry {
+    margin-top: 16px;
+}
+
+.secret-key {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--surface-light);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-top: 8px;
+}
+
+.secret-key code {
+    flex: 1;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.875rem;
+    letter-spacing: 2px;
+}
+
+.verification-input {
+    width: 200px;
+    padding: 16px;
+    font-size: 1.5rem;
+    font-family: 'Roboto Mono', monospace;
+    text-align: center;
+    letter-spacing: 8px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    transition: border-color 0.2s ease;
+}
+
+.verification-input:focus {
+    border-color: var(--primary);
+    outline: none;
+}
+
+.backup-codes-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin: 20px 0;
+}
+
+.backup-code {
+    padding: 12px;
+    background: var(--surface-light);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    text-align: center;
+}
+
+.backup-code code {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+}
+
+.backup-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.twofa-status {
+    padding: 20px;
+    background: var(--success-light, rgba(34, 197, 94, 0.1));
+    border: 1px solid var(--success);
+    border-radius: 8px;
+    margin-bottom: 24px;
+}
+
+.twofa-actions {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 32px;
+}
+
+.twofa-info {
+    padding: 20px;
+    background: var(--surface-light);
+    border-radius: 8px;
+}
+
+.twofa-info h3 {
+    margin: 0 0 12px 0;
+    font-size: 1rem;
+}
+
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.status-badge.status-success {
+    background: var(--success);
+    color: white;
+}
+
+.backup-codes-modal {
+    padding: 20px;
+}
+
+.backup-codes-modal p {
+    margin-bottom: 16px;
+}
+
+/* Dark Mode Overrides */
+[data-theme="dark"] .role-card,
+[data-theme="dark"] .role-option,
+[data-theme="dark"] .twofa-step {
+    background: var(--surface);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .role-card:hover,
+[data-theme="dark"] .role-option:hover {
+    background: var(--surface-light);
+}
+
+[data-theme="dark"] .qr-code-container {
+    background: white;
+}
+
+[data-theme="dark"] .twofa-status {
+    background: rgba(34, 197, 94, 0.15);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .roles-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .rbac-header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: flex-start;
+    }
+
+    .rbac-header button {
+        width: 100%;
+    }
+
+    .twofa-step {
+        flex-direction: column;
+    }
+
+    .backup-codes-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .twofa-actions {
+        flex-direction: column;
+    }
+
+    .twofa-actions button {
+        width: 100%;
+    }
+
+    .verification-input {
+        width: 100%;
+        font-size: 1.25rem;
+    }
+}
