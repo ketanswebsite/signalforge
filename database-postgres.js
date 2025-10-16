@@ -322,6 +322,9 @@ async function initializeDatabase() {
     // Sync active_positions count with actual trades (one-time migration)
     await syncActivePositions();
 
+    // Backfill allocated capital for existing trades (one-time migration)
+    await backfillAllocatedCapital();
+
     // Add unified audit log columns if they don't exist (for admin portal compatibility)
     try {
       await pool.query(`ALTER TABLE trade_audit_log ADD COLUMN IF NOT EXISTS entity_type VARCHAR(50) DEFAULT 'trade'`);
@@ -625,6 +628,107 @@ async function syncActivePositions() {
   } catch (error) {
     // Silent fail - migration might not be needed
     console.error('Active positions sync warning:', error.message);
+  }
+}
+
+// Migration function to backfill allocated capital for existing trades
+async function backfillAllocatedCapital() {
+  try {
+    // Check if this migration has already been applied
+    const migrationCheck = await pool.query(`
+      SELECT filename FROM schema_migrations WHERE filename = '014_backfill_allocated_capital.sql'
+    `);
+
+    if (migrationCheck.rows.length > 0) {
+      // Migration already applied, skip
+      return;
+    }
+
+    // Update each market separately
+    const markets = [
+      { name: 'India', symbol_pattern: '%.NS' },
+      { name: 'UK', symbol_pattern: '%.L' },
+      { name: 'US', not_patterns: ['%.NS', '%.L'] }
+    ];
+
+    for (const market of markets) {
+      let query;
+      if (market.name === 'US') {
+        query = `
+          UPDATE portfolio_capital
+          SET
+            allocated_capital = COALESCE((
+              SELECT SUM(investment_amount)
+              FROM trades
+              WHERE status = 'active'
+              AND symbol NOT LIKE '%.NS'
+              AND symbol NOT LIKE '%.L'
+              AND user_id = 'ketanjoshisahs@gmail.com'
+              AND investment_amount IS NOT NULL
+            ), 0),
+            available_capital = initial_capital + realized_pl - COALESCE((
+              SELECT SUM(investment_amount)
+              FROM trades
+              WHERE status = 'active'
+              AND symbol NOT LIKE '%.NS'
+              AND symbol NOT LIKE '%.L'
+              AND user_id = 'ketanjoshisahs@gmail.com'
+              AND investment_amount IS NOT NULL
+            ), 0),
+            updated_at = CURRENT_TIMESTAMP
+          WHERE user_id = 'system' AND market = 'US'
+          RETURNING allocated_capital, available_capital
+        `;
+      } else {
+        query = `
+          UPDATE portfolio_capital
+          SET
+            allocated_capital = COALESCE((
+              SELECT SUM(investment_amount)
+              FROM trades
+              WHERE status = 'active'
+              AND symbol LIKE '${market.symbol_pattern}'
+              AND user_id = 'ketanjoshisahs@gmail.com'
+              AND investment_amount IS NOT NULL
+            ), 0),
+            available_capital = initial_capital + realized_pl - COALESCE((
+              SELECT SUM(investment_amount)
+              FROM trades
+              WHERE status = 'active'
+              AND symbol LIKE '${market.symbol_pattern}'
+              AND user_id = 'ketanjoshisahs@gmail.com'
+              AND investment_amount IS NOT NULL
+            ), 0),
+            updated_at = CURRENT_TIMESTAMP
+          WHERE user_id = 'system' AND market = '${market.name}'
+          RETURNING allocated_capital, available_capital
+        `;
+      }
+
+      await pool.query(query);
+    }
+
+    // Get final values for logging
+    const result = await pool.query(`
+      SELECT market, allocated_capital, available_capital
+      FROM portfolio_capital
+      WHERE user_id = 'system'
+      ORDER BY market
+    `);
+
+    const logData = result.rows.map(r => `${r.market}: Allocated=${r.allocated_capital}, Available=${r.available_capital}`).join(', ');
+    console.log(`✅ Backfilled allocated capital: ${logData}`);
+
+    // Mark migration as applied
+    await pool.query(`
+      INSERT INTO schema_migrations (filename, applied_at)
+      VALUES ('014_backfill_allocated_capital.sql', NOW())
+      ON CONFLICT (filename) DO NOTHING
+    `);
+
+  } catch (error) {
+    // Silent fail - migration might not be needed
+    console.error('Allocated capital backfill warning:', error.message);
   }
 }
 
