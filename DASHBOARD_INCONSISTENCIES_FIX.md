@@ -55,16 +55,29 @@
 - Display: Properly formatted in TradeUI-Trades.js (lines 169-186)
 **Note:** These values depend on correct data from API, which should be verified
 
-#### 2.6 Market Opening Hours Logic
-**Status:** ✅ Verified correct
-**Logic:** `getMarketStatus()` function (lines 811-1004)
-- Handles timezones correctly (US EST, UK GMT, India IST)
-- Includes pre-market and after-hours
-- Accounts for holidays and weekends
-- Market hours:
-  - NYSE/NASDAQ: 9:30 AM - 4:00 PM EST
-  - NSE: 9:15 AM - 3:30 PM IST
-  - LSE: 8:00 AM - 4:30 PM GMT
+#### 2.6 Market Opening Hours Logic - UPGRADED TO 100% ROBUST ✅
+**Previous Status:** Had critical flaws
+**Issues Fixed:**
+1. **toLocaleString() unreliability**: Old method used string parsing which was error-prone
+2. **Fallback to local time**: Would show wrong status based on user's timezone
+3. **No UTC baseline**: Prone to DST and timezone calculation errors
+4. **Side effects**: Modified schedule object directly
+5. **No validation**: Didn't validate calculated times
+
+**New Implementation:** `market-status-robust.js`
+- **UTC-based calculations**: All timezone math uses UTC as baseline
+- **Proper DST handling**: Calculates DST transitions mathematically for each market
+  - US: 2nd Sunday in March to 1st Sunday in November
+  - UK: Last Sunday in March to Last Sunday in October
+  - India: No DST
+- **Validated date calculations**: All dates validated before use
+- **Immutable config**: No side effects, pure functions
+- **Comprehensive error handling**: Graceful fallbacks if module fails to load
+- **Market hours**:
+  - NYSE/NASDAQ: 9:30 AM - 4:00 PM (EST/EDT with DST)
+  - NSE: 9:15 AM - 3:30 PM (IST, no DST)
+  - LSE: 8:00 AM - 4:30 PM (GMT/BST with DST)
+- **Includes**: Pre-market, after-hours, holidays, weekends, early closes
 
 ## Phase 3: Testing
 
