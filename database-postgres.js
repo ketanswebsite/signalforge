@@ -328,6 +328,9 @@ async function initializeDatabase() {
     // Backfill allocated capital for existing trades (one-time migration)
     await backfillAllocatedCapital();
 
+    // Recalculate allocated capital after investment amounts are populated (one-time migration)
+    await recalculateAllocatedCapital();
+
     // Add unified audit log columns if they don't exist (for admin portal compatibility)
     try {
       await pool.query(`ALTER TABLE trade_audit_log ADD COLUMN IF NOT EXISTS entity_type VARCHAR(50) DEFAULT 'trade'`);
