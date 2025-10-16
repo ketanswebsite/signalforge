@@ -1,0 +1,473 @@
+================================================================================
+CSS DEDUPLICATION REPORT v2
+================================================================================
+
+Total lines in original file: 14950
+Total duplicate blocks removed: 71
+Unique selectors with duplicates: 64
+
+Total lines removed: 491
+Reduction: 3.3%
+
+================================================================================
+DUPLICATE SELECTORS (sorted by number of duplicates)
+================================================================================
+
+.stat-label
+  First occurrence: line 1945
+  Duplicate occurrences (3): 9453, 9709, 14061
+
+.stat-value
+  First occurrence: line 1920
+  Duplicate occurrences (3): 9460, 9717, 14068
+
+.app-container
+  First occurrence: line 396
+  Duplicate occurrences (2): 2633, 4390
+
+.hamburger-line
+  First occurrence: line 1470
+  Duplicate occurrences (2): 3532, 5826
+
+.btn-icon
+  First occurrence: line 852
+  Duplicate occurrences (2): 9260, 12789
+
+.trades-table-container
+  First occurrence: line 1720
+  Duplicate occurrences (1): 1731
+
+.dashboard
+  First occurrence: line 416
+  Duplicate occurrences (1): 2656
+
+.param-slider
+  First occurrence: line 2772
+  Duplicate occurrences (1): 2791
+
+.hamburger-menu
+  First occurrence: line 3521
+  Duplicate occurrences (1): 5816
+
+.desktop-only
+  First occurrence: line 2149
+  Duplicate occurrences (1): 5835
+
+.stock-name
+  First occurrence: line 4867
+  Duplicate occurrences (1): 6029
+
+.trade-info-label
+  First occurrence: line 5196
+  Duplicate occurrences (1): 6064
+
+.btn-delete-trade
+  First occurrence: line 6098
+  Duplicate occurrences (1): 6130
+
+.parameter-group
+  First occurrence: line 2880
+  Duplicate occurrences (1): 6433
+
+.form-hint
+  First occurrence: line 1095
+  Duplicate occurrences (1): 6466
+
+.trade-info
+  First occurrence: line 5183
+  Duplicate occurrences (1): 6604
+
+.detail-row
+  First occurrence: line 5372
+  Duplicate occurrences (1): 6617
+
+.pricing-card
+  First occurrence: line 7203
+  Duplicate occurrences (1): 7682
+
+.rights-box
+  First occurrence: line 7812
+  Duplicate occurrences (1): 7830
+
+.dialog-overlay
+  First occurrence: line 6346
+  Duplicate occurrences (1): 8033
+
+.dialog-content
+  First occurrence: line 6365
+  Duplicate occurrences (1): 8051
+
+.dialog-header
+  First occurrence: line 6377
+  Duplicate occurrences (1): 8063
+
+.dialog-title
+  First occurrence: line 6385
+  Duplicate occurrences (1): 8071
+
+.dialog-close
+  First occurrence: line 6399
+  Duplicate occurrences (1): 8086
+
+.dialog-body
+  First occurrence: line 6416
+  Duplicate occurrences (1): 8106
+
+.dialog-actions
+  First occurrence: line 6425
+  Duplicate occurrences (1): 8127
+
+.currency-select
+  First occurrence: line 8741
+  Duplicate occurrences (1): 8760
+
+.info-label
+  First occurrence: line 8846
+  Duplicate occurrences (1): 9418
+
+.info-value
+  First occurrence: line 8852
+  Duplicate occurrences (1): 9423
+
+.stat-item
+  First occurrence: line 1874
+  Duplicate occurrences (1): 9446
+
+.modal-overlay
+  First occurrence: line 4735
+  Duplicate occurrences (1): 9822
+
+.modal-header
+  First occurrence: line 4782
+  Duplicate occurrences (1): 9838
+
+.modal-close
+  First occurrence: line 4814
+  Duplicate occurrences (1): 9850
+
+.section-title
+  First occurrence: line 6739
+  Duplicate occurrences (1): 10107
+
+.notification
+  First occurrence: line 2122
+  Duplicate occurrences (1): 10237
+
+.back-link
+  First occurrence: line 7865
+  Duplicate occurrences (1): 10321
+
+.subscription-card
+  First occurrence: line 6889
+  Duplicate occurrences (1): 10526
+
+.secondary-button
+  First occurrence: line 10675
+  Duplicate occurrences (1): 10701
+
+.status-indicator
+  First occurrence: line 2017
+  Duplicate occurrences (1): 10913
+
+.status-dot
+  First occurrence: line 2028
+  Duplicate occurrences (1): 10923
+
+.status-success
+  First occurrence: line 2035
+  Duplicate occurrences (1): 10929
+
+.metric-card
+  First occurrence: line 622
+  Duplicate occurrences (1): 10960
+
+.metric-icon
+  First occurrence: line 641
+  Duplicate occurrences (1): 10966
+
+.metric-content
+  First occurrence: line 653
+  Duplicate occurrences (1): 10974
+
+.metric-title
+  First occurrence: line 659
+  Duplicate occurrences (1): 10979
+
+.metric-value
+  First occurrence: line 667
+  Duplicate occurrences (1): 10986
+
+.spinner
+  First occurrence: line 2078
+  Duplicate occurrences (1): 11060
+
+.metric-change
+  First occurrence: line 675
+  Duplicate occurrences (1): 11108
+
+.metric-change-positive
+  First occurrence: line 683
+  Duplicate occurrences (1): 11119
+
+.metric-change-negative
+  First occurrence: line 687
+  Duplicate occurrences (1): 11124
+
+.dropdown-arrow
+  First occurrence: line 1367
+  Duplicate occurrences (1): 11440
+
+.dropdown-item
+  First occurrence: line 1441
+  Duplicate occurrences (1): 11486
+
+.btn-danger
+  First occurrence: line 807
+  Duplicate occurrences (1): 11539
+
+.chart-controls
+  First occurrence: line 3110
+  Duplicate occurrences (1): 11551
+
+.empty-state
+  First occurrence: line 6159
+  Duplicate occurrences (1): 12370
+
+.analytics-tabs
+  First occurrence: line 5963
+  Duplicate occurrences (1): 12470
+
+.analytics-tab
+  First occurrence: line 5974
+  Duplicate occurrences (1): 12479
+
+.analytics-tab-content
+  First occurrence: line 6003
+  Duplicate occurrences (1): 12502
+
+.chart-container
+  First occurrence: line 3041
+  Duplicate occurrences (1): 13132
+
+.chart-loading
+  First occurrence: line 3060
+  Duplicate occurrences (1): 13144
+
+.step-number
+  First occurrence: line 10458
+  Duplicate occurrences (1): 13511
+
+.status-badge
+  First occurrence: line 6754
+  Duplicate occurrences (1): 13645
+
+.template-card
+  First occurrence: line 13884
+  Duplicate occurrences (1): 14652
+
+.checkbox-label
+  First occurrence: line 10172
+  Duplicate occurrences (1): 14800
+
+================================================================================
+BLOCKS REMOVED (grouped by selector)
+================================================================================
+
+.analytics-tab: 1 block(s) removed (12 lines)
+  Lines 12479-12490
+
+.analytics-tab-content: 1 block(s) removed (3 lines)
+  Lines 12502-12504
+
+.analytics-tabs: 1 block(s) removed (8 lines)
+  Lines 12470-12477
+
+.app-container: 2 block(s) removed (7 lines)
+  Lines 4390-4392
+  Lines 2633-2636
+
+.back-link: 1 block(s) removed (10 lines)
+  Lines 10321-10330
+
+.btn-danger: 1 block(s) removed (5 lines)
+  Lines 11539-11543
+
+.btn-delete-trade: 1 block(s) removed (5 lines)
+  Lines 6130-6134
+
+.btn-icon: 2 block(s) removed (18 lines)
+  Lines 12789-12796
+  Lines 9260-9269
+
+.chart-container: 1 block(s) removed (5 lines)
+  Lines 13132-13136
+
+.chart-controls: 1 block(s) removed (7 lines)
+  Lines 11551-11557
+
+.chart-loading: 1 block(s) removed (8 lines)
+  Lines 13144-13151
+
+.checkbox-label: 1 block(s) removed (10 lines)
+  Lines 14800-14809
+
+.currency-select: 1 block(s) removed (9 lines)
+  Lines 8760-8768
+
+.dashboard: 1 block(s) removed (9 lines)
+  Lines 2656-2664
+
+.desktop-only: 1 block(s) removed (3 lines)
+  Lines 5835-5837
+
+.detail-row: 1 block(s) removed (6 lines)
+  Lines 6617-6622
+
+.dialog-actions: 1 block(s) removed (7 lines)
+  Lines 8127-8133
+
+.dialog-body: 1 block(s) removed (3 lines)
+  Lines 8106-8108
+
+.dialog-close: 1 block(s) removed (15 lines)
+  Lines 8086-8100
+
+.dialog-content: 1 block(s) removed (11 lines)
+  Lines 8051-8061
+
+.dialog-header: 1 block(s) removed (7 lines)
+  Lines 8063-8069
+
+.dialog-overlay: 1 block(s) removed (13 lines)
+  Lines 8033-8045
+
+.dialog-title: 1 block(s) removed (10 lines)
+  Lines 8071-8080
+
+.dropdown-arrow: 1 block(s) removed (5 lines)
+  Lines 11440-11444
+
+.dropdown-item: 1 block(s) removed (7 lines)
+  Lines 11486-11492
+
+.empty-state: 1 block(s) removed (4 lines)
+  Lines 12370-12373
+
+.form-hint: 1 block(s) removed (6 lines)
+  Lines 6466-6471
+
+.hamburger-line: 2 block(s) removed (14 lines)
+  Lines 5826-5832
+  Lines 3532-3538
+
+.hamburger-menu: 1 block(s) removed (9 lines)
+  Lines 5816-5824
+
+.info-label: 1 block(s) removed (4 lines)
+  Lines 9418-9421
+
+.info-value: 1 block(s) removed (5 lines)
+  Lines 9423-9427
+
+.metric-card: 1 block(s) removed (5 lines)
+  Lines 10960-10964
+
+.metric-change: 1 block(s) removed (10 lines)
+  Lines 11108-11117
+
+.metric-change-negative: 1 block(s) removed (4 lines)
+  Lines 11124-11127
+
+.metric-change-positive: 1 block(s) removed (4 lines)
+  Lines 11119-11122
+
+.metric-content: 1 block(s) removed (4 lines)
+  Lines 10974-10977
+
+.metric-icon: 1 block(s) removed (7 lines)
+  Lines 10966-10972
+
+.metric-title: 1 block(s) removed (6 lines)
+  Lines 10979-10984
+
+.metric-value: 1 block(s) removed (7 lines)
+  Lines 10986-10992
+
+.modal-close: 1 block(s) removed (15 lines)
+  Lines 9850-9864
+
+.modal-header: 1 block(s) removed (6 lines)
+  Lines 9838-9843
+
+.modal-overlay: 1 block(s) removed (11 lines)
+  Lines 9822-9832
+
+.notification: 1 block(s) removed (10 lines)
+  Lines 10237-10246
+
+.param-slider: 1 block(s) removed (8 lines)
+  Lines 2791-2798
+
+.parameter-group: 1 block(s) removed (3 lines)
+  Lines 6433-6435
+
+.pricing-card: 1 block(s) removed (4 lines)
+  Lines 7682-7685
+
+.rights-box: 1 block(s) removed (4 lines)
+  Lines 7830-7833
+
+.secondary-button: 1 block(s) removed (5 lines)
+  Lines 10701-10705
+
+.section-title: 1 block(s) removed (11 lines)
+  Lines 10107-10117
+
+.spinner: 1 block(s) removed (8 lines)
+  Lines 11060-11067
+
+.stat-item: 1 block(s) removed (6 lines)
+  Lines 9446-9451
+
+.stat-label: 3 block(s) removed (19 lines)
+  Lines 14061-14066
+  Lines 9709-9715
+  Lines 9453-9458
+
+.stat-value: 3 block(s) removed (16 lines)
+  Lines 14068-14072
+  Lines 9717-9722
+  Lines 9460-9464
+
+.status-badge: 1 block(s) removed (6 lines)
+  Lines 13645-13650
+
+.status-dot: 1 block(s) removed (5 lines)
+  Lines 10923-10927
+
+.status-indicator: 1 block(s) removed (9 lines)
+  Lines 10913-10921
+
+.status-success: 1 block(s) removed (3 lines)
+  Lines 10929-10931
+
+.step-number: 1 block(s) removed (13 lines)
+  Lines 13511-13523
+
+.stock-name: 1 block(s) removed (6 lines)
+  Lines 6029-6034
+
+.subscription-card: 1 block(s) removed (7 lines)
+  Lines 10526-10532
+
+.template-card: 1 block(s) removed (10 lines)
+  Lines 14652-14661
+
+.trade-info: 1 block(s) removed (6 lines)
+  Lines 6604-6609
+
+.trade-info-label: 1 block(s) removed (5 lines)
+  Lines 6064-6068
+
+.trades-table-container: 1 block(s) removed (3 lines)
+  Lines 1731-1733
