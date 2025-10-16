@@ -5765,6 +5765,30 @@ button .spinner {
    ======================================== */
 
 /* === Header & Navigation === */
+/* Trades Page Container */
+.trades-page-container {
+    max-width: min(95%, 2400px);
+    margin: 0 auto;
+    padding: 90px var(--spacing-lg) var(--spacing-2xl) var(--spacing-lg); /* Top padding for navbar */
+}
+
+/* Responsive spacing for trades page */
+@media (max-width: 1024px) {
+    .trades-page-container {
+        padding-top: 90px;
+        padding-left: var(--spacing-md);
+        padding-right: var(--spacing-md);
+    }
+}
+
+@media (max-width: 768px) {
+    .trades-page-container {
+        padding-top: 85px;
+        padding-left: var(--spacing-sm);
+        padding-right: var(--spacing-sm);
+    }
+}
+
 .header {
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border);
