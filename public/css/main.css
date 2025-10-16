@@ -1243,6 +1243,17 @@ input[type="file"].param-input {
     transform: rotate(20deg) scale(1.1);
 }
 
+.navbar-logo {
+    height: 40px;
+    width: auto;
+    object-fit: contain;
+    transition: transform var(--transition-base);
+}
+
+.navbar-brand:hover .navbar-logo {
+    transform: scale(1.05);
+}
+
 .brand-text {
     background: var(--gradient-primary);
     -webkit-background-clip: text;

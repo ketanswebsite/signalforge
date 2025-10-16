@@ -37,9 +37,7 @@
                 <div class="navbar-container">
                     <!-- Logo/Brand -->
                     <a href="/index.html" class="navbar-brand">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-                        </svg>
+                        <img src="/images/logo.PNG" alt="SutrAlgo Logo" class="navbar-logo">
                         <span class="brand-text">SutrAlgo</span>
                     </a>
 
