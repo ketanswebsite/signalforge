@@ -106,6 +106,7 @@
     --z-modal: 1050;
     --z-popover: 1060;
     --z-tooltip: 1070;
+    --z-notification: 10100;
     --z-cursor: 9999;
     --z-progress: 10000;
 }
@@ -2106,7 +2107,7 @@ tbody td.negative {
     position: fixed;
     top: 1rem;
     right: 1rem;
-    z-index: var(--z-tooltip);
+    z-index: var(--z-notification);
     display: flex;
     flex-direction: column;
     gap: 0.75rem;

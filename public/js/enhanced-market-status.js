@@ -3,13 +3,61 @@
  * This will replace the existing function in trade-core.js
  */
 
+/**
+ * Helper function to create a Date object for a specific time in a specific timezone
+ * @param {Date} baseDate - Base date to use (will extract year/month/day in target timezone)
+ * @param {number} hour - Hour in 24h format (can be decimal, e.g., 9.25 for 9:15)
+ * @param {string} timezone - IANA timezone string
+ * @returns {Date} Date object representing the specified time in the timezone
+ */
+function setTimeInTimezone(baseDate, hour, timezone) {
+    // Get date components in the target timezone
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    });
+
+    const parts = formatter.formatToParts(baseDate);
+    const year = parts.find(p => p.type === 'year').value;
+    const month = parts.find(p => p.type === 'month').value;
+    const day = parts.find(p => p.type === 'day').value;
+
+    const hourInt = Math.floor(hour);
+    const minute = Math.round((hour % 1) * 60);
+
+    // Create ISO string representing the target time
+    const targetStr = `${year}-${month}-${day}T${String(hourInt).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`;
+
+    // Create a date and format it back in the target timezone to verify
+    const testDate = new Date(targetStr);
+    const testParts = formatter.formatToParts(testDate);
+    const testHour = parseInt(testParts.find(p => p.type === 'hour').value);
+    const testMinute = parseInt(testParts.find(p => p.type === 'minute').value);
+
+    // Calculate the difference between what we want and what we got
+    const targetMinutes = hourInt * 60 + minute;
+    const testMinutes = testHour * 60 + testMinute;
+    const diff = targetMinutes - testMinutes;
+
+    // Adjust by the difference
+    const result = new Date(testDate.getTime() + diff * 60 * 1000);
+
+    return result;
+}
+
 function getMarketStatus(symbol) {
     // Determine market from symbol
     let marketKey = 'US';
     let marketName = 'US Market';
     let timezone = 'America/New_York';
     let marketCode = 'NYSE';
-    
+
     if (symbol.endsWith('.NS')) {
         marketKey = 'IN';
         marketName = 'India (NSE)';
@@ -104,29 +152,25 @@ function getMarketStatus(symbol) {
         // Calculate next trading day
         if (window.MarketHolidays && window.MarketHolidays.getNextTradingDay) {
             const nextTradingDay = window.MarketHolidays.getNextTradingDay(marketTime, marketKey);
-            nextOpen = new Date(nextTradingDay);
-            nextOpen.setHours(Math.floor(schedule.open), (schedule.open % 1) * 60, 0, 0);
+            nextOpen = setTimeInTimezone(new Date(nextTradingDay), schedule.open, timezone);
         } else {
             // Fallback to simple next day calculation
-            nextOpen = new Date(marketTime);
-            nextOpen.setDate(nextOpen.getDate() + 1);
-            nextOpen.setHours(Math.floor(schedule.open), (schedule.open % 1) * 60, 0, 0);
+            const tomorrow = new Date(marketTime.getTime() + 24 * 60 * 60 * 1000);
+            nextOpen = setTimeInTimezone(tomorrow, schedule.open, timezone);
         }
     } else if (!schedule.days.includes(day)) {
         // Weekend
         statusText = 'Weekend - Closed';
-        
+
         // Calculate next trading day (considering holidays)
         if (window.MarketHolidays && window.MarketHolidays.getNextTradingDay) {
             const nextTradingDay = window.MarketHolidays.getNextTradingDay(marketTime, marketKey);
-            nextOpen = new Date(nextTradingDay);
-            nextOpen.setHours(Math.floor(schedule.open), (schedule.open % 1) * 60, 0, 0);
+            nextOpen = setTimeInTimezone(new Date(nextTradingDay), schedule.open, timezone);
         } else {
             // Fallback to next Monday
             const daysUntilMonday = (8 - day) % 7 || 7;
-            nextOpen = new Date(marketTime);
-            nextOpen.setDate(nextOpen.getDate() + daysUntilMonday);
-            nextOpen.setHours(Math.floor(schedule.open), (schedule.open % 1) * 60, 0, 0);
+            const nextMonday = new Date(marketTime.getTime() + daysUntilMonday * 24 * 60 * 60 * 1000);
+            nextOpen = setTimeInTimezone(nextMonday, schedule.open, timezone);
         }
     } else {
         // It's a weekday and not a holiday
@@ -135,49 +179,42 @@ function getMarketStatus(symbol) {
             statusText = earlyCloseInfo ? 'Open (Early Close)' : 'Open';
             isOpen = true;
             // Calculate next close time
-            nextClose = new Date(marketTime);
-            nextClose.setHours(Math.floor(schedule.close), (schedule.close % 1) * 60, 0, 0);
+            nextClose = setTimeInTimezone(marketTime, schedule.close, timezone);
         } else if (currentTime >= schedule.preOpen && currentTime < schedule.open) {
             status = 'pre-market';
             statusText = 'Pre-Market';
             isExtendedHours = true;
             // Calculate next open time
-            nextOpen = new Date(marketTime);
-            nextOpen.setHours(Math.floor(schedule.open), (schedule.open % 1) * 60, 0, 0);
+            nextOpen = setTimeInTimezone(marketTime, schedule.open, timezone);
         } else if (currentTime >= schedule.close && currentTime < schedule.postClose) {
             status = 'post-market';
             statusText = 'After Hours';
             isExtendedHours = true;
-            
+
             // Calculate next open time (next trading day)
             if (window.MarketHolidays && window.MarketHolidays.getNextTradingDay) {
                 const nextTradingDay = window.MarketHolidays.getNextTradingDay(marketTime, marketKey);
-                nextOpen = new Date(nextTradingDay);
-                nextOpen.setHours(Math.floor(schedule.open), (schedule.open % 1) * 60, 0, 0);
+                nextOpen = setTimeInTimezone(new Date(nextTradingDay), schedule.open, timezone);
             } else {
                 // Fallback to tomorrow
-                nextOpen = new Date(marketTime);
-                nextOpen.setDate(nextOpen.getDate() + 1);
-                nextOpen.setHours(Math.floor(schedule.open), (schedule.open % 1) * 60, 0, 0);
+                const tomorrow = new Date(marketTime.getTime() + 24 * 60 * 60 * 1000);
+                nextOpen = setTimeInTimezone(tomorrow, schedule.open, timezone);
             }
         } else {
             // Outside all trading hours
             statusText = 'Closed';
             if (currentTime < schedule.preOpen) {
                 // Before pre-market today
-                nextOpen = new Date(marketTime);
-                nextOpen.setHours(Math.floor(schedule.preOpen), (schedule.preOpen % 1) * 60, 0, 0);
+                nextOpen = setTimeInTimezone(marketTime, schedule.preOpen, timezone);
             } else {
                 // After post-market, next open is next trading day
                 if (window.MarketHolidays && window.MarketHolidays.getNextTradingDay) {
                     const nextTradingDay = window.MarketHolidays.getNextTradingDay(marketTime, marketKey);
-                    nextOpen = new Date(nextTradingDay);
-                    nextOpen.setHours(Math.floor(schedule.preOpen), (schedule.preOpen % 1) * 60, 0, 0);
+                    nextOpen = setTimeInTimezone(new Date(nextTradingDay), schedule.preOpen, timezone);
                 } else {
                     // Fallback to tomorrow
-                    nextOpen = new Date(marketTime);
-                    nextOpen.setDate(nextOpen.getDate() + 1);
-                    nextOpen.setHours(Math.floor(schedule.preOpen), (schedule.preOpen % 1) * 60, 0, 0);
+                    const tomorrow = new Date(marketTime.getTime() + 24 * 60 * 60 * 1000);
+                    nextOpen = setTimeInTimezone(tomorrow, schedule.preOpen, timezone);
                 }
             }
         }
