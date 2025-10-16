@@ -75,6 +75,12 @@ function displayBuyingOpportunities() {
             </h3>
             <p class="no-opportunities">No active buying opportunities found. Try adjusting parameters or running a full scan.</p>
         `;
+
+        // Ensure the section is revealed (fix for scroll-reveal issue after scan)
+        requestAnimationFrame(() => {
+            opportunitiesContainer.classList.add('revealed');
+        });
+
         return;
     }
 
@@ -242,7 +248,13 @@ function displayBuyingOpportunities() {
         
         // Display on the page
         opportunitiesContainer.innerHTML = html;
-        
+
+        // Ensure the section is revealed (fix for scroll-reveal issue after scan)
+        // The section may already be in viewport after scan completes, so manually add revealed class
+        requestAnimationFrame(() => {
+            opportunitiesContainer.classList.add('revealed');
+        });
+
         // Animate cards appearing
         const cards = opportunitiesContainer.querySelectorAll('.opportunity-card');
         cards.forEach((card, index) => {
