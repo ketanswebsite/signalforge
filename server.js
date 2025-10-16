@@ -2925,14 +2925,27 @@ app.get('/favicon.ico', (req, res) => {
 // Serve lib directory for frontend shared modules (BEFORE auth middleware)
 app.use('/lib', express.static(path.join(__dirname, 'lib')));
 
-// Protect static files except login page and lib directory
+// Root route - serve landing page for unauthenticated users, redirect to dashboard for authenticated users
+app.get('/', (req, res) => {
+  if (req.isAuthenticated()) {
+    // Authenticated users go to dashboard
+    res.redirect('/index.html');
+  } else {
+    // Unauthenticated users see landing page
+    res.sendFile(path.join(__dirname, 'public', 'landing.html'));
+  }
+});
+
+// Protect static files except landing page, login page, and lib directory
 app.use((req, res, next) => {
-  // Allow access to login page, lib directory, and specific assets without authentication
-  if (req.path === '/login.html' ||
+  // Allow access to landing page, login page, lib directory, and specific assets without authentication
+  if (req.path === '/landing.html' ||
+      req.path === '/login.html' ||
       req.path === '/styles.css' ||
       req.path === '/css/main.css' ||
       req.path === '/js/modern-effects.js' ||
       req.path === '/js/theme-toggle.js' ||
+      req.path === '/js/landing.js' ||
       req.path.startsWith('/lib/')) {
     return next();
   }
