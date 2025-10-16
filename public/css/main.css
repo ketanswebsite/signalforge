@@ -2107,11 +2107,16 @@ tbody td.negative {
     position: fixed;
     top: 1rem;
     right: 1rem;
-    z-index: var(--z-notification);
+    z-index: 999999 !important;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
     max-width: 400px;
+    pointer-events: none;
+}
+
+#notification-container > * {
+    pointer-events: auto;
 }
 
 .notification {
