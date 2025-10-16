@@ -1903,7 +1903,8 @@ app.post('/api/portfolio/check-exits', ensureAuthenticatedAPI, async (req, res) 
 // ===== SIGNALS ENDPOINTS =====
 
 // Store signals from scan (called by scanner)
-app.post('/api/signals/from-scan', ensureAuthenticatedAPI, async (req, res) => {
+// NOTE: No authentication required - this is an internal service-to-service call
+app.post('/api/signals/from-scan', async (req, res) => {
   try {
     const { signals } = req.body;
 
@@ -1913,6 +1914,7 @@ app.post('/api/signals/from-scan', ensureAuthenticatedAPI, async (req, res) => {
 
     const stored = [];
     const duplicates = [];
+    const errors = [];
 
     for (const signal of signals) {
       try {
@@ -1941,7 +1943,8 @@ app.post('/api/signals/from-scan', ensureAuthenticatedAPI, async (req, res) => {
         const result = await TradeDB.storePendingSignal(signal);
         stored.push({ id: result.id, symbol: signal.symbol });
       } catch (error) {
-        duplicates.push({
+        // Actual errors (not duplicates) go into errors array
+        errors.push({
           symbol: signal.symbol,
           reason: error.message
         });
@@ -1950,11 +1953,13 @@ app.post('/api/signals/from-scan', ensureAuthenticatedAPI, async (req, res) => {
 
     res.json({
       success: true,
-      stored: stored.length,
+      created: stored.length,
       duplicates: duplicates.length,
+      errors: errors.length,
       details: {
         storedSignals: stored,
-        duplicateSignals: duplicates
+        duplicateSignals: duplicates,
+        errorSignals: errors
       }
     });
   } catch (error) {

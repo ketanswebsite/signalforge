@@ -1,0 +1,3 @@
+- use render mcp to deploy and monitor deploy logs after we are done writing the code and pushing to github
+- always ensure css is in main.css file only - no inline css in html, no inline css in js
+- always create .md plan file first - and categories them in 3 phases; 1. identification of the issue, 2. plan to resolve the issue, 3. testing the reloved issue. Important Note - Delete the created the .md file after 3 is complete. Important Note - Neve delete the CLAUDE.md file this has important memory
