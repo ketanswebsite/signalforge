@@ -10,6 +10,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="/js/admin-components.js"></script>
     <script src="/js/admin-components-v2.js"></script>
+    <script src="/js/admin-charts-v2.js"></script>
+    <script src="/js/admin-tables-v2.js"></script>
     <script src="/js/admin-dashboard.js"></script>
     <script src="/js/admin-users.js"></script>
     <script src="/js/admin-subscriptions.js"></script>
@@ -29,11 +31,19 @@
     <!-- Alert Container -->
     <div id="alert-container" class="alert-container"></div>
 
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle menu">
+        <span class="hamburger-icon"></span>
+    </button>
+
     <!-- Main Container -->
     <div class="admin-container">
         <!-- Sidebar -->
-        <aside class="admin-sidebar">
-            <a href="/admin-v2" class="admin-logo">⚡ SutrAlgo</a>
+        <aside class="admin-sidebar" id="admin-sidebar">
+            <div class="sidebar-header">
+                <a href="/admin-v2" class="admin-logo">⚡ SutrAlgo</a>
+                <button class="sidebar-close" id="sidebar-close" aria-label="Close menu">&times;</button>
+            </div>
 
             <nav>
                 <ul class="admin-nav">
@@ -96,6 +106,9 @@
                 <div class="admin-header-content">
                     <h1 class="admin-header-title" id="page-title">Dashboard</h1>
                     <div class="admin-header-actions">
+                        <button class="btn btn-secondary btn-sm" id="dark-mode-toggle" title="Toggle Dark Mode">
+                            🌙 Dark Mode
+                        </button>
                         <div class="status-indicator">
                             <span class="status-dot status-success"></span>
                             <span class="status-text">System Online</span>
@@ -420,6 +433,74 @@
         }
 
         // setupSSE(); // Uncomment when SSE endpoint is ready
+
+        // Mobile Menu Functionality
+        const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+        const sidebar = document.getElementById('admin-sidebar');
+        const sidebarClose = document.getElementById('sidebar-close');
+        const sidebarOverlay = document.createElement('div');
+        sidebarOverlay.className = 'sidebar-overlay';
+        document.body.appendChild(sidebarOverlay);
+
+        function openSidebar() {
+            sidebar.classList.add('open');
+            sidebarOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSidebar() {
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        mobileMenuToggle?.addEventListener('click', openSidebar);
+        sidebarClose?.addEventListener('click', closeSidebar);
+        sidebarOverlay.addEventListener('click', closeSidebar);
+
+        // Close sidebar when clicking nav links on mobile
+        document.querySelectorAll('.admin-nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 768) {
+                    closeSidebar();
+                }
+            });
+        });
+
+        // Dark Mode Functionality
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        const html = document.documentElement;
+
+        // Check for saved dark mode preference
+        const savedTheme = localStorage.getItem('admin-theme');
+        if (savedTheme === 'dark') {
+            html.setAttribute('data-theme', 'dark');
+            if (darkModeToggle) darkModeToggle.textContent = '☀️ Light Mode';
+        }
+
+        darkModeToggle?.addEventListener('click', () => {
+            const currentTheme = html.getAttribute('data-theme');
+
+            if (currentTheme === 'dark') {
+                html.removeAttribute('data-theme');
+                localStorage.setItem('admin-theme', 'light');
+                darkModeToggle.textContent = '🌙 Dark Mode';
+                AdminComponentsV2.toast({
+                    type: 'info',
+                    message: 'Light mode enabled',
+                    duration: 2000
+                });
+            } else {
+                html.setAttribute('data-theme', 'dark');
+                localStorage.setItem('admin-theme', 'dark');
+                darkModeToggle.textContent = '☀️ Light Mode';
+                AdminComponentsV2.toast({
+                    type: 'info',
+                    message: 'Dark mode enabled',
+                    duration: 2000
+                });
+            }
+        });
     </script>
 </body>
 </html>
