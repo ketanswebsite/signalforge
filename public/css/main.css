@@ -14777,6 +14777,10 @@ img.lazy-loaded {
     margin-bottom: var(--spacing-md);
 }
 
+.brand-icon .material-icons {
+    font-size: 3rem;
+}
+
 .gold-icon {
     color: var(--accent-gold);
 }
@@ -14833,6 +14837,10 @@ img.lazy-loaded {
     border: none;
     position: relative;
     overflow: hidden;
+}
+
+.cta-button .material-icons {
+    font-size: 20px;
 }
 
 .cta-button::before {
@@ -15066,6 +15074,10 @@ img.lazy-loaded {
     transition: all var(--transition-base);
 }
 
+.about-icon .material-icons {
+    font-size: 48px;
+}
+
 .gold-gradient {
     background: var(--gradient-premium);
 }
@@ -15150,6 +15162,11 @@ img.lazy-loaded {
     transition: all var(--transition-base);
 }
 
+.feature-icon .material-icons {
+    font-size: 32px;
+    color: var(--primary-dark);
+}
+
 .feature-icon svg {
     color: var(--primary-dark);
 }
@@ -15214,6 +15231,11 @@ img.lazy-loaded {
 .pricing-icon {
     font-size: 3rem;
     margin-bottom: var(--spacing-md);
+}
+
+.pricing-icon .material-icons {
+    font-size: 3rem;
+    color: var(--accent-gold);
 }
 
 .pricing-teaser-card h3 {

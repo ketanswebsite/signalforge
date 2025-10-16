@@ -155,51 +155,12 @@
     }
 
     // ========================================
-    // COUNTER ANIMATIONS
+    // COUNTER ANIMATIONS (Optional - for future use)
     // ========================================
     function initCounters() {
-        const counters = document.querySelectorAll('.counter');
-
-        const observerOptions = {
-            threshold: 0.5,
-            rootMargin: '0px'
-        };
-
-        const animateCounter = (element) => {
-            const target = parseInt(element.getAttribute('data-target'));
-            const duration = 2000;
-            const start = performance.now();
-
-            function update(currentTime) {
-                const elapsed = currentTime - start;
-                const progress = Math.min(elapsed / duration, 1);
-
-                // Ease out cubic
-                const easeOut = 1 - Math.pow(1 - progress, 3);
-                const current = Math.floor(easeOut * target);
-
-                element.textContent = current.toLocaleString();
-
-                if (progress < 1) {
-                    requestAnimationFrame(update);
-                } else {
-                    element.textContent = target.toLocaleString();
-                }
-            }
-
-            requestAnimationFrame(update);
-        };
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting && !entry.target.classList.contains('counted')) {
-                    entry.target.classList.add('counted');
-                    animateCounter(entry.target);
-                }
-            });
-        }, observerOptions);
-
-        counters.forEach(counter => observer.observe(counter));
+        // Stats section removed from landing page
+        // Keeping function for potential future use
+        return;
     }
 
     // ========================================
