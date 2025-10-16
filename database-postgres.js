@@ -313,6 +313,9 @@ async function initializeDatabase() {
     // Migrate trades to primary user (one-time migration)
     await migrateTradesToPrimaryUser();
 
+    // Backfill signal data to existing trades (one-time migration)
+    await backfillSignalDataToTrades();
+
     // Add unified audit log columns if they don't exist (for admin portal compatibility)
     try {
       await pool.query(`ALTER TABLE trade_audit_log ADD COLUMN IF NOT EXISTS entity_type VARCHAR(50) DEFAULT 'trade'`);
@@ -429,6 +432,56 @@ async function migrateTradesToPrimaryUser() {
   }
 }
 
+// Migration function to backfill signal data to existing trades
+async function backfillSignalDataToTrades() {
+  try {
+    // Check if this migration has already been applied
+    const migrationCheck = await pool.query(`
+      SELECT filename FROM schema_migrations WHERE filename = '011_backfill_signal_data_to_trades.sql'
+    `);
+
+    if (migrationCheck.rows.length > 0) {
+      // Migration already applied, skip
+      return;
+    }
+
+    // Update existing trades with signal data from pending_signals
+    const result = await pool.query(`
+      UPDATE trades t
+      SET
+        win_rate = ps.win_rate,
+        historical_signal_count = ps.historical_signal_count,
+        signal_date = ps.signal_date,
+        market = ps.market,
+        auto_added = true,
+        entry_dti = ps.entry_dti,
+        entry_7day_dti = ps.entry_7day_dti,
+        prev_dti = ps.prev_dti,
+        prev_7day_dti = ps.prev_7day_dti
+      FROM pending_signals ps
+      WHERE ps.added_to_trade_id = t.id
+        AND t.win_rate IS NULL
+      RETURNING t.id
+    `);
+
+    const backfilledCount = result.rowCount;
+
+    if (backfilledCount > 0) {
+      console.log(`✅ Backfilled signal data for ${backfilledCount} trades`);
+    }
+
+    // Mark migration as applied
+    await pool.query(`
+      INSERT INTO schema_migrations (filename, applied_at)
+      VALUES ('011_backfill_signal_data_to_trades.sql', NOW())
+      ON CONFLICT (filename) DO NOTHING
+    `);
+
+  } catch (error) {
+    // Silent fail - migration might not be needed
+  }
+}
+
 // Database operations
 const TradeDB = {
   // Initialize database on module load
@@ -481,7 +534,17 @@ const TradeDB = {
         takeProfitPercent: row.take_profit_percent ? parseFloat(row.take_profit_percent) : null,
         user_id: row.user_id,
         created_at: row.created_at,
-        updated_at: row.updated_at
+        updated_at: row.updated_at,
+        winRate: row.win_rate ? parseFloat(row.win_rate) : null,
+        historicalSignalCount: row.historical_signal_count ? parseInt(row.historical_signal_count) : null,
+        signalDate: row.signal_date,
+        market: row.market,
+        autoAdded: row.auto_added,
+        tradeSize: row.trade_size ? parseFloat(row.trade_size) : null,
+        prevDTI: row.prev_dti ? parseFloat(row.prev_dti) : null,
+        entryDTI: row.entry_dti ? parseFloat(row.entry_dti) : null,
+        prev7DayDTI: row.prev_7day_dti ? parseFloat(row.prev_7day_dti) : null,
+        entry7DayDTI: row.entry_7day_dti ? parseFloat(row.entry_7day_dti) : null
       }));
     } catch (error) {
       return [];
@@ -520,7 +583,17 @@ const TradeDB = {
         currencySymbol: row.currency_symbol,
         stopLossPercent: row.stop_loss_percent ? parseFloat(row.stop_loss_percent) : null,
         takeProfitPercent: row.take_profit_percent ? parseFloat(row.take_profit_percent) : null,
-        user_id: row.user_id
+        user_id: row.user_id,
+        winRate: row.win_rate ? parseFloat(row.win_rate) : null,
+        historicalSignalCount: row.historical_signal_count ? parseInt(row.historical_signal_count) : null,
+        signalDate: row.signal_date,
+        market: row.market,
+        autoAdded: row.auto_added,
+        tradeSize: row.trade_size ? parseFloat(row.trade_size) : null,
+        prevDTI: row.prev_dti ? parseFloat(row.prev_dti) : null,
+        entryDTI: row.entry_dti ? parseFloat(row.entry_dti) : null,
+        prev7DayDTI: row.prev_7day_dti ? parseFloat(row.prev_7day_dti) : null,
+        entry7DayDTI: row.entry_7day_dti ? parseFloat(row.entry_7day_dti) : null
       }));
     } catch (error) {
       return [];
@@ -559,7 +632,17 @@ const TradeDB = {
         takeProfitPercent: row.take_profit_percent ? parseFloat(row.take_profit_percent) : null,
         user_id: row.user_id,
         created_at: row.created_at,
-        updated_at: row.updated_at
+        updated_at: row.updated_at,
+        winRate: row.win_rate ? parseFloat(row.win_rate) : null,
+        historicalSignalCount: row.historical_signal_count ? parseInt(row.historical_signal_count) : null,
+        signalDate: row.signal_date,
+        market: row.market,
+        autoAdded: row.auto_added,
+        tradeSize: row.trade_size ? parseFloat(row.trade_size) : null,
+        prevDTI: row.prev_dti ? parseFloat(row.prev_dti) : null,
+        entryDTI: row.entry_dti ? parseFloat(row.entry_dti) : null,
+        prev7DayDTI: row.prev_7day_dti ? parseFloat(row.prev_7day_dti) : null,
+        entry7DayDTI: row.entry_7day_dti ? parseFloat(row.entry_7day_dti) : null
       }));
     } catch (error) {
       return [];
@@ -610,8 +693,10 @@ const TradeDB = {
           shares, status, profit_loss, profit_loss_percentage,
           entry_reason, exit_reason, target_price,
           square_off_date, notes, stock_name, investment_amount, position_size,
-          currency_symbol, stop_loss_percent, take_profit_percent, user_id
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
+          currency_symbol, stop_loss_percent, take_profit_percent, user_id,
+          win_rate, historical_signal_count, signal_date, market, auto_added, trade_size,
+          prev_dti, entry_dti, prev_7day_dti, entry_7day_dti
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33)
         RETURNING *`,
         [
           trade.symbol,
@@ -636,7 +721,17 @@ const TradeDB = {
           trade.currencySymbol || null,
           trade.stopLossPercent || null,
           trade.takeProfitPercent || null,
-          userId
+          userId,
+          trade.winRate || null,
+          trade.historicalSignalCount || null,
+          trade.signalDate || null,
+          trade.market || null,
+          trade.autoAdded !== undefined ? trade.autoAdded : null,
+          trade.tradeSize || null,
+          trade.prevDTI || null,
+          trade.entryDTI || null,
+          trade.prev7DayDTI || null,
+          trade.entry7DayDTI || null
         ]
       );
       
@@ -668,7 +763,17 @@ const TradeDB = {
         takeProfitPercent: row.take_profit_percent ? parseFloat(row.take_profit_percent) : null,
         user_id: row.user_id,
         created_at: row.created_at,
-        updated_at: row.updated_at
+        updated_at: row.updated_at,
+        winRate: row.win_rate ? parseFloat(row.win_rate) : null,
+        historicalSignalCount: row.historical_signal_count ? parseInt(row.historical_signal_count) : null,
+        signalDate: row.signal_date,
+        market: row.market,
+        autoAdded: row.auto_added,
+        tradeSize: row.trade_size ? parseFloat(row.trade_size) : null,
+        prevDTI: row.prev_dti ? parseFloat(row.prev_dti) : null,
+        entryDTI: row.entry_dti ? parseFloat(row.entry_dti) : null,
+        prev7DayDTI: row.prev_7day_dti ? parseFloat(row.prev_7day_dti) : null,
+        entry7DayDTI: row.entry_7day_dti ? parseFloat(row.entry_7day_dti) : null
       };
     } catch (error) {
       throw error;
