@@ -99,7 +99,20 @@
 - ✅ Database code updated to use 'system' instead of NULL
 - ✅ Deployed to Render successfully
 
+**Issues Found After Deployment**:
+
+**1. Historical Pattern Analysis (Frontend Issue)**
+- ✅ Backend: Trades have signal data (win_rate, entry_dti, etc.)
+- ❌ Frontend: Likely not refreshing or TradeCore.getTradeStatisticsByCurrency() not calculating correctly
+- **Root Cause**: User needs to refresh page OR there's a calculation error in frontend
+
+**2. Portfolio Capital Display (Backend + Frontend Issue)**
+- ✅ Database: Clean data (3 rows with 'system' user_id)
+- ❌ Active Positions: Database shows 0 active_positions despite 4 active trades
+- ❌ Frontend: May be using wrong field for display
+- **Root Cause**: Trades are not updating portfolio_capital.active_positions when created
+
 **Next Steps**:
-1. Test trades.html to verify Historical Pattern Analysis now shows percentages
-2. Verify Portfolio Capital displays correct amounts (₹1,000,000, £10,000, $15,000)
-3. Begin Phase 2B (Multi-User Architecture) design
+1. Ask user to hard-refresh trades.html page (Ctrl+Shift+R) to see if Historical Pattern Analysis updates
+2. Fix portfolio_capital.active_positions sync issue
+3. Test full flow end-to-end

@@ -322,6 +322,9 @@ async function initializeDatabase() {
     // Sync active_positions count with actual trades (one-time migration)
     await syncActivePositions();
 
+    // Populate investment_amount for existing trades (one-time migration)
+    await populateInvestmentAmount();
+
     // Backfill allocated capital for existing trades (one-time migration)
     await backfillAllocatedCapital();
 
@@ -631,6 +634,88 @@ async function syncActivePositions() {
   }
 }
 
+// Migration function to populate investment_amount for existing trades
+async function populateInvestmentAmount() {
+  try {
+    // Check if this migration has already been applied
+    const migrationCheck = await pool.query(`
+      SELECT filename FROM schema_migrations WHERE filename = '015_populate_investment_amount.sql'
+    `);
+
+    if (migrationCheck.rows.length > 0) {
+      // Migration already applied, skip
+      return;
+    }
+
+    // Standard trade sizes per market (from capital-manager.js)
+    const tradeSizes = {
+      India: 50000,   // ₹50,000 per trade
+      UK: 400,        // £400 per trade
+      US: 500         // $500 per trade
+    };
+
+    // Update India market trades (.NS stocks)
+    const indiaResult = await pool.query(`
+      UPDATE trades
+      SET
+        investment_amount = $1,
+        trade_size = $1,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE status = 'active'
+      AND symbol LIKE '%.NS'
+      AND user_id = 'ketanjoshisahs@gmail.com'
+      AND investment_amount IS NULL
+      RETURNING id
+    `, [tradeSizes.India]);
+
+    // Update UK market trades (.L stocks)
+    const ukResult = await pool.query(`
+      UPDATE trades
+      SET
+        investment_amount = $1,
+        trade_size = $1,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE status = 'active'
+      AND symbol LIKE '%.L'
+      AND user_id = 'ketanjoshisahs@gmail.com'
+      AND investment_amount IS NULL
+      RETURNING id
+    `, [tradeSizes.UK]);
+
+    // Update US market trades (no suffix)
+    const usResult = await pool.query(`
+      UPDATE trades
+      SET
+        investment_amount = $1,
+        trade_size = $1,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE status = 'active'
+      AND symbol NOT LIKE '%.NS'
+      AND symbol NOT LIKE '%.L'
+      AND user_id = 'ketanjoshisahs@gmail.com'
+      AND investment_amount IS NULL
+      RETURNING id
+    `, [tradeSizes.US]);
+
+    const indiaCount = indiaResult.rowCount || 0;
+    const ukCount = ukResult.rowCount || 0;
+    const usCount = usResult.rowCount || 0;
+
+    console.log(`✅ Populated investment_amount: India=${indiaCount} trades (₹50K each), UK=${ukCount} trades (£400 each), US=${usCount} trades ($500 each)`);
+
+    // Mark migration as applied
+    await pool.query(`
+      INSERT INTO schema_migrations (filename, applied_at)
+      VALUES ('015_populate_investment_amount.sql', NOW())
+      ON CONFLICT (filename) DO NOTHING
+    `);
+
+  } catch (error) {
+    // Silent fail - migration might not be needed
+    console.error('Investment amount population warning:', error.message);
+  }
+}
+
 // Migration function to backfill allocated capital for existing trades
 async function backfillAllocatedCapital() {
   try {
@@ -729,6 +814,107 @@ async function backfillAllocatedCapital() {
   } catch (error) {
     // Silent fail - migration might not be needed
     console.error('Allocated capital backfill warning:', error.message);
+  }
+}
+
+// Migration function to recalculate allocated capital after investment_amount is populated
+async function recalculateAllocatedCapital() {
+  try {
+    // Check if this migration has already been applied
+    const migrationCheck = await pool.query(`
+      SELECT filename FROM schema_migrations WHERE filename = '016_recalculate_allocated_capital.sql'
+    `);
+
+    if (migrationCheck.rows.length > 0) {
+      // Migration already applied, skip
+      return;
+    }
+
+    // Update each market separately
+    const markets = [
+      { name: 'India', symbol_pattern: '%.NS' },
+      { name: 'UK', symbol_pattern: '%.L' },
+      { name: 'US', not_patterns: ['%.NS', '%.L'] }
+    ];
+
+    for (const market of markets) {
+      let query;
+      if (market.name === 'US') {
+        query = `
+          UPDATE portfolio_capital
+          SET
+            allocated_capital = COALESCE((
+              SELECT SUM(investment_amount)
+              FROM trades
+              WHERE status = 'active'
+              AND symbol NOT LIKE '%.NS'
+              AND symbol NOT LIKE '%.L'
+              AND user_id = 'ketanjoshisahs@gmail.com'
+              AND investment_amount IS NOT NULL
+            ), 0),
+            available_capital = initial_capital + realized_pl - COALESCE((
+              SELECT SUM(investment_amount)
+              FROM trades
+              WHERE status = 'active'
+              AND symbol NOT LIKE '%.NS'
+              AND symbol NOT LIKE '%.L'
+              AND user_id = 'ketanjoshisahs@gmail.com'
+              AND investment_amount IS NOT NULL
+            ), 0),
+            updated_at = CURRENT_TIMESTAMP
+          WHERE user_id = 'system' AND market = 'US'
+          RETURNING allocated_capital, available_capital
+        `;
+      } else {
+        query = `
+          UPDATE portfolio_capital
+          SET
+            allocated_capital = COALESCE((
+              SELECT SUM(investment_amount)
+              FROM trades
+              WHERE status = 'active'
+              AND symbol LIKE '${market.symbol_pattern}'
+              AND user_id = 'ketanjoshisahs@gmail.com'
+              AND investment_amount IS NOT NULL
+            ), 0),
+            available_capital = initial_capital + realized_pl - COALESCE((
+              SELECT SUM(investment_amount)
+              FROM trades
+              WHERE status = 'active'
+              AND symbol LIKE '${market.symbol_pattern}'
+              AND user_id = 'ketanjoshisahs@gmail.com'
+              AND investment_amount IS NOT NULL
+            ), 0),
+            updated_at = CURRENT_TIMESTAMP
+          WHERE user_id = 'system' AND market = '${market.name}'
+          RETURNING allocated_capital, available_capital
+        `;
+      }
+
+      await pool.query(query);
+    }
+
+    // Get final values for logging
+    const result = await pool.query(`
+      SELECT market, allocated_capital, available_capital
+      FROM portfolio_capital
+      WHERE user_id = 'system'
+      ORDER BY market
+    `);
+
+    const logData = result.rows.map(r => `${r.market}: Allocated=${r.allocated_capital}, Available=${r.available_capital}`).join(', ');
+    console.log(`✅ Recalculated allocated capital: ${logData}`);
+
+    // Mark migration as applied
+    await pool.query(`
+      INSERT INTO schema_migrations (filename, applied_at)
+      VALUES ('016_recalculate_allocated_capital.sql', NOW())
+      ON CONFLICT (filename) DO NOTHING
+    `);
+
+  } catch (error) {
+    // Silent fail - migration might not be needed
+    console.error('Allocated capital recalculation warning:', error.message);
   }
 }
 
