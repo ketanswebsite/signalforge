@@ -27,14 +27,53 @@ window.TradeUIModules.charts = (function() {
      * Render all available charts
      */
     function renderAllCharts() {
-        renderEquityCurve();
-        renderDrawdownChart();
-        renderPLDistribution();
-        renderWinLossPieChart();
-        renderMonthlyPerformance();
-        renderMarketComparison();
-        renderTradeSizeVsReturn();
-        renderHoldingPeriodAnalysis();
+        try {
+            renderEquityCurve();
+        } catch (error) {
+            console.error('Error rendering equity curve:', error);
+        }
+
+        try {
+            renderDrawdownChart();
+        } catch (error) {
+            console.error('Error rendering drawdown chart:', error);
+        }
+
+        try {
+            renderPLDistribution();
+        } catch (error) {
+            console.error('Error rendering P/L distribution:', error);
+        }
+
+        try {
+            renderWinLossPieChart();
+        } catch (error) {
+            console.error('Error rendering win/loss pie chart:', error);
+        }
+
+        try {
+            renderMonthlyPerformance();
+        } catch (error) {
+            console.error('Error rendering monthly performance:', error);
+        }
+
+        try {
+            renderMarketComparison();
+        } catch (error) {
+            console.error('Error rendering market comparison:', error);
+        }
+
+        try {
+            renderTradeSizeVsReturn();
+        } catch (error) {
+            console.error('Error rendering trade size vs return:', error);
+        }
+
+        try {
+            renderHoldingPeriodAnalysis();
+        } catch (error) {
+            console.error('Error rendering holding period analysis:', error);
+        }
     }
     
     /**
@@ -881,7 +920,7 @@ window.TradeUIModules.charts = (function() {
                             afterBody: function(tooltipItems) {
                                 const dataIndex = tooltipItems[0].dataIndex;
                                 const marketData = data[dataIndex];
-                                return [`Currency: ${marketData.currency}`];
+                                return [`Total Trades: ${marketData.trades}`, `Total P/L: ${marketData.totalPL.toFixed(2)}`];
                             }
                         }
                     }
