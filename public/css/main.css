@@ -8286,6 +8286,243 @@ button .spinner {
     display: none;
 }
 
+/* Market Status Badge */
+.market-status-badge {
+    position: relative;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md);
+    min-width: 280px;
+    max-width: 320px;
+    transition: all var(--transition-base);
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.market-status-badge::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--grey-500);
+    transition: background var(--transition-base);
+}
+
+.market-status-badge:hover {
+    border-color: var(--border-color-hover);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+/* Status Indicator (Animated Dot) */
+.market-status-indicator {
+    position: absolute;
+    top: var(--spacing-md);
+    right: var(--spacing-md);
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--grey-500);
+    transition: all var(--transition-base);
+}
+
+/* Badge Content Layout */
+.market-badge-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.market-badge-header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-right: 24px;
+}
+
+/* Market Name */
+.market-name {
+    font-family: var(--font-heading);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+}
+
+/* Market Status Text */
+.market-status {
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Market Reason Text */
+.market-reason-text {
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: 2px;
+}
+
+/* Next Action Text (Opens in X / Closes in X) */
+.market-next-action {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    padding: var(--spacing-xs);
+    background: var(--bg-surface);
+    border-radius: var(--radius-sm);
+    border-left: 2px solid var(--border);
+    margin-top: 2px;
+}
+
+/* Trade Count Badge */
+.market-trade-count {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent-gold);
+    background: rgba(212, 175, 55, 0.1);
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    margin-top: 2px;
+    width: fit-content;
+}
+
+/* Current Market Time */
+.market-current-time {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-top: 4px;
+    padding-top: var(--spacing-xs);
+    border-top: 1px solid var(--border);
+}
+
+/* Status-Specific Styles */
+.market-status-badge.open::before {
+    background: var(--success);
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+}
+
+.market-status-badge.open .market-status-indicator {
+    background: var(--success);
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.market-status-badge.open .market-status {
+    color: var(--success);
+}
+
+.market-status-badge.open:hover {
+    border-color: rgba(34, 197, 94, 0.3);
+    box-shadow: var(--shadow-green);
+}
+
+.market-status-badge.closed::before {
+    background: var(--error);
+}
+
+.market-status-badge.closed .market-status-indicator {
+    background: var(--error);
+}
+
+.market-status-badge.closed .market-status {
+    color: var(--error);
+}
+
+.market-status-badge.closed:hover {
+    border-color: rgba(220, 38, 38, 0.3);
+    box-shadow: var(--shadow-red);
+}
+
+.market-status-badge.pre-market::before,
+.market-status-badge.post-market::before {
+    background: var(--warning);
+}
+
+.market-status-badge.pre-market .market-status-indicator,
+.market-status-badge.post-market .market-status-indicator {
+    background: var(--warning);
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+    animation: pulse 3s ease-in-out infinite;
+}
+
+.market-status-badge.pre-market .market-status,
+.market-status-badge.post-market .market-status {
+    color: var(--warning);
+}
+
+.market-status-badge.pre-market:hover,
+.market-status-badge.post-market:hover {
+    border-color: rgba(245, 158, 11, 0.3);
+    box-shadow: 0 10px 40px rgba(245, 158, 11, 0.3);
+}
+
+.market-status-badge.holiday::before {
+    background: var(--accent-gold);
+}
+
+.market-status-badge.holiday .market-status-indicator {
+    background: var(--accent-gold);
+    box-shadow: 0 0 8px rgba(212, 175, 55, 0.6);
+}
+
+.market-status-badge.holiday .market-status {
+    color: var(--accent-gold);
+}
+
+.market-status-badge.holiday:hover {
+    border-color: var(--border-color-hover);
+    box-shadow: var(--shadow-gold);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .market-status-badge {
+        min-width: 100%;
+        max-width: 100%;
+    }
+
+    .market-status-container {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-sm);
+    }
+}
+
+@media (max-width: 480px) {
+    .market-badge-header {
+        gap: 2px;
+    }
+
+    .market-name {
+        font-size: 16px;
+    }
+
+    .market-status {
+        font-size: 12px;
+    }
+
+    .market-next-action {
+        font-size: 12px;
+        padding: 6px;
+    }
+}
+
 /* ========================================
    CHART ZOOM CONTROLS
    ======================================== */

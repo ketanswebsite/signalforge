@@ -164,43 +164,116 @@
         // Generate display text based on status
         enhanced.displayText = status.statusText;
         enhanced.nextActionText = '';
+        enhanced.reasonText = '';
 
-        switch (status.status) {
-            case 'closed':
-                if (enhanced.timeToOpen) {
-                    enhanced.nextActionText = formatTimeDifference(enhanced.timeToOpen, 'Opens');
-                }
-                break;
-                
-            case 'pre-market':
-                if (enhanced.timeToOpen) {
-                    enhanced.nextActionText = formatTimeDifference(enhanced.timeToOpen, 'Market opens');
-                }
-                break;
-                
-            case 'open':
-                if (enhanced.timeToClose) {
-                    enhanced.nextActionText = formatTimeDifference(enhanced.timeToClose, 'Closes');
-                }
-                break;
-                
-            case 'post-market':
-                if (enhanced.timeToClose) {
-                    enhanced.nextActionText = formatTimeDifference(enhanced.timeToClose, 'After-hours ends');
-                } else if (enhanced.timeToOpen) {
-                    enhanced.nextActionText = formatTimeDifference(enhanced.timeToOpen, 'Opens');
-                }
-                break;
-        }
-
-        // Add holiday information to display
+        // Add holiday information to display (highest priority)
         if (status.isHoliday && status.holidayInfo) {
-            enhanced.displayText = `Holiday - ${status.holidayInfo.name}`;
+            enhanced.displayText = `${status.holidayInfo.name}`;
+            enhanced.reasonText = 'Market Holiday';
+            if (enhanced.timeToOpen) {
+                enhanced.nextActionText = formatTimeDifference(enhanced.timeToOpen, 'Opens');
+            } else {
+                enhanced.nextActionText = 'Reopens next trading day';
+            }
         }
-
         // Add early close information
-        if (status.earlyCloseInfo) {
-            enhanced.displayText += ' (Early Close)';
+        else if (status.earlyCloseInfo) {
+            enhanced.displayText = 'Open (Early Close)';
+            if (enhanced.timeToClose) {
+                const closeTimeStr = status.earlyCloseInfo.closeTime;
+                enhanced.nextActionText = `Closes early at ${closeTimeStr}:00`;
+                enhanced.reasonText = formatTimeDifference(enhanced.timeToClose, 'Closes');
+            }
+        }
+        // Regular status display with comprehensive info
+        else {
+            switch (status.status) {
+                case 'closed':
+                    // Determine specific reason for closure
+                    const currentDate = new Date();
+                    const dayOfWeek = currentDate.getDay();
+
+                    if (dayOfWeek === 0 || dayOfWeek === 6) {
+                        enhanced.displayText = 'Weekend';
+                        enhanced.reasonText = 'Market Closed';
+                    } else {
+                        enhanced.displayText = 'Market Closed';
+                        enhanced.reasonText = 'Outside Trading Hours';
+                    }
+
+                    // Always provide next open time
+                    if (enhanced.timeToOpen) {
+                        enhanced.nextActionText = formatTimeDifference(enhanced.timeToOpen, 'Opens');
+                    } else if (status.nextOpen) {
+                        const nextOpenDate = status.nextOpen.toLocaleDateString('en-US', {
+                            timeZone: status.timezone,
+                            weekday: 'short',
+                            month: 'short',
+                            day: 'numeric'
+                        });
+                        const nextOpenTime = status.nextOpen.toLocaleTimeString('en-US', {
+                            timeZone: status.timezone,
+                            hour: 'numeric',
+                            minute: '2-digit'
+                        });
+                        enhanced.nextActionText = `Opens ${nextOpenDate} at ${nextOpenTime}`;
+                    }
+                    break;
+
+                case 'pre-market':
+                    enhanced.displayText = 'Pre-Market';
+                    enhanced.reasonText = 'Extended Trading Hours';
+
+                    if (enhanced.timeToOpen) {
+                        enhanced.nextActionText = formatTimeDifference(enhanced.timeToOpen, 'Market opens');
+                    } else if (status.nextOpen) {
+                        const openTime = status.nextOpen.toLocaleTimeString('en-US', {
+                            timeZone: status.timezone,
+                            hour: 'numeric',
+                            minute: '2-digit'
+                        });
+                        enhanced.nextActionText = `Market opens at ${openTime}`;
+                    }
+                    break;
+
+                case 'open':
+                    enhanced.displayText = 'Market Open';
+                    enhanced.reasonText = 'Regular Trading Hours';
+
+                    if (enhanced.timeToClose) {
+                        enhanced.nextActionText = formatTimeDifference(enhanced.timeToClose, 'Closes');
+                    } else if (status.nextClose) {
+                        const closeTime = status.nextClose.toLocaleTimeString('en-US', {
+                            timeZone: status.timezone,
+                            hour: 'numeric',
+                            minute: '2-digit'
+                        });
+                        enhanced.nextActionText = `Closes at ${closeTime}`;
+                    }
+                    break;
+
+                case 'post-market':
+                    enhanced.displayText = 'After Hours';
+                    enhanced.reasonText = 'Extended Trading Hours';
+
+                    if (enhanced.timeToOpen) {
+                        enhanced.nextActionText = formatTimeDifference(enhanced.timeToOpen, 'Market opens');
+                    } else if (status.nextOpen) {
+                        const nextOpenDate = status.nextOpen.toLocaleDateString('en-US', {
+                            timeZone: status.timezone,
+                            weekday: 'short',
+                            month: 'short',
+                            day: 'numeric'
+                        });
+                        const nextOpenTime = status.nextOpen.toLocaleTimeString('en-US', {
+                            timeZone: status.timezone,
+                            hour: 'numeric',
+                            minute: '2-digit'
+                        });
+                        enhanced.nextActionText = `Opens ${nextOpenDate} at ${nextOpenTime}`;
+                    }
+                    break;
+            }
         }
 
         return enhanced;
@@ -238,9 +311,17 @@
         marketStatusSpan.className = 'market-status';
         marketStatusSpan.textContent = marketStatus.displayText;
         header.appendChild(marketStatusSpan);
-        
+
         content.appendChild(header);
-        
+
+        // Reason text (if available)
+        if (marketStatus.reasonText) {
+            const reasonDiv = document.createElement('div');
+            reasonDiv.className = 'market-reason-text';
+            reasonDiv.textContent = marketStatus.reasonText;
+            content.appendChild(reasonDiv);
+        }
+
         // Next action time with smooth updates
         if (marketStatus.nextActionText) {
             const nextAction = document.createElement('div');
