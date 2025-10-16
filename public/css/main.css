@@ -3103,7 +3103,7 @@ tbody td.negative {
 
 .chart-controls {
     display: flex;
-    flex-wrap: nowrap; /* Prevent wrapping on desktop for compact layout */
+    flex-wrap: wrap; /* Allow wrapping for better responsiveness */
     gap: var(--spacing-sm); /* Reduced from md */
     align-items: center;
 }
