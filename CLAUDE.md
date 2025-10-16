@@ -1,3 +1,4 @@
 - please run deploy-to-render.bat everytime we finalise making changes to a code
 - always make changes related to css in main.css only no inline css in the html or the js file
 - remember to not duplicate anything in the main.css - if there are css already defined reuse it
+- use render mcp to see the postgres db on render and deploy to render
