@@ -80,17 +80,74 @@ const SignalsDisplay = (function() {
     async function refreshSignals() {
         try {
             const response = await fetch('/api/signals/pending?status=pending');
-            if (!response.ok) throw new Error('Failed to fetch signals');
+
+            // Handle authentication errors
+            if (response.status === 401) {
+                showError('Authentication required', 'Please log in to view signals');
+                return;
+            }
+
+            // Handle server errors
+            if (response.status >= 500) {
+                showError('Server error', 'Unable to fetch signals. Please try again later.');
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch signals: ${response.statusText}`);
+            }
 
             const data = await response.json();
+
+            // Handle error response from API
+            if (data.error) {
+                showError('API Error', data.error);
+                return;
+            }
+
             pendingSignals = data.signals || [];
+
+            // Clear any previous errors
+            clearError();
 
             // Update UI
             renderSignals();
 
         } catch (error) {
             console.error('Error fetching signals:', error);
+            showError('Connection error', 'Unable to connect to server. Check your internet connection.');
         }
+    }
+
+    /**
+     * Show error message to user
+     */
+    function showError(title, message) {
+        const grid = document.getElementById('signals-grid');
+        if (!grid) return;
+
+        grid.innerHTML = `
+            <div class="signals-error">
+                <div class="error-icon">⚠️</div>
+                <div class="error-title">${title}</div>
+                <div class="error-message">${message}</div>
+                <button class="btn btn-secondary" onclick="SignalsDisplay.refreshSignals()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
+                    Retry
+                </button>
+            </div>
+        `;
+    }
+
+    /**
+     * Clear error message
+     */
+    function clearError() {
+        // Errors are cleared by rendering signals normally
     }
 
     /**
@@ -315,7 +372,9 @@ const SignalsDisplay = (function() {
     // Public API
     return {
         init,
-        refreshSignals
+        refreshSignals,
+        showError,
+        clearError
     };
 })();
 

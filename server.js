@@ -2856,6 +2856,123 @@ app.post('/api/test-7am-scan', ensureAuthenticatedAPI, ensureSubscriptionActive,
   }
 });
 
+// Manual execution endpoint - execute pending signals for a market NOW
+app.post('/api/execute-signals/:market', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const { market } = req.params;
+
+    // Validate market
+    if (!['India', 'UK', 'US'].includes(market)) {
+      return res.status(400).json({ error: 'Invalid market. Must be India, UK, or US' });
+    }
+
+    // Check if user is admin
+    if (req.user.email !== ADMIN_EMAIL) {
+      return res.status(403).json({ error: 'Admin privileges required' });
+    }
+
+    if (!tradeExecutor) {
+      return res.status(503).json({ error: 'Trade executor not available' });
+    }
+
+    console.log(`🔧 [MANUAL] Manual execution triggered for ${market} by ${req.user.email}`);
+    const result = await tradeExecutor.manualExecute(market);
+
+    res.json({
+      success: true,
+      message: `Manual execution completed for ${market}`,
+      result
+    });
+  } catch (error) {
+    console.error(`❌ [MANUAL] Manual execution failed:`, error.message);
+    res.status(500).json({ error: 'Failed to execute signals', details: error.message });
+  }
+});
+
+// Health check endpoint - shows cron status and recent execution history
+app.get('/api/health/trading-automation', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.email !== ADMIN_EMAIL) {
+      return res.status(403).json({ error: 'Admin privileges required' });
+    }
+
+    const now = new Date();
+    const ukNow = new Date(now.toLocaleString("en-US", {timeZone: "Europe/London"}));
+    const istNow = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Kolkata"}));
+
+    // Get pending signals for each market
+    const indiaPending = await TradeDB.getPendingSignals('pending', 'India');
+    const ukPending = await TradeDB.getPendingSignals('pending', 'UK');
+    const usPending = await TradeDB.getPendingSignals('pending', 'US');
+
+    // Get today's signals
+    const today = new Date().toISOString().split('T')[0];
+    const todayIndia = indiaPending.filter(s => new Date(s.signal_date).toISOString().split('T')[0] === today);
+    const todayUK = ukPending.filter(s => new Date(s.signal_date).toISOString().split('T')[0] === today);
+    const todayUS = usPending.filter(s => new Date(s.signal_date).toISOString().split('T')[0] === today);
+
+    // Get execution logs
+    const executionLogs = tradeExecutor ? tradeExecutor.getExecutionLogs(5) : [];
+
+    res.json({
+      success: true,
+      timestamp: now.toISOString(),
+      serverTime: {
+        utc: now.toISOString(),
+        uk: ukNow.toLocaleString("en-GB", {timeZone: "Europe/London"}),
+        india: istNow.toLocaleString("en-IN", {timeZone: "Asia/Kolkata"}),
+        us: now.toLocaleString("en-US", {timeZone: "America/New_York"})
+      },
+      todayDate: today,
+      pendingSignals: {
+        India: {
+          total: indiaPending.length,
+          today: todayIndia.length,
+          nextExecution: '1:00 PM IST (Mon-Fri)'
+        },
+        UK: {
+          total: ukPending.length,
+          today: todayUK.length,
+          nextExecution: '1:00 PM GMT/BST (Mon-Fri)'
+        },
+        US: {
+          total: usPending.length,
+          today: todayUS.length,
+          nextExecution: '1:00 PM EST/EDT (Mon-Fri)'
+        }
+      },
+      cronJobs: {
+        scanner: {
+          active: stockScanner ? stockScanner.scheduledJobs.length > 0 : false,
+          nextRun: '7:00 AM UK Time (Mon-Fri)'
+        },
+        tradeExecutor: {
+          active: tradeExecutor ? tradeExecutor.isInitialized : false,
+          markets: ['India', 'UK', 'US']
+        }
+      },
+      recentExecutions: executionLogs.map(log => ({
+        timestamp: log.timestamp,
+        market: log.market,
+        executed: log.summary.executed,
+        failed: log.summary.failed,
+        skipped: log.summary.skipped,
+        duration: log.summary.duration
+      })),
+      diagnostics: {
+        databaseConnected: TradeDB.isConnected(),
+        telegramConfigured: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
+        scannerInitialized: stockScanner ? true : false,
+        tradeExecutorInitialized: tradeExecutor ? tradeExecutor.isInitialized : false
+      }
+    });
+  } catch (error) {
+    console.error('❌ [HEALTH] Health check failed:', error.message);
+    res.status(500).json({ error: 'Failed to get health status', details: error.message });
+  }
+});
+
 // Force trigger cron job (admin only) - useful for debugging on Render
 app.post('/api/force-cron-trigger', ensureAuthenticatedAPI, async (req, res) => {
   try {

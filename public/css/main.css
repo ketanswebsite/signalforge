@@ -9415,6 +9415,49 @@ body.dark .signal-stats {
     background: var(--bg-secondary);
 }
 
+/* Signals Error State */
+.signals-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2rem;
+    text-align: center;
+    background: var(--card-bg);
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    min-height: 300px;
+}
+
+.signals-error .error-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.8;
+}
+
+.signals-error .error-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--danger-color);
+    margin-bottom: 0.5rem;
+}
+
+.signals-error .error-message {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    max-width: 400px;
+}
+
+.signals-error .btn {
+    margin-top: 1rem;
+}
+
+body.dark .signals-error {
+    background: var(--bg-card);
+    border-color: var(--border-dark);
+}
+
 /* ===== Phase 5: Enhanced Trade Management Styles ===== */
 
 /* Performance Analytics */
