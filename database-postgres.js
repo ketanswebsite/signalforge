@@ -319,6 +319,9 @@ async function initializeDatabase() {
     // Fix portfolio capital duplicates (one-time migration)
     await fixPortfolioCapitalDuplicates();
 
+    // Sync active_positions count with actual trades (one-time migration)
+    await syncActivePositions();
+
     // Add unified audit log columns if they don't exist (for admin portal compatibility)
     try {
       await pool.query(`ALTER TABLE trade_audit_log ADD COLUMN IF NOT EXISTS entity_type VARCHAR(50) DEFAULT 'trade'`);
@@ -547,6 +550,81 @@ async function fixPortfolioCapitalDuplicates() {
   } catch (error) {
     // Silent fail - migration might not be needed
     console.error('Portfolio capital duplicate fix warning:', error.message);
+  }
+}
+
+// Migration function to sync active_positions count with actual trades
+async function syncActivePositions() {
+  try {
+    // Check if this migration has already been applied
+    const migrationCheck = await pool.query(`
+      SELECT filename FROM schema_migrations WHERE filename = '013_sync_active_positions.sql'
+    `);
+
+    if (migrationCheck.rows.length > 0) {
+      // Migration already applied, skip
+      return;
+    }
+
+    // Update India market (.NS stocks)
+    const indiaResult = await pool.query(`
+      UPDATE portfolio_capital
+      SET active_positions = (
+        SELECT COUNT(*)
+        FROM trades
+        WHERE status = 'active'
+        AND symbol LIKE '%.NS'
+        AND user_id = 'ketanjoshisahs@gmail.com'
+      )
+      WHERE user_id = 'system' AND market = 'India'
+      RETURNING active_positions
+    `);
+
+    // Update UK market (.L stocks)
+    const ukResult = await pool.query(`
+      UPDATE portfolio_capital
+      SET active_positions = (
+        SELECT COUNT(*)
+        FROM trades
+        WHERE status = 'active'
+        AND symbol LIKE '%.L'
+        AND user_id = 'ketanjoshisahs@gmail.com'
+      )
+      WHERE user_id = 'system' AND market = 'UK'
+      RETURNING active_positions
+    `);
+
+    // Update US market (no suffix)
+    const usResult = await pool.query(`
+      UPDATE portfolio_capital
+      SET active_positions = (
+        SELECT COUNT(*)
+        FROM trades
+        WHERE status = 'active'
+        AND symbol NOT LIKE '%.NS'
+        AND symbol NOT LIKE '%.L'
+        AND user_id = 'ketanjoshisahs@gmail.com'
+      )
+      WHERE user_id = 'system' AND market = 'US'
+      RETURNING active_positions
+    `);
+
+    const indiaCount = indiaResult.rows[0]?.active_positions || 0;
+    const ukCount = ukResult.rows[0]?.active_positions || 0;
+    const usCount = usResult.rows[0]?.active_positions || 0;
+
+    console.log(`✅ Synced active_positions: India=${indiaCount}, UK=${ukCount}, US=${usCount}`);
+
+    // Mark migration as applied
+    await pool.query(`
+      INSERT INTO schema_migrations (filename, applied_at)
+      VALUES ('013_sync_active_positions.sql', NOW())
+      ON CONFLICT (filename) DO NOTHING
+    `);
+
+  } catch (error) {
+    // Silent fail - migration might not be needed
+    console.error('Active positions sync warning:', error.message);
   }
 }
 
