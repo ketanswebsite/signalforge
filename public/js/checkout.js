@@ -80,7 +80,7 @@ class CheckoutPage {
                 style: {
                     base: {
                         color: '#ffffff',
-                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                        fontFamily: '"Work Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                         fontSize: '16px',
                         '::placeholder': {
                             color: '#b8b8d1'

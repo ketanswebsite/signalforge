@@ -426,7 +426,7 @@ window.TradeUIModules.export = (function() {
                         <title>Trading Analytics - ${exportDate}</title>
                         <style>
                             body {
-                                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+                                font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                                 margin: 0;
                                 padding: 20px;
                                 background-color: #f9fafb;
@@ -739,7 +739,7 @@ window.TradeUIModules.export = (function() {
                         <title>DTI Trading Report - ${exportDate}</title>
                         <style>
                             body {
-                                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+                                font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                                 margin: 0;
                                 padding: 20px;
                                 background-color: #f9fafb;
