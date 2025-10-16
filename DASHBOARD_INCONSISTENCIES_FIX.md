@@ -40,22 +40,35 @@
 **Change:** Added `justify-content: space-evenly` to `.market-status-container`
 **Impact:** Market status badges now properly spaced across the full width, responsive and evenly distributed
 
+#### 2.4 Empty State Not Hiding When Trades Exist ✅
+**File:** `public/js/trade-filters.js` (Lines 309, 317, 332, 143, 157, 166, 174, 562)
+**Issue:** Incomplete JavaScript statements causing empty state to remain visible even when trades exist
+**Change:** Fixed incomplete lines that were missing `.style.display` property assignments:
+- Line 309: Added `.style.display = 'block'` to show empty state when no trades match filters
+- Line 317: Added `.style.display = 'block'` for default empty state
+- Line 332: Added `.style.display = 'none'` to hide empty state when trades exist **(CRITICAL FIX)**
+- Lines 143, 157, 166, 174, 562: Fixed clear search button display logic
+**Impact:** Empty state now properly hides when active trades are displayed, fixing the UI overlay issue
+
+#### 2.5 Shares and Current Value Showing 0 ✅
+**Root Cause:** Database missing `shares` field for active trades (only `investment_amount` was populated by migration 015)
+**Files:**
+1. Created `migrations/017_backfill_shares.sql`
+2. Calculates shares as: `shares = investment_amount / entry_price`
+3. Handles all three markets (India, UK, US) with proper calculations
+**Impact:**
+- Shares now correctly calculated from investment amount and entry price
+- Current value automatically recalculates as `currentPrice * shares`
+- All active trades will show correct shares and current value after migration runs
+
 ### Fixes Verified:
 
-#### 2.4 Open P&L Calculation
+#### 2.6 Open P&L Calculation
 **Status:** ✅ Verified correct
-**Logic:** Calculation at lines 2229-2262 uses `(currentValue - totalInvested) / totalInvested * 100`
-**Note:** With corrected totalInvested, Open P&L calculations are now accurate
+**Logic:** Calculation uses `(currentValue - totalInvested) / totalInvested * 100`
+**Note:** With corrected totalInvested and currentValue (from migration 017), Open P&L calculations are now accurate
 
-#### 2.5 Shares and Current Value Display
-**Status:** ✅ Verified correct
-**Logic:**
-- Shares: Loaded from database (line 262)
-- Current Value: Calculated as `currentPrice * shares` (line 284)
-- Display: Properly formatted in TradeUI-Trades.js (lines 169-186)
-**Note:** These values depend on correct data from API, which should be verified
-
-#### 2.6 Market Opening Hours Logic - UPGRADED TO 100% ROBUST ✅
+#### 2.7 Market Opening Hours Logic - UPGRADED TO 100% ROBUST ✅
 **Previous Status:** Had critical flaws
 **Issues Fixed:**
 1. **toLocaleString() unreliability**: Old method used string parsing which was error-prone
