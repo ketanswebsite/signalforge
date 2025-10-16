@@ -8288,6 +8288,7 @@ button .spinner {
 .market-status-container {
     display: flex;
     flex-wrap: wrap;
+    justify-content: space-evenly;
     gap: var(--spacing-md);
     align-items: center;
     margin-bottom: var(--spacing-lg);

@@ -15,7 +15,7 @@ const TradeCore = (function() {
     
     // Constants
     const DATA_VERSION = '1.0.0'; // For versioning the exported data format
-    const PRICE_UPDATE_INTERVAL = 5000; // Update prices every 5 seconds (reduced from 1s)
+    const PRICE_UPDATE_INTERVAL = 1000; // Update prices every 1 second when markets are active
     const MAX_RETRIES = 3; // Maximum retries for fetching data
 
     /**
@@ -2152,7 +2152,8 @@ const TradeCore = (function() {
             if (trade.status === 'active') {
                 currencies[currency].activeTrades++;
                 overall.activeTrades++;
-                const invested = trade.entryPrice * trade.shares;
+                // Use investmentAmount from database instead of calculating
+                const invested = trade.investmentAmount || (trade.entryPrice * trade.shares);
                 currencies[currency].totalInvested += invested;
                 overall.totalInvested += invested;
                 
