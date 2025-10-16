@@ -22,13 +22,17 @@
     }
     
     // Apply theme to document
+    // NOTE: CSS has inverted naming - [data-theme="dark"] actually applies light colors
+    // So we need to invert the logic here
     function applyTheme(theme) {
         if (theme === DARK_THEME) {
-            document.documentElement.setAttribute('data-theme', 'dark');
-        } else {
+            // For dark mode, REMOVE the attribute (default CSS is dark)
             document.documentElement.removeAttribute('data-theme');
+        } else {
+            // For light mode, SET data-theme="dark" (CSS naming is backwards)
+            document.documentElement.setAttribute('data-theme', 'dark');
         }
-        
+
         // Update meta theme color for mobile browsers
         const metaThemeColor = document.querySelector('meta[name="theme-color"]');
         if (metaThemeColor) {
@@ -38,7 +42,8 @@
     
     // Toggle theme
     function toggleTheme() {
-        const currentTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? DARK_THEME : LIGHT_THEME;
+        // NOTE: data-theme="dark" actually means LIGHT mode (CSS naming is inverted)
+        const currentTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? LIGHT_THEME : DARK_THEME;
         const newTheme = currentTheme === DARK_THEME ? LIGHT_THEME : DARK_THEME;
         
         applyTheme(newTheme);
