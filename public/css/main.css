@@ -10585,6 +10585,283 @@ body.dark .signals-error {
 }
 
 /* ========================================
+   ADMIN V2 BASE LAYOUT
+   Core Admin Portal Structure
+   ======================================== */
+
+/* Admin Portal Body */
+.admin-portal {
+    min-height: 100vh;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+/* Admin Container - Main Layout Grid */
+.admin-container {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    min-height: 100vh;
+}
+
+/* Sidebar */
+.admin-sidebar {
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border);
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    overflow-y: auto;
+    z-index: 100;
+}
+
+.admin-logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent-gold);
+    text-decoration: none;
+    display: inline-block;
+    padding: var(--spacing-md);
+}
+
+/* Admin Navigation */
+.admin-nav {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.admin-nav-item {
+    margin: 0;
+}
+
+.admin-nav-link {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md) var(--spacing-lg);
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all var(--transition-fast);
+    border-left: 3px solid transparent;
+}
+
+.admin-nav-link:hover {
+    background: var(--surface);
+    color: var(--text-primary);
+    border-left-color: var(--accent-gold);
+}
+
+.admin-nav-link.active {
+    background: var(--surface);
+    color: var(--accent-gold);
+    border-left-color: var(--accent-gold);
+    font-weight: 600;
+}
+
+.admin-nav-icon {
+    font-size: 1.25rem;
+    width: 24px;
+    text-align: center;
+}
+
+/* Main Content Area */
+.admin-content {
+    background: var(--bg-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* Admin Header */
+.admin-header {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    padding: var(--spacing-lg) var(--spacing-xl);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+.admin-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-lg);
+}
+
+.admin-header-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.admin-header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--surface);
+    border-radius: var(--radius-full);
+    font-size: 0.875rem;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.status-success {
+    background: var(--success);
+}
+
+.status-text {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* Page Content Container */
+#page-content {
+    padding: var(--spacing-xl);
+}
+
+.page-section {
+    display: none;
+}
+
+.page-section.active {
+    display: block;
+}
+
+/* Metrics Grid */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+/* Metric Card Enhancements */
+.metric-card {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+}
+
+.metric-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.metric-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.metric-title {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-xs);
+    font-weight: 500;
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+    margin-bottom: var(--spacing-xs);
+}
+
+/* Admin Cards */
+.admin-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    margin-bottom: var(--spacing-lg);
+}
+
+.admin-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--border);
+}
+
+.admin-card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.admin-card-body {
+    color: var(--text-secondary);
+}
+
+/* Quick Actions Grid */
+.admin-card-body > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+}
+
+/* Dashboard Grid Layout */
+#dashboard-page > div:last-child {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-lg);
+}
+
+@media (max-width: 1024px) {
+    #dashboard-page > div:last-child {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Activity Feed */
+.activity-feed {
+    min-height: 200px;
+}
+
+/* Spinner */
+.spinner-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+}
+
+.spinner-medium {
+    min-height: 300px;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent-gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ========================================
    ADMIN V2 ENHANCED COMPONENTS
    Phase 2: UI/UX Improvements
    ======================================== */
@@ -11432,6 +11709,10 @@ body.dark .signals-error {
         display: block;
     }
 
+    .admin-container {
+        grid-template-columns: 1fr;
+    }
+
     .admin-sidebar {
         position: fixed;
         left: -280px;
@@ -11440,6 +11721,7 @@ body.dark .signals-error {
         width: 280px;
         z-index: 1000;
         transition: left var(--transition-base);
+        height: 100vh;
     }
 
     .admin-sidebar.open {
@@ -11457,7 +11739,11 @@ body.dark .signals-error {
 
     .admin-content {
         margin-left: 0;
-        padding: 80px 20px 20px 20px;
+        width: 100%;
+    }
+
+    #page-content {
+        padding: var(--spacing-lg);
     }
 
     .admin-header {
