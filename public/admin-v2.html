@@ -32,6 +32,7 @@
     <script src="/js/admin-analytics.js"></script>
     <script src="/js/admin-database.js"></script>
     <script src="/js/admin-settings.js"></script>
+    <script src="/js/admin-signal-testing.js"></script>
     <!-- Modern CSS -->
     <link rel="stylesheet" href="/css/main.css">
 
@@ -105,6 +106,12 @@
                         <a href="#settings" class="admin-nav-link" data-page="settings">
                             <span class="admin-nav-icon">⚙️</span>
                             <span>Settings</span>
+                        </a>
+                    </li>
+                    <li class="admin-nav-item">
+                        <a href="#signal-testing" class="admin-nav-link" data-page="signal-testing">
+                            <span class="admin-nav-icon">🧪</span>
+                            <span>Signal Testing</span>
                         </a>
                     </li>
                 </ul>
@@ -242,6 +249,7 @@
                 <div id="analytics-page" class="page-section"></div>
                 <div id="database-page" class="page-section"></div>
                 <div id="settings-page" class="page-section"></div>
+                <div id="signal-testing-page" class="page-section"></div>
             </div>
         </main>
     </div>
@@ -280,7 +288,8 @@
                 audit: 'Audit Log',
                 analytics: 'Analytics & Reports',
                 database: 'Database Tools',
-                settings: 'System Settings'
+                settings: 'System Settings',
+                'signal-testing': 'Signal Testing & Diagnostics'
             };
 
             document.getElementById('page-title').textContent = titles[pageName] || pageName;
@@ -324,6 +333,9 @@
                 case 'settings':
                     loadSettings();
                     break;
+                case 'signal-testing':
+                    loadSignalTesting();
+                    break;
             }
         }
 
@@ -366,6 +378,11 @@
         // Load Settings
         async function loadSettings() {
             await AdminSettings.init();
+        }
+
+        // Load Signal Testing
+        async function loadSignalTesting() {
+            await AdminSignalTesting.init();
         }
 
         // Run Manual Scan

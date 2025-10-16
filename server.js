@@ -2155,6 +2155,241 @@ app.get('/api/executor/logs', ensureAuthenticatedAPI, async (req, res) => {
   }
 });
 
+// ===== SIGNAL TESTING & DIAGNOSTICS ENDPOINTS =====
+
+// Test 7 AM scan manually
+app.post('/api/admin/test-scan', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    if (!stockScanner) {
+      return res.status(503).json({ error: 'Stock Scanner not available' });
+    }
+
+    console.log(`🧪 [TEST] Manual 7 AM scan triggered by ${req.user?.email || 'user'}`);
+
+    // Run the high conviction scan (same as 7 AM cron job)
+    const result = await stockScanner.runHighConvictionScan();
+
+    res.json({
+      success: true,
+      message: 'Signal scan completed',
+      ...result
+    });
+  } catch (error) {
+    console.error('❌ [TEST] Scan failed:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Test 1 PM execution manually (for specific market)
+app.post('/api/admin/test-execution', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const { market } = req.body;
+
+    // Validate market
+    if (!market || !['India', 'UK', 'US'].includes(market)) {
+      return res.status(400).json({ error: 'Invalid market. Must be India, UK, or US' });
+    }
+
+    if (!tradeExecutor) {
+      return res.status(503).json({ error: 'Trade Executor not available' });
+    }
+
+    console.log(`🧪 [TEST] Manual 1 PM execution triggered for ${market} by ${req.user?.email || 'user'}`);
+
+    // Execute market signals
+    const result = await tradeExecutor.manualExecute(market);
+
+    res.json({
+      success: true,
+      message: `Execution completed for ${market}`,
+      ...result
+    });
+  } catch (error) {
+    console.error(`❌ [TEST] Execution failed:`, error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get pending signals with detailed information
+app.get('/api/admin/pending-signals', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const { status, market } = req.query;
+
+    // Get all pending signals
+    const signals = await TradeDB.getPendingSignals(status || 'pending', market || null);
+
+    // Get today's date for comparison
+    const today = new Date().toISOString().split('T')[0];
+
+    // Enrich signals with diagnostic info
+    const enrichedSignals = signals.map(signal => {
+      const signalDateStr = new Date(signal.signal_date).toISOString().split('T')[0];
+      const isToday = signalDateStr === today;
+      const daysDiff = Math.floor((new Date() - new Date(signal.signal_date)) / (1000 * 60 * 60 * 24));
+
+      return {
+        ...signal,
+        signal_date_formatted: signalDateStr,
+        is_today: isToday,
+        days_old: daysDiff,
+        will_execute: isToday && signal.status === 'pending'
+      };
+    });
+
+    // Group by status and market
+    const grouped = {
+      byStatus: {},
+      byMarket: {},
+      byDate: {}
+    };
+
+    enrichedSignals.forEach(signal => {
+      // Group by status
+      if (!grouped.byStatus[signal.status]) {
+        grouped.byStatus[signal.status] = [];
+      }
+      grouped.byStatus[signal.status].push(signal);
+
+      // Group by market
+      if (!grouped.byMarket[signal.market]) {
+        grouped.byMarket[signal.market] = [];
+      }
+      grouped.byMarket[signal.market].push(signal);
+
+      // Group by date
+      if (!grouped.byDate[signal.signal_date_formatted]) {
+        grouped.byDate[signal.signal_date_formatted] = [];
+      }
+      grouped.byDate[signal.signal_date_formatted].push(signal);
+    });
+
+    res.json({
+      success: true,
+      today,
+      total: enrichedSignals.length,
+      signals: enrichedSignals,
+      grouped
+    });
+  } catch (error) {
+    console.error('Error fetching pending signals:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get detailed execution logs with diagnostics
+app.get('/api/admin/execution-logs', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    if (!tradeExecutor) {
+      return res.status(503).json({ error: 'Trade Executor not available' });
+    }
+
+    const logs = tradeExecutor.getExecutionLogs();
+
+    // Get today's auto-added trades
+    const today = new Date().toISOString().split('T')[0];
+    const todayTrades = await TradeDB.pool.query(`
+      SELECT
+        symbol,
+        market,
+        entry_date,
+        entry_price,
+        trade_size,
+        win_rate,
+        signal_date
+      FROM trades
+      WHERE DATE(entry_date) = $1
+        AND auto_added = true
+      ORDER BY entry_date DESC
+    `, [today]);
+
+    res.json({
+      success: true,
+      today,
+      executionLogs: logs,
+      todayTrades: todayTrades.rows
+    });
+  } catch (error) {
+    console.error('Error fetching execution logs:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get signal diagnostics (why signals not executing)
+app.get('/api/admin/signal-diagnostics', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const CapitalManager = require('./lib/portfolio/capital-manager');
+
+    // Get pending signals
+    const pendingSignals = await TradeDB.getPendingSignals('pending', null);
+    const todaySignals = pendingSignals.filter(s => {
+      const signalDateStr = new Date(s.signal_date).toISOString().split('T')[0];
+      return signalDateStr === today;
+    });
+
+    // Get capital status
+    const capitalStatus = await CapitalManager.getCapitalStatus();
+
+    // Get dismissed signals from today
+    const dismissedToday = await TradeDB.pool.query(`
+      SELECT
+        symbol,
+        market,
+        signal_date,
+        win_rate,
+        status,
+        dismissed_at,
+        created_at
+      FROM pending_signals
+      WHERE status = 'dismissed'
+        AND DATE(dismissed_at) = $1
+      ORDER BY dismissed_at DESC
+    `, [today]);
+
+    // Validate each pending signal
+    const validationResults = [];
+    for (const signal of todaySignals) {
+      const validation = await CapitalManager.validateTradeEntry(signal.market, signal.symbol);
+      validationResults.push({
+        symbol: signal.symbol,
+        market: signal.market,
+        win_rate: signal.win_rate,
+        valid: validation.valid,
+        reason: validation.reason || 'Valid',
+        code: validation.code || 'OK'
+      });
+    }
+
+    // Get cron status
+    const cronStatus = {
+      scannerInitialized: !!stockScanner,
+      executorInitialized: !!tradeExecutor,
+      serverTime: new Date().toISOString(),
+      serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      ukTime: new Date().toLocaleString("en-GB", {timeZone: "Europe/London"}),
+      indiaTime: new Date().toLocaleString("en-IN", {timeZone: "Asia/Kolkata"}),
+      usTime: new Date().toLocaleString("en-US", {timeZone: "America/New_York"})
+    };
+
+    res.json({
+      success: true,
+      today,
+      diagnostics: {
+        pendingSignalsTotal: pendingSignals.length,
+        pendingSignalsToday: todaySignals.length,
+        dismissedToday: dismissedToday.rows.length,
+        capitalStatus: capitalStatus,
+        validationResults: validationResults,
+        dismissedSignals: dismissedToday.rows,
+        cronStatus: cronStatus
+      }
+    });
+  } catch (error) {
+    console.error('Error getting signal diagnostics:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Manual exit check trigger (for testing)
 app.post('/api/exit-monitor/check-exits', ensureAuthenticatedAPI, async (req, res) => {
   try {
