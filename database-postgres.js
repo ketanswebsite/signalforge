@@ -310,6 +310,9 @@ async function initializeDatabase() {
     // Migrate existing users from trades table
     await migrateExistingUsers();
 
+    // Migrate trades to primary user (one-time migration)
+    await migrateTradesToPrimaryUser();
+
     // Add unified audit log columns if they don't exist (for admin portal compatibility)
     try {
       await pool.query(`ALTER TABLE trade_audit_log ADD COLUMN IF NOT EXISTS entity_type VARCHAR(50) DEFAULT 'trade'`);
@@ -384,6 +387,45 @@ async function migrateExistingUsers() {
       }
     }
   } catch (error) {
+  }
+}
+
+// Migration function to update trades from wrong user to primary user
+async function migrateTradesToPrimaryUser() {
+  try {
+    // Check if this migration has already been applied
+    const migrationCheck = await pool.query(`
+      SELECT filename FROM schema_migrations WHERE filename = '010_migrate_trades_to_primary_user.sql'
+    `);
+
+    if (migrationCheck.rows.length > 0) {
+      // Migration already applied, skip
+      return;
+    }
+
+    // Update all trades from deepak.joshi2898@gmail.com to ketanjoshisahs@gmail.com
+    const result = await pool.query(`
+      UPDATE trades
+      SET user_id = 'ketanjoshisahs@gmail.com'
+      WHERE user_id = 'deepak.joshi2898@gmail.com'
+      RETURNING id
+    `);
+
+    const migratedCount = result.rowCount;
+
+    if (migratedCount > 0) {
+      console.log(`✅ Migrated ${migratedCount} trades to primary user (ketanjoshisahs@gmail.com)`);
+    }
+
+    // Mark migration as applied
+    await pool.query(`
+      INSERT INTO schema_migrations (filename, applied_at)
+      VALUES ('010_migrate_trades_to_primary_user.sql', NOW())
+      ON CONFLICT (filename) DO NOTHING
+    `);
+
+  } catch (error) {
+    // Silent fail - migration might not be needed
   }
 }
 
