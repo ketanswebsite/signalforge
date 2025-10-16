@@ -215,13 +215,13 @@ async function initializeDatabase() {
       )
     `);
 
-    // Initialize default capital for single user
+    // Initialize default capital for single user (using 'system' as sentinel value)
     await pool.query(`
       INSERT INTO portfolio_capital (user_id, market, currency, initial_capital, available_capital)
       VALUES
-        (NULL, 'India', 'INR', 1000000, 1000000),
-        (NULL, 'UK', 'GBP', 10000, 10000),
-        (NULL, 'US', 'USD', 15000, 15000)
+        ('system', 'India', 'INR', 1000000, 1000000),
+        ('system', 'UK', 'GBP', 10000, 10000),
+        ('system', 'US', 'USD', 15000, 15000)
       ON CONFLICT (user_id, market) DO NOTHING
     `);
 
@@ -315,6 +315,9 @@ async function initializeDatabase() {
 
     // Backfill signal data to existing trades (one-time migration)
     await backfillSignalDataToTrades();
+
+    // Fix portfolio capital duplicates (one-time migration)
+    await fixPortfolioCapitalDuplicates();
 
     // Add unified audit log columns if they don't exist (for admin portal compatibility)
     try {
@@ -479,6 +482,71 @@ async function backfillSignalDataToTrades() {
 
   } catch (error) {
     // Silent fail - migration might not be needed
+  }
+}
+
+// Migration function to fix portfolio capital duplicates
+async function fixPortfolioCapitalDuplicates() {
+  try {
+    // Check if this migration has already been applied
+    const migrationCheck = await pool.query(`
+      SELECT filename FROM schema_migrations WHERE filename = '012_fix_portfolio_capital_duplicates.sql'
+    `);
+
+    if (migrationCheck.rows.length > 0) {
+      // Migration already applied, skip
+      return;
+    }
+
+    // Get the current state for each market (use the row with most recent activity)
+    await pool.query(`
+      CREATE TEMP TABLE IF NOT EXISTS portfolio_capital_latest AS
+      SELECT DISTINCT ON (market)
+        market,
+        currency,
+        initial_capital,
+        realized_pl,
+        allocated_capital,
+        available_capital,
+        active_positions,
+        max_positions
+      FROM portfolio_capital
+      WHERE user_id IS NULL
+      ORDER BY market, active_positions DESC, allocated_capital DESC, id DESC
+    `);
+
+    // Delete ALL existing rows with NULL user_id
+    const deleteResult = await pool.query(`DELETE FROM portfolio_capital WHERE user_id IS NULL`);
+    const deletedCount = deleteResult.rowCount;
+
+    // Insert the cleaned data using 'system' as the user_id
+    await pool.query(`
+      INSERT INTO portfolio_capital (user_id, market, currency, initial_capital, realized_pl, allocated_capital, available_capital, active_positions, max_positions)
+      SELECT
+        'system' as user_id,
+        market,
+        currency,
+        initial_capital,
+        realized_pl,
+        allocated_capital,
+        available_capital,
+        active_positions,
+        max_positions
+      FROM portfolio_capital_latest
+    `);
+
+    console.log(`✅ Fixed portfolio_capital duplicates (removed ${deletedCount} duplicate rows, kept 3)`);
+
+    // Mark migration as applied
+    await pool.query(`
+      INSERT INTO schema_migrations (filename, applied_at)
+      VALUES ('012_fix_portfolio_capital_duplicates.sql', NOW())
+      ON CONFLICT (filename) DO NOTHING
+    `);
+
+  } catch (error) {
+    // Silent fail - migration might not be needed
+    console.error('Portfolio capital duplicate fix warning:', error.message);
   }
 }
 
@@ -1784,16 +1852,12 @@ const TradeDB = {
   async getPortfolioCapital(market = null, userId = null) {
     checkConnection();
     try {
-      let query = 'SELECT * FROM portfolio_capital WHERE user_id IS NULL';
-      const params = [];
-
-      if (userId) {
-        query = 'SELECT * FROM portfolio_capital WHERE user_id = $1';
-        params.push(userId);
-      }
+      // Use 'system' as default for single-user system (not NULL to avoid duplicate row issues)
+      let query = 'SELECT * FROM portfolio_capital WHERE user_id = $1';
+      const params = [userId || 'system'];
 
       if (market) {
-        query += params.length > 0 ? ' AND market = $2' : ' AND market = $1';
+        query += ' AND market = $2';
         params.push(market);
       }
 
@@ -1848,9 +1912,9 @@ const TradeDB = {
             available_capital = initial_capital + realized_pl - (allocated_capital + $1),
             active_positions = active_positions + 1,
             updated_at = CURRENT_TIMESTAMP
-        WHERE market = $2 AND user_id IS NULL
+        WHERE market = $2 AND user_id = $3
         RETURNING *
-      `, [amount, market]);
+      `, [amount, market, userId || 'system']);
       return result.rows.length > 0;
     } catch (error) {
       throw error;
@@ -1868,9 +1932,9 @@ const TradeDB = {
             available_capital = initial_capital + (realized_pl + $2) - (allocated_capital - $1),
             active_positions = active_positions - 1,
             updated_at = CURRENT_TIMESTAMP
-        WHERE market = $3 AND user_id IS NULL
+        WHERE market = $3 AND user_id = $4
         RETURNING *
-      `, [allocatedAmount, plAmount, market]);
+      `, [allocatedAmount, plAmount, market, userId || 'system']);
       return result.rows.length > 0;
     } catch (error) {
       throw error;
