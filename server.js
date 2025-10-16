@@ -201,6 +201,75 @@ app.post('/api/telegram/webhook', express.json(), (req, res) => {
   }
 });
 
+// ===== INTERNAL SERVICE ENDPOINTS (NO AUTH REQUIRED) =====
+
+// Store signals from scan (called by scanner)
+// NOTE: No authentication required - this is an internal service-to-service call
+// IMPORTANT: This route MUST be defined BEFORE the global /api authentication middleware
+app.post('/api/signals/from-scan', async (req, res) => {
+  try {
+    const { signals } = req.body;
+
+    if (!signals || !Array.isArray(signals)) {
+      return res.status(400).json({ error: 'Invalid signals data' });
+    }
+
+    const stored = [];
+    const duplicates = [];
+    const errors = [];
+
+    for (const signal of signals) {
+      try {
+        // Check if signal already exists
+        const existing = await TradeDB.getPendingSignal(signal.symbol, signal.signalDate);
+
+        if (existing) {
+          duplicates.push({
+            symbol: signal.symbol,
+            reason: 'Signal already exists for today'
+          });
+          continue;
+        }
+
+        // Check if user already has active position
+        const activePosition = await TradeDB.getActiveTradeBySymbol(signal.symbol);
+        if (activePosition) {
+          duplicates.push({
+            symbol: signal.symbol,
+            reason: 'Already have active position'
+          });
+          continue;
+        }
+
+        // Store signal
+        const result = await TradeDB.storePendingSignal(signal);
+        stored.push({ id: result.id, symbol: signal.symbol });
+      } catch (error) {
+        // Actual errors (not duplicates) go into errors array
+        errors.push({
+          symbol: signal.symbol,
+          reason: error.message
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      created: stored.length,
+      duplicates: duplicates.length,
+      errors: errors.length,
+      details: {
+        storedSignals: stored,
+        duplicateSignals: duplicates,
+        errorSignals: errors
+      }
+    });
+  } catch (error) {
+    console.error('Error storing signals:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Protect all API routes except auth routes and telegram webhook
 app.use('/api', ensureAuthenticatedAPI);
 
@@ -1901,72 +1970,7 @@ app.post('/api/portfolio/check-exits', ensureAuthenticatedAPI, async (req, res) 
 });
 
 // ===== SIGNALS ENDPOINTS =====
-
-// Store signals from scan (called by scanner)
-// NOTE: No authentication required - this is an internal service-to-service call
-app.post('/api/signals/from-scan', async (req, res) => {
-  try {
-    const { signals } = req.body;
-
-    if (!signals || !Array.isArray(signals)) {
-      return res.status(400).json({ error: 'Invalid signals data' });
-    }
-
-    const stored = [];
-    const duplicates = [];
-    const errors = [];
-
-    for (const signal of signals) {
-      try {
-        // Check if signal already exists
-        const existing = await TradeDB.getPendingSignal(signal.symbol, signal.signalDate);
-
-        if (existing) {
-          duplicates.push({
-            symbol: signal.symbol,
-            reason: 'Signal already exists for today'
-          });
-          continue;
-        }
-
-        // Check if user already has active position
-        const activePosition = await TradeDB.getActiveTradeBySymbol(signal.symbol);
-        if (activePosition) {
-          duplicates.push({
-            symbol: signal.symbol,
-            reason: 'Already have active position'
-          });
-          continue;
-        }
-
-        // Store signal
-        const result = await TradeDB.storePendingSignal(signal);
-        stored.push({ id: result.id, symbol: signal.symbol });
-      } catch (error) {
-        // Actual errors (not duplicates) go into errors array
-        errors.push({
-          symbol: signal.symbol,
-          reason: error.message
-        });
-      }
-    }
-
-    res.json({
-      success: true,
-      created: stored.length,
-      duplicates: duplicates.length,
-      errors: errors.length,
-      details: {
-        storedSignals: stored,
-        duplicateSignals: duplicates,
-        errorSignals: errors
-      }
-    });
-  } catch (error) {
-    console.error('Error storing signals:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
+// NOTE: /api/signals/from-scan is defined BEFORE the global auth middleware (see line ~209)
 
 // Get pending signals
 app.get('/api/signals/pending', ensureAuthenticatedAPI, async (req, res) => {
