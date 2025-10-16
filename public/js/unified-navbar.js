@@ -305,11 +305,14 @@
         });
     }
 
+    let tradeCountRetries = 0;
+    const MAX_RETRIES = 10;
+
     async function updateTradeCount() {
         try {
             if (typeof TradeCore !== 'undefined' && TradeCore.getActiveTrades) {
                 const trades = await TradeCore.getActiveTrades();
-                const count = trades.length;
+                const count = trades ? trades.length : 0;
 
                 // Update both desktop and mobile badges
                 const navBadge = document.getElementById('nav-trades-count');
@@ -317,15 +320,25 @@
 
                 if (navBadge) {
                     navBadge.textContent = count;
-                    navBadge
+                    navBadge.style.display = count > 0 ? 'inline-block' : 'none';
                 }
 
                 if (drawerBadge) {
                     drawerBadge.textContent = count;
-                    drawerBadge
+                    drawerBadge.style.display = count > 0 ? 'inline-block' : 'none';
+                }
+
+                // Reset retry counter on success
+                tradeCountRetries = 0;
+            } else {
+                // TradeCore not ready yet, retry after a short delay
+                if (tradeCountRetries < MAX_RETRIES) {
+                    tradeCountRetries++;
+                    setTimeout(updateTradeCount, 500);
                 }
             }
         } catch (error) {
+            console.error('Error updating trade count:', error);
         }
     }
 
