@@ -12454,3 +12454,334 @@ body.dark .signals-error {
         width: 100% !important;
     }
 }
+
+/* ================================================
+   Phase 4: Performance & Virtual Scrolling Styles
+   ================================================ */
+
+/* Virtual Scroll Container */
+.virtual-scroll-container {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+.virtual-scroll-wrapper {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.virtual-scroll-header {
+    background: var(--surface-light);
+    border-bottom: 2px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.virtual-scroll-header-row {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.virtual-scroll-viewport {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
+    /* Enable momentum scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
+    /* Improve scrolling performance */
+    will-change: scroll-position;
+}
+
+.virtual-scroll-viewport::-webkit-scrollbar {
+    width: 8px;
+}
+
+.virtual-scroll-viewport::-webkit-scrollbar-track {
+    background: var(--surface);
+}
+
+.virtual-scroll-viewport::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+.virtual-scroll-viewport::-webkit-scrollbar-thumb:hover {
+    background: var(--text-tertiary);
+}
+
+.virtual-scroll-spacer {
+    position: relative;
+    width: 100%;
+}
+
+.virtual-scroll-content {
+    width: 100%;
+    /* GPU acceleration for smooth scrolling */
+    transform: translateZ(0);
+    will-change: transform;
+}
+
+/* Virtual Scroll Row */
+.virtual-scroll-row {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    padding: 0 16px;
+    background: var(--surface);
+    transition: background-color 0.2s ease;
+    /* GPU acceleration */
+    transform: translateZ(0);
+}
+
+.virtual-scroll-row:hover {
+    background: var(--surface-hover);
+}
+
+.virtual-scroll-row:last-child {
+    border-bottom: none;
+}
+
+.virtual-scroll-cell {
+    padding: 12px 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Virtual Scroll List */
+.virtual-scroll-list-container .virtual-scroll-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--surface);
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+    /* GPU acceleration */
+    transform: translateZ(0);
+}
+
+.virtual-scroll-list-container .virtual-scroll-item:hover {
+    background: var(--surface-hover);
+}
+
+.virtual-scroll-list-container .virtual-scroll-item:last-child {
+    border-bottom: none;
+}
+
+/* Loading States for Performance */
+.loading-skeleton {
+    background: linear-gradient(
+        90deg,
+        var(--surface-light) 25%,
+        var(--surface-hover) 50%,
+        var(--surface-light) 75%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+    border-radius: 4px;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Performance Optimization Classes */
+.gpu-accelerated {
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
+    perspective: 1000px;
+}
+
+.optimize-animations {
+    /* Reduce animations for performance */
+    animation-duration: 0.1s !important;
+    transition-duration: 0.1s !important;
+}
+
+.reduce-motion {
+    /* Respect user's motion preferences */
+    animation: none !important;
+    transition: none !important;
+}
+
+/* Lazy Loading Images */
+img[data-src] {
+    background: var(--surface-light);
+    min-height: 100px;
+}
+
+img.lazy-loaded {
+    animation: fade-in 0.3s ease-in;
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Chart Performance */
+.chart-container {
+    position: relative;
+    /* Contain layout reflows */
+    contain: layout style paint;
+}
+
+.chart-container canvas {
+    /* GPU acceleration for canvas */
+    transform: translateZ(0);
+    will-change: contents;
+}
+
+.chart-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    background: var(--surface-light);
+    border-radius: 8px;
+}
+
+.chart-loading::after {
+    content: '';
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--border-color);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: chart-spinner 0.8s linear infinite;
+}
+
+@keyframes chart-spinner {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Table Performance Optimizations */
+.optimized-table {
+    /* Contain layout for better performance */
+    contain: layout style;
+}
+
+.optimized-table thead {
+    /* Sticky header with GPU acceleration */
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    transform: translateZ(0);
+    will-change: transform;
+}
+
+.optimized-table tbody tr {
+    /* GPU acceleration for rows */
+    transform: translateZ(0);
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .virtual-scroll-content {
+        will-change: auto;
+    }
+}
+
+/* Dark Mode Overrides */
+[data-theme="dark"] .virtual-scroll-header {
+    background: var(--surface);
+}
+
+[data-theme="dark"] .virtual-scroll-row,
+[data-theme="dark"] .virtual-scroll-item {
+    background: var(--surface);
+}
+
+[data-theme="dark"] .virtual-scroll-row:hover,
+[data-theme="dark"] .virtual-scroll-item:hover {
+    background: var(--surface-light);
+}
+
+[data-theme="dark"] .loading-skeleton {
+    background: linear-gradient(
+        90deg,
+        var(--surface) 25%,
+        var(--surface-light) 50%,
+        var(--surface) 75%
+    );
+    background-size: 200% 100%;
+}
+
+[data-theme="dark"] .chart-loading {
+    background: var(--surface);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .virtual-scroll-row {
+        padding: 0 12px;
+    }
+
+    .virtual-scroll-cell {
+        padding: 10px 6px;
+        font-size: 0.875rem;
+    }
+
+    .virtual-scroll-list-container .virtual-scroll-item {
+        padding: 10px 12px;
+    }
+
+    /* Reduce GPU acceleration on mobile for battery */
+    .virtual-scroll-content,
+    .virtual-scroll-row,
+    .virtual-scroll-item {
+        will-change: auto;
+    }
+}
+
+/* High Performance Mode */
+.high-performance-mode .virtual-scroll-row,
+.high-performance-mode .virtual-scroll-item {
+    transition: none;
+}
+
+.high-performance-mode * {
+    animation: none !important;
+}
+
+/* Print Styles */
+@media print {
+    .virtual-scroll-viewport {
+        overflow: visible !important;
+        height: auto !important;
+    }
+
+    .virtual-scroll-spacer {
+        height: auto !important;
+    }
+
+    .virtual-scroll-content {
+        position: static !important;
+        transform: none !important;
+    }
+}
