@@ -165,6 +165,12 @@
 
                     if (valueElement) {
                         const originalText = valueElement.textContent.trim();
+
+                        // Skip animation for decimal numbers (like percentages with decimals)
+                        if (originalText.includes('.')) {
+                            return;
+                        }
+
                         const value = parseInt(originalText.replace(/[^0-9]/g, ''));
 
                         if (!isNaN(value) && value > 0) {
