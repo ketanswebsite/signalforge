@@ -141,9 +141,7 @@ const PortfolioSimulator = (function() {
                     processing: {
                         totalStocksProcessed: allStocks.length,
                         stocksWithWinRates: stockWinRates.length,
-                        highConvictionStocks: highConvictionStocks.length,
-                        batchSize: 50,
-                        totalBatches: Math.ceil(allStocks.length / 50)
+                        highConvictionStocks: highConvictionStocks.length
                     },
                     // Signal stats
                     signals: {
@@ -206,7 +204,7 @@ const PortfolioSimulator = (function() {
     /**
      * Fetch all stocks data from all markets
      * Uses comprehensive stock list from StockData module (2,200+ stocks)
-     * Optimized with parallel batch processing for 50x speed improvement
+     * Optimized with full parallel processing for maximum speed
      */
     async function fetchAllStocksData(startDate, progressCallback) {
         // Use StockData module (SINGLE SOURCE OF TRUTH)
@@ -223,56 +221,42 @@ const PortfolioSimulator = (function() {
         ];
 
         const total = allStockDefinitions.length;
-        const BATCH_SIZE = 50;  // Fetch 50 stocks in parallel for optimal performance
-        const allStocks = [];
         const endDate = new Date().toISOString().split('T')[0];
 
-        // Process in batches for parallel execution
-        for (let batchStart = 0; batchStart < total; batchStart += BATCH_SIZE) {
-            const batchEnd = Math.min(batchStart + BATCH_SIZE, total);
-            const batch = allStockDefinitions.slice(batchStart, batchEnd);
-            const batchNum = Math.floor(batchStart / BATCH_SIZE) + 1;
-            const totalBatches = Math.ceil(total / BATCH_SIZE);
-
-            // Report progress for this batch
-            if (progressCallback) {
-                progressCallback({
-                    stage: 'fetch',
-                    message: `Fetching batch ${batchNum}/${totalBatches}`,
-                    current: batchStart,
-                    total: total,
-                    percent: Math.round((batchStart / total) * 100)
-                });
-            }
-
-            // Fetch entire batch in parallel using Promise.all
-            const batchPromises = batch.map(async (stockObj) => {
-                const market = getMarketForSymbol(stockObj.symbol);
-                try {
-                    const stockData = await fetchStockData(stockObj.symbol, startDate, endDate);
-                    if (stockData && stockData.dates && stockData.dates.length > 200) {
-                        return {
-                            symbol: stockObj.symbol,
-                            market: market,
-                            data: stockData
-                        };
-                    }
-                } catch (error) {
-                    // Silently skip failed fetches
-                }
-                return null;
+        // Report initial progress
+        if (progressCallback) {
+            progressCallback({
+                stage: 'fetch',
+                message: `Fetching ${total} stocks...`,
+                current: 0,
+                total: total,
+                percent: 0
             });
-
-            // Wait for entire batch to complete
-            const batchResults = await Promise.all(batchPromises);
-
-            // Add successful results to the collection
-            for (const result of batchResults) {
-                if (result) {
-                    allStocks.push(result);
-                }
-            }
         }
+
+        // Fetch ALL stocks in parallel using Promise.all
+        const allPromises = allStockDefinitions.map(async (stockObj) => {
+            const market = getMarketForSymbol(stockObj.symbol);
+            try {
+                const stockData = await fetchStockData(stockObj.symbol, startDate, endDate);
+                if (stockData && stockData.dates && stockData.dates.length > 200) {
+                    return {
+                        symbol: stockObj.symbol,
+                        market: market,
+                        data: stockData
+                    };
+                }
+            } catch (error) {
+                // Silently skip failed fetches
+            }
+            return null;
+        });
+
+        // Wait for all fetches to complete
+        const results = await Promise.all(allPromises);
+
+        // Filter out null results
+        const allStocks = results.filter(result => result !== null);
 
         return allStocks;
     }
@@ -357,86 +341,72 @@ const PortfolioSimulator = (function() {
     /**
      * Calculate historical win rates for all stocks
      * Uses 5-year backtest period BEFORE simulation start
-     * Optimized with parallel batch processing (CPU-intensive work uses smaller batches)
+     * Optimized with full parallel processing for maximum speed
      */
     async function calculateHistoricalWinRates(allStocks, dates, progressCallback) {
-        const stockWinRates = [];
         const total = allStocks.length;
-        const BATCH_SIZE = 25;  // Smaller batches for CPU-intensive backtesting
 
-        // Process in batches for parallel execution
-        for (let batchStart = 0; batchStart < total; batchStart += BATCH_SIZE) {
-            const batchEnd = Math.min(batchStart + BATCH_SIZE, total);
-            const batch = allStocks.slice(batchStart, batchEnd);
-            const batchNum = Math.floor(batchStart / BATCH_SIZE) + 1;
-            const totalBatches = Math.ceil(total / BATCH_SIZE);
-
-            // Report progress for this batch
-            if (progressCallback) {
-                progressCallback({
-                    stage: 'backtest',
-                    message: `Backtesting batch ${batchNum}/${totalBatches}`,
-                    current: batchStart,
-                    total: total,
-                    percent: Math.round((batchStart / total) * 100)
-                });
-            }
-
-            // Process batch in parallel using Promise.all
-            const batchPromises = batch.map(async (stock) => {
-                try {
-                    // Filter data for historical backtest period only
-                    const historicalData = filterDataByDateRange(
-                        stock.data,
-                        dates.dataStart,
-                        dates.simulationStart
-                    );
-
-                    if (!historicalData || historicalData.dates.length < 200) {
-                        return null; // Not enough data
-                    }
-
-                    // Run backtest on historical period
-                    const backtest = window.BacktestCalculator.runBacktest(historicalData, CONFIG.DTI_PARAMS);
-
-                    if (backtest && backtest.trades) {
-                        // Count only signals AFTER buffer period (6 months)
-                        const bufferEnd = new Date(dates.bufferEnd);
-                        const historicalSignals = backtest.trades.filter(trade => {
-                            const entryDate = new Date(trade.entryDate);
-                            return entryDate >= bufferEnd && !trade.isOpen;
-                        });
-
-                        // Only proceed if we have at least 5 historical signals after buffer
-                        if (historicalSignals.length >= 5) {
-                            const wins = historicalSignals.filter(t => t.isWin).length;
-                            const winRate = (wins / historicalSignals.length) * 100;
-
-                            return {
-                                symbol: stock.symbol,
-                                market: stock.market,
-                                winRate: winRate,
-                                historicalSignalCount: historicalSignals.length,
-                                avgReturn: backtest.metrics.avgReturn
-                            };
-                        }
-                    }
-                } catch (error) {
-                    // Silently skip failed backtests
-                }
-                return null;
+        // Report initial progress
+        if (progressCallback) {
+            progressCallback({
+                stage: 'backtest',
+                message: `Backtesting ${total} stocks...`,
+                current: 0,
+                total: total,
+                percent: 0
             });
-
-            // Wait for entire batch to complete
-            const batchResults = await Promise.all(batchPromises);
-
-            // Add successful results to the collection
-            for (const result of batchResults) {
-                if (result) {
-                    stockWinRates.push(result);
-                }
-            }
         }
+
+        // Process ALL stocks in parallel using Promise.all
+        const allPromises = allStocks.map(async (stock) => {
+            try {
+                // Filter data for historical backtest period only
+                const historicalData = filterDataByDateRange(
+                    stock.data,
+                    dates.dataStart,
+                    dates.simulationStart
+                );
+
+                if (!historicalData || historicalData.dates.length < 200) {
+                    return null; // Not enough data
+                }
+
+                // Run backtest on historical period
+                const backtest = window.BacktestCalculator.runBacktest(historicalData, CONFIG.DTI_PARAMS);
+
+                if (backtest && backtest.trades) {
+                    // Count only signals AFTER buffer period (6 months)
+                    const bufferEnd = new Date(dates.bufferEnd);
+                    const historicalSignals = backtest.trades.filter(trade => {
+                        const entryDate = new Date(trade.entryDate);
+                        return entryDate >= bufferEnd && !trade.isOpen;
+                    });
+
+                    // Only proceed if we have at least 5 historical signals after buffer
+                    if (historicalSignals.length >= 5) {
+                        const wins = historicalSignals.filter(t => t.isWin).length;
+                        const winRate = (wins / historicalSignals.length) * 100;
+
+                        return {
+                            symbol: stock.symbol,
+                            market: stock.market,
+                            winRate: winRate,
+                            historicalSignalCount: historicalSignals.length,
+                            avgReturn: backtest.metrics.avgReturn
+                        };
+                    }
+                }
+            } catch (error) {
+                // Silently skip failed backtests
+            }
+            return null;
+        });
+
+        // Wait for all backtests to complete
+        const results = await Promise.all(allPromises);
+
+        // Filter out null results
+        const stockWinRates = results.filter(result => result !== null);
 
         return stockWinRates;
     }
@@ -459,91 +429,79 @@ const PortfolioSimulator = (function() {
     /**
      * Generate signals during simulation period for high conviction stocks
      * Layer 2: Includes open trades with proper handling
-     * Optimized with parallel batch processing
+     * Optimized with full parallel processing for maximum speed
      */
     async function generateSimulationSignals(allStocks, highConvictionStocks, dates, progressCallback) {
-        const signals = [];
         const highConvictionSymbols = new Set(highConvictionStocks.map(s => s.symbol));
-        const BATCH_SIZE = 25;  // Smaller batches for CPU-intensive work
 
         // Filter to only high conviction stocks first (more efficient)
         const stocksToProcess = allStocks.filter(s => highConvictionSymbols.has(s.symbol));
         const total = stocksToProcess.length;
 
-        // Process in batches for parallel execution
-        for (let batchStart = 0; batchStart < total; batchStart += BATCH_SIZE) {
-            const batchEnd = Math.min(batchStart + BATCH_SIZE, total);
-            const batch = stocksToProcess.slice(batchStart, batchEnd);
-            const batchNum = Math.floor(batchStart / BATCH_SIZE) + 1;
-            const totalBatches = Math.ceil(total / BATCH_SIZE);
+        // Report initial progress
+        if (progressCallback) {
+            progressCallback({
+                stage: 'signals',
+                message: `Generating signals for ${total} stocks...`,
+                current: 0,
+                total: total,
+                percent: 0
+            });
+        }
 
-            // Report progress for this batch
-            if (progressCallback) {
-                progressCallback({
-                    stage: 'signals',
-                    message: `Generating signals batch ${batchNum}/${totalBatches}`,
-                    current: batchStart,
-                    total: total,
-                    percent: Math.round((batchStart / total) * 100)
-                });
-            }
+        // Process ALL stocks in parallel using Promise.all
+        const allPromises = stocksToProcess.map(async (stock) => {
+            const stockSignals = [];
+            try {
+                // Run backtest on entire data range to get all signals
+                const backtest = window.BacktestCalculator.runBacktest(stock.data, CONFIG.DTI_PARAMS);
 
-            // Process batch in parallel using Promise.all
-            const batchPromises = batch.map(async (stock) => {
-                const stockSignals = [];
-                try {
-                    // Run backtest on entire data range to get all signals
-                    const backtest = window.BacktestCalculator.runBacktest(stock.data, CONFIG.DTI_PARAMS);
+                if (backtest && backtest.trades) {
+                    // Get win rate and historical signal count from high conviction data
+                    const stockInfo = highConvictionStocks.find(s => s.symbol === stock.symbol);
 
-                    if (backtest && backtest.trades) {
-                        // Get win rate and historical signal count from high conviction data
-                        const stockInfo = highConvictionStocks.find(s => s.symbol === stock.symbol);
+                    // Convert trades to signals, filter for simulation period
+                    for (const trade of backtest.trades) {
+                        const entryDate = new Date(trade.entryDate);
+                        const simStart = new Date(dates.simulationStart);
 
-                        // Convert trades to signals, filter for simulation period
-                        for (const trade of backtest.trades) {
-                            const entryDate = new Date(trade.entryDate);
-                            const simStart = new Date(dates.simulationStart);
-
-                            // Layer 2: Include completed trades OR open trades that entered during simulation
-                            // Open trades likely have incomplete data but represent real opportunities
-                            if (entryDate >= simStart && (!trade.isOpen || shouldIncludeOpenTrade(trade, dates))) {
-                                stockSignals.push({
-                                    symbol: stock.symbol,
-                                    market: stock.market,
-                                    entryDate: trade.entryDate,
-                                    entryPrice: trade.entryPrice,
-                                    exitDate: trade.exitDate,
-                                    exitPrice: trade.exitPrice,
-                                    plPercent: trade.plPercent,
-                                    holdingDays: trade.holdingDays,
-                                    exitReason: trade.exitReason,
-                                    winRate: stockInfo.winRate,
-                                    historicalSignalCount: stockInfo.historicalSignalCount,
-                                    isWin: trade.isWin,
-                                    isOpen: trade.isOpen || false,  // Track if signal is from open trade
-                                    // DTI values at entry
-                                    prevDTI: trade.prevDTI,
-                                    entryDTI: trade.entryDTI,
-                                    prev7DayDTI: trade.prev7DayDTI,
-                                    entry7DayDTI: trade.entry7DayDTI
-                                });
-                            }
+                        // Layer 2: Include completed trades OR open trades that entered during simulation
+                        // Open trades likely have incomplete data but represent real opportunities
+                        if (entryDate >= simStart && (!trade.isOpen || shouldIncludeOpenTrade(trade, dates))) {
+                            stockSignals.push({
+                                symbol: stock.symbol,
+                                market: stock.market,
+                                entryDate: trade.entryDate,
+                                entryPrice: trade.entryPrice,
+                                exitDate: trade.exitDate,
+                                exitPrice: trade.exitPrice,
+                                plPercent: trade.plPercent,
+                                holdingDays: trade.holdingDays,
+                                exitReason: trade.exitReason,
+                                winRate: stockInfo.winRate,
+                                historicalSignalCount: stockInfo.historicalSignalCount,
+                                isWin: trade.isWin,
+                                isOpen: trade.isOpen || false,  // Track if signal is from open trade
+                                // DTI values at entry
+                                prevDTI: trade.prevDTI,
+                                entryDTI: trade.entryDTI,
+                                prev7DayDTI: trade.prev7DayDTI,
+                                entry7DayDTI: trade.entry7DayDTI
+                            });
                         }
                     }
-                } catch (error) {
-                    // Silently skip failed signal generation
                 }
-                return stockSignals;
-            });
-
-            // Wait for entire batch to complete
-            const batchResults = await Promise.all(batchPromises);
-
-            // Add all signals from this batch
-            for (const stockSignals of batchResults) {
-                signals.push(...stockSignals);
+            } catch (error) {
+                // Silently skip failed signal generation
             }
-        }
+            return stockSignals;
+        });
+
+        // Wait for all signal generation to complete
+        const results = await Promise.all(allPromises);
+
+        // Flatten all signals into a single array
+        const signals = results.flat();
 
         // Sort by entry date (FIFO)
         return signals.sort((a, b) => new Date(a.entryDate) - new Date(b.entryDate));
