@@ -270,15 +270,18 @@ const PortfolioUI = (function() {
         const tbody = document.getElementById('completed-trades-body');
         const countSpan = document.getElementById('completed-count');
 
-        countSpan.textContent = trades.length;
+        // Filter out trades without exit dates (only show truly completed trades)
+        const completedTrades = trades.filter(trade => trade.exitDate && trade.exitPrice !== undefined);
 
-        if (trades.length === 0) {
+        countSpan.textContent = completedTrades.length;
+
+        if (completedTrades.length === 0) {
             tbody.innerHTML = '<tr><td colspan="18" class="no-data">No completed trades</td></tr>';
             return;
         }
 
         // Apply filters
-        const filteredTrades = getFilteredTrades(trades);
+        const filteredTrades = getFilteredTrades(completedTrades);
 
         tbody.innerHTML = '';
 
