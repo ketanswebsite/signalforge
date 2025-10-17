@@ -406,14 +406,14 @@ window.TradeUI = (function() {
             openPLElement.classList.remove('positive', 'negative');
             openPLElement.classList.add(newValue >= 0 ? 'positive' : 'negative');
             
-            // Add glow effect if value changed
+            // Add glow effect and animation if value changed
             if (Math.abs(newValue - oldValue) > 0.01) {
                 if (newValue > oldValue) {
-                    openPLElement.classList.add('glow-green');
-                    setTimeout(() => openPLElement.classList.remove('glow-green'), 1000);
+                    openPLElement.classList.add('value-increase');
+                    setTimeout(() => openPLElement.classList.remove('value-increase'), 800);
                 } else if (newValue < oldValue) {
-                    openPLElement.classList.add('glow-red');
-                    setTimeout(() => openPLElement.classList.remove('glow-red'), 1000);
+                    openPLElement.classList.add('value-decrease');
+                    setTimeout(() => openPLElement.classList.remove('value-decrease'), 800);
                 }
             }
             
@@ -441,14 +441,14 @@ window.TradeUI = (function() {
                     element.classList.remove('positive', 'negative');
                     element.classList.add(newValue >= 0 ? 'positive' : 'negative');
                     
-                    // Add glow effect if value changed
+                    // Add glow effect and animation if value changed
                     if (Math.abs(newValue - oldValue) > 0.01) {
                         if (newValue > oldValue) {
-                            element.classList.add('glow-green');
-                            setTimeout(() => element.classList.remove('glow-green'), 1000);
+                            element.classList.add('value-increase');
+                            setTimeout(() => element.classList.remove('value-increase'), 800);
                         } else if (newValue < oldValue) {
-                            element.classList.add('glow-red');
-                            setTimeout(() => element.classList.remove('glow-red'), 1000);
+                            element.classList.add('value-decrease');
+                            setTimeout(() => element.classList.remove('value-decrease'), 800);
                         }
                     }
                     

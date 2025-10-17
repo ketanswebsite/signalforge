@@ -758,26 +758,52 @@ function renderActiveTrades() {
         }
         
         if (winRate) {
-            const rate = currencyStats.overall.winRate;
-            winRate.textContent = `${rate.toFixed(2)}%`;
-            winRate.className = rate >= 50 ? 'positive' : '';
-            
+            const newRate = currencyStats.overall.winRate;
+            const oldRate = parseFloat(winRate.textContent) || 0;
+
+            winRate.textContent = `${newRate.toFixed(2)}%`;
+            winRate.className = `statistic-value ${newRate >= 50 ? 'positive' : ''}`;
+
+            // Add animation if value changed
+            if (Math.abs(newRate - oldRate) > 0.01) {
+                if (newRate > oldRate) {
+                    winRate.classList.add('value-increase');
+                    setTimeout(() => winRate.classList.remove('value-increase'), 800);
+                } else if (newRate < oldRate) {
+                    winRate.classList.add('value-decrease');
+                    setTimeout(() => winRate.classList.remove('value-decrease'), 800);
+                }
+            }
+
             // Update card styling
             const rateCard = winRate.closest('.statistic-card');
             if (rateCard) {
-                rateCard.className = `statistic-card ${rate >= 50 ? 'success' : ''}`;
+                rateCard.className = `statistic-card ${newRate >= 50 ? 'success' : ''}`;
             }
         }
         
         if (avgProfit) {
-            const profit = currencyStats.overall.avgProfit;
-            avgProfit.textContent = `${profit.toFixed(2)}%`;
-            avgProfit.className = profit > 0 ? 'positive' : (profit < 0 ? 'negative' : '');
-            
+            const newProfit = currencyStats.overall.avgProfit;
+            const oldProfit = parseFloat(avgProfit.textContent) || 0;
+
+            avgProfit.textContent = `${newProfit.toFixed(2)}%`;
+            avgProfit.className = `statistic-value ${newProfit > 0 ? 'positive' : (newProfit < 0 ? 'negative' : '')}`;
+
+            // Add animation if value changed
+            if (Math.abs(newProfit - oldProfit) > 0.01) {
+                if (newProfit > oldProfit) {
+                    avgProfit.classList.add('value-increase');
+                    setTimeout(() => avgProfit.classList.remove('value-increase'), 800);
+                } else if (newProfit < oldProfit) {
+                    avgProfit.classList.add('value-decrease');
+                    setTimeout(() => avgProfit.classList.remove('value-decrease'), 800);
+                }
+            }
+
             // Update card styling
             const profitCard = avgProfit.closest('.statistic-card');
             if (profitCard) {
-                profitCard.className = `statistic-card ${profit > 0 ? 'success' : (profit < 0 ? 'danger' : '')}`;
+                profitCard.className = `statistic-card ${newProfit > 0 ? 'success' : (newProfit < 0 ? 'danger' : '')}`;
             }
         }
         
