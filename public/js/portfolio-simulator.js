@@ -832,6 +832,12 @@ const PortfolioSimulator = (function() {
                     stats.fuzzyMatches++;
                 }
 
+                // CRITICAL: Skip signals marked as open - they shouldn't trigger position closes
+                // Open trades have exitDate/exitPrice set but are not actually complete
+                if (signal.isOpen === true) {
+                    continue; // Don't close this position based on an open signal
+                }
+
                 // Check if exit date has passed (handles weekends/holidays)
                 const signalExitDate = new Date(signal.exitDate);
                 const current = new Date(currentDate);
@@ -852,7 +858,9 @@ const PortfolioSimulator = (function() {
                         entryDTI: signal.entryDTI,
                         prev7DayDTI: signal.prev7DayDTI,
                         entry7DayDTI: signal.entry7DayDTI,
-                        historicalSignalCount: signal.historicalSignalCount
+                        historicalSignalCount: signal.historicalSignalCount,
+                        // Preserve isOpen flag for defensive filtering
+                        isOpen: signal.isOpen || false
                     };
 
                     portfolio.closedTrades.push(closedTrade);
