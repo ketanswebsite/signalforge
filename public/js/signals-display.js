@@ -275,60 +275,110 @@ const SignalsDisplay = (function() {
             const countdown = calculateTimeUntilExecution(market);
 
             if (countdown.expired) {
-                element.textContent = '⏰ Executing now...';
-                element.classList.add('executing');
-                element.parentElement.parentElement.classList.add('executing');
+                if (countdown.overdue) {
+                    const overdueHours = Math.floor(countdown.overdueMinutes / 60);
+                    const overdueMinutes = countdown.overdueMinutes % 60;
+
+                    if (overdueHours > 0) {
+                        element.textContent = `Executed ${overdueHours}h ${overdueMinutes}m ago`;
+                    } else {
+                        element.textContent = `Executed ${overdueMinutes}m ago`;
+                    }
+                    element.classList.add('overdue');
+                    element.parentElement.parentElement.classList.add('overdue');
+                } else {
+                    element.textContent = 'Executing now...';
+                    element.classList.add('executing');
+                    element.parentElement.parentElement.classList.add('executing');
+                }
             } else if (countdown.hours < 1) {
-                element.textContent = `⏰ Executes in ${countdown.minutes}m ${countdown.seconds}s`;
+                element.textContent = `Executes in ${countdown.minutes}m`;
                 element.classList.add('imminent');
                 element.parentElement.parentElement.classList.add('imminent');
             } else if (countdown.hours < 6) {
-                element.textContent = `⏰ Executes in ${countdown.hours}h ${countdown.minutes}m`;
+                element.textContent = `Executes in ${countdown.hours}h ${countdown.minutes}m`;
                 element.classList.add('soon');
             } else {
-                element.textContent = `⏰ Executes in ${countdown.hours}h ${countdown.minutes}m`;
+                element.textContent = `Executes in ${countdown.hours}h ${countdown.minutes}m`;
             }
         });
     }
 
     /**
      * Calculate time until 1 PM execution for a market
+     * Uses IANA timezone identifiers to properly handle daylight saving time (BST/EDT)
      */
     function calculateTimeUntilExecution(market) {
-        const now = new Date();
-
-        // Get 1 PM today in market timezone
-        const executionTime = new Date(now);
-        executionTime.setHours(13, 0, 0, 0);
-
-        // Timezone offsets in minutes
-        const timezoneOffsets = {
-            'India': 330,  // IST is UTC+5:30
-            'UK': 0,       // GMT is UTC+0 (BST would be +60, but we'll use local time)
-            'US': -300     // EST is UTC-5 (EDT would be -240)
+        // Map market names to IANA timezone identifiers
+        const timezoneMap = {
+            'India': 'Asia/Kolkata',
+            'UK': 'Europe/London',      // Automatically handles GMT/BST
+            'US': 'America/New_York'    // Automatically handles EST/EDT
         };
 
-        const offset = timezoneOffsets[market] || 0;
-        const localOffset = now.getTimezoneOffset();
-        executionTime.setMinutes(executionTime.getMinutes() + offset + localOffset);
-
-        let diff = executionTime - now;
-
-        // If time has passed today, it was for today but already happened
-        if (diff < 0) {
-            // Check if it happened within the last hour (might still be executing)
-            if (Math.abs(diff) < 3600000) { // 1 hour in milliseconds
-                return { expired: true };
-            }
-            // Otherwise, it's scheduled for tomorrow
-            diff += 24 * 60 * 60 * 1000;
+        const timezone = timezoneMap[market];
+        if (!timezone) {
+            console.error(`Unknown market: ${market}`);
+            return { expired: false, hours: 0, minutes: 0, seconds: 0 };
         }
 
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        try {
+            // Get current time
+            const now = new Date();
 
-        return { expired: false, hours, minutes, seconds };
+            // Get current time in market timezone as a string, then parse it
+            const marketTimeStr = now.toLocaleString('en-US', {
+                timeZone: timezone,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+
+            // Parse the market time string (format: "MM/DD/YYYY, HH:mm:ss")
+            const [datePart, timePart] = marketTimeStr.split(', ');
+            const [month, day, year] = datePart.split('/');
+            const [hours, minutes, seconds] = timePart.split(':');
+
+            // Create Date object representing current time in market timezone
+            const marketNow = new Date(year, month - 1, day, hours, minutes, seconds);
+
+            // Create Date object for 1 PM today in market timezone
+            const executionTime = new Date(year, month - 1, day, 13, 0, 0);
+
+            // Calculate difference in milliseconds
+            const diffMs = executionTime - marketNow;
+
+            // If execution time has passed (negative difference)
+            if (diffMs < 0) {
+                const overdueMs = Math.abs(diffMs);
+                const overdueMinutes = Math.floor(overdueMs / (1000 * 60));
+
+                return {
+                    expired: true,
+                    overdue: true,
+                    overdueMinutes: overdueMinutes
+                };
+            }
+
+            // Calculate hours and minutes remaining
+            const hoursRemaining = Math.floor(diffMs / (1000 * 60 * 60));
+            const minutesRemaining = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+            return {
+                expired: false,
+                hours: hoursRemaining,
+                minutes: minutesRemaining,
+                seconds: 0
+            };
+
+        } catch (error) {
+            console.error(`Error calculating execution time for ${market}:`, error);
+            return { expired: false, hours: 0, minutes: 0, seconds: 0 };
+        }
     }
 
     /**
@@ -353,12 +403,40 @@ const SignalsDisplay = (function() {
     }
 
     function getMarketTimezone(market) {
-        const timezones = {
-            'India': 'IST',
-            'UK': 'GMT',
-            'US': 'EST'
+        // Map to IANA timezone identifiers
+        const timezoneMap = {
+            'India': 'Asia/Kolkata',
+            'UK': 'Europe/London',
+            'US': 'America/New_York'
         };
-        return timezones[market] || '';
+
+        const timezone = timezoneMap[market];
+        if (!timezone) {
+            return '';
+        }
+
+        try {
+            // Get current date in the market timezone
+            const now = new Date();
+            const formatter = new Intl.DateTimeFormat('en-US', {
+                timeZone: timezone,
+                timeZoneName: 'short'
+            });
+
+            // Extract the timezone abbreviation (e.g., "GMT", "BST", "IST", "EST", "EDT")
+            const parts = formatter.formatToParts(now);
+            const timeZonePart = parts.find(part => part.type === 'timeZoneName');
+
+            return timeZonePart ? timeZonePart.value : '';
+        } catch (error) {
+            // Fallback to static timezone names
+            const fallbackTimezones = {
+                'India': 'IST',
+                'UK': 'GMT',
+                'US': 'EST'
+            };
+            return fallbackTimezones[market] || '';
+        }
     }
 
     function calculateSignalAge(signalDate) {
