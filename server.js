@@ -2954,7 +2954,8 @@ app.use((req, res, next) => {
 });
 
 // Static files (MUST BE LAST!)
-app.use(express.static(path.join(__dirname, 'public')));
+// Disable automatic index.html serving - we handle root route explicitly above
+app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 
 // Alert checking function
 async function checkTradeAlerts() {
