@@ -142,7 +142,12 @@ const PortfolioSimulator = (function() {
                         totalStocksProcessed: allStocks.length,
                         stocksWithWinRates: stockWinRates.length,
                         highConvictionStocks: highConvictionStocks.length,
-                        processingMode: 'sequential'
+                        processingMode: 'concurrent',
+                        concurrencyLevels: {
+                            fetch: 40,
+                            backtest: 30,
+                            signals: 30
+                        }
                     },
                     // Signal stats
                     signals: {
@@ -177,6 +182,36 @@ const PortfolioSimulator = (function() {
     }
 
     /**
+     * Process items concurrently with a worker pool pattern
+     * Maintains constant concurrency - starts new work as soon as any task finishes
+     * @param {Array} items - Items to process
+     * @param {number} concurrency - Number of items to process simultaneously
+     * @param {function} processor - Async function to process each item
+     */
+    async function processConcurrently(items, concurrency, processor) {
+        const results = [];
+        let index = 0;
+
+        // Create worker pool
+        const workers = Array(Math.min(concurrency, items.length)).fill(null).map(async () => {
+            while (index < items.length) {
+                const currentIndex = index++;
+                const item = items[currentIndex];
+                try {
+                    const result = await processor(item, currentIndex);
+                    results.push(result);
+                } catch (error) {
+                    // Continue processing even if individual item fails
+                }
+            }
+        });
+
+        // Wait for all workers to complete
+        await Promise.all(workers);
+        return results;
+    }
+
+    /**
      * Calculate date ranges for backtest and simulation
      * Data fetch: 5 years before simulation start
      * Buffer period: First 6 months of data (for DTI warmup only, no signals counted)
@@ -205,7 +240,7 @@ const PortfolioSimulator = (function() {
     /**
      * Fetch all stocks data from all markets
      * Uses comprehensive stock list from StockData module (2,200+ stocks)
-     * Processes sequentially one stock at a time to minimize resource usage
+     * Uses concurrent processing (worker pool) - starts new stocks as soon as any finish
      */
     async function fetchAllStocksData(startDate, progressCallback) {
         // Use StockData module (SINGLE SOURCE OF TRUTH)
@@ -225,21 +260,13 @@ const PortfolioSimulator = (function() {
         const allStocks = [];
         const endDate = new Date().toISOString().split('T')[0];
 
-        // Process stocks sequentially, one at a time
-        for (let i = 0; i < total; i++) {
-            const stockObj = allStockDefinitions[i];
-            const market = getMarketForSymbol(stockObj.symbol);
+        // Concurrent processing with worker pool (not batches)
+        const CONCURRENCY = 40;  // Process 40 stocks simultaneously
+        let completed = 0;
 
-            // Report progress for this stock
-            if (progressCallback) {
-                progressCallback({
-                    stage: 'fetch',
-                    message: `Fetching ${i + 1}/${total}: ${stockObj.symbol}`,
-                    current: i,
-                    total: total,
-                    percent: Math.round((i / total) * 100)
-                });
-            }
+        // Process stocks with concurrency limit
+        await processConcurrently(allStockDefinitions, CONCURRENCY, async (stockObj) => {
+            const market = getMarketForSymbol(stockObj.symbol);
 
             try {
                 const stockData = await fetchStockData(stockObj.symbol, startDate, endDate);
@@ -253,7 +280,19 @@ const PortfolioSimulator = (function() {
             } catch (error) {
                 // Silently skip failed fetches
             }
-        }
+
+            // Report progress after each completion
+            completed++;
+            if (progressCallback) {
+                progressCallback({
+                    stage: 'fetch',
+                    message: `Fetching stocks (${CONCURRENCY} concurrent)...`,
+                    current: completed,
+                    total: total,
+                    percent: Math.round((completed / total) * 100)
+                });
+            }
+        });
 
         return allStocks;
     }
@@ -338,27 +377,18 @@ const PortfolioSimulator = (function() {
     /**
      * Calculate historical win rates for all stocks
      * Uses 5-year backtest period BEFORE simulation start
-     * Processes sequentially one stock at a time to minimize resource usage
+     * Uses concurrent processing (worker pool) - starts new stocks as soon as any finish
      */
     async function calculateHistoricalWinRates(allStocks, dates, progressCallback) {
         const stockWinRates = [];
         const total = allStocks.length;
 
-        // Process stocks sequentially, one at a time
-        for (let i = 0; i < total; i++) {
-            const stock = allStocks[i];
+        // Concurrent processing with worker pool (not batches)
+        const CONCURRENCY = 30;  // Process 30 stocks simultaneously (CPU-intensive)
+        let completed = 0;
 
-            // Report progress for this stock
-            if (progressCallback) {
-                progressCallback({
-                    stage: 'backtest',
-                    message: `Backtesting ${i + 1}/${total}: ${stock.symbol}`,
-                    current: i,
-                    total: total,
-                    percent: Math.round((i / total) * 100)
-                });
-            }
-
+        // Process stocks with concurrency limit
+        await processConcurrently(allStocks, CONCURRENCY, async (stock) => {
             try {
                 // Filter data for historical backtest period only
                 const historicalData = filterDataByDateRange(
@@ -368,7 +398,7 @@ const PortfolioSimulator = (function() {
                 );
 
                 if (!historicalData || historicalData.dates.length < 200) {
-                    continue; // Not enough data
+                    return; // Not enough data
                 }
 
                 // Run backtest on historical period
@@ -399,7 +429,19 @@ const PortfolioSimulator = (function() {
             } catch (error) {
                 // Silently skip failed backtests
             }
-        }
+
+            // Report progress after each completion
+            completed++;
+            if (progressCallback) {
+                progressCallback({
+                    stage: 'backtest',
+                    message: `Backtesting stocks (${CONCURRENCY} concurrent)...`,
+                    current: completed,
+                    total: total,
+                    percent: Math.round((completed / total) * 100)
+                });
+            }
+        });
 
         return stockWinRates;
     }
@@ -422,7 +464,7 @@ const PortfolioSimulator = (function() {
     /**
      * Generate signals during simulation period for high conviction stocks
      * Layer 2: Includes open trades with proper handling
-     * Processes sequentially one stock at a time to minimize resource usage
+     * Uses concurrent processing (worker pool) - starts new stocks as soon as any finish
      */
     async function generateSimulationSignals(allStocks, highConvictionStocks, dates, progressCallback) {
         const signals = [];
@@ -432,21 +474,12 @@ const PortfolioSimulator = (function() {
         const stocksToProcess = allStocks.filter(s => highConvictionSymbols.has(s.symbol));
         const total = stocksToProcess.length;
 
-        // Process stocks sequentially, one at a time
-        for (let i = 0; i < total; i++) {
-            const stock = stocksToProcess[i];
+        // Concurrent processing with worker pool (not batches)
+        const CONCURRENCY = 30;  // Process 30 stocks simultaneously (CPU-intensive)
+        let completed = 0;
 
-            // Report progress for this stock
-            if (progressCallback) {
-                progressCallback({
-                    stage: 'signals',
-                    message: `Generating signals ${i + 1}/${total}: ${stock.symbol}`,
-                    current: i,
-                    total: total,
-                    percent: Math.round((i / total) * 100)
-                });
-            }
-
+        // Process stocks with concurrency limit
+        await processConcurrently(stocksToProcess, CONCURRENCY, async (stock) => {
             try {
                 // Run backtest on entire data range to get all signals
                 const backtest = window.BacktestCalculator.runBacktest(stock.data, CONFIG.DTI_PARAMS);
@@ -489,7 +522,19 @@ const PortfolioSimulator = (function() {
             } catch (error) {
                 // Silently skip failed signal generation
             }
-        }
+
+            // Report progress after each completion
+            completed++;
+            if (progressCallback) {
+                progressCallback({
+                    stage: 'signals',
+                    message: `Generating signals (${CONCURRENCY} concurrent)...`,
+                    current: completed,
+                    total: total,
+                    percent: Math.round((completed / total) * 100)
+                });
+            }
+        });
 
         // Sort by entry date (FIFO)
         return signals.sort((a, b) => new Date(a.entryDate) - new Date(b.entryDate));
