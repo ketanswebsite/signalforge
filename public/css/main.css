@@ -8756,17 +8756,17 @@ body.dark .chart-wrapper {
 }
 
 .simulation-status.info {
-    background: rgba(59, 130, 246, 0.05);
-    border-left-color: #3b82f6;
-    color: #3b82f6;
-    border-color: rgba(59, 130, 246, 0.2);
+    background: rgba(212, 175, 55, 0.05);
+    border-left-color: var(--accent-gold);
+    color: var(--accent-gold);
+    border-color: rgba(212, 175, 55, 0.2);
 }
 
 .simulation-status.loading {
-    background: rgba(59, 130, 246, 0.05);
-    border-left-color: #3b82f6;
-    color: #3b82f6;
-    border-color: rgba(59, 130, 246, 0.2);
+    background: rgba(212, 175, 55, 0.05);
+    border-left-color: var(--accent-gold);
+    color: var(--accent-gold);
+    border-color: rgba(212, 175, 55, 0.2);
 }
 
 .simulation-status.success {
@@ -9186,13 +9186,13 @@ body.dark .simulation-status:not(:empty) {
 }
 
 body.dark .simulation-status.info {
-    background: rgba(59, 130, 246, 0.1);
-    border-color: rgba(59, 130, 246, 0.3);
+    background: rgba(212, 175, 55, 0.1);
+    border-color: rgba(212, 175, 55, 0.3);
 }
 
 body.dark .simulation-status.loading {
-    background: rgba(59, 130, 246, 0.1);
-    border-color: rgba(59, 130, 246, 0.3);
+    background: rgba(212, 175, 55, 0.1);
+    border-color: rgba(212, 175, 55, 0.3);
 }
 
 body.dark .simulation-status.success {
