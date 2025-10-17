@@ -2927,7 +2927,7 @@ app.use('/lib', express.static(path.join(__dirname, 'lib')));
 
 // Root route - serve landing page for unauthenticated users, redirect to dashboard for authenticated users
 app.get('/', (req, res) => {
-  if (req.isAuthenticated()) {
+  if (authEnabled && req.isAuthenticated()) {
     // Authenticated users go to dashboard
     res.redirect('/index.html');
   } else {
