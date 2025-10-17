@@ -3141,6 +3141,25 @@ tbody td.negative {
     margin-bottom: 0.5rem; /* Add small margin at bottom for x-axis labels */
 }
 
+/* Chart wrapper for portfolio backtest and other chart displays */
+.chart-wrapper {
+    width: 100%;
+    height: 450px;
+    min-height: 350px;
+    position: relative;
+    background: var(--bg-surface);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    border: 1px solid var(--border);
+    margin-top: var(--spacing-md);
+}
+
+.chart-wrapper canvas {
+    max-height: 100% !important;
+    max-width: 100% !important;
+    display: block;
+}
+
 .chart-loading {
     display: flex;
     align-items: center;
@@ -3395,6 +3414,12 @@ tbody td.negative {
         padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-md) var(--spacing-sm);
     }
 
+    .chart-wrapper {
+        height: 320px;
+        min-height: 280px;
+        padding: var(--spacing-md);
+    }
+
     .chart-header {
         flex-direction: column;
         align-items: flex-start;
@@ -3516,6 +3541,10 @@ tbody td.negative {
     /* Optimize chart container padding */
     .chart-container {
         padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-md) var(--spacing-sm);
+    }
+
+    .chart-wrapper {
+        padding: var(--spacing-md);
     }
 
     /* Reduce control group spacing */
@@ -8616,6 +8645,11 @@ body.dark .chart-zoom-controls .zoom-btn:hover {
 }
 
 body.dark .zoom-indicator {
+    background: var(--bg-card);
+    border-color: var(--border-dark);
+}
+
+body.dark .chart-wrapper {
     background: var(--bg-card);
     border-color: var(--border-dark);
 }
