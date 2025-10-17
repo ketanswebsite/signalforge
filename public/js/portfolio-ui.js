@@ -223,9 +223,56 @@ const PortfolioUI = (function() {
     }
 
     /**
+     * Fetch current price for a stock symbol
+     * Returns the most recent close price available
+     */
+    async function fetchCurrentPrice(symbol) {
+        try {
+            // Fetch last 7 days of data to get most recent price
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - 7);
+
+            const start = Math.floor(startDate.getTime() / 1000);
+            const end = Math.floor(endDate.getTime() / 1000);
+
+            const url = `/yahoo/history?symbol=${symbol}&period1=${start}&period2=${end}&interval=1d`;
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const csvText = await response.text();
+            const rows = csvText.trim().split('\n');
+
+            if (rows.length < 2) {
+                throw new Error('No data returned');
+            }
+
+            // Get the most recent row (last row in CSV)
+            const lastRow = rows[rows.length - 1];
+            const values = lastRow.split(',');
+
+            if (values.length >= 5) {
+                const price = parseFloat(values[4]); // close price
+                if (!isNaN(price) && price > 0) {
+                    return price;
+                }
+            }
+
+            throw new Error('No valid price found');
+
+        } catch (error) {
+            console.error(`Failed to fetch current price for ${symbol}:`, error);
+            return null; // Return null on failure
+        }
+    }
+
+    /**
      * Render active trades table
      */
-    function renderActiveTrades(positions, currency) {
+    async function renderActiveTrades(positions, currency) {
         const tbody = document.getElementById('active-trades-body');
         const countSpan = document.getElementById('active-count');
 
@@ -242,14 +289,33 @@ const PortfolioUI = (function() {
             return;
         }
 
+        // Show loading state
+        tbody.innerHTML = '<tr><td colspan="9" class="no-data">Fetching current prices...</td></tr>';
+
+        // Fetch current prices for all positions concurrently
+        const pricePromises = activePositions.map(position =>
+            fetchCurrentPrice(position.symbol).then(price => ({ position, currentPrice: price }))
+        );
+
+        const positionsWithPrices = await Promise.all(pricePromises);
+
+        // Clear loading state
         tbody.innerHTML = '';
 
-        for (const position of activePositions) {
+        // Render each position with real P&L
+        for (const { position, currentPrice } of positionsWithPrices) {
             const row = document.createElement('tr');
 
-            // Calculate current P/L (assuming current price equals entry for simulation)
-            const plPercent = 0; // This would need live prices
-            const plValue = 0;
+            // Calculate current P/L with fetched price
+            let plPercent = 0;
+            let plValue = 0;
+            let displayPrice = position.entryPrice; // Fallback to entry price
+
+            if (currentPrice !== null && currentPrice > 0) {
+                displayPrice = currentPrice;
+                plPercent = ((currentPrice - position.entryPrice) / position.entryPrice) * 100;
+                plValue = (position.tradeSize * plPercent) / 100;
+            }
 
             const daysHeld = Math.floor((new Date() - new Date(position.entryDate)) / (24 * 60 * 60 * 1000));
 
@@ -259,7 +325,7 @@ const PortfolioUI = (function() {
                 <td><span class="market-badge market-${position.market.toLowerCase()}">${position.market}</span></td>
                 <td>${formatDate(position.entryDate)}</td>
                 <td>${position.currency}${position.entryPrice.toFixed(2)}</td>
-                <td>${position.currency}${position.entryPrice.toFixed(2)}</td>
+                <td>${position.currency}${displayPrice.toFixed(2)}</td>
                 <td>${daysHeld}</td>
                 <td class="${plPercent >= 0 ? 'positive' : 'negative'}">${plPercent.toFixed(2)}%</td>
                 <td class="${plValue >= 0 ? 'positive' : 'negative'}">${position.currency}${plValue.toFixed(2)}</td>
