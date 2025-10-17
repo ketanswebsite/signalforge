@@ -8783,6 +8783,27 @@ body.dark .chart-wrapper {
     border-color: rgba(239, 68, 68, 0.2);
 }
 
+/* Progress elements within simulation status */
+.simulation-status .progress-message {
+    font-weight: 500;
+    margin-bottom: var(--spacing-sm);
+    color: inherit;
+}
+
+.simulation-status .progress-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8125rem;
+    margin-bottom: var(--spacing-xs);
+    color: inherit;
+    opacity: 0.9;
+}
+
+.simulation-status .progress-bar {
+    margin-top: var(--spacing-sm);
+}
+
 /* Form Input Variants */
 .date-input,
 .currency-select {
