@@ -8705,40 +8705,48 @@ body.dark .zoom-indicator {
 
 .simulation-status {
     margin-top: var(--spacing-md);
-    padding: var(--spacing-md);
-    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-lg);
     font-size: 0.875rem;
     text-align: center;
-    transition: all 0.3s ease;
+    transition: all var(--transition-base);
+    display: none;
 }
 
 .simulation-status:not(:empty) {
-    background: var(--bg-secondary);
+    display: block;
+    background: var(--bg-primary);
     border: 1px solid var(--border);
+    border-left: 4px solid var(--border);
+    box-shadow: var(--shadow-sm);
 }
 
 .simulation-status.info {
-    background: rgba(59, 130, 246, 0.1);
-    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.05);
+    border-left-color: #3b82f6;
     color: #3b82f6;
+    border-color: rgba(59, 130, 246, 0.2);
 }
 
 .simulation-status.loading {
-    background: rgba(59, 130, 246, 0.1);
-    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.05);
+    border-left-color: #3b82f6;
     color: #3b82f6;
+    border-color: rgba(59, 130, 246, 0.2);
 }
 
 .simulation-status.success {
-    background: rgba(16, 185, 129, 0.1);
-    border-color: var(--success);
+    background: rgba(34, 197, 94, 0.05);
+    border-left-color: var(--success);
     color: var(--success);
+    border-color: rgba(34, 197, 94, 0.2);
 }
 
 .simulation-status.error {
-    background: rgba(239, 68, 68, 0.1);
-    border-color: var(--error);
+    background: rgba(239, 68, 68, 0.05);
+    border-left-color: var(--error);
     color: var(--error);
+    border-color: rgba(239, 68, 68, 0.2);
 }
 
 /* Form Input Variants */
@@ -9118,8 +9126,28 @@ body.dark .table-container.scrollable table thead {
 }
 
 body.dark .simulation-status:not(:empty) {
-    background: var(--bg-card);
+    background: var(--bg-secondary);
     border-color: var(--border-dark);
+}
+
+body.dark .simulation-status.info {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+body.dark .simulation-status.loading {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+body.dark .simulation-status.success {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: rgba(34, 197, 94, 0.3);
+}
+
+body.dark .simulation-status.error {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
 }
 
 body.dark .position-count {
