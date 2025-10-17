@@ -144,9 +144,9 @@ const PortfolioSimulator = (function() {
                         highConvictionStocks: highConvictionStocks.length,
                         processingMode: 'concurrent',
                         concurrencyLevels: {
-                            fetch: 40,
-                            backtest: 30,
-                            signals: 30
+                            fetch: 100,
+                            backtest: 100,
+                            signals: 100
                         }
                     },
                     // Signal stats
@@ -261,7 +261,7 @@ const PortfolioSimulator = (function() {
         const endDate = new Date().toISOString().split('T')[0];
 
         // Concurrent processing with worker pool (not batches)
-        const CONCURRENCY = 40;  // Process 40 stocks simultaneously
+        const CONCURRENCY = 100;  // Process 100 stocks simultaneously
         let completed = 0;
 
         // Process stocks with concurrency limit
@@ -384,7 +384,7 @@ const PortfolioSimulator = (function() {
         const total = allStocks.length;
 
         // Concurrent processing with worker pool (not batches)
-        const CONCURRENCY = 30;  // Process 30 stocks simultaneously (CPU-intensive)
+        const CONCURRENCY = 100;  // Process 100 stocks simultaneously
         let completed = 0;
 
         // Process stocks with concurrency limit
@@ -475,7 +475,7 @@ const PortfolioSimulator = (function() {
         const total = stocksToProcess.length;
 
         // Concurrent processing with worker pool (not batches)
-        const CONCURRENCY = 30;  // Process 30 stocks simultaneously (CPU-intensive)
+        const CONCURRENCY = 100;  // Process 100 stocks simultaneously
         let completed = 0;
 
         // Process stocks with concurrency limit
