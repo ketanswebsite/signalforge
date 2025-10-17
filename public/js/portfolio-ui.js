@@ -229,16 +229,22 @@ const PortfolioUI = (function() {
         const tbody = document.getElementById('active-trades-body');
         const countSpan = document.getElementById('active-count');
 
-        countSpan.textContent = positions.length;
+        // Filter to only show truly active positions (no exit data)
+        const activePositions = positions.filter(position => {
+            // Must NOT have exit data (exitDate or exitPrice)
+            return !position.exitDate && (position.exitPrice === undefined || position.exitPrice === null);
+        });
 
-        if (positions.length === 0) {
+        countSpan.textContent = activePositions.length;
+
+        if (activePositions.length === 0) {
             tbody.innerHTML = '<tr><td colspan="9" class="no-data">No active positions</td></tr>';
             return;
         }
 
         tbody.innerHTML = '';
 
-        for (const position of positions) {
+        for (const position of activePositions) {
             const row = document.createElement('tr');
 
             // Calculate current P/L (assuming current price equals entry for simulation)
@@ -271,7 +277,17 @@ const PortfolioUI = (function() {
         const countSpan = document.getElementById('completed-count');
 
         // Filter out trades without exit dates (only show truly completed trades)
-        const completedTrades = trades.filter(trade => trade.exitDate && trade.exitPrice !== undefined);
+        // Exclude open trades (isOpen flag) and trades with invalid exit data
+        const completedTrades = trades.filter(trade => {
+            // Exclude if explicitly marked as open
+            if (trade.isOpen === true) return false;
+
+            // Must have both exitDate and a valid exitPrice (not null, not undefined)
+            return trade.exitDate &&
+                   trade.exitPrice !== undefined &&
+                   trade.exitPrice !== null &&
+                   !isNaN(trade.exitPrice);
+        });
 
         countSpan.textContent = completedTrades.length;
 
