@@ -1,7 +1,84 @@
 /**
  * Account Page JavaScript
- * Manages subscription, payment information, and user settings
+ * Manages tabs, subscription, payment information, and user settings
  */
+
+/**
+ * Tab Manager
+ * Handles tab switching and URL hash navigation
+ */
+class TabManager {
+    constructor() {
+        this.tabs = document.querySelectorAll('.tab-item');
+        this.panels = document.querySelectorAll('.tab-panel');
+
+        this.init();
+    }
+
+    init() {
+        this.tabs.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                const tabName = tab.dataset.tab;
+                this.switchTab(tabName);
+            });
+        });
+
+        window.addEventListener('hashchange', () => {
+            this.handleHashChange();
+        });
+
+        this.handleHashChange();
+    }
+
+    switchTab(tabName) {
+        this.tabs.forEach(tab => {
+            const isActive = tab.dataset.tab === tabName;
+            tab.classList.toggle('active', isActive);
+            tab.setAttribute('aria-selected', isActive);
+        });
+
+        this.panels.forEach(panel => {
+            const panelId = panel.id.replace('-panel', '');
+            panel.classList.toggle('active', panelId === tabName);
+        });
+
+        window.location.hash = tabName;
+    }
+
+    handleHashChange() {
+        const hash = window.location.hash.replace('#', '') || 'overview';
+        const validTabs = ['overview', 'billing', 'settings', 'account'];
+
+        if (validTabs.includes(hash)) {
+            this.switchTab(hash);
+        }
+    }
+}
+
+/**
+ * Collapsible Section Manager
+ * Handles expanding/collapsing settings sections
+ */
+class CollapsibleManager {
+    constructor() {
+        this.sections = document.querySelectorAll('.collapsible-section');
+        this.init();
+    }
+
+    init() {
+        this.sections.forEach(section => {
+            const header = section.querySelector('.collapsible-header');
+
+            header.addEventListener('click', () => {
+                this.toggle(section);
+            });
+        });
+    }
+
+    toggle(section) {
+        section.classList.toggle('expanded');
+    }
+}
 
 /**
  * Settings Manager
@@ -10,36 +87,25 @@
 class SettingsManager {
     constructor() {
         this.defaults = {
-            // Display & Theme
             darkMode: this.isDarkModePreferred(),
             reduceAnimations: false,
             highContrast: false,
             fontSize: 'medium',
-
-            // Notifications
             emailNotifications: true,
             browserNotifications: false,
             tradeAlerts: true,
             newsletterSubscription: false,
-
-            // Data & Privacy
             analyticsTracking: true,
             cookieConsent: true,
             savePreferences: true,
-
-            // Accessibility
             screenReaderMode: false,
             keyboardShortcuts: true,
             focusIndicators: true,
             autoPlayDisable: false,
-
-            // Chart Preferences
             chartTheme: 'auto',
             showGrid: true,
             smoothAnimations: true,
             defaultTimeframe: '1M',
-
-            // Language & Region
             language: 'en',
             timezone: 'Asia/Kolkata',
             currency: 'INR'
@@ -79,7 +145,6 @@ class SettingsManager {
     }
 
     syncSettingsToUI() {
-        // Sync all checkboxes and selects to their stored values
         Object.keys(this.currentSettings).forEach(key => {
             const element = document.getElementById(this.settingIdMap(key));
             if (element) {
@@ -121,7 +186,6 @@ class SettingsManager {
     }
 
     setupSettingsListeners() {
-        // Display & Theme
         this.addListener('dark-mode-setting', (checked) => {
             this.currentSettings.darkMode = checked;
             this.applyTheme();
@@ -142,7 +206,6 @@ class SettingsManager {
             this.applyFontSize();
         });
 
-        // Notifications
         this.addListener('email-notifications', (checked) => {
             this.currentSettings.emailNotifications = checked;
         });
@@ -164,7 +227,6 @@ class SettingsManager {
             this.currentSettings.newsletterSubscription = checked;
         });
 
-        // Data & Privacy
         this.addListener('analytics-tracking', (checked) => {
             this.currentSettings.analyticsTracking = checked;
         });
@@ -177,7 +239,6 @@ class SettingsManager {
             this.currentSettings.savePreferences = checked;
         });
 
-        // Accessibility
         this.addListener('screen-reader-mode', (checked) => {
             this.currentSettings.screenReaderMode = checked;
             this.applyAccessibilitySettings();
@@ -196,7 +257,6 @@ class SettingsManager {
             this.currentSettings.autoPlayDisable = checked;
         });
 
-        // Chart Preferences
         this.addSelectListener('chart-theme-setting', (value) => {
             this.currentSettings.chartTheme = value;
         });
@@ -213,7 +273,6 @@ class SettingsManager {
             this.currentSettings.defaultTimeframe = value;
         });
 
-        // Language & Region
         this.addSelectListener('language-setting', (value) => {
             this.currentSettings.language = value;
             this.showNotification('Language preference saved. Full translation coming soon!', 'info');
@@ -227,7 +286,6 @@ class SettingsManager {
             this.currentSettings.currency = value;
         });
 
-        // Action buttons
         document.getElementById('save-settings-btn')?.addEventListener('click', () => {
             this.saveSettings();
         });
@@ -240,7 +298,15 @@ class SettingsManager {
             this.exportData();
         });
 
+        document.getElementById('export-data-btn-settings')?.addEventListener('click', () => {
+            this.exportData();
+        });
+
         document.getElementById('clear-cache-btn')?.addEventListener('click', () => {
+            this.clearCache();
+        });
+
+        document.getElementById('clear-cache-btn-settings')?.addEventListener('click', () => {
             this.clearCache();
         });
 
@@ -248,7 +314,6 @@ class SettingsManager {
             document.getElementById('delete-account-modal').classList.add('active');
         });
 
-        // Delete account confirmation
         const deleteInput = document.getElementById('delete-confirmation');
         const deleteBtn = document.getElementById('confirm-delete-btn');
 
@@ -408,7 +473,6 @@ class SettingsManager {
     }
 
     showNotification(message, type = 'info') {
-        // Create notification element
         const notification = document.createElement('div');
         notification.className = `notification notification-${type}`;
         notification.textContent = message;
@@ -417,12 +481,13 @@ class SettingsManager {
             top: 20px;
             right: 20px;
             padding: 1rem 1.5rem;
-            background: var(--card-bg);
-            border-left: 4px solid var(--${type === 'success' ? 'success' : type === 'error' ? 'error' : 'primary'});
+            background: var(--bg-secondary);
+            border-left: 4px solid var(--${type === 'success' ? 'success' : type === 'error' ? 'error' : 'accent-gold'});
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             z-index: 10000;
             animation: slideIn 0.3s ease-out;
+            color: var(--text-primary);
         `;
 
         document.body.appendChild(notification);
@@ -439,6 +504,8 @@ class AccountPage {
         this.subscription = null;
         this.payments = [];
         this.settingsManager = new SettingsManager();
+        this.tabManager = new TabManager();
+        this.collapsibleManager = new CollapsibleManager();
 
         this.init();
     }
@@ -459,41 +526,40 @@ class AccountPage {
     async loadSubscription() {
         try {
             const response = await fetch('/api/user/subscription');
-            
-            // Handle authentication error
+
             if (response.status === 401) {
-                document.getElementById('subscription-content').innerHTML = this.renderLoginRequired();
+                document.getElementById('subscription-hero').innerHTML = this.renderLoginRequired();
+                document.getElementById('subscription-full-details').innerHTML = this.renderLoginRequired();
                 return;
             }
-            
-            const data = await response.json();
 
-            const contentDiv = document.getElementById('subscription-content');
-            const statusBadge = document.getElementById('subscription-status-badge');
+            const data = await response.json();
 
             if (data.success && data.hasSubscription) {
                 this.subscription = data.subscription;
-                this.renderSubscription();
-                this.renderStatusBadge(statusBadge);
+                this.renderHeroSubscriptionCard();
+                this.renderFullSubscriptionDetails();
+                this.renderQuickStats();
             } else {
-                contentDiv.innerHTML = this.renderNoSubscription();
+                document.getElementById('subscription-hero').innerHTML = this.renderNoSubscription();
+                document.getElementById('subscription-full-details').innerHTML = this.renderNoSubscription();
             }
         } catch (error) {
             console.error('Error loading subscription:', error);
-            document.getElementById('subscription-content').innerHTML = this.renderError('Failed to load subscription');
+            document.getElementById('subscription-hero').innerHTML = this.renderError('Failed to load subscription');
+            document.getElementById('subscription-full-details').innerHTML = this.renderError('Failed to load subscription');
         }
     }
 
     async loadPaymentHistory() {
         try {
             const response = await fetch('/api/user/payments');
-            
-            // Handle authentication error
+
             if (response.status === 401) {
                 document.getElementById('payment-history-content').innerHTML = this.renderLoginRequired();
                 return;
             }
-            
+
             const data = await response.json();
 
             const contentDiv = document.getElementById('payment-history-content');
@@ -501,6 +567,7 @@ class AccountPage {
             if (data.success && data.payments && data.payments.length > 0) {
                 this.payments = data.payments;
                 this.renderPaymentHistory();
+                this.renderRecentPayment();
             } else if (data.success) {
                 contentDiv.innerHTML = this.renderEmptyPayments();
             } else {
@@ -512,7 +579,7 @@ class AccountPage {
         }
     }
 
-    renderSubscription() {
+    renderHeroSubscriptionCard() {
         const sub = this.subscription;
         const isTrial = sub.status === 'trial';
         const isCancelled = sub.status === 'cancelled';
@@ -523,47 +590,42 @@ class AccountPage {
         const nextBillingDate = new Date(sub.subscription_end_date);
         const daysUntilRenewal = Math.ceil((nextBillingDate - new Date()) / (1000 * 60 * 60 * 24));
 
+        const statusClass = isTrial ? 'trial' : isActive ? 'active' : isCancelled ? 'cancelled' : 'expired';
+        const statusBadgeHTML = `
+            <div class="status-badge ${statusClass}">
+                <span class="material-icons" style="font-size: 1rem;">circle</span>
+                ${this.formatStatus(sub.status)}
+            </div>
+        `;
+
         let alertHTML = '';
         if (isTrial) {
             alertHTML = `
-                <div class="alert alert-info">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="12" y1="16" x2="12" y2="12"/>
-                        <line x1="12" y1="8" x2="12.01" y2="8"/>
-                    </svg>
+                <div class="alert alert-info" style="margin-bottom: 1.5rem;">
+                    <span class="material-icons">info</span>
                     <div>
                         <strong>Free Trial Active</strong><br>
-                        You have ${daysUntilRenewal} days remaining in your trial. No payment required until ${nextBillingDate.toLocaleDateString()}.
+                        You have ${daysUntilRenewal} days remaining in your trial.
                     </div>
                 </div>
             `;
         } else if (isCancelled) {
             alertHTML = `
-                <div class="alert alert-warning">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                        <line x1="12" y1="9" x2="12" y2="13"/>
-                        <line x1="12" y1="17" x2="12.01" y2="17"/>
-                    </svg>
+                <div class="alert alert-warning" style="margin-bottom: 1.5rem;">
+                    <span class="material-icons">warning</span>
                     <div>
                         <strong>Subscription Cancelled</strong><br>
-                        You'll continue to have access until ${nextBillingDate.toLocaleDateString()}. You can reactivate anytime before this date.
-                        ${sub.cancellation_reason ? `<br><small>Reason: ${sub.cancellation_reason}</small>` : ''}
+                        You'll have access until ${nextBillingDate.toLocaleDateString()}.
                     </div>
                 </div>
             `;
         } else if (isExpired) {
             alertHTML = `
-                <div class="alert alert-danger">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="15" y1="9" x2="9" y2="15"/>
-                        <line x1="9" y1="9" x2="15" y2="15"/>
-                    </svg>
+                <div class="alert alert-danger" style="margin-bottom: 1.5rem;">
+                    <span class="material-icons">error</span>
                     <div>
                         <strong>Subscription Expired</strong><br>
-                        Your subscription expired on ${nextBillingDate.toLocaleDateString()}. Renew now to regain access to all features.
+                        Renew now to regain access to all features.
                     </div>
                 </div>
             `;
@@ -571,7 +633,104 @@ class AccountPage {
 
         const html = `
             ${alertHTML}
+            <div class="hero-subscription-card">
+                <div class="hero-subscription-header">
+                    <div class="hero-plan-info">
+                        <h2>${sub.plan_name}</h2>
+                        ${sub.amount_paid > 0 ? `
+                            <div class="plan-price">
+                                <span class="currency">${currencySymbol}</span>${sub.amount_paid.toFixed(2)}
+                                <span class="currency">/ ${sub.billing_period || 'month'}</span>
+                            </div>
+                        ` : '<div class="plan-price">Free Trial</div>'}
+                    </div>
+                    ${statusBadgeHTML}
+                </div>
 
+                <div class="hero-stats-grid">
+                    <div class="hero-stat-item">
+                        <div class="hero-stat-label">${isTrial ? 'Trial Ends' : (isCancelled || isExpired) ? 'Access Until' : 'Next Billing'}</div>
+                        <div class="hero-stat-value highlight">${nextBillingDate.toLocaleDateString()}</div>
+                    </div>
+                    <div class="hero-stat-item">
+                        <div class="hero-stat-label">Days Remaining</div>
+                        <div class="hero-stat-value">${daysUntilRenewal > 0 ? daysUntilRenewal : 0}</div>
+                    </div>
+                    ${sub.auto_renew !== undefined ? `
+                    <div class="hero-stat-item">
+                        <div class="hero-stat-label">Auto-Renew</div>
+                        <div class="hero-stat-value">${sub.auto_renew ? 'Enabled' : 'Disabled'}</div>
+                    </div>
+                    ` : ''}
+                </div>
+
+                ${this.renderSubscriptionActions()}
+            </div>
+        `;
+
+        document.getElementById('subscription-hero').innerHTML = html;
+        this.setupSubscriptionButtons();
+    }
+
+    renderQuickStats() {
+        const sub = this.subscription;
+        if (!sub) return;
+
+        const startDate = new Date(sub.subscription_start_date);
+        const daysSinceMember = Math.floor((new Date() - startDate) / (1000 * 60 * 60 * 24));
+
+        const html = `
+            <h3 style="margin-bottom: 1rem; color: var(--text-primary);">Quick Stats</h3>
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-card-icon">
+                        <span class="material-icons">event</span>
+                    </div>
+                    <div class="stat-card-title">Member Since</div>
+                </div>
+                <div class="stat-card-value">${startDate.toLocaleDateString()}</div>
+                <div class="stat-card-subtitle">${daysSinceMember} days ago</div>
+            </div>
+        `;
+
+        document.getElementById('quick-stats').innerHTML = html;
+        document.getElementById('quick-stats-section').style.display = 'block';
+    }
+
+    renderRecentPayment() {
+        if (!this.payments || this.payments.length === 0) return;
+
+        const recentPayment = this.payments[0];
+        const paymentDate = new Date(recentPayment.payment_date);
+
+        const html = `
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-card-icon">
+                        <span class="material-icons">receipt</span>
+                    </div>
+                    <div class="stat-card-title">Last Payment</div>
+                </div>
+                <div class="stat-card-value">${this.getCurrencySymbol(recentPayment.currency)}${recentPayment.amount.toFixed(2)}</div>
+                <div class="stat-card-subtitle">${paymentDate.toLocaleDateString()} - ${this.formatPaymentStatus(recentPayment.status)}</div>
+            </div>
+        `;
+
+        document.getElementById('recent-payment-card').innerHTML = html;
+        document.getElementById('recent-payment-section').style.display = 'block';
+    }
+
+    renderFullSubscriptionDetails() {
+        const sub = this.subscription;
+        const isTrial = sub.status === 'trial';
+        const isCancelled = sub.status === 'cancelled';
+        const isActive = sub.status === 'active';
+        const isExpired = sub.status === 'expired';
+
+        const currencySymbol = this.getCurrencySymbol(sub.currency);
+        const nextBillingDate = new Date(sub.subscription_end_date);
+
+        const html = `
             <div class="subscription-card">
                 <div class="plan-name-large">${sub.plan_name}</div>
                 ${sub.amount_paid > 0 ? `
@@ -607,11 +766,14 @@ class AccountPage {
                     ` : ''}
                 </div>
             </div>
-
-            ${this.renderSubscriptionActions()}
         `;
 
-        document.getElementById('subscription-content').innerHTML = html;
+        document.getElementById('subscription-full-details').innerHTML = html;
+
+        const statusBadge = document.getElementById('subscription-status-badge');
+        if (statusBadge) {
+            this.renderStatusBadge(statusBadge);
+        }
     }
 
     renderSubscriptionActions() {
@@ -626,39 +788,25 @@ class AccountPage {
         if (isExpired) {
             actionsHTML += `
                 <a href="/pricing.html" class="btn btn-primary">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="1 4 1 10 7 10"/>
-                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
-                    </svg>
+                    <span class="material-icons icon-sm icon-mr-xs">refresh</span>
                     Renew Subscription
                 </a>
             `;
         } else if (isCancelled) {
             actionsHTML += `
                 <button class="btn btn-primary" id="reactivate-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="23 4 23 10 17 10"/>
-                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-                    </svg>
+                    <span class="material-icons icon-sm icon-mr-xs">refresh</span>
                     Reactivate Subscription
                 </button>
             `;
         } else if (isActive || isTrial) {
             actionsHTML += `
                 <a href="/pricing.html" class="btn btn-secondary">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"/>
-                        <line x1="6" y1="6" x2="18" y2="18"/>
-                        <line x1="12" y1="2" x2="12" y2="22"/>
-                    </svg>
+                    <span class="material-icons icon-sm icon-mr-xs">swap_horiz</span>
                     Change Plan
                 </a>
                 <button class="btn btn-danger" id="cancel-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="15" y1="9" x2="9" y2="15"/>
-                        <line x1="9" y1="9" x2="15" y2="15"/>
-                    </svg>
+                    <span class="material-icons icon-sm icon-mr-xs">cancel</span>
                     Cancel Subscription
                 </button>
             `;
@@ -711,9 +859,7 @@ class AccountPage {
 
         container.innerHTML = `
             <div class="status-badge ${statusClass}">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/>
-                </svg>
+                <span class="material-icons" style="font-size: 1rem;">circle</span>
                 ${this.formatStatus(sub.status)}
             </div>
         `;
@@ -722,11 +868,7 @@ class AccountPage {
     renderNoSubscription() {
         return `
             <div class="empty-state">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-                    <line x1="12" y1="17" x2="12.01" y2="17"/>
-                </svg>
+                <span class="material-icons" style="font-size: 64px; color: var(--accent-gold); margin-bottom: 1rem;">card_membership</span>
                 <p>You don't have an active subscription</p>
                 <a href="/pricing.html" class="btn btn-primary mt-2">
                     View Plans
@@ -738,10 +880,7 @@ class AccountPage {
     renderEmptyPayments() {
         return `
             <div class="empty-state">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                    <line x1="1" y1="10" x2="23" y2="10"/>
-                </svg>
+                <span class="material-icons" style="font-size: 64px; color: var(--accent-gold); margin-bottom: 1rem;">receipt</span>
                 <p>No payment history available</p>
             </div>
         `;
@@ -750,11 +889,7 @@ class AccountPage {
     renderError(message) {
         return `
             <div class="empty-state">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="12" y1="8" x2="12" y2="12"/>
-                    <line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
+                <span class="material-icons" style="font-size: 64px; color: var(--error); margin-bottom: 1rem;">error</span>
                 <p>${message}</p>
                 <button class="btn btn-secondary mt-2" onclick="location.reload()">
                     Retry
@@ -763,8 +898,23 @@ class AccountPage {
         `;
     }
 
+    renderLoginRequired() {
+        return `
+            <div class="empty-state">
+                <span class="material-icons" style="font-size: 64px; color: var(--accent-gold); margin-bottom: 1rem;">lock</span>
+                <p style="margin-bottom: 0.5rem;">Please log in to view this information</p>
+                <a href="/login" class="btn btn-primary mt-2">
+                    Log In
+                </a>
+            </div>
+        `;
+    }
+
     setupEventListeners() {
-        // Cancel subscription button
+        this.setupSubscriptionButtons();
+    }
+
+    setupSubscriptionButtons() {
         const cancelBtn = document.getElementById('cancel-btn');
         if (cancelBtn) {
             cancelBtn.addEventListener('click', () => {
@@ -772,7 +922,6 @@ class AccountPage {
             });
         }
 
-        // Confirm cancellation
         const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
         if (confirmCancelBtn) {
             confirmCancelBtn.addEventListener('click', () => {
@@ -780,7 +929,6 @@ class AccountPage {
             });
         }
 
-        // Reactivate subscription button
         const reactivateBtn = document.getElementById('reactivate-btn');
         if (reactivateBtn) {
             reactivateBtn.addEventListener('click', () => {
@@ -806,13 +954,8 @@ class AccountPage {
             const data = await response.json();
 
             if (data.success) {
-                // Close modal
                 document.getElementById('cancel-modal').classList.remove('active');
-
-                // Show success message
                 alert('Your subscription has been cancelled successfully. You will continue to have access until ' + new Date(data.accessUntil).toLocaleDateString());
-
-                // Reload subscription details
                 await this.loadSubscription();
             } else {
                 throw new Error(data.error?.message || 'Failed to cancel subscription');
@@ -889,23 +1032,8 @@ class AccountPage {
         };
         return statusMap[status] || status;
     }
-
-
-    renderLoginRequired() {
-        return `
-            <div class="empty-state">
-                <span class="material-icons" style="font-size: 64px; color: var(--primary); margin-bottom: 1rem;">lock</span>
-                <p style="margin-bottom: 0.5rem;">Please log in to view this information</p>
-                <a href="/login" class="btn btn-primary mt-2">
-                    Log In
-                </a>
-            </div>
-        `;
-    }
 }
 
-// Initialize account page when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     new AccountPage();
 });
-

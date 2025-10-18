@@ -7427,6 +7427,319 @@ button .spinner {
     }
 }
 
+/* ===== 9. Tab Navigation ===== */
+.tab-navigation {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: var(--spacing-2xl);
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.tab-navigation::-webkit-scrollbar {
+    display: none;
+}
+
+.tab-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    white-space: nowrap;
+    position: relative;
+}
+
+.tab-item .material-icons {
+    font-size: 1.25rem;
+}
+
+.tab-item:hover {
+    color: var(--text-primary);
+    background: rgba(212, 175, 55, 0.05);
+}
+
+.tab-item.active {
+    color: var(--accent-gold);
+    border-bottom-color: var(--accent-gold);
+}
+
+.tab-item.active .material-icons {
+    color: var(--accent-gold);
+}
+
+.tab-panel {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.tab-panel.active {
+    display: block;
+}
+
+/* ===== 10. Hero Subscription Card ===== */
+.hero-subscription-card {
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--surface) 100%);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-2xl);
+    margin-bottom: var(--spacing-xl);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-subscription-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(212, 175, 55, 0.1) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.hero-subscription-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-xl);
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+}
+
+.hero-plan-info h2 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--accent-gold);
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
+}
+
+.hero-plan-info .plan-price {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.hero-plan-info .plan-price .currency {
+    font-size: 1.25rem;
+    color: var(--text-muted);
+}
+
+.hero-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.hero-stat-item {
+    background: var(--bg-primary);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+}
+
+.hero-stat-label {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+.hero-stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.hero-stat-value.highlight {
+    color: var(--accent-gold);
+}
+
+/* ===== 11. Collapsible Sections ===== */
+.collapsible-section {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--spacing-md);
+    overflow: hidden;
+}
+
+.collapsible-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md) var(--spacing-lg);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    background: var(--bg-secondary);
+}
+
+.collapsible-header:hover {
+    background: var(--surface);
+}
+
+.collapsible-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.collapsible-title .material-icons {
+    color: var(--accent-gold);
+    font-size: 1.5rem;
+}
+
+.collapsible-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--bg-primary);
+    transition: all var(--transition-base);
+}
+
+.collapsible-toggle .material-icons {
+    transition: transform var(--transition-base);
+}
+
+.collapsible-section.expanded .collapsible-toggle .material-icons {
+    transform: rotate(180deg);
+}
+
+.collapsible-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height var(--transition-slow);
+}
+
+.collapsible-section.expanded .collapsible-content {
+    max-height: 2000px;
+}
+
+.collapsible-body {
+    padding: var(--spacing-lg);
+}
+
+/* ===== 12. Quick Stats & Recent Payment Cards ===== */
+.quick-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.stat-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    transition: all var(--transition-base);
+}
+
+.stat-card:hover {
+    border-color: var(--glass-border);
+    box-shadow: var(--shadow-md);
+}
+
+.stat-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: var(--spacing-md);
+}
+
+.stat-card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    background: rgba(212, 175, 55, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-card-icon .material-icons {
+    font-size: 1.5rem;
+    color: var(--accent-gold);
+}
+
+.stat-card-title {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+.stat-card-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.stat-card-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+/* ===== 13. Responsive Tab Navigation ===== */
+@media (max-width: 768px) {
+    .tab-navigation {
+        gap: 0;
+        border-bottom-width: 1px;
+    }
+
+    .tab-item {
+        padding: 0.875rem 1rem;
+        font-size: 0.9375rem;
+        flex: 0 0 auto;
+    }
+
+    .tab-item .material-icons {
+        font-size: 1.125rem;
+    }
+
+    .hero-subscription-card {
+        padding: var(--spacing-lg);
+    }
+
+    .hero-plan-info h2 {
+        font-size: 2rem;
+    }
+
+    .hero-plan-info .plan-price {
+        font-size: 1.5rem;
+    }
+
+    .hero-stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .quick-stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* ========================================
    CHECKOUT PAGE STYLES - MULTI-STEP WIZARD WITH GLASSMORPHISM
    ======================================== */
