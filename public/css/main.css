@@ -1345,8 +1345,10 @@ input[type="file"].param-input {
     white-space: nowrap;
 }
 
-.nav-item svg {
+.nav-item .material-icons,
+.nav-item .nav-icon {
     flex-shrink: 0;
+    margin-right: 0.5rem;
 }
 
 .nav-item::before {
@@ -1749,7 +1751,8 @@ body.menu-open {
         display: none;
     }
 
-    .nav-item svg {
+    .nav-item .material-icons,
+    .nav-item .nav-icon {
         margin: 0;
     }
 }
