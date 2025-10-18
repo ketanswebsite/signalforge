@@ -1,12 +1,444 @@
 /**
  * Account Page JavaScript
- * Manages subscription and payment information
+ * Manages subscription, payment information, and user settings
  */
+
+/**
+ * Settings Manager
+ * Handles all user preferences and settings
+ */
+class SettingsManager {
+    constructor() {
+        this.defaults = {
+            // Display & Theme
+            darkMode: this.isDarkModePreferred(),
+            reduceAnimations: false,
+            highContrast: false,
+            fontSize: 'medium',
+
+            // Notifications
+            emailNotifications: true,
+            browserNotifications: false,
+            tradeAlerts: true,
+            newsletterSubscription: false,
+
+            // Data & Privacy
+            analyticsTracking: true,
+            cookieConsent: true,
+            savePreferences: true,
+
+            // Accessibility
+            screenReaderMode: false,
+            keyboardShortcuts: true,
+            focusIndicators: true,
+            autoPlayDisable: false,
+
+            // Chart Preferences
+            chartTheme: 'auto',
+            showGrid: true,
+            smoothAnimations: true,
+            defaultTimeframe: '1M',
+
+            // Language & Region
+            language: 'en',
+            timezone: 'Asia/Kolkata',
+            currency: 'INR'
+        };
+
+        this.currentSettings = this.loadSettings();
+        this.init();
+    }
+
+    isDarkModePreferred() {
+        return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+
+    init() {
+        this.applySettings();
+        this.setupSettingsListeners();
+        this.syncSettingsToUI();
+    }
+
+    loadSettings() {
+        const stored = localStorage.getItem('userSettings');
+        if (stored) {
+            try {
+                return { ...this.defaults, ...JSON.parse(stored) };
+            } catch (e) {
+                console.error('Error parsing stored settings:', e);
+            }
+        }
+        return { ...this.defaults };
+    }
+
+    saveSettings() {
+        if (this.currentSettings.savePreferences) {
+            localStorage.setItem('userSettings', JSON.stringify(this.currentSettings));
+            this.showNotification('Settings saved successfully!', 'success');
+        }
+    }
+
+    syncSettingsToUI() {
+        // Sync all checkboxes and selects to their stored values
+        Object.keys(this.currentSettings).forEach(key => {
+            const element = document.getElementById(this.settingIdMap(key));
+            if (element) {
+                if (element.type === 'checkbox') {
+                    element.checked = this.currentSettings[key];
+                } else if (element.tagName === 'SELECT') {
+                    element.value = this.currentSettings[key];
+                }
+            }
+        });
+    }
+
+    settingIdMap(settingKey) {
+        const map = {
+            darkMode: 'dark-mode-setting',
+            reduceAnimations: 'reduce-animations',
+            highContrast: 'high-contrast',
+            fontSize: 'font-size-setting',
+            emailNotifications: 'email-notifications',
+            browserNotifications: 'browser-notifications',
+            tradeAlerts: 'trade-alerts',
+            newsletterSubscription: 'newsletter-subscription',
+            analyticsTracking: 'analytics-tracking',
+            cookieConsent: 'cookie-consent',
+            savePreferences: 'save-preferences',
+            screenReaderMode: 'screen-reader-mode',
+            keyboardShortcuts: 'keyboard-shortcuts',
+            focusIndicators: 'focus-indicators',
+            autoPlayDisable: 'auto-play-disable',
+            chartTheme: 'chart-theme-setting',
+            showGrid: 'show-grid',
+            smoothAnimations: 'smooth-animations',
+            defaultTimeframe: 'default-timeframe',
+            language: 'language-setting',
+            timezone: 'timezone-setting',
+            currency: 'currency-setting'
+        };
+        return map[settingKey] || settingKey;
+    }
+
+    setupSettingsListeners() {
+        // Display & Theme
+        this.addListener('dark-mode-setting', (checked) => {
+            this.currentSettings.darkMode = checked;
+            this.applyTheme();
+        });
+
+        this.addListener('reduce-animations', (checked) => {
+            this.currentSettings.reduceAnimations = checked;
+            this.applyAnimationPreferences();
+        });
+
+        this.addListener('high-contrast', (checked) => {
+            this.currentSettings.highContrast = checked;
+            this.applyHighContrast();
+        });
+
+        this.addSelectListener('font-size-setting', (value) => {
+            this.currentSettings.fontSize = value;
+            this.applyFontSize();
+        });
+
+        // Notifications
+        this.addListener('email-notifications', (checked) => {
+            this.currentSettings.emailNotifications = checked;
+        });
+
+        this.addListener('browser-notifications', async (checked) => {
+            if (checked && 'Notification' in window) {
+                const permission = await Notification.requestPermission();
+                this.currentSettings.browserNotifications = permission === 'granted';
+            } else {
+                this.currentSettings.browserNotifications = false;
+            }
+        });
+
+        this.addListener('trade-alerts', (checked) => {
+            this.currentSettings.tradeAlerts = checked;
+        });
+
+        this.addListener('newsletter-subscription', (checked) => {
+            this.currentSettings.newsletterSubscription = checked;
+        });
+
+        // Data & Privacy
+        this.addListener('analytics-tracking', (checked) => {
+            this.currentSettings.analyticsTracking = checked;
+        });
+
+        this.addListener('cookie-consent', (checked) => {
+            this.currentSettings.cookieConsent = checked;
+        });
+
+        this.addListener('save-preferences', (checked) => {
+            this.currentSettings.savePreferences = checked;
+        });
+
+        // Accessibility
+        this.addListener('screen-reader-mode', (checked) => {
+            this.currentSettings.screenReaderMode = checked;
+            this.applyAccessibilitySettings();
+        });
+
+        this.addListener('keyboard-shortcuts', (checked) => {
+            this.currentSettings.keyboardShortcuts = checked;
+        });
+
+        this.addListener('focus-indicators', (checked) => {
+            this.currentSettings.focusIndicators = checked;
+            this.applyFocusIndicators();
+        });
+
+        this.addListener('auto-play-disable', (checked) => {
+            this.currentSettings.autoPlayDisable = checked;
+        });
+
+        // Chart Preferences
+        this.addSelectListener('chart-theme-setting', (value) => {
+            this.currentSettings.chartTheme = value;
+        });
+
+        this.addListener('show-grid', (checked) => {
+            this.currentSettings.showGrid = checked;
+        });
+
+        this.addListener('smooth-animations', (checked) => {
+            this.currentSettings.smoothAnimations = checked;
+        });
+
+        this.addSelectListener('default-timeframe', (value) => {
+            this.currentSettings.defaultTimeframe = value;
+        });
+
+        // Language & Region
+        this.addSelectListener('language-setting', (value) => {
+            this.currentSettings.language = value;
+            this.showNotification('Language preference saved. Full translation coming soon!', 'info');
+        });
+
+        this.addSelectListener('timezone-setting', (value) => {
+            this.currentSettings.timezone = value;
+        });
+
+        this.addSelectListener('currency-setting', (value) => {
+            this.currentSettings.currency = value;
+        });
+
+        // Action buttons
+        document.getElementById('save-settings-btn')?.addEventListener('click', () => {
+            this.saveSettings();
+        });
+
+        document.getElementById('reset-settings-btn')?.addEventListener('click', () => {
+            this.resetSettings();
+        });
+
+        document.getElementById('export-data-btn')?.addEventListener('click', () => {
+            this.exportData();
+        });
+
+        document.getElementById('clear-cache-btn')?.addEventListener('click', () => {
+            this.clearCache();
+        });
+
+        document.getElementById('delete-account-btn')?.addEventListener('click', () => {
+            document.getElementById('delete-account-modal').classList.add('active');
+        });
+
+        // Delete account confirmation
+        const deleteInput = document.getElementById('delete-confirmation');
+        const deleteBtn = document.getElementById('confirm-delete-btn');
+
+        deleteInput?.addEventListener('input', (e) => {
+            deleteBtn.disabled = e.target.value !== 'DELETE';
+        });
+
+        deleteBtn?.addEventListener('click', () => {
+            this.deleteAccount();
+        });
+    }
+
+    addListener(id, callback) {
+        const element = document.getElementById(id);
+        if (element && element.type === 'checkbox') {
+            element.addEventListener('change', (e) => {
+                callback(e.target.checked);
+                this.saveSettings();
+            });
+        }
+    }
+
+    addSelectListener(id, callback) {
+        const element = document.getElementById(id);
+        if (element && element.tagName === 'SELECT') {
+            element.addEventListener('change', (e) => {
+                callback(e.target.value);
+                this.saveSettings();
+            });
+        }
+    }
+
+    applySettings() {
+        this.applyTheme();
+        this.applyFontSize();
+        this.applyAnimationPreferences();
+        this.applyHighContrast();
+        this.applyFocusIndicators();
+        this.applyAccessibilitySettings();
+    }
+
+    applyTheme() {
+        if (this.currentSettings.darkMode) {
+            document.body.classList.add('dark-theme');
+            document.body.classList.remove('light-theme');
+        } else {
+            document.body.classList.add('light-theme');
+            document.body.classList.remove('dark-theme');
+        }
+    }
+
+    applyFontSize() {
+        const root = document.documentElement;
+        const sizes = {
+            'small': '14px',
+            'medium': '16px',
+            'large': '18px',
+            'extra-large': '20px'
+        };
+        root.style.fontSize = sizes[this.currentSettings.fontSize] || '16px';
+    }
+
+    applyAnimationPreferences() {
+        if (this.currentSettings.reduceAnimations) {
+            document.body.classList.add('reduce-motion');
+        } else {
+            document.body.classList.remove('reduce-motion');
+        }
+    }
+
+    applyHighContrast() {
+        if (this.currentSettings.highContrast) {
+            document.body.classList.add('high-contrast');
+        } else {
+            document.body.classList.remove('high-contrast');
+        }
+    }
+
+    applyFocusIndicators() {
+        if (this.currentSettings.focusIndicators) {
+            document.body.classList.add('enhanced-focus');
+        } else {
+            document.body.classList.remove('enhanced-focus');
+        }
+    }
+
+    applyAccessibilitySettings() {
+        if (this.currentSettings.screenReaderMode) {
+            document.body.classList.add('screen-reader-mode');
+        } else {
+            document.body.classList.remove('screen-reader-mode');
+        }
+    }
+
+    resetSettings() {
+        if (confirm('Are you sure you want to reset all settings to defaults? This cannot be undone.')) {
+            this.currentSettings = { ...this.defaults };
+            this.saveSettings();
+            this.syncSettingsToUI();
+            this.applySettings();
+            this.showNotification('Settings reset to defaults', 'success');
+        }
+    }
+
+    exportData() {
+        const data = {
+            settings: this.currentSettings,
+            exportDate: new Date().toISOString(),
+            version: '1.0'
+        };
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `sutralgo-settings-${Date.now()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        this.showNotification('Settings exported successfully', 'success');
+    }
+
+    clearCache() {
+        if (confirm('This will clear all cached data. Are you sure?')) {
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => caches.delete(name));
+                });
+            }
+            this.showNotification('Cache cleared successfully', 'success');
+        }
+    }
+
+    async deleteAccount() {
+        try {
+            const response = await fetch('/api/user/delete', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                localStorage.clear();
+                sessionStorage.clear();
+                alert('Your account has been deleted. You will be redirected to the home page.');
+                window.location.href = '/';
+            } else {
+                throw new Error(data.error?.message || 'Failed to delete account');
+            }
+        } catch (error) {
+            console.error('Error deleting account:', error);
+            alert('Failed to delete account: ' + error.message);
+        }
+    }
+
+    showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            background: var(--card-bg);
+            border-left: 4px solid var(--${type === 'success' ? 'success' : type === 'error' ? 'error' : 'primary'});
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10000;
+            animation: slideIn 0.3s ease-out;
+        `;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.style.animation = 'slideOut 0.3s ease-out';
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+}
 
 class AccountPage {
     constructor() {
         this.subscription = null;
         this.payments = [];
+        this.settingsManager = new SettingsManager();
 
         this.init();
     }

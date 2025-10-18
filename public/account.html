@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Account - SutrAlgo</title>
+    <title>Account Settings - SutrAlgo</title>
 
     <!-- Google Material Icons -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -11,7 +11,7 @@
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800;900&family=Work+Sans:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <!-- Modern CSS -->
     <link rel="stylesheet" href="/css/main.css">
 
@@ -37,16 +37,305 @@
 
     <div class="account-container">
         <div class="account-header">
-            <h1>My Account</h1>
-            <p>Manage your subscription and billing information</p>
+            <h1>Account Settings</h1>
+            <p>Customize your experience and manage your preferences</p>
         </div>
 
         <div class="account-grid">
+
+            <!-- Display & Theme Settings -->
+            <div class="account-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <span class="material-icons icon-md icon-mr-xs" aria-hidden="true">palette</span>
+                        Display & Theme
+                    </h2>
+                </div>
+
+                <div class="settings-section">
+                    <div class="setting-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="dark-mode-setting" aria-label="Enable dark mode">
+                            <span>Dark Mode</span>
+                        </label>
+                        <span class="setting-help">Switch between light and dark theme</span>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="reduce-animations" aria-label="Reduce animations">
+                            <span>Reduce Animations</span>
+                        </label>
+                        <span class="setting-help">Minimize motion effects for better performance</span>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="high-contrast" aria-label="Enable high contrast mode">
+                            <span>High Contrast Mode</span>
+                        </label>
+                        <span class="setting-help">Increase contrast for better visibility</span>
+                    </div>
+
+                    <div class="setting-item">
+                        <label for="font-size-setting">Font Size</label>
+                        <select id="font-size-setting" class="settings-input" aria-label="Select font size">
+                            <option value="small">Small</option>
+                            <option value="medium" selected>Medium (Default)</option>
+                            <option value="large">Large</option>
+                            <option value="extra-large">Extra Large</option>
+                        </select>
+                        <span class="setting-help">Adjust text size for better readability</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications & Alerts -->
+            <div class="account-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <span class="material-icons icon-md icon-mr-xs" aria-hidden="true">notifications</span>
+                        Notifications & Alerts
+                    </h2>
+                </div>
+
+                <div class="settings-section">
+                    <div class="setting-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="email-notifications" checked aria-label="Enable email notifications">
+                            <span>Email Notifications</span>
+                        </label>
+                        <span class="setting-help">Receive updates and alerts via email</span>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="browser-notifications" aria-label="Enable browser notifications">
+                            <span>Browser Notifications</span>
+                        </label>
+                        <span class="setting-help">Show desktop notifications for important events</span>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="trade-alerts" checked aria-label="Enable trade alerts">
+                            <span>Trade Alerts</span>
+                        </label>
+                        <span class="setting-help">Get notified about trade opportunities</span>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="newsletter-subscription" aria-label="Subscribe to newsletter">
+                            <span>Newsletter Subscription</span>
+                        </label>
+                        <span class="setting-help">Receive weekly market insights and updates</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data & Privacy Settings -->
+            <div class="account-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <span class="material-icons icon-md icon-mr-xs" aria-hidden="true">privacy_tip</span>
+                        Data & Privacy
+                    </h2>
+                </div>
+
+                <div class="settings-section">
+                    <div class="setting-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="analytics-tracking" checked aria-label="Enable analytics tracking">
+                            <span>Analytics & Performance Tracking</span>
+                        </label>
+                        <span class="setting-help">Help us improve by sharing anonymous usage data</span>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="cookie-consent" checked aria-label="Accept cookies">
+                            <span>Cookie Consent</span>
+                        </label>
+                        <span class="setting-help">Allow cookies for better experience</span>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="save-preferences" checked aria-label="Save preferences locally">
+                            <span>Save Preferences Locally</span>
+                        </label>
+                        <span class="setting-help">Store your settings in browser storage</span>
+                    </div>
+
+                    <div class="settings-actions">
+                        <button class="btn btn-secondary" id="export-data-btn">
+                            <span class="material-icons icon-sm icon-mr-xs" aria-hidden="true">download</span>
+                            Export My Data
+                        </button>
+                        <button class="btn btn-secondary" id="clear-cache-btn">
+                            <span class="material-icons icon-sm icon-mr-xs" aria-hidden="true">delete_sweep</span>
+                            Clear Cache
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Accessibility Settings -->
+            <div class="account-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <span class="material-icons icon-md icon-mr-xs" aria-hidden="true">accessibility</span>
+                        Accessibility
+                    </h2>
+                </div>
+
+                <div class="settings-section">
+                    <div class="setting-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="screen-reader-mode" aria-label="Enable screen reader optimizations">
+                            <span>Screen Reader Optimizations</span>
+                        </label>
+                        <span class="setting-help">Optimize interface for screen readers</span>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="keyboard-shortcuts" checked aria-label="Enable keyboard shortcuts">
+                            <span>Keyboard Shortcuts</span>
+                        </label>
+                        <span class="setting-help">Enable keyboard navigation shortcuts</span>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="focus-indicators" checked aria-label="Show focus indicators">
+                            <span>Enhanced Focus Indicators</span>
+                        </label>
+                        <span class="setting-help">Show clear visual focus for keyboard navigation</span>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="auto-play-disable" aria-label="Disable auto-play animations">
+                            <span>Disable Auto-Play</span>
+                        </label>
+                        <span class="setting-help">Prevent charts and animations from auto-playing</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Preferences -->
+            <div class="account-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <span class="material-icons icon-md icon-mr-xs" aria-hidden="true">bar_chart</span>
+                        Chart Preferences
+                    </h2>
+                </div>
+
+                <div class="settings-section">
+                    <div class="setting-item">
+                        <label for="chart-theme-setting">Chart Theme</label>
+                        <select id="chart-theme-setting" class="settings-input" aria-label="Select chart theme">
+                            <option value="auto" selected>Auto (Match Site Theme)</option>
+                            <option value="light">Light</option>
+                            <option value="dark">Dark</option>
+                        </select>
+                        <span class="setting-help">Choose your preferred chart color scheme</span>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="show-grid" checked aria-label="Show chart grid">
+                            <span>Show Grid Lines</span>
+                        </label>
+                        <span class="setting-help">Display grid lines on charts for easier reading</span>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="smooth-animations" checked aria-label="Enable smooth chart animations">
+                            <span>Smooth Chart Animations</span>
+                        </label>
+                        <span class="setting-help">Animate chart transitions smoothly</span>
+                    </div>
+
+                    <div class="setting-item">
+                        <label for="default-timeframe">Default Timeframe</label>
+                        <select id="default-timeframe" class="settings-input" aria-label="Select default timeframe">
+                            <option value="1D">1 Day</option>
+                            <option value="1W">1 Week</option>
+                            <option value="1M" selected>1 Month</option>
+                            <option value="3M">3 Months</option>
+                            <option value="6M">6 Months</option>
+                            <option value="1Y">1 Year</option>
+                            <option value="ALL">All Time</option>
+                        </select>
+                        <span class="setting-help">Default time period for chart display</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Language & Region -->
+            <div class="account-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <span class="material-icons icon-md icon-mr-xs" aria-hidden="true">language</span>
+                        Language & Region
+                    </h2>
+                </div>
+
+                <div class="settings-section">
+                    <div class="setting-item">
+                        <label for="language-setting">Language</label>
+                        <select id="language-setting" class="settings-input" aria-label="Select language">
+                            <option value="en" selected>English</option>
+                            <option value="es">Español</option>
+                            <option value="fr">Français</option>
+                            <option value="de">Deutsch</option>
+                            <option value="zh">中文</option>
+                            <option value="ja">日本語</option>
+                        </select>
+                        <span class="setting-help">Choose your preferred language</span>
+                    </div>
+
+                    <div class="setting-item">
+                        <label for="timezone-setting">Timezone</label>
+                        <select id="timezone-setting" class="settings-input" aria-label="Select timezone">
+                            <option value="UTC">UTC</option>
+                            <option value="America/New_York">Eastern Time (ET)</option>
+                            <option value="America/Chicago">Central Time (CT)</option>
+                            <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                            <option value="Europe/London">London (GMT/BST)</option>
+                            <option value="Europe/Paris">Central European Time</option>
+                            <option value="Asia/Tokyo">Tokyo</option>
+                            <option value="Asia/Shanghai">Shanghai</option>
+                            <option value="Asia/Kolkata" selected>India (IST)</option>
+                        </select>
+                        <span class="setting-help">Your local timezone for displaying times</span>
+                    </div>
+
+                    <div class="setting-item">
+                        <label for="currency-setting">Currency Display</label>
+                        <select id="currency-setting" class="settings-input" aria-label="Select currency">
+                            <option value="USD">USD ($)</option>
+                            <option value="EUR">EUR (€)</option>
+                            <option value="GBP">GBP (£)</option>
+                            <option value="JPY">JPY (¥)</option>
+                            <option value="INR" selected>INR (₹)</option>
+                            <option value="CNY">CNY (¥)</option>
+                        </select>
+                        <span class="setting-help">Preferred currency for displaying values</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Subscription Section -->
             <div class="account-section full-width" id="subscription-section">
                 <div class="section-header">
                     <h2 class="section-title">
-                        <span class="material-icons icon-md icon-mr-xs" aria-hidden="true">help</span>
+                        <span class="material-icons icon-md icon-mr-xs" aria-hidden="true">card_membership</span>
                         Subscription
                     </h2>
                     <div id="subscription-status-badge"></div>
@@ -72,6 +361,34 @@
                     <p>Loading payment history...</p>
                 </div>
             </div>
+
+            <!-- Account Actions -->
+            <div class="account-section full-width">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <span class="material-icons icon-md icon-mr-xs" aria-hidden="true">manage_accounts</span>
+                        Account Management
+                    </h2>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-actions">
+                        <button class="btn btn-primary" id="save-settings-btn">
+                            <span class="material-icons icon-sm icon-mr-xs" aria-hidden="true">save</span>
+                            Save All Settings
+                        </button>
+                        <button class="btn btn-secondary" id="reset-settings-btn">
+                            <span class="material-icons icon-sm icon-mr-xs" aria-hidden="true">refresh</span>
+                            Reset to Defaults
+                        </button>
+                        <button class="btn btn-danger" id="delete-account-btn">
+                            <span class="material-icons icon-sm icon-mr-xs" aria-hidden="true">delete_forever</span>
+                            Delete Account
+                        </button>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -99,6 +416,44 @@
                 </button>
                 <button class="btn btn-danger" id="confirm-cancel-btn">
                     Confirm Cancellation
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Account Confirmation Modal -->
+    <div class="modal-overlay" id="delete-account-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Delete Account</h3>
+                <button class="modal-close" onclick="document.getElementById('delete-account-modal').classList.remove('active')" aria-label="Close modal">
+                    <span class="material-icons icon-md" aria-hidden="true">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--error-color); font-weight: 600;">
+                    Warning: This action cannot be undone!
+                </p>
+                <p>
+                    Deleting your account will permanently remove all your data, including:
+                </p>
+                <ul style="margin: 1rem 0; padding-left: 1.5rem;">
+                    <li>Account information</li>
+                    <li>Subscription details</li>
+                    <li>Trade history and preferences</li>
+                    <li>All saved settings</li>
+                </ul>
+                <div class="form-group">
+                    <label class="form-label" for="delete-confirmation">Type "DELETE" to confirm</label>
+                    <input type="text" id="delete-confirmation" class="settings-input" placeholder="Type DELETE" aria-label="Type DELETE to confirm account deletion">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="document.getElementById('delete-account-modal').classList.remove('active')">
+                    Cancel
+                </button>
+                <button class="btn btn-danger" id="confirm-delete-btn" disabled>
+                    Permanently Delete Account
                 </button>
             </div>
         </div>
