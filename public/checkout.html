@@ -11,7 +11,7 @@
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800;900&family=Work+Sans:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <!-- Modern CSS -->
     <link rel="stylesheet" href="/css/main.css">
 
@@ -23,113 +23,347 @@
 
 </head>
 <body>
-    <div class="checkout-container">
-        <div class="checkout-header">
-            <h1>Complete Your Subscription</h1>
-            <p>Start your journey with SutrAlgo today</p>
-        </div>
+    <!-- Animated decorative background -->
+    <div class="page-background">
+        <div class="background-gradient"></div>
+        <div class="floating-element floating-element-1"></div>
+        <div class="floating-element floating-element-2"></div>
+        <div class="floating-element floating-element-3"></div>
+        <div class="floating-element floating-element-4"></div>
+    </div>
 
-        <div class="checkout-grid">
-            <!-- Payment & Billing Section -->
-            <div class="checkout-section payment-section">
-                <h2 class="section-title">
-                    <span class="material-icons" style="font-size: 24px;">credit_card</span>
-                    Payment Information
-                </h2>
+    <div class="app-container">
+        <div class="checkout-container">
+            <!-- Checkout Header -->
+            <div class="checkout-header">
+                <h1>Complete Your Subscription</h1>
+                <p>Join thousands of traders who trust SutrAlgo for technical analysis</p>
+            </div>
 
-                <!-- Billing Period Selection -->
-                <div class="form-group">
-                    <label class="form-label">Select Billing Period</label>
-                    <div class="billing-period-options" id="billingPeriodOptions">
-                        <!-- Populated by JavaScript -->
+            <!-- Progress Indicator -->
+            <div class="checkout-progress">
+                <div class="progress-step active" data-step="1">
+                    <div class="step-circle">
+                        <span class="step-number">1</span>
+                        <span class="material-icons step-check">check</span>
                     </div>
+                    <div class="step-label">Choose Plan</div>
                 </div>
-
-                <!-- Payment Form -->
-                <form id="payment-form">
-                    <div class="form-group">
-                        <label class="form-label" for="card-holder-name">Cardholder Name</label>
-                        <input type="text" id="card-holder-name" class="form-input" placeholder="John Doe" required>
+                <div class="progress-line">
+                    <div class="progress-line-fill"></div>
+                </div>
+                <div class="progress-step" data-step="2">
+                    <div class="step-circle">
+                        <span class="step-number">2</span>
+                        <span class="material-icons step-check">check</span>
                     </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Card Information</label>
-                        <div id="card-element" class="stripe-element">
-                            <!-- Stripe Elements will be inserted here -->
-                        </div>
+                    <div class="step-label">Payment Info</div>
+                </div>
+                <div class="progress-line">
+                    <div class="progress-line-fill"></div>
+                </div>
+                <div class="progress-step" data-step="3">
+                    <div class="step-circle">
+                        <span class="step-number">3</span>
+                        <span class="material-icons step-check">check</span>
                     </div>
-
-                    <div class="error-message" id="card-errors" role="alert"></div>
-
-                    <button type="submit" id="submit-button" class="btn-checkout">
-                        <span class="btn-text">Complete Subscription</span>
-                        <div class="loading-spinner"></div>
-                    </button>
-                </form>
-
-                <div class="security-notice">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                    </svg>
-                    <span>Secure payment powered by Stripe. Your card information is encrypted and never stored on our servers.</span>
+                    <div class="step-label">Review & Confirm</div>
                 </div>
             </div>
 
-            <!-- Order Summary Section -->
-            <div class="order-summary-section">
-                <div class="checkout-section">
-                    <h2 class="section-title">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14 2 14 8 20 8"/>
-                            <line x1="16" y1="13" x2="8" y2="13"/>
-                            <line x1="16" y1="17" x2="8" y2="17"/>
-                            <polyline points="10 9 9 9 8 9"/>
-                        </svg>
-                        Order Summary
-                    </h2>
+            <div class="checkout-grid">
+                <!-- Main Content - Steps -->
+                <div class="checkout-main">
 
-                    <div class="plan-summary-card" id="plan-summary">
-                        <!-- Populated by JavaScript -->
-                    </div>
+                    <!-- STEP 1: Plan Selection -->
+                    <div class="checkout-step active" id="step-1">
+                        <div class="checkout-section glass-card">
+                            <h2 class="section-title">
+                                <span class="material-icons">workspace_premium</span>
+                                Select Your Billing Period
+                            </h2>
 
-                    <div class="summary-row">
-                        <span>Subtotal</span>
-                        <span id="subtotal">$0.00</span>
-                    </div>
-                    <div class="summary-row">
-                        <span>Tax</span>
-                        <span id="tax">$0.00</span>
-                    </div>
-                    <div class="summary-row">
-                        <span>Discount</span>
-                        <span id="discount">$0.00</span>
-                    </div>
-                    <div class="summary-row total">
-                        <span>Total Due Today</span>
-                        <span id="total">$0.00</span>
-                    </div>
+                            <div class="billing-period-options" id="billingPeriodOptions">
+                                <!-- Populated by JavaScript -->
+                            </div>
 
-                    <div class="discount-code">
-                        <input type="text" id="discount-code" class="form-input" placeholder="Discount code">
-                        <button type="button" class="btn-apply-discount" id="apply-discount">Apply</button>
-                    </div>
-
-                    <div id="trial-notice" class="trial-info">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <polyline points="12 6 12 12 16 14"/>
-                        </svg>
-                        <div>
-                            <strong>90-Day Free Trial</strong><br>
-                            Your card will not be charged today. Billing starts after your trial ends.
+                            <div class="step-navigation">
+                                <button type="button" class="btn-next btn-primary" id="step1-next">
+                                    Continue to Payment
+                                    <span class="material-icons">arrow_forward</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- STEP 2: Payment Information -->
+                    <div class="checkout-step" id="step-2">
+                        <div class="checkout-section glass-card">
+                            <h2 class="section-title">
+                                <span class="material-icons">credit_card</span>
+                                Payment Information
+                            </h2>
+
+                            <form id="payment-form">
+                                <div class="form-group">
+                                    <label class="form-label" for="card-holder-name">
+                                        Cardholder Name
+                                        <span class="form-required">*</span>
+                                    </label>
+                                    <input type="text"
+                                           id="card-holder-name"
+                                           class="form-input"
+                                           placeholder="John Doe"
+                                           required>
+                                    <div class="validation-feedback">
+                                        <span class="material-icons validation-icon">check_circle</span>
+                                        <span class="validation-message"></span>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        Card Information
+                                        <span class="form-required">*</span>
+                                    </label>
+                                    <div id="card-element" class="stripe-element">
+                                        <!-- Stripe Elements will be inserted here -->
+                                    </div>
+                                    <div class="validation-feedback">
+                                        <span class="material-icons validation-icon">check_circle</span>
+                                        <span class="validation-message"></span>
+                                    </div>
+                                </div>
+
+                                <div class="error-message" id="card-errors" role="alert"></div>
+                            </form>
+
+                            <div class="security-notice">
+                                <span class="material-icons">lock</span>
+                                <span>Secure payment powered by Stripe. Your card information is encrypted and never stored on our servers.</span>
+                            </div>
+
+                            <div class="step-navigation">
+                                <button type="button" class="btn-back" id="step2-back">
+                                    <span class="material-icons">arrow_back</span>
+                                    Back
+                                </button>
+                                <button type="button" class="btn-next btn-primary" id="step2-next">
+                                    Review Order
+                                    <span class="material-icons">arrow_forward</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STEP 3: Review & Confirm -->
+                    <div class="checkout-step" id="step-3">
+                        <div class="checkout-section glass-card">
+                            <h2 class="section-title">
+                                <span class="material-icons">fact_check</span>
+                                Review Your Order
+                            </h2>
+
+                            <div class="order-review">
+                                <div class="review-section">
+                                    <h3 class="review-title">Selected Plan</h3>
+                                    <div class="review-content" id="review-plan">
+                                        <!-- Populated by JavaScript -->
+                                    </div>
+                                </div>
+
+                                <div class="review-section">
+                                    <h3 class="review-title">Payment Method</h3>
+                                    <div class="review-content" id="review-payment">
+                                        <div class="payment-preview">
+                                            <span class="material-icons">credit_card</span>
+                                            <span id="cardholder-preview">•••• •••• •••• ••••</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="final-notice" id="trial-notice-final">
+                                <span class="material-icons">info</span>
+                                <div>
+                                    <strong>90-Day Free Trial</strong><br>
+                                    Your card will not be charged today. Billing starts after your trial ends.
+                                </div>
+                            </div>
+
+                            <div class="step-navigation">
+                                <button type="button" class="btn-back" id="step3-back">
+                                    <span class="material-icons">arrow_back</span>
+                                    Back
+                                </button>
+                                <button type="button" class="btn-checkout btn-primary" id="submit-button">
+                                    <span class="btn-text">Complete Subscription</span>
+                                    <div class="loading-spinner"></div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Sidebar - Order Summary & Trust Badges -->
+                <div class="checkout-sidebar">
+
+                    <!-- Order Summary -->
+                    <div class="checkout-section glass-card sticky-summary">
+                        <h2 class="section-title">
+                            <span class="material-icons">receipt_long</span>
+                            Order Summary
+                        </h2>
+
+                        <div class="plan-summary-card" id="plan-summary">
+                            <!-- Populated by JavaScript -->
+                        </div>
+
+                        <div class="summary-divider"></div>
+
+                        <div class="summary-row">
+                            <span>Subtotal</span>
+                            <span class="summary-value" id="subtotal">$0.00</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Tax</span>
+                            <span class="summary-value" id="tax">$0.00</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Discount</span>
+                            <span class="summary-value discount-value" id="discount">$0.00</span>
+                        </div>
+
+                        <div class="summary-divider"></div>
+
+                        <div class="summary-row total">
+                            <span>Total Due Today</span>
+                            <span class="summary-value total-value" id="total">$0.00</span>
+                        </div>
+
+                        <div class="discount-code">
+                            <input type="text"
+                                   id="discount-code"
+                                   class="form-input"
+                                   placeholder="Discount code">
+                            <button type="button" class="btn-apply-discount" id="apply-discount">
+                                Apply
+                            </button>
+                        </div>
+
+                        <div id="trial-notice" class="trial-info">
+                            <span class="material-icons">schedule</span>
+                            <div>
+                                <strong>90-Day Free Trial</strong><br>
+                                Your card will not be charged today. Billing starts after your trial ends.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Trust Badges -->
+                    <div class="checkout-section glass-card trust-badges">
+                        <h3 class="trust-title">Secure & Trusted</h3>
+                        <div class="badges-grid">
+                            <div class="trust-badge">
+                                <span class="material-icons">verified_user</span>
+                                <span>SSL Encrypted</span>
+                            </div>
+                            <div class="trust-badge">
+                                <span class="material-icons">payment</span>
+                                <span>Stripe Powered</span>
+                            </div>
+                            <div class="trust-badge">
+                                <span class="material-icons">replay</span>
+                                <span>14-Day Refund</span>
+                            </div>
+                            <div class="trust-badge">
+                                <span class="material-icons">cancel</span>
+                                <span>Cancel Anytime</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Testimonials -->
+                    <div class="checkout-section glass-card testimonials">
+                        <h3 class="trust-title">What Traders Say</h3>
+                        <div class="testimonial-carousel" id="testimonialCarousel">
+                            <div class="testimonial-item active">
+                                <div class="testimonial-stars">
+                                    <span class="material-icons">star</span>
+                                    <span class="material-icons">star</span>
+                                    <span class="material-icons">star</span>
+                                    <span class="material-icons">star</span>
+                                    <span class="material-icons">star</span>
+                                </div>
+                                <p class="testimonial-text">
+                                    "SutrAlgo's technical analysis tools have completely transformed my trading strategy. The signals are incredibly accurate!"
+                                </p>
+                                <div class="testimonial-author">
+                                    <strong>Sarah M.</strong>
+                                    <span>Pro Trader</span>
+                                </div>
+                            </div>
+                            <div class="testimonial-item">
+                                <div class="testimonial-stars">
+                                    <span class="material-icons">star</span>
+                                    <span class="material-icons">star</span>
+                                    <span class="material-icons">star</span>
+                                    <span class="material-icons">star</span>
+                                    <span class="material-icons">star</span>
+                                </div>
+                                <p class="testimonial-text">
+                                    "The backtesting feature is phenomenal. I can test strategies on years of historical data before risking real money."
+                                </p>
+                                <div class="testimonial-author">
+                                    <strong>James K.</strong>
+                                    <span>Swing Trader</span>
+                                </div>
+                            </div>
+                            <div class="testimonial-item">
+                                <div class="testimonial-stars">
+                                    <span class="material-icons">star</span>
+                                    <span class="material-icons">star</span>
+                                    <span class="material-icons">star</span>
+                                    <span class="material-icons">star</span>
+                                    <span class="material-icons">star</span>
+                                </div>
+                                <p class="testimonial-text">
+                                    "Real-time Telegram alerts keep me informed 24/7. I never miss a trading opportunity anymore. Highly recommend!"
+                                </p>
+                                <div class="testimonial-author">
+                                    <strong>Priya R.</strong>
+                                    <span>Day Trader</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="testimonial-dots" id="testimonialDots">
+                            <span class="dot active" data-index="0"></span>
+                            <span class="dot" data-index="1"></span>
+                            <span class="dot" data-index="2"></span>
+                        </div>
+                    </div>
+
+                    <!-- Social Proof -->
+                    <div class="checkout-section glass-card social-proof">
+                        <div class="social-proof-item">
+                            <span class="material-icons pulse">fiber_manual_record</span>
+                            <span class="social-proof-text">
+                                <strong>2,847</strong> traders joined this month
+                            </span>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Dark Mode Toggle -->
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+        <span class="material-icons sun-icon">light_mode</span>
+        <span class="material-icons moon-icon">dark_mode</span>
+    </button>
 
     <!-- Load Stripe.js -->
     <script src="https://js.stripe.com/v3/"></script>

@@ -1,5 +1,5 @@
 /**
- * Checkout Page JavaScript
+ * Checkout Page JavaScript - Multi-Step Wizard
  * Handles Stripe payment integration and checkout flow
  */
 
@@ -11,6 +11,11 @@ class CheckoutPage {
         this.selectedPeriod = 'monthly';
         this.discountCode = null;
         this.discountAmount = 0;
+        this.currentStep = 1;
+        this.totalSteps = 3;
+        this.cardholderName = '';
+        this.testimonialIndex = 0;
+        this.testimonialInterval = null;
 
         this.init();
     }
@@ -35,6 +40,12 @@ class CheckoutPage {
 
             // Setup event listeners
             this.setupEventListeners();
+
+            // Setup step navigation
+            this.setupStepNavigation();
+
+            // Start testimonial rotation
+            this.startTestimonialRotation();
 
         } catch (error) {
             console.error('Checkout initialization error:', error);
@@ -98,18 +109,214 @@ class CheckoutPage {
             // Handle real-time validation errors
             this.cardElement.on('change', (event) => {
                 const displayError = document.getElementById('card-errors');
+                const cardGroup = document.getElementById('card-element').closest('.form-group');
+
                 if (event.error) {
                     displayError.textContent = event.error.message;
-                    displayError.classList.add('visible');
+                    cardGroup?.classList.remove('valid');
+                    cardGroup?.classList.add('invalid');
+                } else if (event.complete) {
+                    displayError.textContent = '';
+                    cardGroup?.classList.remove('invalid');
+                    cardGroup?.classList.add('valid');
                 } else {
                     displayError.textContent = '';
-                    displayError.classList.remove('visible');
+                    cardGroup?.classList.remove('valid', 'invalid');
                 }
             });
 
         } catch (error) {
             console.error('Stripe initialization error:', error);
             this.showError('Payment system not available. Please contact support.');
+        }
+    }
+
+    setupStepNavigation() {
+        // Step 1 -> Step 2
+        const step1Next = document.getElementById('step1-next');
+        if (step1Next) {
+            step1Next.addEventListener('click', () => {
+                if (this.validateStep1()) {
+                    this.goToStep(2);
+                }
+            });
+        }
+
+        // Step 2 -> Back to Step 1
+        const step2Back = document.getElementById('step2-back');
+        if (step2Back) {
+            step2Back.addEventListener('click', () => {
+                this.goToStep(1);
+            });
+        }
+
+        // Step 2 -> Step 3
+        const step2Next = document.getElementById('step2-next');
+        if (step2Next) {
+            step2Next.addEventListener('click', () => {
+                if (this.validateStep2()) {
+                    this.populateReviewStep();
+                    this.goToStep(3);
+                }
+            });
+        }
+
+        // Step 3 -> Back to Step 2
+        const step3Back = document.getElementById('step3-back');
+        if (step3Back) {
+            step3Back.addEventListener('click', () => {
+                this.goToStep(2);
+            });
+        }
+
+        // Final submit (Step 3)
+        const submitButton = document.getElementById('submit-button');
+        if (submitButton) {
+            submitButton.addEventListener('click', async () => {
+                await this.handlePayment();
+            });
+        }
+    }
+
+    goToStep(stepNumber) {
+        // Validate step number
+        if (stepNumber < 1 || stepNumber > this.totalSteps) return;
+
+        // Get current and target steps
+        const currentStepEl = document.getElementById(`step-${this.currentStep}`);
+        const targetStepEl = document.getElementById(`step-${stepNumber}`);
+
+        // Remove active class from current step
+        currentStepEl?.classList.remove('active');
+
+        // Add slide-out animation
+        if (stepNumber > this.currentStep) {
+            currentStepEl?.classList.add('slide-out-left');
+        } else {
+            currentStepEl?.classList.add('slide-out-right');
+        }
+
+        // Wait for animation, then show new step
+        setTimeout(() => {
+            currentStepEl?.classList.remove('slide-out-left', 'slide-out-right');
+            targetStepEl?.classList.add('active');
+
+            // Update current step
+            this.currentStep = stepNumber;
+
+            // Update progress indicator
+            this.updateProgressIndicator();
+
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 400);
+    }
+
+    updateProgressIndicator() {
+        const steps = document.querySelectorAll('.progress-step');
+
+        steps.forEach((step, index) => {
+            const stepNum = index + 1;
+
+            if (stepNum < this.currentStep) {
+                // Completed step
+                step.classList.add('completed');
+                step.classList.remove('active');
+            } else if (stepNum === this.currentStep) {
+                // Active step
+                step.classList.add('active');
+                step.classList.remove('completed');
+            } else {
+                // Future step
+                step.classList.remove('active', 'completed');
+            }
+        });
+    }
+
+    validateStep1() {
+        // Check if a billing period is selected
+        const selectedPeriod = document.querySelector('.period-option.selected');
+
+        if (!selectedPeriod) {
+            this.showError('Please select a billing period');
+            return false;
+        }
+
+        return true;
+    }
+
+    validateStep2() {
+        // Validate cardholder name
+        const cardholderNameInput = document.getElementById('card-holder-name');
+        const cardholderName = cardholderNameInput?.value.trim();
+
+        if (!cardholderName) {
+            this.showError('Please enter cardholder name');
+            cardholderNameInput?.focus();
+            return false;
+        }
+
+        // Store cardholder name
+        this.cardholderName = cardholderName;
+
+        // Validate cardholder name format (at least 2 words)
+        const nameParts = cardholderName.split(' ').filter(part => part.length > 0);
+        if (nameParts.length < 2) {
+            this.showError('Please enter your full name');
+            cardholderNameInput?.focus();
+            return false;
+        }
+
+        // Mark as valid
+        const nameGroup = cardholderNameInput?.closest('.form-group');
+        nameGroup?.classList.add('valid');
+        nameGroup?.classList.remove('invalid');
+
+        // Note: Stripe card validation is handled by Stripe Elements
+        // We can't manually validate it here
+        return true;
+    }
+
+    populateReviewStep() {
+        // Populate selected plan
+        const reviewPlan = document.getElementById('review-plan');
+        if (reviewPlan && this.selectedPlan) {
+            const currencySymbol = this.getCurrencySymbol(this.selectedPlan.currency);
+            let price = 0;
+            let periodText = '';
+
+            switch (this.selectedPeriod) {
+                case 'monthly':
+                    price = parseFloat(this.selectedPlan.price_monthly) || 0;
+                    periodText = 'Monthly';
+                    break;
+                case 'quarterly':
+                    price = parseFloat(this.selectedPlan.price_quarterly) || 0;
+                    periodText = 'Quarterly';
+                    break;
+                case 'annual':
+                    price = parseFloat(this.selectedPlan.price_yearly) || 0;
+                    periodText = 'Annual';
+                    break;
+            }
+
+            reviewPlan.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>${this.selectedPlan.plan_name}</strong><br>
+                        <span style="color: var(--text-muted); font-size: 0.875rem;">${periodText} Billing</span>
+                    </div>
+                    <div style="font-size: 1.25rem; font-weight: 700; color: var(--accent-gold); font-family: var(--font-mono);">
+                        ${currencySymbol}${price.toFixed(2)}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Populate payment method preview
+        const cardholderPreview = document.getElementById('cardholder-preview');
+        if (cardholderPreview && this.cardholderName) {
+            cardholderPreview.textContent = this.cardholderName;
         }
     }
 
@@ -123,11 +330,8 @@ class CheckoutPage {
             <div class="plan-description">${this.getPlanDescription(plan)}</div>
 
             ${isFree ? `
-                <div class="trial-info">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <polyline points="12 6 12 12 16 14"/>
-                    </svg>
+                <div class="trial-info" style="margin-top: var(--spacing-md);">
+                    <span class="material-icons">schedule</span>
                     <div>
                         <strong>90-Day Free Trial</strong><br>
                         Full access to all features. No payment required.
@@ -155,21 +359,27 @@ class CheckoutPage {
         const isFree = plan.plan_code === 'FREE';
 
         if (isFree) {
-            document.querySelector('.billing-period-options')
-            document.querySelector('.payment-section')
-            document.getElementById('trial-notice')
+            // Hide billing period selection for free plans
+            const billingOptions = document.querySelector('.billing-period-options');
+            if (billingOptions) {
+                billingOptions.innerHTML = `
+                    <div style="padding: var(--spacing-lg); text-align: center; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: var(--radius-lg);">
+                        <span class="material-icons" style="font-size: 48px; color: var(--success); margin-bottom: var(--spacing-md);">check_circle</span>
+                        <h3 style="color: var(--success); margin-bottom: var(--spacing-sm);">Free Trial</h3>
+                        <p style="color: var(--text-secondary);">No payment required. Start your 90-day trial immediately.</p>
+                    </div>
+                `;
+            }
 
-            // Show "Start Free Trial" button instead
-            const form = document.getElementById('payment-form');
-            form.innerHTML = `
-                <button type="button" class="btn-checkout" id="start-trial-btn">
-                    Start 90-Day Free Trial
-                </button>
-            `;
-
-            document.getElementById('start-trial-btn').addEventListener('click', () => {
-                this.startFreeTrial();
-            });
+            // Modify submit button for free trial
+            const submitBtn = document.getElementById('submit-button');
+            if (submitBtn) {
+                submitBtn.innerHTML = `
+                    <span class="btn-text">Start Free Trial</span>
+                    <div class="loading-spinner"></div>
+                `;
+                submitBtn.onclick = () => this.startFreeTrial();
+            }
 
             return;
         }
@@ -232,34 +442,19 @@ class CheckoutPage {
         `).join('');
 
         document.getElementById('billingPeriodOptions').innerHTML = periodsHTML;
-
-        // Show trial notice if trial_days > 0
-        if (plan.trial_days > 0) {
-            const trialNotice = document.getElementById('trial-notice');
-            trialNotice.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <polyline points="12 6 12 12 16 14"/>
-                </svg>
-                <div>
-                    <strong>${plan.trial_days}-Day Free Trial</strong><br>
-                    Your card will not be charged today. Billing starts after your trial ends.
-                </div>
-            `;
-            trialNotice
-        }
     }
 
     setupEventListeners() {
         // Billing period selection
-        document.querySelectorAll('.period-option').forEach(option => {
-            option.addEventListener('click', () => {
+        document.addEventListener('click', (e) => {
+            const periodOption = e.target.closest('.period-option');
+            if (periodOption) {
                 document.querySelectorAll('.period-option').forEach(opt => opt.classList.remove('selected'));
-                option.classList.add('selected');
-                option.querySelector('input').checked = true;
-                this.selectedPeriod = option.dataset.period;
+                periodOption.classList.add('selected');
+                periodOption.querySelector('input').checked = true;
+                this.selectedPeriod = periodOption.dataset.period;
                 this.updateOrderSummary();
-            });
+            }
         });
 
         // Discount code
@@ -267,14 +462,34 @@ class CheckoutPage {
             this.applyDiscountCode();
         });
 
-        // Payment form submission
-        const form = document.getElementById('payment-form');
-        if (form) {
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                await this.handlePayment();
+        // Real-time validation for cardholder name
+        const cardholderNameInput = document.getElementById('card-holder-name');
+        if (cardholderNameInput) {
+            cardholderNameInput.addEventListener('input', () => {
+                const value = cardholderNameInput.value.trim();
+                const group = cardholderNameInput.closest('.form-group');
+
+                if (value.length >= 3) {
+                    const nameParts = value.split(' ').filter(part => part.length > 0);
+                    if (nameParts.length >= 2) {
+                        group?.classList.add('valid');
+                        group?.classList.remove('invalid');
+                    } else {
+                        group?.classList.remove('valid', 'invalid');
+                    }
+                } else {
+                    group?.classList.remove('valid', 'invalid');
+                }
             });
         }
+
+        // Testimonial dots click
+        document.querySelectorAll('.testimonial-dots .dot').forEach((dot, index) => {
+            dot.addEventListener('click', () => {
+                this.showTestimonial(index);
+                this.resetTestimonialRotation();
+            });
+        });
     }
 
     updateOrderSummary() {
@@ -348,9 +563,9 @@ class CheckoutPage {
     }
 
     async startFreeTrial() {
-        const submitBtn = document.getElementById('start-trial-btn');
+        const submitBtn = document.getElementById('submit-button');
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Activating Trial...';
+        submitBtn.classList.add('loading');
 
         try {
             const response = await fetch('/api/subscription/start-free-trial', {
@@ -372,16 +587,17 @@ class CheckoutPage {
             console.error('Error starting trial:', error);
             this.showError(error.message);
             submitBtn.disabled = false;
-            submitBtn.textContent = 'Start 90-Day Free Trial';
+            submitBtn.classList.remove('loading');
         }
     }
 
     async handlePayment() {
         const submitBtn = document.getElementById('submit-button');
-        const cardholderName = document.getElementById('card-holder-name').value.trim();
+        const cardholderName = this.cardholderName;
 
         if (!cardholderName) {
             this.showError('Please enter cardholder name');
+            this.goToStep(2);
             return;
         }
 
@@ -434,6 +650,43 @@ class CheckoutPage {
             submitBtn.disabled = false;
             submitBtn.classList.remove('processing');
         }
+    }
+
+    // Testimonial rotation
+    startTestimonialRotation() {
+        this.testimonialInterval = setInterval(() => {
+            this.showTestimonial((this.testimonialIndex + 1) % 3);
+        }, 6000);
+    }
+
+    showTestimonial(index) {
+        const items = document.querySelectorAll('.testimonial-item');
+        const dots = document.querySelectorAll('.testimonial-dots .dot');
+
+        items.forEach((item, i) => {
+            if (i === index) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
+
+        dots.forEach((dot, i) => {
+            if (i === index) {
+                dot.classList.add('active');
+            } else {
+                dot.classList.remove('active');
+            }
+        });
+
+        this.testimonialIndex = index;
+    }
+
+    resetTestimonialRotation() {
+        if (this.testimonialInterval) {
+            clearInterval(this.testimonialInterval);
+        }
+        this.startTestimonialRotation();
     }
 
     getCurrencySymbol(currency) {
@@ -499,16 +752,20 @@ class CheckoutPage {
 
     showError(message) {
         const errorDiv = document.getElementById('card-errors');
-        errorDiv.textContent = message;
-        errorDiv.classList.add('visible');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+        }
 
+        // Auto-hide after 5 seconds
         setTimeout(() => {
-            errorDiv.classList.remove('visible');
+            if (errorDiv) {
+                errorDiv.textContent = '';
+            }
         }, 5000);
     }
 
     showSuccess(message) {
-        // You could create a success message element similar to error
+        // Show success message (could be enhanced with a proper notification system)
         console.log('Success:', message);
     }
 }
