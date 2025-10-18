@@ -2263,6 +2263,169 @@ tbody td.negative {
     display: none !important;
 }
 
+/* === Icon Utilities === */
+/* Standardized Material Icons sizing utilities for consistent icon display across the application */
+
+/* Icon Size Classes */
+.icon-xs {
+    font-size: 16px !important;
+    width: 16px;
+    height: 16px;
+}
+
+.icon-sm {
+    font-size: 18px !important;
+    width: 18px;
+    height: 18px;
+}
+
+.icon-md {
+    font-size: 24px !important;
+    width: 24px;
+    height: 24px;
+}
+
+.icon-lg {
+    font-size: 36px !important;
+    width: 36px;
+    height: 36px;
+}
+
+.icon-xl {
+    font-size: 48px !important;
+    width: 48px;
+    height: 48px;
+}
+
+/* Icon Color Utilities */
+.icon-primary {
+    color: var(--accent-gold) !important;
+}
+
+.icon-secondary {
+    color: var(--grey-400) !important;
+}
+
+.icon-accent {
+    color: var(--accent-gold) !important;
+}
+
+.icon-success {
+    color: var(--success) !important;
+}
+
+.icon-error {
+    color: var(--error) !important;
+}
+
+.icon-warning {
+    color: var(--warning) !important;
+}
+
+.icon-info {
+    color: var(--info) !important;
+}
+
+.icon-muted {
+    color: var(--grey-500) !important;
+}
+
+/* Icon Alignment Utilities */
+.icon-align-text {
+    vertical-align: middle;
+    margin-top: -2px;
+}
+
+.icon-inline {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+}
+
+/* Icon Spacing Utilities */
+.icon-mr-xs {
+    margin-right: 4px;
+}
+
+.icon-mr-sm {
+    margin-right: 8px;
+}
+
+.icon-mr-md {
+    margin-right: 12px;
+}
+
+.icon-ml-xs {
+    margin-left: 4px;
+}
+
+.icon-ml-sm {
+    margin-left: 8px;
+}
+
+.icon-ml-md {
+    margin-left: 12px;
+}
+
+/* Material Icons Base Styling - ensures all Material Icons render consistently */
+.material-icons {
+    font-family: 'Material Icons';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    display: inline-block;
+    line-height: 1;
+    text-transform: none;
+    letter-spacing: normal;
+    word-wrap: normal;
+    white-space: nowrap;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'liga';
+    vertical-align: middle;
+}
+
+/* Accessibility - Icons should not be read by screen readers when decorative */
+.material-icons[aria-hidden="true"] {
+    user-select: none;
+    pointer-events: none;
+}
+
+/* Icon in buttons - ensure proper alignment */
+button .material-icons,
+a .material-icons {
+    vertical-align: middle;
+}
+
+/* Icon animations for interactive elements */
+.icon-spin {
+    animation: icon-spin 1s linear infinite;
+}
+
+@keyframes icon-spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.icon-pulse {
+    animation: icon-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes icon-pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
 /* ========================================
    19. RESPONSIVE
    ======================================== */

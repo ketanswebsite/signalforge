@@ -43,7 +43,9 @@
 
     <div class="telegram-page-container">
         <div class="telegram-header">
-            <div class="telegram-icon">📱</div>
+            <div class="telegram-icon">
+                <span class="material-icons icon-xl icon-primary" aria-hidden="true">smartphone</span>
+            </div>
             <h1>Get Trading Signals on Telegram</h1>
             <p class="subtitle">Receive instant alerts for high-conviction trading opportunities</p>
         </div>
@@ -52,22 +54,30 @@
             <h2>Why Subscribe to Telegram?</h2>
             <div class="benefits-grid">
                 <div class="benefit-card">
-                    <span class="benefit-icon">⚡</span>
+                    <span class="benefit-icon">
+                        <span class="material-icons icon-lg icon-primary" aria-hidden="true">bolt</span>
+                    </span>
                     <h3>Instant Notifications</h3>
                     <p>Get alerts the moment opportunities are found</p>
                 </div>
                 <div class="benefit-card">
-                    <span class="benefit-icon">🌅</span>
+                    <span class="benefit-icon">
+                        <span class="material-icons icon-lg icon-primary" aria-hidden="true">wb_twilight</span>
+                    </span>
                     <h3>Daily 7 AM Scans</h3>
                     <p>Automatic morning conviction trades every weekday (UK time)</p>
                 </div>
                 <div class="benefit-card">
-                    <span class="benefit-icon">📊</span>
+                    <span class="benefit-icon">
+                        <span class="material-icons icon-lg icon-primary" aria-hidden="true">bar_chart</span>
+                    </span>
                     <h3>Backtested Signals</h3>
                     <p>All trades include 5-year win rate statistics</p>
                 </div>
                 <div class="benefit-card">
-                    <span class="benefit-icon">🎯</span>
+                    <span class="benefit-icon">
+                        <span class="material-icons icon-lg icon-primary" aria-hidden="true">track_changes</span>
+                    </span>
                     <h3>High Conviction Only</h3>
                     <p>Filter for >75% win rate opportunities</p>
                 </div>
@@ -103,7 +113,7 @@
 
         <div class="cta-section">
             <a href="https://t.me/MySignalForgeBot?start=all" class="cta-button">
-                <span class="material-icons" style="font-size: 20px;">send</span>
+                <span class="material-icons icon-sm icon-mr-xs" aria-hidden="true">send</span>
                 Open in Telegram
             </a>
         </div>
@@ -112,27 +122,36 @@
             <h2>Choose Your Subscription Type</h2>
             <div class="subscription-cards">
                 <div class="subscription-card">
-                    <h3>🎯 All Signals (Recommended)</h3>
+                    <h3>
+                        <span class="material-icons icon-md icon-primary icon-mr-xs" aria-hidden="true">track_changes</span>
+                        All Signals (Recommended)
+                    </h3>
                     <p>Get everything: daily 7 AM scans, conviction trades, and all market alerts</p>
                     <a href="https://t.me/MySignalForgeBot?start=all" class="link">
                         Subscribe to All
-                        <span class="material-icons">arrow_forward</span>
+                        <span class="material-icons icon-sm" aria-hidden="true">arrow_forward</span>
                     </a>
                 </div>
                 <div class="subscription-card">
-                    <h3>🌅 Morning Conviction Only</h3>
+                    <h3>
+                        <span class="material-icons icon-md icon-primary icon-mr-xs" aria-hidden="true">wb_twilight</span>
+                        Morning Conviction Only
+                    </h3>
                     <p>Just the daily 7 AM conviction trades with >75% win rates</p>
                     <a href="https://t.me/MySignalForgeBot?start=conviction" class="link">
                         Subscribe to Morning Trades
-                        <span class="material-icons">arrow_forward</span>
+                        <span class="material-icons icon-sm" aria-hidden="true">arrow_forward</span>
                     </a>
                 </div>
                 <div class="subscription-card">
-                    <h3>🔍 Scan Results Only</h3>
+                    <h3>
+                        <span class="material-icons icon-md icon-primary icon-mr-xs" aria-hidden="true">search</span>
+                        Scan Results Only
+                    </h3>
                     <p>Receive only the scan results when high conviction opportunities are found</p>
                     <a href="https://t.me/MySignalForgeBot?start=scans" class="link">
                         Subscribe to Scans
-                        <span class="material-icons">arrow_forward</span>
+                        <span class="material-icons icon-sm" aria-hidden="true">arrow_forward</span>
                     </a>
                 </div>
             </div>
@@ -158,19 +177,32 @@
         <!-- OAuth User Linking Section (only visible if logged in) -->
         <div id="oauth-linking-section" class="oauth-linking-section">
             <div class="oauth-content">
-                <h2>🔗 Link Your Account</h2>
+                <h2>
+                    <span class="material-icons icon-md icon-primary icon-mr-xs" aria-hidden="true">link</span>
+                    Link Your Account
+                </h2>
                 <p>Connect your Google account with Telegram to sync your subscription across both platforms</p>
 
                 <!-- Not Linked State -->
                 <div id="not-linked-state">
                     <div class="oauth-card">
                         <p>
-                            ✨ <strong>Benefits of linking:</strong>
+                            <span class="material-icons icon-sm icon-primary icon-mr-xs" aria-hidden="true">auto_awesome</span>
+                            <strong>Benefits of linking:</strong>
                         </p>
                         <ul class="benefits-list">
-                            <li>📧 Single subscription for both platforms</li>
-                            <li>🔄 Automatic sync of preferences</li>
-                            <li>💳 Unified subscription management</li>
+                            <li>
+                                <span class="material-icons icon-xs icon-mr-xs" aria-hidden="true">email</span>
+                                Single subscription for both platforms
+                            </li>
+                            <li>
+                                <span class="material-icons icon-xs icon-mr-xs" aria-hidden="true">sync</span>
+                                Automatic sync of preferences
+                            </li>
+                            <li>
+                                <span class="material-icons icon-xs icon-mr-xs" aria-hidden="true">credit_card</span>
+                                Unified subscription management
+                            </li>
                         </ul>
                         <button id="generate-link-btn" class="oauth-button">
                             Generate Telegram Link
@@ -181,7 +213,8 @@
                     <div id="deep-link-display" class="oauth-card">
                         <p><strong>Step 1:</strong> Click the button below</p>
                         <a id="telegram-deep-link" href="#" class="cta-button">
-                            📱 Open in Telegram & Link
+                            <span class="material-icons icon-sm icon-mr-xs" aria-hidden="true">smartphone</span>
+                            Open in Telegram & Link
                         </a>
                         <p><strong>Step 2:</strong> Send /start to the bot</p>
                         <p>Your accounts will be linked automatically!</p>
@@ -195,7 +228,9 @@
                 <!-- Linked State -->
                 <div id="linked-state" class="linked-state">
                     <div class="oauth-card">
-                        <div class="success-icon">✅</div>
+                        <div class="success-icon">
+                            <span class="material-icons icon-xl icon-success" role="img" aria-label="Success">check_circle</span>
+                        </div>
                         <h3>Account Linked!</h3>
                         <p>Your Telegram account <strong id="linked-username"></strong> is connected</p>
                         <p>

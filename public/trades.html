@@ -148,7 +148,9 @@
             <div id="active-trades-container">
                 <!-- Empty state for no active trades -->
                 <div class="empty-state" id="no-active-trades">
-                    <div class="empty-state-icon">📈</div>
+                    <div class="empty-state-icon">
+                        <span class="material-icons icon-xl icon-primary" aria-hidden="true">trending_up</span>
+                    </div>
                     <div class="empty-state-message">No active signals</div>
                     <p>Return to the backtester to analyze new technical patterns</p>
                     <button class="btn btn-nav" onclick="window.location.href='index.html'">
@@ -180,7 +182,9 @@
                 <div id="all-trades-container">
                     <!-- Empty state for no trade history -->
                     <div class="empty-state" id="no-trade-history">
-                        <div class="empty-state-icon">📊</div>
+                        <div class="empty-state-icon">
+                            <span class="material-icons icon-xl icon-primary" aria-hidden="true">bar_chart</span>
+                        </div>
                         <div class="empty-state-message">No trade history yet</div>
                         <p>Your closed positions will appear here with detailed performance metrics including P/L, holding periods, and exit reasons</p>
                     </div>
@@ -217,7 +221,9 @@
                 <div id="winning-trades-container">
                     <!-- Will be populated by JavaScript -->
                     <div class="empty-state" id="no-winning-trades">
-                        <div class="empty-state-icon">🏆</div>
+                        <div class="empty-state-icon">
+                            <span class="material-icons icon-xl icon-success" aria-hidden="true">emoji_events</span>
+                        </div>
                         <div class="empty-state-message">No winning trades yet</div>
                         <p>Profitable positions will be displayed here when you close trades above your entry price</p>
                     </div>
@@ -253,7 +259,9 @@
                 <div id="losing-trades-container">
                     <!-- Will be populated by JavaScript -->
                     <div class="empty-state" id="no-losing-trades">
-                        <div class="empty-state-icon">📉</div>
+                        <div class="empty-state-icon">
+                            <span class="material-icons icon-xl icon-error" aria-hidden="true">trending_down</span>
+                        </div>
                         <div class="empty-state-message">No losing trades yet</div>
                         <p>Positions closed below entry price will appear here for analysis and learning</p>
                     </div>
@@ -610,7 +618,7 @@
 
                     <div class="file-upload-container">
                         <label for="import-file-input" class="file-upload-label">
-                            <span class="material-icons" style="font-size: 24px;">insert_drive_file</span>
+                            <span class="material-icons icon-md" aria-hidden="true">insert_drive_file</span>
                             <span>Choose File</span>
                         </label>
                         <input type="file" id="import-file-input" accept=".json">
@@ -744,7 +752,7 @@
                 </div>
             </div>
             <div class="trade-timer">
-                <span class="material-icons" style="font-size: 14px;">schedule</span>
+                <span class="material-icons icon-xs icon-mr-xs" aria-hidden="true">schedule</span>
                 <span class="days-remaining"></span> days remaining until square off
             </div>
             <div class="trade-actions">
