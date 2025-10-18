@@ -1737,23 +1737,54 @@ body.menu-open {
    10C. UNIFIED NAVBAR RESPONSIVE
    ======================================== */
 
+/* Large tablets and small desktops - reduce size but keep text */
 @media (max-width: 1200px) {
+    .navbar-links {
+        gap: 0.5rem;
+    }
+
+    .nav-item {
+        padding: 0.5rem 0.875rem;
+        font-size: 0.875rem;
+    }
+
+    .brand-text {
+        font-size: 1.35rem;
+    }
+
+    .user-name {
+        font-size: 0.875rem;
+    }
+}
+
+/* Medium tablets - more compact but still show icon + text */
+@media (max-width: 900px) {
     .navbar-links {
         gap: 0.25rem;
     }
 
     .nav-item {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.875rem;
+        padding: 0.5rem 0.625rem;
+        font-size: 0.8125rem;
     }
 
-    .nav-item span {
-        display: none;
-    }
-
-    .nav-item .material-icons,
     .nav-item .nav-icon {
-        margin: 0;
+        font-size: 16px !important;
+        width: 16px;
+        height: 16px;
+    }
+
+    .brand-text {
+        font-size: 1.25rem;
+    }
+
+    .navbar-logo {
+        height: 35px;
+        width: auto;
+    }
+
+    .user-name {
+        display: none;
     }
 }
 
