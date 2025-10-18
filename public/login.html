@@ -18,17 +18,28 @@
 
     <!-- Modern Effects (Custom Cursor, Scroll Progress, Animations) -->
     <script src="/js/modern-effects.js" defer></script>
+
+    <!-- Animation Controller -->
+    <script src="/js/animationController.js" defer></script>
 </head>
 <body>
     <!-- Full-page login wrapper -->
     <div class="login-page-wrapper">
-        <!-- Animated background -->
-        <div class="login-hero"></div>
+        <!-- Animated Background with Particles -->
+        <div class="animated-background animated-background--full">
+            <div class="gradient-orb orb-1"></div>
+            <div class="gradient-orb orb-2"></div>
+            <div class="gradient-orb orb-3"></div>
+            <canvas id="particles-canvas"></canvas>
+        </div>
 
         <!-- Floating decorative elements -->
         <div class="floating-element floating-element-1"></div>
         <div class="floating-element floating-element-2"></div>
         <div class="floating-element floating-element-3"></div>
+        <div class="floating-element floating-element-4"></div>
+        <div class="floating-element floating-element-5"></div>
+        <div class="floating-element floating-element-6"></div>
 
         <!-- Login card with glassmorphism -->
         <div class="login-card-glass">
@@ -71,6 +82,12 @@
     </div>
 
     <script src="/js/theme-toggle.js"></script>
+    <script>
+        // Initialize animations
+        if (window.AnimationController) {
+            window.AnimationController.init('full');
+        }
+    </script>
     <script>
         // Check for error in URL
         const urlParams = new URLSearchParams(window.location.search);

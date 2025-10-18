@@ -15930,6 +15930,226 @@ img.lazy-loaded {
 }
 
 /* ========================================
+   REUSABLE ANIMATED BACKGROUND SYSTEM
+   ======================================== */
+
+/* Base animated background - can be used on any page */
+.animated-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background: radial-gradient(ellipse at top, rgba(28, 28, 28, 0.9), var(--primary-dark)),
+                radial-gradient(ellipse at bottom, rgba(212, 175, 55, 0.05), transparent);
+    overflow: hidden;
+}
+
+/* Full animation variant (for user-facing pages) */
+.animated-background--full {
+    /* Uses default background styles */
+}
+
+/* Reduced animation variant (for functional pages like admin) */
+.animated-background--reduced {
+    /* Slightly darker background for less distraction */
+    background: radial-gradient(ellipse at top, rgba(20, 20, 20, 0.95), var(--primary-dark)),
+                radial-gradient(ellipse at bottom, rgba(212, 175, 55, 0.03), transparent);
+}
+
+/* Gradient orbs for animated backgrounds */
+.animated-background .gradient-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.3;
+    will-change: transform;
+    animation: gradient-pulse 8s ease-in-out infinite;
+}
+
+/* Reduced variant has more subtle orbs */
+.animated-background--reduced .gradient-orb {
+    opacity: 0.15;
+    filter: blur(100px);
+    animation-duration: 12s;
+}
+
+/* Floating elements for animated backgrounds */
+.animated-background .floating-element {
+    position: absolute;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(245, 158, 11, 0.1));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+}
+
+/* Reduced variant has more subtle floating elements */
+.animated-background--reduced .floating-element {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.05), rgba(245, 158, 11, 0.05));
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Orb positioning (reusable across pages) */
+.animated-background .orb-1 {
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, var(--accent-gold), transparent);
+    top: 10%;
+    left: 10%;
+    animation-delay: 0s;
+}
+
+.animated-background .orb-2 {
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, var(--accent-amber), transparent);
+    top: 50%;
+    right: 10%;
+    animation-delay: 2s;
+}
+
+.animated-background .orb-3 {
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, var(--accent-bronze), transparent);
+    bottom: 10%;
+    left: 50%;
+    animation-delay: 4s;
+}
+
+/* Smaller orbs for reduced animation */
+.animated-background--reduced .orb-1 {
+    width: 350px;
+    height: 350px;
+}
+
+.animated-background--reduced .orb-2 {
+    width: 300px;
+    height: 300px;
+}
+
+/* Hide orb-3 in reduced mode */
+.animated-background--reduced .orb-3 {
+    display: none;
+}
+
+/* Floating element positioning (full animation - 6 elements) */
+.animated-background--full .floating-element-1 {
+    width: 100px;
+    height: 100px;
+    top: 10%;
+    right: 15%;
+    animation: float 8s ease-in-out infinite;
+}
+
+.animated-background--full .floating-element-2 {
+    width: 80px;
+    height: 80px;
+    bottom: 15%;
+    left: 10%;
+    animation: float 6s ease-in-out infinite 2s;
+}
+
+.animated-background--full .floating-element-3 {
+    width: 60px;
+    height: 60px;
+    top: 60%;
+    right: 10%;
+    animation: float 7s ease-in-out infinite 1s;
+}
+
+.animated-background--full .floating-element-4 {
+    width: 90px;
+    height: 90px;
+    top: 35%;
+    left: 8%;
+    animation: float 9s ease-in-out infinite 3s;
+}
+
+.animated-background--full .floating-element-5 {
+    width: 70px;
+    height: 70px;
+    bottom: 30%;
+    right: 20%;
+    animation: float 8.5s ease-in-out infinite 4s;
+}
+
+.animated-background--full .floating-element-6 {
+    width: 85px;
+    height: 85px;
+    top: 75%;
+    left: 25%;
+    animation: float 7.5s ease-in-out infinite 2.5s;
+}
+
+/* Floating element positioning (reduced animation - 3 elements) */
+.animated-background--reduced .floating-element-1 {
+    width: 70px;
+    height: 70px;
+    top: 15%;
+    right: 12%;
+    animation: float 10s ease-in-out infinite;
+}
+
+.animated-background--reduced .floating-element-2 {
+    width: 60px;
+    height: 60px;
+    bottom: 20%;
+    left: 10%;
+    animation: float 12s ease-in-out infinite 3s;
+}
+
+.animated-background--reduced .floating-element-3 {
+    width: 50px;
+    height: 50px;
+    top: 55%;
+    right: 15%;
+    animation: float 11s ease-in-out infinite 1.5s;
+}
+
+/* Hide extra floating elements in reduced mode */
+.animated-background--reduced .floating-element-4,
+.animated-background--reduced .floating-element-5,
+.animated-background--reduced .floating-element-6 {
+    display: none;
+}
+
+/* Responsive adjustments for animated backgrounds */
+@media (max-width: 768px) {
+    .animated-background .gradient-orb {
+        opacity: 0.2;
+    }
+
+    .animated-background--reduced .gradient-orb {
+        opacity: 0.1;
+    }
+
+    .animated-background .floating-element {
+        display: none;
+    }
+}
+
+/* Light theme support for animated backgrounds */
+body.light-theme .animated-background {
+    background: radial-gradient(ellipse at top, rgba(255, 255, 255, 0.95), var(--off-white)),
+                radial-gradient(ellipse at bottom, rgba(212, 175, 55, 0.08), transparent);
+}
+
+body.light-theme .animated-background .gradient-orb {
+    opacity: 0.2;
+}
+
+body.light-theme .animated-background--reduced {
+    background: radial-gradient(ellipse at top, rgba(250, 250, 250, 0.98), var(--off-white)),
+                radial-gradient(ellipse at bottom, rgba(212, 175, 55, 0.05), transparent);
+}
+
+body.light-theme .animated-background--reduced .gradient-orb {
+    opacity: 0.1;
+}
+
+/* ========================================
    LANDING HERO SECTION
    ======================================== */
 

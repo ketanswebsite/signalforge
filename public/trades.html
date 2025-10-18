@@ -28,6 +28,9 @@
     <!-- Modern Effects (Custom Cursor, Scroll Progress, Animations) -->
     <script src="/js/modern-effects.js" defer></script>
 
+    <!-- Animation Controller -->
+    <script src="/js/animationController.js" defer></script>
+
     <!-- XSS Protection (load first for security) -->
     <script src="js/xss-protection.js"></script>
 
@@ -65,6 +68,22 @@
     <script src="js/ml-insights-ui.js" defer></script>
 </head>
 <body>
+    <!-- Animated Background with Particles -->
+    <div class="animated-background animated-background--full">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+        <canvas id="particles-canvas"></canvas>
+    </div>
+
+    <!-- Floating decorative elements -->
+    <div class="floating-element floating-element-1"></div>
+    <div class="floating-element floating-element-2"></div>
+    <div class="floating-element floating-element-3"></div>
+    <div class="floating-element floating-element-4"></div>
+    <div class="floating-element floating-element-5"></div>
+    <div class="floating-element floating-element-6"></div>
+
     <div class="app-container">
         <!-- Navigation bar will be inserted here by unified-navbar.js -->
 
@@ -854,5 +873,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <!-- Unified Navigation Bar -->
 <script src="js/unified-navbar.js"></script>
+
+<!-- Initialize Animations -->
+<script>
+    if (window.AnimationController) {
+        window.AnimationController.init('full');
+    }
+</script>
 </body>
 </html>

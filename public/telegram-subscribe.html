@@ -21,8 +21,27 @@
     <!-- Modern Effects (Custom Cursor, Scroll Progress, Animations) -->
     <script src="/js/modern-effects.js" defer></script>
 
+    <!-- Animation Controller -->
+    <script src="/js/animationController.js" defer></script>
+
 </head>
 <body>
+    <!-- Animated Background with Particles -->
+    <div class="animated-background animated-background--full">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+        <canvas id="particles-canvas"></canvas>
+    </div>
+
+    <!-- Floating decorative elements -->
+    <div class="floating-element floating-element-1"></div>
+    <div class="floating-element floating-element-2"></div>
+    <div class="floating-element floating-element-3"></div>
+    <div class="floating-element floating-element-4"></div>
+    <div class="floating-element floating-element-5"></div>
+    <div class="floating-element floating-element-6"></div>
+
     <!-- Dark Mode Toggle -->
     <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
         <span class="material-icons sun-icon">light_mode</span>
@@ -288,5 +307,12 @@
     </script>
 <!-- Unified Navigation Bar -->
 <script src="js/unified-navbar.js"></script>
+
+<!-- Initialize Animations -->
+<script>
+    if (window.AnimationController) {
+        window.AnimationController.init('full');
+    }
+</script>
 </body>
 </html>

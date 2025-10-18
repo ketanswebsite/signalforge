@@ -35,8 +35,23 @@
     <!-- Modern Effects (Custom Cursor, Scroll Progress, Animations) -->
     <script src="/js/modern-effects.js" defer></script>
 
+    <!-- Animation Controller -->
+    <script src="/js/animationController.js" defer></script>
+
 </head>
 <body>
+    <!-- Animated Background with Particles -->
+    <div class="animated-background animated-background--reduced">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <canvas id="particles-canvas"></canvas>
+    </div>
+
+    <!-- Floating decorative elements -->
+    <div class="floating-element floating-element-1"></div>
+    <div class="floating-element floating-element-2"></div>
+    <div class="floating-element floating-element-3"></div>
+
     <div class="app-container">
         <!-- Header -->
         <div class="header">
@@ -422,5 +437,12 @@
 
 <!-- Unified Navigation Bar -->
 <script src="js/unified-navbar.js"></script>
+
+<!-- Initialize Animations -->
+<script>
+    if (window.AnimationController) {
+        window.AnimationController.init('reduced');
+    }
+</script>
 </body>
 </html>
