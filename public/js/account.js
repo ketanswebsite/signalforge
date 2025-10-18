@@ -889,12 +889,7 @@ class AccountPage {
         };
         return statusMap[status] || status;
     }
-}
 
-// Initialize account page when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    new AccountPage();
-});
 
     renderLoginRequired() {
         return `
@@ -907,3 +902,10 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
     }
+}
+
+// Initialize account page when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    new AccountPage();
+});
+
