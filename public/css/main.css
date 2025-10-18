@@ -2358,7 +2358,7 @@ tbody td.negative {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--primary-dark);
+    background: transparent;
     position: relative;
     overflow: hidden;
     padding: 2rem;
