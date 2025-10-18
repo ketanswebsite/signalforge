@@ -71,8 +71,8 @@
     <!-- Modern Effects (Custom Cursor, Scroll Progress, Animations) -->
     <script src="/js/modern-effects.js" defer></script>
 
-    <!-- Animation Controller -->
-    <script src="/js/animationController.js" defer></script>
+    <!-- Landing Page Animations -->
+    <script src="/js/landing.js" defer></script>
 
     <!-- CORS proxy functionality -->
     <script>
@@ -86,7 +86,7 @@
 </head>
 <body>
     <!-- Animated Background with Particles -->
-    <div class="animated-background animated-background--full">
+    <div class="landing-background">
         <div class="gradient-orb orb-1"></div>
         <div class="gradient-orb orb-2"></div>
         <div class="gradient-orb orb-3"></div>
@@ -456,12 +456,5 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <!-- Unified Navigation Bar -->
 <script src="js/unified-navbar.js"></script>
-
-<!-- Initialize Animations -->
-<script>
-    if (window.AnimationController) {
-        window.AnimationController.init('full');
-    }
-</script>
 </body>
 </html>
