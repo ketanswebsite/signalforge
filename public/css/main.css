@@ -17289,3 +17289,51 @@ body.screen-reader-mode [aria-label]::after {
         margin: 1rem;
     }
 }
+
+/* ========================================
+   ACCOUNT PAGE TEXT WRAPPING FIXES
+   ======================================== */
+
+.setting-help {
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    line-height: 1.5 !important;
+    max-width: 100% !important;
+}
+
+.checkbox-label {
+    flex-wrap: wrap !important;
+    word-wrap: break-word !important;
+}
+
+.checkbox-label span {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.setting-item label {
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+}
+
+.settings-actions {
+    flex-wrap: wrap;
+}
+
+.settings-actions .btn {
+    min-width: fit-content;
+    white-space: nowrap;
+}
+
+/* Better responsive text for buttons */
+@media (max-width: 480px) {
+    .settings-actions .btn {
+        font-size: 0.875rem;
+        padding: 0.65rem 1rem;
+    }
+    
+    .section-title {
+        font-size: 1.25rem;
+        word-wrap: break-word;
+    }
+}

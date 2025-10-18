@@ -459,6 +459,13 @@ class AccountPage {
     async loadSubscription() {
         try {
             const response = await fetch('/api/user/subscription');
+            
+            // Handle authentication error
+            if (response.status === 401) {
+                document.getElementById('subscription-content').innerHTML = this.renderLoginRequired();
+                return;
+            }
+            
             const data = await response.json();
 
             const contentDiv = document.getElementById('subscription-content');
@@ -480,6 +487,13 @@ class AccountPage {
     async loadPaymentHistory() {
         try {
             const response = await fetch('/api/user/payments');
+            
+            // Handle authentication error
+            if (response.status === 401) {
+                document.getElementById('payment-history-content').innerHTML = this.renderLoginRequired();
+                return;
+            }
+            
             const data = await response.json();
 
             const contentDiv = document.getElementById('payment-history-content');
@@ -487,8 +501,10 @@ class AccountPage {
             if (data.success && data.payments && data.payments.length > 0) {
                 this.payments = data.payments;
                 this.renderPaymentHistory();
-            } else {
+            } else if (data.success) {
                 contentDiv.innerHTML = this.renderEmptyPayments();
+            } else {
+                contentDiv.innerHTML = this.renderError('Unable to load payment history');
             }
         } catch (error) {
             console.error('Error loading payment history:', error);
@@ -879,3 +895,15 @@ class AccountPage {
 document.addEventListener('DOMContentLoaded', () => {
     new AccountPage();
 });
+
+    renderLoginRequired() {
+        return `
+            <div class="empty-state">
+                <span class="material-icons" style="font-size: 64px; color: var(--primary); margin-bottom: 1rem;">lock</span>
+                <p style="margin-bottom: 0.5rem;">Please log in to view this information</p>
+                <a href="/login" class="btn btn-primary mt-2">
+                    Log In
+                </a>
+            </div>
+        `;
+    }
