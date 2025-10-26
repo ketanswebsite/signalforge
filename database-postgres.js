@@ -1126,6 +1126,17 @@ const TradeDB = {
   // Insert a new trade
   async insertTrade(trade, userId = 'default') {
     try {
+      // Auto-calculate shares if not provided but we have tradeSize and entryPrice
+      if (!trade.shares && trade.tradeSize && trade.entryPrice && trade.entryPrice > 0) {
+        trade.shares = trade.tradeSize / trade.entryPrice;
+        console.log(`[DB] Auto-calculated shares for ${trade.symbol}: ${trade.shares.toFixed(2)} shares (${trade.tradeSize} / ${trade.entryPrice})`);
+      }
+
+      // Auto-populate investmentAmount from tradeSize if not provided
+      if (!trade.investmentAmount && trade.tradeSize) {
+        trade.investmentAmount = trade.tradeSize;
+      }
+
       const result = await pool.query(
         `INSERT INTO trades (
           symbol, name, stock_index, entry_date, entry_price, exit_date, exit_price,

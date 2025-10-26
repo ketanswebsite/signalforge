@@ -3878,6 +3878,64 @@ app.listen(PORT, async () => {
     console.error('❌ [MIGRATION] Failed to create trade_alerts_sent table:', error.message);
   }
 
+  // Run migration to fix missing shares and profit_loss values
+  try {
+    console.log('🔧 [MIGRATION] Fixing missing shares and profit_loss values...');
+
+    // Step 1: Calculate and populate shares for trades where shares is NULL
+    const sharesUpdate = await TradeDB.pool.query(`
+      UPDATE trades
+      SET shares = trade_size / entry_price
+      WHERE shares IS NULL
+        AND trade_size IS NOT NULL
+        AND entry_price IS NOT NULL
+        AND entry_price > 0
+      RETURNING id, symbol, trade_size, entry_price, shares
+    `);
+
+    if (sharesUpdate.rows.length > 0) {
+      console.log(`✅ [MIGRATION] Updated ${sharesUpdate.rows.length} trades with calculated shares`);
+    }
+
+    // Step 2: Populate investment_amount where missing
+    const investmentUpdate = await TradeDB.pool.query(`
+      UPDATE trades
+      SET investment_amount = trade_size
+      WHERE investment_amount IS NULL
+        AND trade_size IS NOT NULL
+      RETURNING id, symbol
+    `);
+
+    if (investmentUpdate.rows.length > 0) {
+      console.log(`✅ [MIGRATION] Updated ${investmentUpdate.rows.length} trades with investment_amount`);
+    }
+
+    // Step 3: Calculate and populate profit_loss for closed trades
+    const profitLossUpdate = await TradeDB.pool.query(`
+      UPDATE trades
+      SET profit_loss = (exit_price - entry_price) * shares
+      WHERE status = 'closed'
+        AND profit_loss IS NULL
+        AND exit_price IS NOT NULL
+        AND entry_price IS NOT NULL
+        AND shares IS NOT NULL
+      RETURNING id, symbol, profit_loss, profit_loss_percentage
+    `);
+
+    if (profitLossUpdate.rows.length > 0) {
+      console.log(`✅ [MIGRATION] Updated ${profitLossUpdate.rows.length} closed trades with profit_loss`);
+      profitLossUpdate.rows.forEach(row => {
+        const plValue = parseFloat(row.profit_loss).toFixed(2);
+        const plPercent = row.profit_loss_percentage ? parseFloat(row.profit_loss_percentage).toFixed(2) : 'N/A';
+        console.log(`   - ${row.symbol} (ID ${row.id}): $${plValue} (${plPercent}%)`);
+      });
+    }
+
+    console.log('✅ [MIGRATION] Shares and profit_loss migration completed');
+  } catch (error) {
+    console.error('❌ [MIGRATION] Failed to fix shares and profit_loss:', error.message);
+  }
+
   try {
     const trades = await TradeDB.getAllTrades('default');
   } catch (error) {
