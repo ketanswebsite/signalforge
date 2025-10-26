@@ -2960,18 +2960,32 @@ app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 // Alert checking function
 async function checkTradeAlerts() {
   if (!telegramBot) return;
-  
+
   try {
+    // Check if within market hours (Mon-Fri, 8 AM - 9 PM UK time)
+    const ukTime = new Date().toLocaleString("en-GB", {timeZone: "Europe/London"});
+    const ukDate = new Date(ukTime);
+    const ukHour = ukDate.getHours();
+    const ukDay = ukDate.getDay();
+
+    // Skip if outside market hours (weekends or outside 8 AM - 9 PM)
+    if (ukDay < 1 || ukDay > 5 || ukHour < 8 || ukHour >= 21) {
+      console.log(`[TRADE ALERTS] Skipping check - outside market hours (${ukDay === 0 ? 'Sunday' : ukDay === 6 ? 'Saturday' : 'Weekday'}, ${ukHour}:00 UK time)`);
+      return;
+    }
+
+    console.log(`[TRADE ALERTS] Checking alerts at ${ukTime}`);
+
     // Get all active alert users
     const alertUsers = await TradeDB.getAllActiveAlertUsers();
     if (alertUsers.length === 0) return;
-    
+
     for (const user of alertUsers) {
       if (!user.telegram_enabled || !user.telegram_chat_id) continue;
-      
+
       // Get active trades for this specific user
       const activeTrades = await TradeDB.getActiveTrades(user.user_id);
-      
+
       // Check each active trade for alert conditions
       for (const trade of activeTrades) {
         // Get current price (you'll need to implement this based on your price fetching logic)
@@ -2983,34 +2997,34 @@ async function checkTradeAlerts() {
             },
             timeout: 5000
           });
-          
+
           const data = response.data;
           if (data.chart && data.chart.result && data.chart.result.length > 0) {
             const result = data.chart.result[0];
             const currentPrice = result.meta.regularMarketPrice;
-            
+
             // Calculate P/L
             const percentGain = ((currentPrice - trade.entryPrice) / trade.entryPrice) * 100;
-            
+
             // Check alert conditions
             let shouldAlert = false;
             let alertType = '';
             let reason = '';
-            
+
             // Target reached
             if (user.alert_on_target && trade.targetPrice && currentPrice >= trade.targetPrice) {
               shouldAlert = true;
               alertType = 'target_reached';
               reason = 'Target price reached';
             }
-            
+
             // Stop loss hit
             if (user.alert_on_stoploss && trade.stopLoss && currentPrice <= trade.stopLoss) {
               shouldAlert = true;
               alertType = 'stop_loss';
               reason = 'Stop loss triggered';
             }
-            
+
             // Time exit (example: 30 days)
             const daysSinceEntry = Math.floor((Date.now() - new Date(trade.entryDate).getTime()) / (1000 * 60 * 60 * 24));
             if (user.alert_on_time_exit && daysSinceEntry >= 30) {
@@ -3018,9 +3032,19 @@ async function checkTradeAlerts() {
               alertType = 'time_exit';
               reason = `${daysSinceEntry} days holding period`;
             }
-            
+
             if (shouldAlert) {
-              await telegramBot.sendTelegramAlert(user.telegram_chat_id, {
+              // Check if alert already sent for this trade
+              const alertAlreadySent = await checkAlertAlreadySent(trade.id, user.user_id, alertType);
+
+              if (alertAlreadySent) {
+                console.log(`[TRADE ALERTS] Alert already sent for ${trade.symbol} (${alertType}) - skipping`);
+                continue;
+              }
+
+              // Send the alert
+              console.log(`[TRADE ALERTS] Sending ${alertType} alert for ${trade.symbol} to ${user.user_id}`);
+              const alertSent = await telegramBot.sendTelegramAlert(user.telegram_chat_id, {
                 type: alertType,
                 stock: trade.symbol,
                 price: currentPrice.toFixed(2),
@@ -3031,13 +3055,68 @@ async function checkTradeAlerts() {
                 reason: reason,
                 currencySymbol: trade.stockIndex === 'usStocks' ? '$' : '₹'
               });
+
+              if (alertSent) {
+                // Record that alert was sent
+                await recordAlertSent(trade.id, user.user_id, alertType, currentPrice, percentGain);
+
+                // Close the trade for target_reached or stop_loss
+                if (alertType === 'target_reached' || alertType === 'stop_loss') {
+                  console.log(`[TRADE ALERTS] Closing trade ${trade.symbol} (${alertType})`);
+                  try {
+                    await TradeDB.closeTrade(trade.id, {
+                      exitDate: new Date().toISOString().split('T')[0],
+                      exitPrice: currentPrice,
+                      profitLossPercent: percentGain,
+                      exitReason: reason
+                    }, user.user_id);
+                    console.log(`[TRADE ALERTS] Trade ${trade.symbol} closed successfully`);
+                  } catch (closeError) {
+                    console.error(`[TRADE ALERTS] Error closing trade ${trade.symbol}:`, closeError.message);
+                  }
+                }
+              }
             }
           }
         } catch (error) {
+          // Silent error handling for individual trade checks
         }
       }
     }
   } catch (error) {
+    console.error('[TRADE ALERTS] Error in checkTradeAlerts:', error.message);
+  }
+}
+
+// Check if alert already sent for this trade
+async function checkAlertAlreadySent(tradeId, userId, alertType) {
+  try {
+    const query = `
+      SELECT * FROM trade_alerts_sent
+      WHERE trade_id = $1 AND user_id = $2 AND alert_type = $3
+      LIMIT 1
+    `;
+    const result = await TradeDB.pool.query(query, [tradeId, userId, alertType]);
+    return result.rows.length > 0;
+  } catch (error) {
+    console.error('[TRADE ALERTS] Error checking alert sent:', error.message);
+    return false;
+  }
+}
+
+// Record alert as sent
+async function recordAlertSent(tradeId, userId, alertType, currentPrice, plPercent) {
+  try {
+    const query = `
+      INSERT INTO trade_alerts_sent
+      (trade_id, user_id, alert_type, current_price, pl_percent)
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (trade_id, user_id, alert_type) DO NOTHING
+    `;
+    await TradeDB.pool.query(query, [tradeId, userId, alertType, currentPrice, plPercent]);
+    console.log(`[TRADE ALERTS] Recorded alert sent: trade=${tradeId}, type=${alertType}`);
+  } catch (error) {
+    console.error('[TRADE ALERTS] Error recording alert sent:', error.message);
   }
 }
 
