@@ -331,6 +331,9 @@ async function initializeDatabase() {
     // Recalculate allocated capital after investment amounts are populated (one-time migration)
     await recalculateAllocatedCapital();
 
+    // Backfill historical realized P/L from closed trades (one-time migration)
+    await backfillHistoricalRealizedPL();
+
     // Add unified audit log columns if they don't exist (for admin portal compatibility)
     try {
       await pool.query(`ALTER TABLE trade_audit_log ADD COLUMN IF NOT EXISTS entity_type VARCHAR(50) DEFAULT 'trade'`);
@@ -918,6 +921,112 @@ async function recalculateAllocatedCapital() {
   } catch (error) {
     // Silent fail - migration might not be needed
     console.error('Allocated capital recalculation warning:', error.message);
+  }
+}
+
+// Migration function to backfill historical realized P/L from closed trades
+async function backfillHistoricalRealizedPL() {
+  try {
+    // Check if this migration has already been applied
+    const migrationCheck = await pool.query(`
+      SELECT filename FROM schema_migrations WHERE filename = '018_backfill_historical_realized_pl.sql'
+    `);
+
+    if (migrationCheck.rows.length > 0) {
+      // Migration already applied, skip
+      return;
+    }
+
+    // Update US Market (stocks without .NS or .L suffix)
+    const usResult = await pool.query(`
+      UPDATE portfolio_capital
+      SET realized_pl = (
+          SELECT COALESCE(SUM(profit_loss), 0)
+          FROM trades
+          WHERE status = 'closed'
+            AND user_id = 'ketanjoshisahs@gmail.com'
+            AND symbol NOT LIKE '%.NS'
+            AND symbol NOT LIKE '%.L'
+            AND profit_loss IS NOT NULL
+      ),
+      available_capital = initial_capital + (
+          SELECT COALESCE(SUM(profit_loss), 0)
+          FROM trades
+          WHERE status = 'closed'
+            AND user_id = 'ketanjoshisahs@gmail.com'
+            AND symbol NOT LIKE '%.NS'
+            AND symbol NOT LIKE '%.L'
+            AND profit_loss IS NOT NULL
+      ) - allocated_capital,
+      updated_at = CURRENT_TIMESTAMP
+      WHERE user_id = 'system' AND market = 'US'
+      RETURNING realized_pl, available_capital
+    `);
+
+    // Update India Market (.NS suffix stocks)
+    const indiaResult = await pool.query(`
+      UPDATE portfolio_capital
+      SET realized_pl = (
+          SELECT COALESCE(SUM(profit_loss), 0)
+          FROM trades
+          WHERE status = 'closed'
+            AND user_id = 'ketanjoshisahs@gmail.com'
+            AND symbol LIKE '%.NS'
+            AND profit_loss IS NOT NULL
+      ),
+      available_capital = initial_capital + (
+          SELECT COALESCE(SUM(profit_loss), 0)
+          FROM trades
+          WHERE status = 'closed'
+            AND user_id = 'ketanjoshisahs@gmail.com'
+            AND symbol LIKE '%.NS'
+            AND profit_loss IS NOT NULL
+      ) - allocated_capital,
+      updated_at = CURRENT_TIMESTAMP
+      WHERE user_id = 'system' AND market = 'India'
+      RETURNING realized_pl, available_capital
+    `);
+
+    // Update UK Market (.L suffix stocks)
+    const ukResult = await pool.query(`
+      UPDATE portfolio_capital
+      SET realized_pl = (
+          SELECT COALESCE(SUM(profit_loss), 0)
+          FROM trades
+          WHERE status = 'closed'
+            AND user_id = 'ketanjoshisahs@gmail.com'
+            AND symbol LIKE '%.L'
+            AND profit_loss IS NOT NULL
+      ),
+      available_capital = initial_capital + (
+          SELECT COALESCE(SUM(profit_loss), 0)
+          FROM trades
+          WHERE status = 'closed'
+            AND user_id = 'ketanjoshisahs@gmail.com'
+            AND symbol LIKE '%.L'
+            AND profit_loss IS NOT NULL
+      ) - allocated_capital,
+      updated_at = CURRENT_TIMESTAMP
+      WHERE user_id = 'system' AND market = 'UK'
+      RETURNING realized_pl, available_capital
+    `);
+
+    const usData = usResult.rows[0] || {};
+    const indiaData = indiaResult.rows[0] || {};
+    const ukData = ukResult.rows[0] || {};
+
+    console.log(`✅ Backfilled historical realized P/L: US=$${usData.realized_pl || 0} (Available: $${usData.available_capital || 0}), India=₹${indiaData.realized_pl || 0} (Available: ₹${indiaData.available_capital || 0}), UK=£${ukData.realized_pl || 0} (Available: £${ukData.available_capital || 0})`);
+
+    // Mark migration as applied
+    await pool.query(`
+      INSERT INTO schema_migrations (filename, applied_at)
+      VALUES ('018_backfill_historical_realized_pl.sql', NOW())
+      ON CONFLICT (filename) DO NOTHING
+    `);
+
+  } catch (error) {
+    // Silent fail - migration might not be needed
+    console.error('Historical realized P/L backfill warning:', error.message);
   }
 }
 
