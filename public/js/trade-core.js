@@ -296,6 +296,10 @@ const TradeCore = (function() {
                     trade.plValue = trade.profitLoss || 0;
                     trade.plPercent = trade.profitLossPercentage || 0;
 
+                    // Map to fields used by statistics calculations
+                    trade.profit = trade.profitLoss || 0;              // For winRate calculations
+                    trade.percentGain = trade.profitLossPercentage || 0;  // For avgProfit calculations
+
                     // Debug logging for closed UK trades
                     if (trade.symbol && trade.symbol.endsWith('.L')) {
                     }
