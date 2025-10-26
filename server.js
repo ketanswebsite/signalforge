@@ -2978,8 +2978,8 @@ async function checkTradeAlerts() {
     const ukDay = dayMap[parts.find(p => p.type === 'weekday').value];
     const ukHour = parseInt(parts.find(p => p.type === 'hour').value);
 
-    // Skip if outside market hours (weekends or outside 8 AM - 9 PM)
-    if (ukDay < 1 || ukDay > 5 || ukHour < 8 || ukHour >= 21) {
+    // Skip if outside market hours (weekends or outside 6 AM - 9 PM)
+    if (ukDay < 1 || ukDay > 5 || ukHour < 6 || ukHour >= 21) {
       console.log(`[TRADE ALERTS] Skipping check - outside market hours (${ukDay === 0 ? 'Sunday' : ukDay === 6 ? 'Saturday' : 'Weekday'}, ${ukHour}:00 UK time)`);
       return;
     }
@@ -3886,7 +3886,33 @@ app.listen(PORT, async () => {
     await autoRecoverUsers();
   } catch (error) {
   }
-  
+
+  // Clean up old pending signals on startup
+  try {
+    console.log('🧹 [STARTUP] Cleaning up old pending signals...');
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    const result = await TradeDB.pool.query(`
+      DELETE FROM pending_signals
+      WHERE status = 'pending'
+        AND signal_date < $1
+      RETURNING symbol, signal_date, market
+    `, [yesterdayStr]);
+
+    if (result.rows.length > 0) {
+      console.log(`🧹 [STARTUP] Removed ${result.rows.length} old pending signals:`);
+      result.rows.forEach(row => {
+        console.log(`   - ${row.symbol} (${row.market}) from ${row.signal_date}`);
+      });
+    } else {
+      console.log(`🧹 [STARTUP] No old pending signals to remove`);
+    }
+  } catch (error) {
+    console.error('🧹 [STARTUP] Error cleaning up old signals:', error.message);
+  }
+
   // Run initial alert check
   if (telegramBot) {
     if (telegramBot) {

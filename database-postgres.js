@@ -2144,6 +2144,19 @@ const TradeDB = {
   async storePendingSignal(signal) {
     checkConnection();
     try {
+      // Check if signal already exists for this symbol and date
+      const existingSignal = await pool.query(`
+        SELECT * FROM pending_signals
+        WHERE symbol = $1 AND signal_date = $2
+        LIMIT 1
+      `, [signal.symbol, signal.signalDate]);
+
+      if (existingSignal.rows.length > 0) {
+        console.log(`[DB] Duplicate signal prevented: ${signal.symbol} for ${signal.signalDate} already exists`);
+        return existingSignal.rows[0];
+      }
+
+      // Insert new signal if no duplicate found
       const result = await pool.query(`
         INSERT INTO pending_signals
         (symbol, signal_date, entry_price, target_price, stop_loss,
@@ -2166,6 +2179,7 @@ const TradeDB = {
         signal.prevDTI || null,
         signal.prev7DayDTI || null
       ]);
+      console.log(`[DB] New pending signal stored: ${signal.symbol} for ${signal.signalDate}`);
       return result.rows[0];
     } catch (error) {
       throw error;
