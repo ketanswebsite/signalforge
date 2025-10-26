@@ -45,6 +45,7 @@ window.TradeUIModules.charts = (function() {
             error: 'rgba(220, 38, 38, 1)',              // --error
             errorLight: 'rgba(220, 38, 38, 0.7)',
             errorVeryLight: 'rgba(220, 38, 38, 0.2)',
+            errorUltraLight: 'rgba(220, 38, 38, 0.05)',
 
             // Text colors
             textPrimary: isDark ? '#ffffff' : '#000000',
