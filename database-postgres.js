@@ -1047,6 +1047,64 @@ const TradeDB = {
     return pool;
   },
 
+  /**
+   * FIELD NAME TRANSFORMATION LAYER DOCUMENTATION
+   * =============================================
+   *
+   * This module implements a dual naming convention:
+   * - Database: snake_case (PostgreSQL convention)
+   * - JavaScript/API: camelCase (JavaScript convention)
+   *
+   * All query functions automatically transform between conventions:
+   *
+   * DB → JS TRANSFORMATIONS (Query Results):
+   * ----------------------------------------
+   * entry_price → entryPrice
+   * exit_price → exitPrice
+   * entry_date → entryDate
+   * exit_date → exitDate
+   * profit_loss → profitLoss
+   * profit_loss_percentage → profitLossPercentage
+   * stop_loss_percent → stopLossPercent
+   * take_profit_percent → takeProfitPercent
+   * stock_index → stockIndex
+   * stock_name → stockName
+   * investment_amount → investmentAmount
+   * position_size → positionSize
+   * current_market_price → currentMarketPrice
+   * unrealized_pl → unrealizedPL
+   * unrealized_pl_percentage → unrealizedPLPercentage
+   * win_rate → winRate
+   * historical_signal_count → historicalSignalCount
+   * signal_date → signalDate
+   * auto_added → autoAdded
+   * trade_size → tradeSize
+   * prev_dti → prevDTI
+   * entry_dti → entryDTI
+   * prev_7day_dti → prev7DayDTI
+   * entry_7day_dti → entry7DayDTI
+   *
+   * FIELDS KEPT AS snake_case:
+   * --------------------------
+   * user_id (consistent backend usage)
+   * created_at (backend metadata)
+   * updated_at (backend metadata)
+   *
+   * JS → DB TRANSFORMATIONS (Updates/Inserts):
+   * ------------------------------------------
+   * Same mappings in reverse (camelCase → snake_case)
+   *
+   * IMPORTANT NOTES:
+   * ---------------
+   * 1. All code should use camelCase when working with trade objects from these functions
+   * 2. Direct SQL queries must use snake_case column names
+   * 3. Admin panel queries should use this transformation layer for consistency
+   * 4. When debugging field name issues, check both conventions in this mapping
+   *
+   * @see updateTrade - For JS → DB transformation example
+   * @see getAllTrades - For DB → JS transformation example
+   */
+
   // Get all trades for a user
   async getAllTrades(userId = 'default') {
     checkConnection();
@@ -1092,7 +1150,11 @@ const TradeDB = {
         prevDTI: row.prev_dti ? parseFloat(row.prev_dti) : null,
         entryDTI: row.entry_dti ? parseFloat(row.entry_dti) : null,
         prev7DayDTI: row.prev_7day_dti ? parseFloat(row.prev_7day_dti) : null,
-        entry7DayDTI: row.entry_7day_dti ? parseFloat(row.entry_7day_dti) : null
+        entry7DayDTI: row.entry_7day_dti ? parseFloat(row.entry_7day_dti) : null,
+        // Missing field transformations added for standardization
+        currentMarketPrice: row.current_market_price ? parseFloat(row.current_market_price) : null,
+        unrealizedPL: row.unrealized_pl ? parseFloat(row.unrealized_pl) : null,
+        unrealizedPLPercentage: row.unrealized_pl_percentage ? parseFloat(row.unrealized_pl_percentage) : null
       }));
     } catch (error) {
       return [];
@@ -1141,7 +1203,11 @@ const TradeDB = {
         prevDTI: row.prev_dti ? parseFloat(row.prev_dti) : null,
         entryDTI: row.entry_dti ? parseFloat(row.entry_dti) : null,
         prev7DayDTI: row.prev_7day_dti ? parseFloat(row.prev_7day_dti) : null,
-        entry7DayDTI: row.entry_7day_dti ? parseFloat(row.entry_7day_dti) : null
+        entry7DayDTI: row.entry_7day_dti ? parseFloat(row.entry_7day_dti) : null,
+        // Missing field transformations added for standardization
+        currentMarketPrice: row.current_market_price ? parseFloat(row.current_market_price) : null,
+        unrealizedPL: row.unrealized_pl ? parseFloat(row.unrealized_pl) : null,
+        unrealizedPLPercentage: row.unrealized_pl_percentage ? parseFloat(row.unrealized_pl_percentage) : null
       }));
     } catch (error) {
       return [];
@@ -1190,7 +1256,11 @@ const TradeDB = {
         prevDTI: row.prev_dti ? parseFloat(row.prev_dti) : null,
         entryDTI: row.entry_dti ? parseFloat(row.entry_dti) : null,
         prev7DayDTI: row.prev_7day_dti ? parseFloat(row.prev_7day_dti) : null,
-        entry7DayDTI: row.entry_7day_dti ? parseFloat(row.entry_7day_dti) : null
+        entry7DayDTI: row.entry_7day_dti ? parseFloat(row.entry_7day_dti) : null,
+        // Missing field transformations added for standardization
+        currentMarketPrice: row.current_market_price ? parseFloat(row.current_market_price) : null,
+        unrealizedPL: row.unrealized_pl ? parseFloat(row.unrealized_pl) : null,
+        unrealizedPLPercentage: row.unrealized_pl_percentage ? parseFloat(row.unrealized_pl_percentage) : null
       }));
     } catch (error) {
       return [];
@@ -1225,7 +1295,11 @@ const TradeDB = {
         profitLoss: row.profit_loss ? parseFloat(row.profit_loss) : null,
         profitLossPercentage: row.profit_loss_percentage ? parseFloat(row.profit_loss_percentage) : null,
         notes: row.notes,
-        user_id: row.user_id
+        user_id: row.user_id,
+        // Missing field transformations added for standardization
+        currentMarketPrice: row.current_market_price ? parseFloat(row.current_market_price) : null,
+        unrealizedPL: row.unrealized_pl ? parseFloat(row.unrealized_pl) : null,
+        unrealizedPLPercentage: row.unrealized_pl_percentage ? parseFloat(row.unrealized_pl_percentage) : null
       };
     } catch (error) {
       return null;
@@ -1363,7 +1437,11 @@ const TradeDB = {
         profit_loss: updates.profitLoss,
         profit_loss_percentage: updates.profitLossPercentage,
         exit_reason: updates.exitReason,
-        notes: updates.notes
+        notes: updates.notes,
+        // Missing field transformations added for standardization
+        current_market_price: updates.currentMarketPrice,
+        unrealized_pl: updates.unrealizedPL,
+        unrealized_pl_percentage: updates.unrealizedPLPercentage
       };
 
       for (const [dbField, value] of Object.entries(fields)) {
