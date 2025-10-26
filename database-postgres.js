@@ -1254,7 +1254,7 @@ const TradeDB = {
         }
       }
 
-      if (setClauses.length === 0) return true;
+      if (setClauses.length === 0) return null;
 
       // Add updated_at
       setClauses.push(`updated_at = CURRENT_TIMESTAMP`);
@@ -1263,14 +1263,23 @@ const TradeDB = {
       values.push(id, userId);
 
       const query = `
-        UPDATE trades 
+        UPDATE trades
         SET ${setClauses.join(', ')}
         WHERE id = $${paramIndex} AND user_id = $${paramIndex + 1}
+        RETURNING *
       `;
 
       const result = await pool.query(query, values);
-      return result.rowCount > 0;
+
+      // Return the updated row if successful, null if no rows updated
+      if (result.rowCount > 0) {
+        return result.rows[0];
+      }
+
+      console.warn(`[DB] updateTrade failed: No trade found with id=${id} and user_id=${userId}`);
+      return null;
     } catch (error) {
+      console.error(`[DB] updateTrade error:`, error);
       throw error;
     }
   },
@@ -2401,14 +2410,25 @@ const TradeDB = {
   async closeTrade(tradeId, exitData, userId = 'default') {
     checkConnection();
     try {
-      return await this.updateTrade(tradeId, {
+      console.log(`[DB] Attempting to close trade: id=${tradeId}, user_id=${userId}, exitPrice=${exitData.exitPrice}, reason=${exitData.exitReason}`);
+
+      const result = await this.updateTrade(tradeId, {
         exitDate: exitData.exitDate,
         exitPrice: exitData.exitPrice,
         profitLossPercentage: exitData.profitLossPercent,
         exitReason: exitData.exitReason,
         status: 'closed'
       }, userId);
+
+      if (result) {
+        console.log(`[DB] ✅ Trade closed successfully: id=${tradeId}, symbol=${result.symbol}, status=${result.status}`);
+      } else {
+        console.error(`[DB] ❌ Failed to close trade: id=${tradeId}, user_id=${userId} - No matching row found`);
+      }
+
+      return result;
     } catch (error) {
+      console.error(`[DB] ❌ Error closing trade id=${tradeId}:`, error);
       throw error;
     }
   },
