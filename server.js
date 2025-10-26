@@ -3174,6 +3174,64 @@ app.get('/api/scanner/status', ensureAuthenticatedAPI, ensureSubscriptionActive,
   }
 });
 
+// Run migration for trade_alerts_sent table
+app.post('/api/run-migration-trade-alerts', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    console.log('🔧 [MIGRATION] Running trade_alerts_sent table migration...');
+
+    // Create table
+    await TradeDB.pool.query(`
+      CREATE TABLE IF NOT EXISTS trade_alerts_sent (
+        id SERIAL PRIMARY KEY,
+        trade_id INTEGER NOT NULL,
+        user_id VARCHAR(255) NOT NULL,
+        alert_type VARCHAR(50) NOT NULL,
+        current_price DECIMAL(15, 2),
+        pl_percent DECIMAL(10, 2),
+        sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT unique_trade_alert UNIQUE(trade_id, user_id, alert_type)
+      )
+    `);
+    console.log('✅ [MIGRATION] Table created');
+
+    // Create indexes
+    await TradeDB.pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_trade_alerts_trade_user
+      ON trade_alerts_sent(trade_id, user_id, alert_type)
+    `);
+    await TradeDB.pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_trade_alerts_sent_at
+      ON trade_alerts_sent(sent_at DESC)
+    `);
+    console.log('✅ [MIGRATION] Indexes created');
+
+    // Add comments
+    await TradeDB.pool.query(`
+      COMMENT ON TABLE trade_alerts_sent IS 'Tracks sent Telegram alerts to prevent duplicates from checkTradeAlerts() function'
+    `);
+    console.log('✅ [MIGRATION] Comments added');
+
+    // Verify table exists
+    const result = await TradeDB.pool.query(`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_name = 'trade_alerts_sent'
+    `);
+
+    res.json({
+      success: true,
+      message: 'Migration completed successfully',
+      tableExists: result.rows.length > 0
+    });
+  } catch (error) {
+    console.error('❌ [MIGRATION] Failed:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Test endpoint for 7 AM scan - simulates the exact cron job behavior
 app.post('/api/test-7am-scan', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
