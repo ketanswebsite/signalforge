@@ -2963,10 +2963,20 @@ async function checkTradeAlerts() {
 
   try {
     // Check if within market hours (Mon-Fri, 8 AM - 9 PM UK time)
-    const ukTime = new Date().toLocaleString("en-GB", {timeZone: "Europe/London"});
-    const ukDate = new Date(ukTime);
-    const ukHour = ukDate.getHours();
-    const ukDay = ukDate.getDay();
+    const now = new Date();
+    const ukTimeString = now.toLocaleString("en-GB", {timeZone: "Europe/London"});
+
+    // Get UK hour and day using reliable timezone-aware method
+    const ukFormatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Europe/London',
+      weekday: 'short',
+      hour: 'numeric',
+      hour12: false
+    });
+    const parts = ukFormatter.formatToParts(now);
+    const dayMap = {Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6};
+    const ukDay = dayMap[parts.find(p => p.type === 'weekday').value];
+    const ukHour = parseInt(parts.find(p => p.type === 'hour').value);
 
     // Skip if outside market hours (weekends or outside 8 AM - 9 PM)
     if (ukDay < 1 || ukDay > 5 || ukHour < 8 || ukHour >= 21) {
@@ -2974,7 +2984,7 @@ async function checkTradeAlerts() {
       return;
     }
 
-    console.log(`[TRADE ALERTS] Checking alerts at ${ukTime}`);
+    console.log(`[TRADE ALERTS] Checking alerts at ${ukTimeString}`);
 
     // Get all active alert users
     const alertUsers = await TradeDB.getAllActiveAlertUsers();
