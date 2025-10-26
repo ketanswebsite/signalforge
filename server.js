@@ -3015,6 +3015,7 @@ async function checkTradeAlerts() {
 
             // Calculate P/L
             const percentGain = ((currentPrice - trade.entryPrice) / trade.entryPrice) * 100;
+            const profitLossValue = (currentPrice - trade.entryPrice) * (trade.shares || 0);
 
             // Check alert conditions
             let shouldAlert = false;
@@ -3077,6 +3078,7 @@ async function checkTradeAlerts() {
                     await TradeDB.closeTrade(trade.id, {
                       exitDate: new Date().toISOString().split('T')[0],
                       exitPrice: currentPrice,
+                      profitLoss: profitLossValue,
                       profitLossPercent: percentGain,
                       exitReason: reason
                     }, user.user_id);
