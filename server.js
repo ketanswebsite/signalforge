@@ -3824,12 +3824,63 @@ app.use((req, res) => {
 
 // Start server
 app.listen(PORT, async () => {
-  
+
+  // Run migration for trade_alerts_sent table on startup
+  try {
+    console.log('🔧 [MIGRATION] Checking trade_alerts_sent table...');
+
+    // Check if table exists
+    const tableCheck = await TradeDB.pool.query(`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_name = 'trade_alerts_sent'
+    `);
+
+    if (tableCheck.rows.length === 0) {
+      console.log('🔧 [MIGRATION] Creating trade_alerts_sent table...');
+
+      // Create table
+      await TradeDB.pool.query(`
+        CREATE TABLE IF NOT EXISTS trade_alerts_sent (
+          id SERIAL PRIMARY KEY,
+          trade_id INTEGER NOT NULL,
+          user_id VARCHAR(255) NOT NULL,
+          alert_type VARCHAR(50) NOT NULL,
+          current_price DECIMAL(15, 2),
+          pl_percent DECIMAL(10, 2),
+          sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT unique_trade_alert UNIQUE(trade_id, user_id, alert_type)
+        )
+      `);
+
+      // Create indexes
+      await TradeDB.pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_trade_alerts_trade_user
+        ON trade_alerts_sent(trade_id, user_id, alert_type)
+      `);
+      await TradeDB.pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_trade_alerts_sent_at
+        ON trade_alerts_sent(sent_at DESC)
+      `);
+
+      // Add comments
+      await TradeDB.pool.query(`
+        COMMENT ON TABLE trade_alerts_sent IS 'Tracks sent Telegram alerts to prevent duplicates from checkTradeAlerts() function'
+      `);
+
+      console.log('✅ [MIGRATION] trade_alerts_sent table created successfully');
+    } else {
+      console.log('✅ [MIGRATION] trade_alerts_sent table already exists');
+    }
+  } catch (error) {
+    console.error('❌ [MIGRATION] Failed to create trade_alerts_sent table:', error.message);
+  }
+
   try {
     const trades = await TradeDB.getAllTrades('default');
   } catch (error) {
   }
-  
+
   // Run automatic user recovery on startup
   try {
     await autoRecoverUsers();
