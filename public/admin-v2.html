@@ -55,3 +55,435 @@
         <canvas id="particles-canvas"></canvas>
     </div>
 
+    <!-- Admin Portal Container -->
+    <div class="admin-container">
+
+        <!-- Sidebar Navigation -->
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <h1 class="sidebar-logo">
+                    <span class="material-icons">admin_panel_settings</span>
+                    Admin Portal
+                </h1>
+            </div>
+
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-tab="dashboard">
+                    <span class="material-icons">dashboard</span>
+                    <span class="nav-text">Dashboard</span>
+                </button>
+                <button class="nav-item" data-tab="users">
+                    <span class="material-icons">people</span>
+                    <span class="nav-text">Users</span>
+                </button>
+                <button class="nav-item" data-tab="subscriptions">
+                    <span class="material-icons">card_membership</span>
+                    <span class="nav-text">Subscriptions</span>
+                </button>
+                <button class="nav-item" data-tab="payments">
+                    <span class="material-icons">payment</span>
+                    <span class="nav-text">Payments</span>
+                </button>
+                <button class="nav-item" data-tab="database">
+                    <span class="material-icons">storage</span>
+                    <span class="nav-text">Database</span>
+                </button>
+                <button class="nav-item" data-tab="analytics">
+                    <span class="material-icons">analytics</span>
+                    <span class="nav-text">Analytics</span>
+                </button>
+                <button class="nav-item" data-tab="signal-testing">
+                    <span class="material-icons">science</span>
+                    <span class="nav-text">Signal Testing</span>
+                </button>
+                <button class="nav-item" data-tab="settings">
+                    <span class="material-icons">settings</span>
+                    <span class="nav-text">Settings</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <a href="/account" class="nav-item">
+                    <span class="material-icons">account_circle</span>
+                    <span class="nav-text">My Account</span>
+                </a>
+                <a href="/logout" class="nav-item">
+                    <span class="material-icons">logout</span>
+                    <span class="nav-text">Logout</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="admin-main">
+
+            <!-- Dashboard Tab -->
+            <div id="dashboard-tab" class="admin-tab active">
+                <div class="tab-header">
+                    <h2>Dashboard Overview</h2>
+                    <p class="text-secondary">Real-time metrics and analytics</p>
+                </div>
+
+                <!-- Metrics Grid -->
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-icon">💷</div>
+                        <div class="metric-content">
+                            <div class="metric-title">Monthly Recurring Revenue</div>
+                            <div class="metric-value" id="metric-mrr">£0.00</div>
+                            <div class="metric-change" id="metric-mrr-change">+0%</div>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-icon">👥</div>
+                        <div class="metric-content">
+                            <div class="metric-title">Total Users</div>
+                            <div class="metric-value" id="metric-users">0</div>
+                            <div class="metric-change" id="metric-users-change">+0%</div>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-icon">🎯</div>
+                        <div class="metric-content">
+                            <div class="metric-title">Active Subscriptions</div>
+                            <div class="metric-value" id="metric-subs">0</div>
+                            <div class="metric-change" id="metric-subs-change">+0%</div>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-icon">📊</div>
+                        <div class="metric-content">
+                            <div class="metric-title">Total Trades</div>
+                            <div class="metric-value" id="metric-trades">0</div>
+                            <div class="metric-change" id="metric-trades-change">+0%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Revenue Chart -->
+                <div class="chart-container">
+                    <h3>Revenue Trend</h3>
+                    <canvas id="revenue-chart"></canvas>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="activity-container">
+                    <h3>Recent Activity</h3>
+                    <div id="recent-activity"></div>
+                </div>
+            </div>
+
+            <!-- Users Tab -->
+            <div id="users-tab" class="admin-tab">
+                <div class="tab-header">
+                    <h2>User Management</h2>
+                    <p class="text-secondary">Manage user accounts and permissions</p>
+                </div>
+
+                <div class="table-controls">
+                    <input type="search" id="user-search" placeholder="Search users..." class="search-input">
+                    <button class="btn-primary" onclick="AdminUsers.refresh()">
+                        <span class="material-icons">refresh</span>
+                        Refresh
+                    </button>
+                </div>
+
+                <div id="users-table-container"></div>
+            </div>
+
+            <!-- Subscriptions Tab -->
+            <div id="subscriptions-tab" class="admin-tab">
+                <div class="tab-header">
+                    <h2>Subscriptions</h2>
+                    <p class="text-secondary">View and manage user subscriptions</p>
+                </div>
+
+                <div class="filter-tabs">
+                    <button class="filter-tab active" data-status="all">All</button>
+                    <button class="filter-tab" data-status="active">Active</button>
+                    <button class="filter-tab" data-status="trialing">Trial</button>
+                    <button class="filter-tab" data-status="canceled">Canceled</button>
+                </div>
+
+                <div id="subscriptions-table-container"></div>
+            </div>
+
+            <!-- Payments Tab -->
+            <div id="payments-tab" class="admin-tab">
+                <div class="tab-header">
+                    <h2>Payment History</h2>
+                    <p class="text-secondary">View all transactions and revenue</p>
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="stat-label">This Month</div>
+                        <div class="stat-value" id="payments-this-month">£0.00</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Last Month</div>
+                        <div class="stat-value" id="payments-last-month">£0.00</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total Revenue</div>
+                        <div class="stat-value" id="payments-total">£0.00</div>
+                    </div>
+                </div>
+
+                <div id="payments-table-container"></div>
+            </div>
+
+            <!-- Database Tab -->
+            <div id="database-tab" class="admin-tab">
+                <div class="tab-header">
+                    <h2>Database Management</h2>
+                    <p class="text-secondary">Query builder and schema viewer</p>
+                </div>
+
+                <div class="database-tools">
+                    <div class="tool-section">
+                        <h3>Query Builder</h3>
+                        <div id="query-builder-container"></div>
+                    </div>
+
+                    <div class="tool-section">
+                        <h3>Schema Viewer</h3>
+                        <div id="schema-viewer-container"></div>
+                    </div>
+
+                    <div class="tool-section">
+                        <h3>Query Results</h3>
+                        <div id="query-results-container"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Tab -->
+            <div id="analytics-tab" class="admin-tab">
+                <div class="tab-header">
+                    <h2>Analytics</h2>
+                    <p class="text-secondary">Detailed insights and reports</p>
+                </div>
+
+                <div class="analytics-grid">
+                    <div class="analytics-card">
+                        <h3>User Growth</h3>
+                        <canvas id="user-growth-chart"></canvas>
+                    </div>
+
+                    <div class="analytics-card">
+                        <h3>Revenue Analytics</h3>
+                        <canvas id="revenue-analytics-chart"></canvas>
+                    </div>
+
+                    <div class="analytics-card">
+                        <h3>Subscription Breakdown</h3>
+                        <canvas id="subscription-breakdown-chart"></canvas>
+                    </div>
+
+                    <div class="analytics-card">
+                        <h3>Trade Performance</h3>
+                        <canvas id="trade-performance-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Signal Testing Tab -->
+            <div id="signal-testing-tab" class="admin-tab">
+                <div class="tab-header">
+                    <h2>Signal Testing & Diagnostics</h2>
+                    <p class="text-secondary">Test 7 AM scans and 1 PM execution</p>
+                </div>
+
+                <div class="testing-grid">
+                    <div class="test-card">
+                        <h3>
+                            <span class="material-icons">radar</span>
+                            7 AM Market Scan
+                        </h3>
+                        <p>Manually trigger 7 AM stock scanner across all markets</p>
+                        <button class="btn-primary" onclick="AdminSignalTesting.test7AMScan()">
+                            <span class="material-icons">play_arrow</span>
+                            Run Test Scan
+                        </button>
+                    </div>
+
+                    <div class="test-card">
+                        <h3>
+                            <span class="material-icons">schedule</span>
+                            1 PM Execution
+                        </h3>
+                        <p>Test trade execution for a specific market</p>
+                        <select id="execution-market" class="form-select">
+                            <option value="India">India</option>
+                            <option value="UK">UK</option>
+                            <option value="US">US</option>
+                        </select>
+                        <button class="btn-primary" onclick="AdminSignalTesting.test1PMExecution()">
+                            <span class="material-icons">play_arrow</span>
+                            Run Execution Test
+                        </button>
+                    </div>
+
+                    <div class="test-card">
+                        <h3>
+                            <span class="material-icons">pending_actions</span>
+                            Pending Signals
+                        </h3>
+                        <p>View signals waiting for execution</p>
+                        <div id="pending-signals-container"></div>
+                    </div>
+
+                    <div class="test-card">
+                        <h3>
+                            <span class="material-icons">troubleshoot</span>
+                            Diagnostics
+                        </h3>
+                        <p>Signal execution diagnostics and capital checks</p>
+                        <div id="diagnostics-container"></div>
+                    </div>
+                </div>
+
+                <div class="execution-logs">
+                    <h3>Execution Logs</h3>
+                    <div id="execution-logs-container"></div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settings-tab" class="admin-tab">
+                <div class="tab-header">
+                    <h2>System Settings</h2>
+                    <p class="text-secondary">Configure system parameters</p>
+                </div>
+
+                <div class="settings-grid">
+                    <div class="settings-card">
+                        <h3>
+                            <span class="material-icons">security</span>
+                            Security
+                        </h3>
+                        <div id="security-settings"></div>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3>
+                            <span class="material-icons">notifications</span>
+                            Notifications
+                        </h3>
+                        <div id="notification-settings"></div>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3>
+                            <span class="material-icons">tune</span>
+                            System Configuration
+                        </h3>
+                        <div id="system-config"></div>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3>
+                            <span class="material-icons">backup</span>
+                            Backup & Maintenance
+                        </h3>
+                        <div id="backup-settings"></div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+    </div>
+
+    <!-- Initialization Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Admin Portal V2 initializing...');
+
+            // Setup tab switching
+            const navItems = document.querySelectorAll('.nav-item[data-tab]');
+            const adminTabs = document.querySelectorAll('.admin-tab');
+
+            function switchTab(tabId) {
+                // Remove active class from all nav items and tabs
+                navItems.forEach(item => item.classList.remove('active'));
+                adminTabs.forEach(tab => tab.classList.remove('active'));
+
+                // Add active class to selected items
+                const selectedNav = document.querySelector(`.nav-item[data-tab="${tabId}"]`);
+                const selectedTab = document.getElementById(`${tabId}-tab`);
+
+                if (selectedNav) selectedNav.classList.add('active');
+                if (selectedTab) selectedTab.classList.add('active');
+
+                // Initialize tab-specific functionality
+                initializeTab(tabId);
+            }
+
+            function initializeTab(tabId) {
+                switch(tabId) {
+                    case 'dashboard':
+                        if (typeof AdminDashboard !== 'undefined' && AdminDashboard.init) {
+                            AdminDashboard.init();
+                        }
+                        break;
+                    case 'users':
+                        if (typeof AdminUsers !== 'undefined' && AdminUsers.init) {
+                            AdminUsers.init();
+                        }
+                        break;
+                    case 'subscriptions':
+                        if (typeof AdminSubscriptions !== 'undefined' && AdminSubscriptions.init) {
+                            AdminSubscriptions.init();
+                        }
+                        break;
+                    case 'payments':
+                        if (typeof AdminPayments !== 'undefined' && AdminPayments.init) {
+                            AdminPayments.init();
+                        }
+                        break;
+                    case 'database':
+                        if (typeof AdminDatabase !== 'undefined' && AdminDatabase.init) {
+                            AdminDatabase.init();
+                        }
+                        break;
+                    case 'analytics':
+                        if (typeof AdminAnalytics !== 'undefined' && AdminAnalytics.init) {
+                            AdminAnalytics.init();
+                        }
+                        break;
+                    case 'signal-testing':
+                        if (typeof AdminSignalTesting !== 'undefined' && AdminSignalTesting.init) {
+                            AdminSignalTesting.init();
+                        }
+                        break;
+                    case 'settings':
+                        if (typeof AdminSettings !== 'undefined' && AdminSettings.init) {
+                            AdminSettings.init();
+                        }
+                        break;
+                }
+            }
+
+            // Add click handlers to nav items
+            navItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    const tabId = this.dataset.tab;
+                    switchTab(tabId);
+                });
+            });
+
+            // Initialize dashboard by default
+            console.log('Initializing Dashboard...');
+            initializeTab('dashboard');
+
+            console.log('Admin Portal V2 initialized successfully');
+        });
+    </script>
+
+</body>
+</html>
