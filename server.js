@@ -2510,7 +2510,7 @@ app.get('/yahoo/history', async (req, res) => {
       return res.status(400).send('Symbol is required');
     }
     
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`;
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}`;
     const params = {
       period1: period1 || Math.floor(Date.now() / 1000) - (365 * 24 * 60 * 60),
       period2: period2 || Math.floor(Date.now() / 1000),
@@ -2568,8 +2568,8 @@ app.get('/yahoo/quote', async (req, res) => {
       return res.status(400).send('Symbol is required');
     }
     
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
-    
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
+
     const response = await axios.get(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
