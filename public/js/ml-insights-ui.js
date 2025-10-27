@@ -96,6 +96,11 @@ const MLInsightsUI = (function() {
         modal.style.display = 'flex';
         modal.classList.add('active');
 
+        // Fix accessibility: modal should not be aria-hidden when visible
+        modal.setAttribute('aria-hidden', 'false');
+        modal.setAttribute('role', 'dialog');
+        modal.setAttribute('aria-modal', 'true');
+
         // Always auto-analyze with provided symbol or current symbol
         const targetSymbol = symbol || getCurrentSymbol();
         if (targetSymbol) {
@@ -111,6 +116,9 @@ const MLInsightsUI = (function() {
         const modal = document.getElementById('ml-insights-modal');
         modal.style.display = 'none';
         modal.classList.remove('active');
+
+        // Properly hide from screen readers
+        modal.setAttribute('aria-hidden', 'true');
     }
     
     /**

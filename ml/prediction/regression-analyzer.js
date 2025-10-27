@@ -432,7 +432,7 @@ class RegressionAnalyzer {
             expectedReturn,
             priceRange,
             classification: this.classifyPrediction(expectedReturn, technical.overallSignal),
-            chart Data: this.generateChartData(linear, monteCarlo, 30)
+            chartData: this.generateChartData(linear, monteCarlo, 30)
         };
     }
 
