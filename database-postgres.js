@@ -334,6 +334,9 @@ async function initializeDatabase() {
     // Backfill historical realized P/L from closed trades (one-time migration)
     await backfillHistoricalRealizedPL();
 
+    // Reactivate user's Telegram subscription (one-time migration)
+    await reactivateTelegramSubscription();
+
     // Add unified audit log columns if they don't exist (for admin portal compatibility)
     try {
       await pool.query(`ALTER TABLE trade_audit_log ADD COLUMN IF NOT EXISTS entity_type VARCHAR(50) DEFAULT 'trade'`);
@@ -1027,6 +1030,45 @@ async function backfillHistoricalRealizedPL() {
   } catch (error) {
     // Silent fail - migration might not be needed
     console.error('Historical realized P/L backfill warning:', error.message);
+  }
+}
+
+// Migration function to reactivate user's Telegram subscription
+async function reactivateTelegramSubscription() {
+  try {
+    // Check if this migration has already been applied
+    const migrationCheck = await pool.query(`
+      SELECT filename FROM schema_migrations WHERE filename = '019_reactivate_user_telegram_subscription.sql'
+    `);
+
+    if (migrationCheck.rows.length > 0) {
+      // Migration already applied, skip
+      return;
+    }
+
+    // Reactivate user's Telegram subscription
+    const result = await pool.query(`
+      UPDATE telegram_subscribers
+      SET is_active = true,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE chat_id = '6168209389'
+      RETURNING chat_id, is_active
+    `);
+
+    if (result.rows.length > 0) {
+      console.log(`✅ Reactivated Telegram subscription for chat_id: ${result.rows[0].chat_id}`);
+    }
+
+    // Mark migration as applied
+    await pool.query(`
+      INSERT INTO schema_migrations (filename, applied_at)
+      VALUES ('019_reactivate_user_telegram_subscription.sql', NOW())
+      ON CONFLICT (filename) DO NOTHING
+    `);
+
+  } catch (error) {
+    // Silent fail - migration might not be needed
+    console.error('Telegram subscription reactivation warning:', error.message);
   }
 }
 
