@@ -1049,8 +1049,7 @@ async function reactivateTelegramSubscription() {
     // Reactivate user's Telegram subscription
     const result = await pool.query(`
       UPDATE telegram_subscribers
-      SET is_active = true,
-          updated_at = CURRENT_TIMESTAMP
+      SET is_active = true
       WHERE chat_id = '6168209389'
       RETURNING chat_id, is_active
     `);

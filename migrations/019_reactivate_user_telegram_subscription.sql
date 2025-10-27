@@ -9,6 +9,5 @@
 -- Fix: Set is_active = true to restore notifications
 
 UPDATE telegram_subscribers
-SET is_active = true,
-    updated_at = CURRENT_TIMESTAMP
+SET is_active = true
 WHERE chat_id = '6168209389';
