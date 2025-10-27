@@ -12320,15 +12320,18 @@ body.dark .signals-error {
     min-height: 100vh;
 }
 
-/* Sidebar */
+/* Sidebar - Glassmorphic Design */
 .admin-sidebar {
-    background: var(--bg-secondary);
-    border-right: 1px solid var(--border);
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid var(--glass-border);
     height: 100vh;
     position: sticky;
     top: 0;
     overflow-y: auto;
     z-index: 100;
+    box-shadow: var(--shadow-gold);
 }
 
 .admin-logo {
@@ -12338,6 +12341,103 @@ body.dark .signals-error {
     text-decoration: none;
     display: inline-block;
     padding: var(--spacing-md);
+}
+
+/* Sidebar Header */
+.sidebar-header {
+    padding: var(--spacing-lg);
+    border-bottom: 1px solid var(--glass-border);
+    margin-bottom: var(--spacing-md);
+}
+
+.sidebar-logo {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent-gold);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin: 0;
+}
+
+.sidebar-logo .material-icons {
+    font-size: 2rem;
+    color: var(--accent-gold);
+}
+
+/* Sidebar Navigation */
+.sidebar-nav {
+    padding: var(--spacing-sm);
+}
+
+/* Sidebar Navigation Items - Glassmorphic with Gold Accents */
+.sidebar-nav .nav-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    margin-bottom: var(--spacing-xs);
+    border-radius: var(--radius-md);
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    transition: all var(--transition-base);
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.sidebar-nav .nav-item:hover {
+    background: rgba(212, 175, 55, 0.1);
+    border-color: var(--border-color-hover);
+    color: var(--accent-gold);
+    transform: translateX(5px);
+}
+
+.sidebar-nav .nav-item.active {
+    background: var(--gradient-premium);
+    border-color: var(--accent-gold);
+    color: var(--primary-dark);
+    box-shadow: var(--shadow-gold-hover);
+    font-weight: 600;
+}
+
+.sidebar-nav .nav-item .material-icons {
+    font-size: 1.25rem;
+}
+
+.sidebar-nav .nav-item .nav-text {
+    flex: 1;
+}
+
+/* Sidebar Footer */
+.sidebar-footer {
+    padding: var(--spacing-md);
+    border-top: 1px solid var(--glass-border);
+    margin-top: auto;
+}
+
+.sidebar-footer .nav-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    margin-bottom: var(--spacing-xs);
+    border-radius: var(--radius-md);
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    transition: all var(--transition-base);
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.sidebar-footer .nav-item:hover {
+    background: rgba(212, 175, 55, 0.1);
+    border-color: var(--border-color-hover);
+    color: var(--accent-gold);
 }
 
 /* Admin Navigation */
@@ -12439,12 +12539,315 @@ body.dark .signals-error {
     display: block;
 }
 
-/* Metrics Grid */
+/* Admin Main Content */
+.admin-main {
+    padding: var(--spacing-2xl);
+    overflow-y: auto;
+}
+
+/* Tab Header */
+.tab-header {
+    margin-bottom: var(--spacing-xl);
+}
+
+.tab-header h2 {
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.tab-header .text-secondary {
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+/* Admin Tabs */
+.admin-tab {
+    display: none;
+    animation: fadeInUp 0.6s var(--transition-base);
+}
+
+.admin-tab.active {
+    display: block;
+}
+
+/* Metrics Grid - Glassmorphic Cards */
 .metrics-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: var(--spacing-lg);
     margin-bottom: var(--spacing-xl);
+}
+
+/* Metric Card - Enhanced with Glassmorphic Effects */
+.admin-main .metric-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
+    transition: all var(--transition-base);
+    box-shadow: var(--shadow-sm);
+}
+
+.admin-main .metric-card:hover {
+    border-color: var(--border-color-hover);
+    box-shadow: var(--shadow-gold-hover);
+    transform: translateY(-5px);
+}
+
+/* Metric Icon with Gold Gradient */
+.admin-main .metric-icon {
+    width: 60px;
+    height: 60px;
+    min-width: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gradient-premium);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-gold);
+}
+
+.admin-main .metric-icon .material-icons {
+    font-size: 32px;
+    color: var(--primary-dark);
+}
+
+/* Chart Container - Glassmorphic */
+.chart-container,
+.analytics-card,
+.test-card,
+.settings-card,
+.activity-container,
+.tool-section {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--spacing-lg);
+    transition: all var(--transition-base);
+}
+
+.chart-container:hover,
+.analytics-card:hover,
+.test-card:hover,
+.settings-card:hover {
+    border-color: var(--border-color-hover);
+    box-shadow: var(--shadow-gold-hover);
+}
+
+.chart-container h3,
+.analytics-card h3,
+.test-card h3,
+.settings-card h3 {
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.chart-container h3 .material-icons,
+.test-card h3 .material-icons,
+.settings-card h3 .material-icons {
+    color: var(--accent-gold);
+}
+
+/* Filter Tabs - Gold Active State */
+.filter-tabs {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-xs);
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: var(--radius-lg);
+    flex-wrap: wrap;
+}
+
+.filter-tab {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: var(--radius-md);
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    transition: all var(--transition-base);
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-weight: 500;
+}
+
+.filter-tab:hover {
+    background: rgba(212, 175, 55, 0.1);
+    color: var(--accent-gold);
+}
+
+.filter-tab.active {
+    background: var(--gradient-premium);
+    color: var(--primary-dark);
+    border-color: var(--accent-gold);
+    box-shadow: var(--shadow-gold-hover);
+    font-weight: 600;
+}
+
+/* Stats Row */
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.stat-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    text-align: center;
+    transition: all var(--transition-base);
+}
+
+.stat-card:hover {
+    border-color: var(--border-color-hover);
+    transform: translateY(-3px);
+}
+
+.stat-label {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--spacing-xs);
+}
+
+.stat-value {
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+/* Analytics Grid */
+.analytics-grid,
+.testing-grid,
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+}
+
+/* Execution Logs */
+.execution-logs {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.execution-logs h3 {
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.execution-logs h3 .material-icons {
+    color: var(--accent-gold);
+}
+
+/* Database Tools */
+.database-tools {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+/* Table Controls */
+.table-controls {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.search-input {
+    flex: 1;
+    min-width: 250px;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    transition: all var(--transition-base);
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+}
+
+.search-input::placeholder {
+    color: var(--text-muted);
+}
+
+/* Button Primary for Admin */
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background: var(--gradient-premium);
+    border: 1px solid var(--accent-gold);
+    border-radius: var(--radius-md);
+    color: var(--primary-dark);
+    font-family: var(--font-body);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    box-shadow: var(--shadow-gold-hover);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-gold);
+}
+
+.btn-primary .material-icons {
+    font-size: 1.125rem;
+}
+
+/* Form Inputs */
+.form-select {
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    transition: all var(--transition-base);
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
 }
 
 /* Metric Card Enhancements */

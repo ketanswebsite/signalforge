@@ -126,52 +126,66 @@
 
                 <!-- Metrics Grid -->
                 <div class="metrics-grid">
-                    <div class="metric-card">
-                        <div class="metric-icon">💷</div>
+                    <div class="metric-card scroll-reveal">
+                        <div class="metric-icon">
+                            <span class="material-icons">payments</span>
+                        </div>
                         <div class="metric-content">
                             <div class="metric-title">Monthly Recurring Revenue</div>
-                            <div class="metric-value" id="metric-mrr">£0.00</div>
+                            <div class="metric-value data-value" id="metric-mrr">£0.00</div>
                             <div class="metric-change" id="metric-mrr-change">+0%</div>
                         </div>
                     </div>
 
-                    <div class="metric-card">
-                        <div class="metric-icon">👥</div>
+                    <div class="metric-card scroll-reveal">
+                        <div class="metric-icon">
+                            <span class="material-icons">people</span>
+                        </div>
                         <div class="metric-content">
                             <div class="metric-title">Total Users</div>
-                            <div class="metric-value" id="metric-users">0</div>
+                            <div class="metric-value data-value" id="metric-users">0</div>
                             <div class="metric-change" id="metric-users-change">+0%</div>
                         </div>
                     </div>
 
-                    <div class="metric-card">
-                        <div class="metric-icon">🎯</div>
+                    <div class="metric-card scroll-reveal">
+                        <div class="metric-icon">
+                            <span class="material-icons">track_changes</span>
+                        </div>
                         <div class="metric-content">
                             <div class="metric-title">Active Subscriptions</div>
-                            <div class="metric-value" id="metric-subs">0</div>
+                            <div class="metric-value data-value" id="metric-subs">0</div>
                             <div class="metric-change" id="metric-subs-change">+0%</div>
                         </div>
                     </div>
 
-                    <div class="metric-card">
-                        <div class="metric-icon">📊</div>
+                    <div class="metric-card scroll-reveal">
+                        <div class="metric-icon">
+                            <span class="material-icons">show_chart</span>
+                        </div>
                         <div class="metric-content">
                             <div class="metric-title">Total Trades</div>
-                            <div class="metric-value" id="metric-trades">0</div>
+                            <div class="metric-value data-value" id="metric-trades">0</div>
                             <div class="metric-change" id="metric-trades-change">+0%</div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Revenue Chart -->
-                <div class="chart-container">
-                    <h3>Revenue Trend</h3>
+                <div class="chart-container scroll-reveal">
+                    <h3>
+                        <span class="material-icons">trending_up</span>
+                        Revenue Trend
+                    </h3>
                     <canvas id="revenue-chart"></canvas>
                 </div>
 
                 <!-- Recent Activity -->
-                <div class="activity-container">
-                    <h3>Recent Activity</h3>
+                <div class="activity-container scroll-reveal">
+                    <h3>
+                        <span class="material-icons">history</span>
+                        Recent Activity
+                    </h3>
                     <div id="recent-activity"></div>
                 </div>
             </div>
@@ -269,23 +283,35 @@
                 </div>
 
                 <div class="analytics-grid">
-                    <div class="analytics-card">
-                        <h3>User Growth</h3>
+                    <div class="analytics-card scroll-reveal">
+                        <h3>
+                            <span class="material-icons">trending_up</span>
+                            User Growth
+                        </h3>
                         <canvas id="user-growth-chart"></canvas>
                     </div>
 
-                    <div class="analytics-card">
-                        <h3>Revenue Analytics</h3>
+                    <div class="analytics-card scroll-reveal">
+                        <h3>
+                            <span class="material-icons">account_balance</span>
+                            Revenue Analytics
+                        </h3>
                         <canvas id="revenue-analytics-chart"></canvas>
                     </div>
 
-                    <div class="analytics-card">
-                        <h3>Subscription Breakdown</h3>
+                    <div class="analytics-card scroll-reveal">
+                        <h3>
+                            <span class="material-icons">pie_chart</span>
+                            Subscription Breakdown
+                        </h3>
                         <canvas id="subscription-breakdown-chart"></canvas>
                     </div>
 
-                    <div class="analytics-card">
-                        <h3>Trade Performance</h3>
+                    <div class="analytics-card scroll-reveal">
+                        <h3>
+                            <span class="material-icons">bar_chart</span>
+                            Trade Performance
+                        </h3>
                         <canvas id="trade-performance-chart"></canvas>
                     </div>
                 </div>
@@ -299,7 +325,7 @@
                 </div>
 
                 <div class="testing-grid">
-                    <div class="test-card">
+                    <div class="test-card scroll-reveal">
                         <h3>
                             <span class="material-icons">radar</span>
                             7 AM Market Scan
@@ -311,7 +337,7 @@
                         </button>
                     </div>
 
-                    <div class="test-card">
+                    <div class="test-card scroll-reveal">
                         <h3>
                             <span class="material-icons">schedule</span>
                             1 PM Execution
@@ -328,7 +354,7 @@
                         </button>
                     </div>
 
-                    <div class="test-card">
+                    <div class="test-card scroll-reveal">
                         <h3>
                             <span class="material-icons">pending_actions</span>
                             Pending Signals
@@ -337,7 +363,7 @@
                         <div id="pending-signals-container"></div>
                     </div>
 
-                    <div class="test-card">
+                    <div class="test-card scroll-reveal">
                         <h3>
                             <span class="material-icons">troubleshoot</span>
                             Diagnostics
@@ -347,8 +373,11 @@
                     </div>
                 </div>
 
-                <div class="execution-logs">
-                    <h3>Execution Logs</h3>
+                <div class="execution-logs scroll-reveal">
+                    <h3>
+                        <span class="material-icons">article</span>
+                        Execution Logs
+                    </h3>
                     <div id="execution-logs-container"></div>
                 </div>
             </div>
@@ -361,7 +390,7 @@
                 </div>
 
                 <div class="settings-grid">
-                    <div class="settings-card">
+                    <div class="settings-card scroll-reveal">
                         <h3>
                             <span class="material-icons">security</span>
                             Security
@@ -369,7 +398,7 @@
                         <div id="security-settings"></div>
                     </div>
 
-                    <div class="settings-card">
+                    <div class="settings-card scroll-reveal">
                         <h3>
                             <span class="material-icons">notifications</span>
                             Notifications
@@ -377,7 +406,7 @@
                         <div id="notification-settings"></div>
                     </div>
 
-                    <div class="settings-card">
+                    <div class="settings-card scroll-reveal">
                         <h3>
                             <span class="material-icons">tune</span>
                             System Configuration
@@ -385,7 +414,7 @@
                         <div id="system-config"></div>
                     </div>
 
-                    <div class="settings-card">
+                    <div class="settings-card scroll-reveal">
                         <h3>
                             <span class="material-icons">backup</span>
                             Backup & Maintenance
