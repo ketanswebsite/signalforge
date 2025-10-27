@@ -6,12 +6,14 @@
 const RiskManagementAI = require('./risk-management/risk-ai-lite');
 const PatternRecognitionAI = require('./pattern-recognition/pattern-ai-lite');
 const SentimentAnalysisAI = require('./sentiment-analysis/sentiment-ai');
+const RegressionAnalyzer = require('./prediction/regression-analyzer');
 
 class MLIntegration {
     constructor() {
         this.riskAI = new RiskManagementAI();
         this.patternAI = new PatternRecognitionAI();
         this.sentimentAI = new SentimentAnalysisAI();
+        this.regressionAnalyzer = new RegressionAnalyzer();
         this.initialized = false;
     }
 
@@ -90,7 +92,7 @@ class MLIntegration {
             // 3. Sentiment Analysis
             const sentiment = await this.analyzeSentiment(symbol);
             analysis.sentiment = sentiment;
-            
+
             if (sentiment.signal) {
                 analysis.recommendations.push({
                     source: 'sentiment_ai',
@@ -99,7 +101,23 @@ class MLIntegration {
                 });
             }
 
-            // 4. Combined Signal
+            // 4. 30-Day Price Prediction (NEW - Regression Analysis)
+            const prediction = await this.generate30DayPrediction(
+                symbol,
+                priceData,
+                currentState
+            );
+            analysis.prediction = prediction;
+
+            if (prediction && prediction.prediction) {
+                analysis.recommendations.push({
+                    source: 'prediction_ai',
+                    action: `Expected ${prediction.prediction.expectedReturn > 0 ? 'gain' : 'loss'} of ${Math.abs(prediction.prediction.expectedReturn).toFixed(2)}% over 30 days`,
+                    confidence: prediction.confidence?.score || 70
+                });
+            }
+
+            // 5. Combined Signal
             analysis.combinedSignal = this.generateCombinedSignal(analysis);
 
         } catch (error) {
@@ -182,6 +200,39 @@ class MLIntegration {
      */
     async analyzeSentiment(symbol) {
         return await this.sentimentAI.analyzeStockSentiment(symbol);
+    }
+
+    /**
+     * Generate 30-day price prediction using regression analysis
+     * @param {string} symbol - Stock symbol
+     * @param {Array} priceData - Historical OHLC data
+     * @param {Object} currentState - Current market state including DTI
+     * @param {Object} backtestData - Optional: Historical backtest results for this symbol
+     */
+    async generate30DayPrediction(symbol, priceData, currentState, backtestData = null) {
+        try {
+            // Extract DTI values from current state
+            const currentDTI = {
+                daily: currentState?.dti || null,
+                weekly: currentState?.weeklyDTI || null
+            };
+
+            // If backtestData not provided, try to fetch from database
+            // For now, we'll pass null and the analyzer will handle it gracefully
+            const prediction = await this.regressionAnalyzer.generate30DayPrediction(
+                priceData,
+                backtestData,
+                currentDTI
+            );
+
+            return prediction;
+        } catch (error) {
+            console.error(`Error generating prediction for ${symbol}:`, error);
+            return {
+                error: error.message,
+                available: false
+            };
+        }
     }
 
     /**

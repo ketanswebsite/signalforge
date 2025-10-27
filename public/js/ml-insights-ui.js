@@ -233,6 +233,221 @@ const MLInsightsUI = (function() {
     }
     
     /**
+     * Create 30-day prediction section
+     */
+    function create30DayPredictionSection(predictionData, symbol) {
+        if (!predictionData || !predictionData.prediction) {
+            return '';
+        }
+
+        const pred = predictionData.prediction;
+        const confidence = predictionData.confidence || { score: 0, level: 'Low' };
+        const riskMetrics = predictionData.riskMetrics || {};
+
+        // Classification color
+        const classification = pred.classification || { class: 'Neutral', color: '#9e9e9e' };
+
+        return `
+            <div class="ml-section ml-prediction-section">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 3v18h18"></path>
+                        <path d="M18 17V9"></path>
+                        <path d="M13 17V5"></path>
+                        <path d="M8 17v-3"></path>
+                    </svg>
+                    30-Day Price Prediction (Regression Analysis)
+                    <button class="ml-explain-toggle" onclick="MLInsightsUI.toggleExplanation('prediction')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        How it works
+                    </button>
+                </h3>
+
+                <div class="ml-explanation-panel" id="explanation-prediction">
+                    <h4>🤖 Prediction Methodology</h4>
+                    <div class="ml-explanation-content">
+                        <p>Our AI uses multiple statistical models to predict price movements:</p>
+                        <ul class="ml-analysis-methods">
+                            <li><strong>Linear Regression:</strong> Analyzes historical trends to project future price direction</li>
+                            <li><strong>Monte Carlo Simulation:</strong> Runs ${predictionData.components?.monteCarlo?.simulations?.length || 1000} price path simulations to calculate probability distribution</li>
+                            <li><strong>Pattern Analysis:</strong> Compares current patterns with ${predictionData.components?.patternBased?.basedOnTrades || 'historical'} similar occurrences</li>
+                            <li><strong>Technical Indicators:</strong> Incorporates RSI, moving averages, volume, and DTI signals</li>
+                        </ul>
+                        <div class="ml-model-accuracy">
+                            <p><strong>Prediction Confidence:</strong> ${confidence.score.toFixed(0)}% (${confidence.level})</p>
+                            <p><strong>Model R²:</strong> ${(predictionData.components?.linearRegression?.r2 * 100 || 0).toFixed(1)}% (higher is better)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ml-section-description">
+                    Statistical regression analysis combining linear trends, Monte Carlo simulations, and pattern recognition
+                    to predict price movement over the next 30 days.
+                </div>
+
+                <!-- Prediction Summary Cards -->
+                <div class="ml-prediction-summary">
+                    <div class="ml-prediction-card" style="border-color: ${classification.color}">
+                        <div class="ml-prediction-label">Expected Price (30 Days)</div>
+                        <div class="ml-prediction-value" style="color: ${classification.color}">
+                            $${pred.predictedPrice.toFixed(2)}
+                        </div>
+                        <div class="ml-prediction-change ${pred.expectedReturn >= 0 ? 'positive' : 'negative'}">
+                            ${pred.expectedReturn >= 0 ? '+' : ''}${pred.expectedReturn.toFixed(2)}%
+                        </div>
+                        <div class="ml-prediction-classification" style="background: ${classification.color}20; color: ${classification.color}">
+                            ${classification.class}
+                        </div>
+                    </div>
+
+                    <div class="ml-prediction-card">
+                        <div class="ml-prediction-label">Price Range (50% Confidence)</div>
+                        <div class="ml-prediction-range">
+                            <span class="ml-range-low">$${pred.priceRange.low.toFixed(2)}</span>
+                            <span class="ml-range-separator">to</span>
+                            <span class="ml-range-high">$${pred.priceRange.high.toFixed(2)}</span>
+                        </div>
+                        <div class="ml-prediction-help">
+                            50% probability price will be in this range
+                        </div>
+                    </div>
+
+                    <div class="ml-prediction-card">
+                        <div class="ml-prediction-label">Extreme Range (95% Confidence)</div>
+                        <div class="ml-prediction-range">
+                            <span class="ml-range-low">$${pred.priceRange.extreme_low.toFixed(2)}</span>
+                            <span class="ml-range-separator">to</span>
+                            <span class="ml-range-high">$${pred.priceRange.extreme_high.toFixed(2)}</span>
+                        </div>
+                        <div class="ml-prediction-help">
+                            95% probability price will be in this range
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Prediction Chart -->
+                <div class="ml-prediction-chart-container">
+                    <canvas id="prediction-chart-${symbol}" class="ml-prediction-canvas"></canvas>
+                </div>
+
+                <!-- Technical Analysis Summary -->
+                ${predictionData.components?.technicalAnalysis ? `
+                    <div class="ml-technical-summary">
+                        <h4>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                            </svg>
+                            Technical Indicators
+                        </h4>
+                        <div class="ml-technical-signal">
+                            <div class="ml-signal-strength ${predictionData.components.technicalAnalysis.overallSignal.toLowerCase()}">
+                                ${predictionData.components.technicalAnalysis.overallSignal}
+                            </div>
+                            <div class="ml-signal-bars">
+                                <div class="ml-bar-label">Bullish Signals</div>
+                                <div class="ml-signal-bar">
+                                    <div class="ml-bar-fill bullish" style="width: ${predictionData.components.technicalAnalysis.bullishPercent}%"></div>
+                                    <span class="ml-bar-value">${predictionData.components.technicalAnalysis.bullishPercent.toFixed(0)}%</span>
+                                </div>
+                                <div class="ml-bar-label">Bearish Signals</div>
+                                <div class="ml-signal-bar">
+                                    <div class="ml-bar-fill bearish" style="width: ${predictionData.components.technicalAnalysis.bearishPercent}%"></div>
+                                    <span class="ml-bar-value">${predictionData.components.technicalAnalysis.bearishPercent.toFixed(0)}%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="ml-technical-recommendation">
+                            ${predictionData.components.technicalAnalysis.recommendation}
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- Risk Scenarios -->
+                ${riskMetrics.scenarios ? `
+                    <div class="ml-prediction-scenarios">
+                        <h4>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                            </svg>
+                            Scenario Analysis
+                        </h4>
+                        <div class="ml-scenarios-grid">
+                            <div class="ml-scenario-card" style="border-color: #f44336">
+                                <div class="ml-scenario-header">
+                                    <span class="ml-scenario-icon">🐻</span>
+                                    <span class="ml-scenario-title">Bear Case</span>
+                                </div>
+                                <div class="ml-scenario-probability">${riskMetrics.scenarios.bearish.probability}% Probability</div>
+                                <div class="ml-scenario-target">Target: $${riskMetrics.scenarios.bearish.priceTarget.toFixed(2)}</div>
+                                <div class="ml-scenario-return negative">
+                                    ${riskMetrics.scenarios.bearish.loss.toFixed(2)}%
+                                </div>
+                            </div>
+
+                            <div class="ml-scenario-card" style="border-color: #ff9800">
+                                <div class="ml-scenario-header">
+                                    <span class="ml-scenario-icon">➡️</span>
+                                    <span class="ml-scenario-title">Base Case</span>
+                                </div>
+                                <div class="ml-scenario-probability">${riskMetrics.scenarios.moderate.probability}% Probability</div>
+                                <div class="ml-scenario-target">Target: $${riskMetrics.scenarios.moderate.priceTarget.toFixed(2)}</div>
+                                <div class="ml-scenario-return ${riskMetrics.scenarios.moderate.return >= 0 ? 'positive' : 'negative'}">
+                                    ${riskMetrics.scenarios.moderate.return >= 0 ? '+' : ''}${riskMetrics.scenarios.moderate.return.toFixed(2)}%
+                                </div>
+                            </div>
+
+                            <div class="ml-scenario-card" style="border-color: #4caf50">
+                                <div class="ml-scenario-header">
+                                    <span class="ml-scenario-icon">🐂</span>
+                                    <span class="ml-scenario-title">Bull Case</span>
+                                </div>
+                                <div class="ml-scenario-probability">${riskMetrics.scenarios.bullish.probability}% Probability</div>
+                                <div class="ml-scenario-target">Target: $${riskMetrics.scenarios.bullish.priceTarget.toFixed(2)}</div>
+                                <div class="ml-scenario-return positive">
+                                    +${riskMetrics.scenarios.bullish.gain.toFixed(2)}%
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- Risk Metrics -->
+                ${riskMetrics.valueAtRisk95 ? `
+                    <div class="ml-risk-metrics-summary">
+                        <h4>Risk Metrics</h4>
+                        <div class="ml-metrics-grid">
+                            <div class="ml-metric-item">
+                                <div class="ml-metric-label">Value at Risk (95%)</div>
+                                <div class="ml-metric-value negative">${riskMetrics.valueAtRisk95.toFixed(2)}%</div>
+                                <div class="ml-metric-help">Maximum expected loss in 95% of cases</div>
+                            </div>
+                            <div class="ml-metric-item">
+                                <div class="ml-metric-label">Expected Shortfall</div>
+                                <div class="ml-metric-value negative">${riskMetrics.expectedShortfall.toFixed(2)}%</div>
+                                <div class="ml-metric-help">Average loss in worst 5% of cases</div>
+                            </div>
+                            <div class="ml-metric-item">
+                                <div class="ml-metric-label">Max Drawdown</div>
+                                <div class="ml-metric-value negative">${riskMetrics.maxDrawdown.toFixed(2)}%</div>
+                                <div class="ml-metric-help">Largest peak-to-trough decline expected</div>
+                            </div>
+                            <div class="ml-metric-item">
+                                <div class="ml-metric-label">Sharpe Ratio</div>
+                                <div class="ml-metric-value ${riskMetrics.sharpeRatio > 1 ? 'positive' : ''}">${riskMetrics.sharpeRatio.toFixed(2)}</div>
+                                <div class="ml-metric-help">Risk-adjusted return (>1 is good)</div>
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    /**
      * Create visual summary section
      */
     function createVisualSummarySection(analysis) {
@@ -408,7 +623,12 @@ const MLInsightsUI = (function() {
         
         // Visual Summary Section - New!
         html += createVisualSummarySection(analysis);
-        
+
+        // 30-Day Price Prediction Section - NEW!
+        if (analysis.prediction && !analysis.prediction.error) {
+            html += create30DayPredictionSection(analysis.prediction, symbol);
+        }
+
         // Risk Management Section with Enhanced Visuals
         if (analysis.risk) {
             html += `
@@ -920,8 +1140,126 @@ const MLInsightsUI = (function() {
         }
         
         contentDiv.innerHTML = html;
+
+        // Render prediction chart if prediction data exists
+        if (analysis.prediction && !analysis.prediction.error && analysis.prediction.prediction) {
+            setTimeout(() => renderPredictionChart(activeSymbol, analysis.prediction), 200);
+        }
     }
-    
+
+    /**
+     * Render 30-day prediction chart using Chart.js
+     */
+    function renderPredictionChart(symbol, predictionData) {
+        const chartId = `prediction-chart-${symbol}`;
+        const canvas = document.getElementById(chartId);
+
+        if (!canvas) {
+            console.warn('Prediction chart canvas not found');
+            return;
+        }
+
+        const ctx = canvas.getContext('2d');
+
+        // Destroy existing chart if any
+        if (window.predictionChartInstance) {
+            window.predictionChartInstance.destroy();
+        }
+
+        // Get chart data from prediction
+        const chartData = predictionData.prediction.chartData;
+
+        if (!chartData || !chartData.datasets) {
+            console.warn('No chart data available for prediction');
+            return;
+        }
+
+        // Create Chart.js configuration
+        const config = {
+            type: 'line',
+            data: {
+                labels: chartData.labels,
+                datasets: chartData.datasets.map(dataset => ({
+                    ...dataset,
+                    borderWidth: dataset.borderDash ? 1 : 2,
+                    tension: 0.1,
+                    pointRadius: dataset.borderDash ? 0 : 2,
+                    pointHoverRadius: 5
+                }))
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `30-Day Price Prediction for ${symbol}`,
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        },
+                        color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim()
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15,
+                            color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim()
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--bg-secondary').trim(),
+                        titleColor: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim(),
+                        bodyColor: getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim(),
+                        borderColor: getComputedStyle(document.documentElement).getPropertyValue('--border').trim(),
+                        borderWidth: 1,
+                        padding: 12,
+                        displayColors: true,
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.dataset.label || '';
+                                const value = context.parsed.y;
+                                return `${label}: $${value.toFixed(2)}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: {
+                            color: getComputedStyle(document.documentElement).getPropertyValue('--border').trim()
+                        },
+                        ticks: {
+                            color: getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim(),
+                            callback: function(value) {
+                                return '$' + value.toFixed(2);
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: getComputedStyle(document.documentElement).getPropertyValue('--border').trim()
+                        },
+                        ticks: {
+                            color: getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim(),
+                            maxTicksLimit: 10
+                        }
+                    }
+                }
+            }
+        };
+
+        // Create the chart
+        window.predictionChartInstance = new Chart(ctx, config);
+    }
+
     /**
      * Format pattern names for display
      */
