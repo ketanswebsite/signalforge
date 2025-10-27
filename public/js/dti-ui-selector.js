@@ -85,11 +85,8 @@ DTIUI.StockSelector = (function() {
             case 'current':
                 return DTIData.getCurrentStockList();
             case 'indian':
-                return [
-                    ...stockLists.nifty50,
-                    ...stockLists.niftyNext50,
-                    ...stockLists.niftyMidcap150
-                ];
+                // Use allIndian (complete NSE list - 2,187 stocks)
+                return stockLists.allIndian || stockLists.nifty50;
             case 'uk':
                 return [
                     ...stockLists.ftse100,
@@ -98,10 +95,9 @@ DTIUI.StockSelector = (function() {
             case 'us':
                 return stockLists.usStocks;
             case 'all':
+                // Use allIndian to avoid duplicates (nifty50/niftyNext50/niftyMidcap150 are aliases)
                 return [
-                    ...stockLists.nifty50,
-                    ...stockLists.niftyNext50,
-                    ...stockLists.niftyMidcap150,
+                    ...(stockLists.allIndian || stockLists.nifty50),
                     ...stockLists.ftse100,
                     ...stockLists.ftse250,
                     ...stockLists.usStocks

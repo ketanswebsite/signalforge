@@ -239,18 +239,17 @@ const PortfolioSimulator = (function() {
 
     /**
      * Fetch all stocks data from all markets
-     * Uses comprehensive stock list from StockData module (2,200+ stocks)
+     * Uses comprehensive stock list from StockData module (3,605 unique stocks)
      * Uses concurrent processing (worker pool) - starts new stocks as soon as any finish
      */
     async function fetchAllStocksData(startDate, progressCallback) {
         // Use StockData module (SINGLE SOURCE OF TRUTH)
         const stockLists = window.StockData.getStockLists();
 
-        // Combine ALL stocks from ALL markets and indexes
+        // Combine ALL stocks from ALL markets (deduplicated)
+        // Note: allIndian contains complete NSE list (nifty50/niftyNext50/niftyMidcap150 are aliases)
         const allStockDefinitions = [
-            ...stockLists.nifty50,
-            ...stockLists.niftyNext50,
-            ...stockLists.niftyMidcap150,
+            ...stockLists.allIndian,
             ...stockLists.ftse100,
             ...stockLists.ftse250,
             ...stockLists.usStocks
