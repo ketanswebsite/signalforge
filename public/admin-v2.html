@@ -118,7 +118,7 @@
         <main class="admin-main">
 
             <!-- Dashboard Tab -->
-            <div id="dashboard-tab" class="admin-tab active">
+            <div id="dashboard-page" class="admin-tab active">
                 <div class="tab-header">
                     <h2>Dashboard Overview</h2>
                     <p class="text-secondary">Real-time metrics and analytics</p>
@@ -177,7 +177,7 @@
             </div>
 
             <!-- Users Tab -->
-            <div id="users-tab" class="admin-tab">
+            <div id="users-page" class="admin-tab">
                 <div class="tab-header">
                     <h2>User Management</h2>
                     <p class="text-secondary">Manage user accounts and permissions</p>
@@ -195,7 +195,7 @@
             </div>
 
             <!-- Subscriptions Tab -->
-            <div id="subscriptions-tab" class="admin-tab">
+            <div id="subscriptions-page" class="admin-tab">
                 <div class="tab-header">
                     <h2>Subscriptions</h2>
                     <p class="text-secondary">View and manage user subscriptions</p>
@@ -212,7 +212,7 @@
             </div>
 
             <!-- Payments Tab -->
-            <div id="payments-tab" class="admin-tab">
+            <div id="payments-page" class="admin-tab">
                 <div class="tab-header">
                     <h2>Payment History</h2>
                     <p class="text-secondary">View all transactions and revenue</p>
@@ -237,7 +237,7 @@
             </div>
 
             <!-- Database Tab -->
-            <div id="database-tab" class="admin-tab">
+            <div id="database-page" class="admin-tab">
                 <div class="tab-header">
                     <h2>Database Management</h2>
                     <p class="text-secondary">Query builder and schema viewer</p>
@@ -262,7 +262,7 @@
             </div>
 
             <!-- Analytics Tab -->
-            <div id="analytics-tab" class="admin-tab">
+            <div id="analytics-page" class="admin-tab">
                 <div class="tab-header">
                     <h2>Analytics</h2>
                     <p class="text-secondary">Detailed insights and reports</p>
@@ -292,7 +292,7 @@
             </div>
 
             <!-- Signal Testing Tab -->
-            <div id="signal-testing-tab" class="admin-tab">
+            <div id="signal-testing-page" class="admin-tab">
                 <div class="tab-header">
                     <h2>Signal Testing & Diagnostics</h2>
                     <p class="text-secondary">Test 7 AM scans and 1 PM execution</p>
@@ -354,7 +354,7 @@
             </div>
 
             <!-- Settings Tab -->
-            <div id="settings-tab" class="admin-tab">
+            <div id="settings-page" class="admin-tab">
                 <div class="tab-header">
                     <h2>System Settings</h2>
                     <p class="text-secondary">Configure system parameters</p>
@@ -415,7 +415,7 @@
 
                 // Add active class to selected items
                 const selectedNav = document.querySelector(`.nav-item[data-tab="${tabId}"]`);
-                const selectedTab = document.getElementById(`${tabId}-tab`);
+                const selectedTab = document.getElementById(`${tabId}-page`);
 
                 if (selectedNav) selectedNav.classList.add('active');
                 if (selectedTab) selectedTab.classList.add('active');
