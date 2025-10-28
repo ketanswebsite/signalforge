@@ -34,9 +34,19 @@ async function getUserSubscriptionStatus(userEmail) {
         u.complimentary_until,
         u.complimentary_reason,
         u.granted_by,
+        us.id as subscription_id,
         us.status as current_status,
+        us.plan_name,
+        us.plan_code,
+        us.currency,
+        us.amount_paid,
+        us.billing_period,
+        us.trial_start_date,
         us.trial_end_date,
-        us.end_date as active_sub_end_date
+        us.start_date,
+        us.end_date as active_sub_end_date,
+        us.cancellation_date,
+        us.cancellation_reason
       FROM users u
       LEFT JOIN user_subscriptions us ON u.email = us.user_email
       WHERE u.email = $1
@@ -111,6 +121,12 @@ async function getUserSubscriptionStatus(userEmail) {
           status = 'active';
           daysRemaining = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
         }
+      } else if (user.current_status === 'cancelled') {
+        status = 'cancelled';
+        endDate = user.active_sub_end_date ? new Date(user.active_sub_end_date) : null;
+        if (endDate && now <= endDate) {
+          daysRemaining = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+        }
       }
     }
 
@@ -118,6 +134,18 @@ async function getUserSubscriptionStatus(userEmail) {
       email: user.email,
       region: user.region || 'IN',
       status: status,
+      subscription_id: user.subscription_id,
+      plan_name: user.plan_name || 'Free Trial',
+      plan_code: user.plan_code,
+      currency: user.currency || 'USD',
+      amount_paid: user.amount_paid || 0,
+      billing_period: user.billing_period || 'monthly',
+      trial_start_date: user.trial_start_date,
+      trial_end_date: user.trial_end_date,
+      start_date: user.start_date,
+      subscription_end_date: endDate,
+      cancellation_date: user.cancellation_date,
+      cancellation_reason: user.cancellation_reason,
       endDate: endDate,
       daysRemaining: daysRemaining,
       isPremium: status === 'active',
