@@ -391,8 +391,8 @@ window.TradeUIModules.filters = (function() {
                 if (trade.symbol && trade.symbol.endsWith('.L')) {
                     card.querySelector('.entry-price').textContent = `${(trade.entryPrice || 0).toFixed(2)}p`;
                     card.querySelector('.current-price').textContent = `${(trade.currentPrice || 0).toFixed(2)}p`;
-                    card.querySelector('.investment').textContent = `${trade.currencySymbol || '£'}${((trade.investmentAmount || 0) / 100).toFixed(2)}`;
-                    card.querySelector('.current-value').textContent = `${trade.currencySymbol || '£'}${((trade.currentValue || 0) / 100).toFixed(2)}`;
+                    card.querySelector('.investment').textContent = `${trade.currencySymbol || '£'}${(trade.investmentAmount || 0).toFixed(2)}`;
+                    card.querySelector('.current-value').textContent = `${trade.currencySymbol || '£'}${(trade.currentValue || 0).toFixed(2)}`;
                     card.querySelector('.stop-loss').textContent = `${(trade.stopLossPrice || 0).toFixed(2)}p`;
                     card.querySelector('.target').textContent = `${(trade.targetPrice || 0).toFixed(2)}p`;
                 } else {

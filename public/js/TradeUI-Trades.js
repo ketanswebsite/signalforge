@@ -157,7 +157,7 @@ function renderActiveTrades() {
             if (trade.symbol && trade.symbol.endsWith('.L')) {
                 card.querySelector('.entry-price').textContent = `${(trade.entryPrice || 0).toFixed(2)}p`;
                 card.querySelector('.current-price').textContent = `${(trade.currentPrice || 0).toFixed(2)}p`;
-                card.querySelector('.investment').textContent = `${trade.currencySymbol || '£'}${((trade.investmentAmount || 0) / 100).toFixed(2)}`;
+                card.querySelector('.investment').textContent = `${trade.currencySymbol || '£'}${(trade.investmentAmount || 0).toFixed(2)}`;
             } else {
                 card.querySelector('.entry-price').textContent = `${trade.currencySymbol || TradeCore.CURRENCY_SYMBOL}${(trade.entryPrice || 0).toFixed(2)}`;
                 card.querySelector('.current-price').textContent = `${trade.currencySymbol || TradeCore.CURRENCY_SYMBOL}${(trade.currentPrice || 0).toFixed(2)}`;
@@ -176,7 +176,7 @@ function renderActiveTrades() {
             
             // Handle UK stocks pricing (pence to pounds conversion)
             if (trade.symbol && trade.symbol.endsWith('.L')) {
-                card.querySelector('.current-value').textContent = `${trade.currencySymbol || '£'}${((trade.currentValue || 0) / 100).toFixed(2)}`;
+                card.querySelector('.current-value').textContent = `${trade.currencySymbol || '£'}${(trade.currentValue || 0).toFixed(2)}`;
                 card.querySelector('.stop-loss').textContent = `${(trade.stopLossPrice || 0).toFixed(2)}p`;
                 card.querySelector('.target').textContent = `${(trade.targetPrice || 0).toFixed(2)}p`;
             } else {
@@ -572,11 +572,11 @@ function renderActiveTrades() {
             if (trade.symbol === 'TW.L' && trade.status === 'closed') {
             }
             
-            // For UK stocks, convert investment amount from pence to pounds for display
-            // Indian and US stocks are already in their base currency units
+            // Investment amounts are stored in base currency (pounds for UK, rupees for India, dollars for US)
+            // No conversion needed for display
             const isUKStock = trade.symbol && trade.symbol.endsWith('.L');
-            const displayInvestment = isUKStock ? investmentAmount / 100 : investmentAmount;
-            const displayPLValue = isUKStock ? plValue / 100 : plValue;
+            const displayInvestment = investmentAmount;
+            const displayPLValue = plValue;
             
             // Get company name from mapping
             const displayName = window.CompanyNames ? 
