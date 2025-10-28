@@ -215,15 +215,8 @@ async function initializeDatabase() {
       )
     `);
 
-    // Initialize default capital for single user (using 'system' as sentinel value)
-    await pool.query(`
-      INSERT INTO portfolio_capital (user_id, market, currency, initial_capital, available_capital)
-      VALUES
-        ('system', 'India', 'INR', 1000000, 1000000),
-        ('system', 'UK', 'GBP', 10000, 10000),
-        ('system', 'US', 'USD', 15000, 15000)
-      ON CONFLICT (user_id, market) DO NOTHING
-    `);
+    // Note: Portfolio capital is now initialized per-user during signup
+    // See ensureUserInDatabase() in server.js for user capital initialization
 
     // Create trade_exit_checks table for exit condition tracking
     await pool.query(`
@@ -1869,11 +1862,11 @@ const TradeDB = {
         
         if (existingUser.rows.length === 0) {
           // User not in database, add them
-          
+
           await client.query(`
             INSERT INTO users (email, name, google_id, picture, first_login, last_login)
             VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-            ON CONFLICT (email) DO UPDATE SET 
+            ON CONFLICT (email) DO UPDATE SET
               name = EXCLUDED.name,
               picture = EXCLUDED.picture,
               last_login = CURRENT_TIMESTAMP
@@ -1883,7 +1876,14 @@ const TradeDB = {
             user.id || user.google_id || null,
             user.picture || null
           ]);
-          
+
+          // Initialize capital for new user with standard amounts
+          console.log(`Initializing capital for new user: ${user.email}`);
+          await this.updatePortfolioCapital('India', 'INR', 1000000, user.email);
+          await this.updatePortfolioCapital('UK', 'GBP', 10000, user.email);
+          await this.updatePortfolioCapital('US', 'USD', 15000, user.email);
+          console.log(`Capital initialized successfully for ${user.email}`);
+
         } else {
           // User exists, update last_login
           await client.query('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE email = $1', [user.email]);
@@ -2485,9 +2485,13 @@ const TradeDB = {
   async getPortfolioCapital(market = null, userId = null) {
     checkConnection();
     try {
-      // Use 'system' as default for single-user system (not NULL to avoid duplicate row issues)
+      // userId is required for per-user capital isolation
+      if (!userId) {
+        throw new Error('userId is required for getPortfolioCapital');
+      }
+
       let query = 'SELECT * FROM portfolio_capital WHERE user_id = $1';
-      const params = [userId || 'system'];
+      const params = [userId];
 
       if (market) {
         query += ' AND market = $2';
@@ -2520,6 +2524,11 @@ const TradeDB = {
   async updatePortfolioCapital(market, currency, initialCapital, userId = null) {
     checkConnection();
     try {
+      // userId is required for per-user capital isolation
+      if (!userId) {
+        throw new Error('userId is required for updatePortfolioCapital');
+      }
+
       const result = await pool.query(`
         INSERT INTO portfolio_capital (user_id, market, currency, initial_capital, available_capital)
         VALUES ($1, $2, $3, $4, $4)
@@ -2539,6 +2548,11 @@ const TradeDB = {
   async allocateCapital(market, amount, userId = null) {
     checkConnection();
     try {
+      // userId is required for per-user capital isolation
+      if (!userId) {
+        throw new Error('userId is required for allocateCapital');
+      }
+
       const result = await pool.query(`
         UPDATE portfolio_capital
         SET allocated_capital = allocated_capital + $1,
@@ -2547,7 +2561,7 @@ const TradeDB = {
             updated_at = CURRENT_TIMESTAMP
         WHERE market = $2 AND user_id = $3
         RETURNING *
-      `, [amount, market, userId || 'system']);
+      `, [amount, market, userId]);
       return result.rows.length > 0;
     } catch (error) {
       throw error;
@@ -2558,6 +2572,11 @@ const TradeDB = {
   async releaseCapital(market, allocatedAmount, plAmount, userId = null) {
     checkConnection();
     try {
+      // userId is required for per-user capital isolation
+      if (!userId) {
+        throw new Error('userId is required for releaseCapital');
+      }
+
       const result = await pool.query(`
         UPDATE portfolio_capital
         SET allocated_capital = allocated_capital - $1,
@@ -2567,7 +2586,7 @@ const TradeDB = {
             updated_at = CURRENT_TIMESTAMP
         WHERE market = $3 AND user_id = $4
         RETURNING *
-      `, [allocatedAmount, plAmount, market, userId || 'system']);
+      `, [allocatedAmount, plAmount, market, userId]);
       return result.rows.length > 0;
     } catch (error) {
       throw error;
@@ -2578,6 +2597,11 @@ const TradeDB = {
   async canAddPosition(market, requiredCapital, userId = null) {
     checkConnection();
     try {
+      // userId is required for per-user capital isolation
+      if (!userId) {
+        throw new Error('userId is required for canAddPosition');
+      }
+
       const capital = await this.getPortfolioCapital(market, userId);
       const marketCap = capital[market];
 
@@ -2746,6 +2770,18 @@ const TradeDB = {
       `, [userId, settingKey]);
       return result.rowCount > 0;
     } catch (error) {
+      throw error;
+    }
+  },
+
+  // Run raw SQL query (for migrations and admin operations)
+  async runRawQuery(sql, params = []) {
+    checkConnection();
+    try {
+      const result = await pool.query(sql, params);
+      return result;
+    } catch (error) {
+      console.error('Raw query error:', error);
       throw error;
     }
   },

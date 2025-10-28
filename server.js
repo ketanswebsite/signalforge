@@ -1243,7 +1243,8 @@ app.get('/api/admin/system/health', ensureAuthenticatedAPI, async (req, res) => 
     // Check 3: Portfolio Capital Calculation
     try {
       const start = performance.now();
-      const capital = await TradeDB.getPortfolioCapital();
+      // Use admin email for system health check
+      const capital = await TradeDB.getPortfolioCapital(null, ADMIN_EMAIL);
       const duration = performance.now() - start;
 
       if (!capital.India || !capital.UK || !capital.US) {
@@ -1328,6 +1329,104 @@ app.get('/api/admin/system/health', ensureAuthenticatedAPI, async (req, res) => 
   } catch (error) {
     console.error('Health check error:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Migrate System Capital to Per-User (One-time migration)
+app.post('/api/admin/migrate-capital', ensureAuthenticatedAPI, async (req, res) => {
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+  }
+
+  try {
+    const results = {
+      step1_before: null,
+      step2_migration: null,
+      step3_after: null,
+      step4_verify: null,
+      step5_constraint: null,
+      step6_final: null
+    };
+
+    console.log('=== CAPITAL MIGRATION STARTING ===');
+
+    // Step 1: Check current state
+    const before = await TradeDB.runRawQuery(
+      `SELECT user_id, market, initial_capital, allocated_capital, available_capital, active_positions
+       FROM portfolio_capital WHERE user_id = 'system'`
+    );
+    results.step1_before = before.rows;
+    console.log('Step 1 - Before:', results.step1_before);
+
+    if (results.step1_before.length === 0) {
+      return res.json({
+        success: true,
+        message: 'Migration already completed - no system records found',
+        results
+      });
+    }
+
+    // Step 2: Migrate 'system' to primary user
+    const migration = await TradeDB.runRawQuery(
+      `UPDATE portfolio_capital
+       SET user_id = 'ketanjoshisahs@gmail.com'
+       WHERE user_id = 'system'
+       RETURNING *`
+    );
+    results.step2_migration = migration.rows;
+    console.log('Step 2 - Migrated:', results.step2_migration.length, 'records');
+
+    // Step 3: Verify migration
+    const after = await TradeDB.runRawQuery(
+      `SELECT user_id, market, initial_capital, allocated_capital, available_capital, active_positions
+       FROM portfolio_capital WHERE user_id = 'ketanjoshisahs@gmail.com'`
+    );
+    results.step3_after = after.rows;
+    console.log('Step 3 - After:', results.step3_after);
+
+    // Step 4: Verify no system records remain
+    const remaining = await TradeDB.runRawQuery(
+      `SELECT COUNT(*) as count FROM portfolio_capital WHERE user_id = 'system'`
+    );
+    results.step4_verify = remaining.rows[0];
+    console.log('Step 4 - Remaining system records:', results.step4_verify.count);
+
+    // Step 5: Add NOT NULL constraint
+    try {
+      await TradeDB.runRawQuery(
+        `ALTER TABLE portfolio_capital ALTER COLUMN user_id SET NOT NULL`
+      );
+      results.step5_constraint = 'NOT NULL constraint added successfully';
+      console.log('Step 5 - Constraint added');
+    } catch (err) {
+      results.step5_constraint = `Constraint may already exist: ${err.message}`;
+      console.log('Step 5 - Constraint error (may already exist):', err.message);
+    }
+
+    // Step 6: Final state
+    const final = await TradeDB.runRawQuery(
+      `SELECT user_id, market, currency, initial_capital, allocated_capital,
+              available_capital, active_positions, max_positions
+       FROM portfolio_capital ORDER BY user_id, market`
+    );
+    results.step6_final = final.rows;
+    console.log('Step 6 - Final state:', results.step6_final.length, 'total records');
+
+    console.log('=== CAPITAL MIGRATION COMPLETED ===');
+
+    res.json({
+      success: true,
+      message: 'Capital migration completed successfully',
+      results
+    });
+
+  } catch (error) {
+    console.error('Migration error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: error.stack
+    });
   }
 });
 
@@ -1971,6 +2070,7 @@ app.post('/api/trades/bulk', ensureAuthenticatedAPI, ensureSubscriptionActive, a
 // Initialize portfolio capital
 app.post('/api/portfolio/initialize-capital', ensureAuthenticatedAPI, async (req, res) => {
   try {
+    const userId = req.user.email;
     const { india, uk, us } = req.body;
 
     // Validate inputs
@@ -1979,12 +2079,12 @@ app.post('/api/portfolio/initialize-capital', ensureAuthenticatedAPI, async (req
     }
 
     // Update capital for each market
-    await TradeDB.updatePortfolioCapital('India', 'INR', india);
-    await TradeDB.updatePortfolioCapital('UK', 'GBP', uk);
-    await TradeDB.updatePortfolioCapital('US', 'USD', us);
+    await TradeDB.updatePortfolioCapital('India', 'INR', india, userId);
+    await TradeDB.updatePortfolioCapital('UK', 'GBP', uk, userId);
+    await TradeDB.updatePortfolioCapital('US', 'USD', us, userId);
 
     // Get updated capital status
-    const capital = await TradeDB.getPortfolioCapital();
+    const capital = await TradeDB.getPortfolioCapital(null, userId);
 
     res.json({ success: true, capital });
   } catch (error) {
@@ -1996,7 +2096,8 @@ app.post('/api/portfolio/initialize-capital', ensureAuthenticatedAPI, async (req
 // Get portfolio capital status
 app.get('/api/portfolio/capital', ensureAuthenticatedAPI, async (req, res) => {
   try {
-    const capital = await TradeDB.getPortfolioCapital();
+    const userId = req.user.email;
+    const capital = await TradeDB.getPortfolioCapital(null, userId);
 
     // Calculate totals
     const totals = {
@@ -2112,7 +2213,7 @@ app.post('/api/signals/add-to-portfolio/:signalId', ensureAuthenticatedAPI, asyn
     const tradeSize = marketSizes[selectedSignal.market];
 
     // Check if can add position
-    const canAdd = await TradeDB.canAddPosition(selectedSignal.market, tradeSize);
+    const canAdd = await TradeDB.canAddPosition(selectedSignal.market, tradeSize, userId);
     if (!canAdd.canAdd) {
       return res.status(400).json({
         success: false,
@@ -2121,7 +2222,7 @@ app.post('/api/signals/add-to-portfolio/:signalId', ensureAuthenticatedAPI, asyn
     }
 
     // Get capital before
-    const capitalBefore = await TradeDB.getPortfolioCapital(selectedSignal.market);
+    const capitalBefore = await TradeDB.getPortfolioCapital(selectedSignal.market, userId);
     const marketCapBefore = capitalBefore[selectedSignal.market];
 
     // Create trade
@@ -2146,13 +2247,13 @@ app.post('/api/signals/add-to-portfolio/:signalId', ensureAuthenticatedAPI, asyn
     const newTrade = await TradeDB.insertTrade(trade, userId);
 
     // Allocate capital
-    await TradeDB.allocateCapital(selectedSignal.market, tradeSize);
+    await TradeDB.allocateCapital(selectedSignal.market, tradeSize, userId);
 
     // Update signal status
     await TradeDB.updateSignalStatus(signalId, 'added', newTrade.id);
 
     // Get capital after
-    const capitalAfter = await TradeDB.getPortfolioCapital(selectedSignal.market);
+    const capitalAfter = await TradeDB.getPortfolioCapital(selectedSignal.market, userId);
     const marketCapAfter = capitalAfter[selectedSignal.market];
 
     res.json({
