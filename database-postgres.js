@@ -1131,12 +1131,80 @@ async function migrateSystemCapitalToUser() {
   }
 }
 
+// Auto-backfill: Initialize capital for existing users who don't have it (one-time)
+async function backfillExistingUsersCapital() {
+  if (!dbConnected || !pool) return;
+
+  try {
+    // Check if migration already applied
+    const migrationCheck = await pool.query(`
+      SELECT * FROM schema_migrations
+      WHERE filename = '021_backfill_existing_users_capital.sql'
+    `);
+
+    if (migrationCheck.rows.length > 0) {
+      console.log('✅ Capital backfill already applied');
+      return;
+    }
+
+    console.log('🔄 Running auto-migration: Backfilling capital for existing users...');
+
+    // Find users without capital
+    const usersWithoutCapital = await pool.query(`
+      SELECT u.email
+      FROM users u
+      LEFT JOIN portfolio_capital pc ON u.email = pc.user_id
+      WHERE pc.user_id IS NULL
+      GROUP BY u.email
+    `);
+
+    if (usersWithoutCapital.rows.length === 0) {
+      console.log('⏭️  All users already have capital - skipping backfill');
+      // Mark as applied anyway
+      await pool.query(`
+        INSERT INTO schema_migrations (filename, applied_at)
+        VALUES ('021_backfill_existing_users_capital.sql', NOW())
+      `);
+      return;
+    }
+
+    console.log(`📝 Found ${usersWithoutCapital.rows.length} users without capital`);
+
+    // Initialize capital for each user
+    for (const user of usersWithoutCapital.rows) {
+      await pool.query(`
+        INSERT INTO portfolio_capital (user_id, market, currency, initial_capital, available_capital)
+        VALUES
+          ($1, 'India', 'INR', 1000000, 1000000),
+          ($1, 'UK', 'GBP', 10000, 10000),
+          ($1, 'US', 'USD', 15000, 15000)
+      `, [user.email]);
+      console.log(`  ✅ Initialized capital for ${user.email}`);
+    }
+
+    console.log(`✅ Backfilled capital for ${usersWithoutCapital.rows.length} users`);
+
+    // Mark migration as applied
+    await pool.query(`
+      INSERT INTO schema_migrations (filename, applied_at)
+      VALUES ('021_backfill_existing_users_capital.sql', NOW())
+    `);
+
+    console.log('✅ Capital backfill complete!');
+
+  } catch (error) {
+    console.error('❌ Capital backfill error:', error.message);
+    // Don't throw - let server continue starting
+  }
+}
+
 // Database operations
 const TradeDB = {
   // Initialize database on module load
   async init() {
     await initializeDatabase();
     await migrateSystemCapitalToUser();  // Auto-migrate on startup
+    await backfillExistingUsersCapital(); // Backfill capital for existing users
   },
   
   // Check if database is connected
