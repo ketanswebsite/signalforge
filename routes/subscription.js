@@ -360,4 +360,121 @@ router.post('/user/subscription/reactivate', ensureAuthenticated, async (req, re
   }
 });
 
+/**
+ * POST /api/user/subscription/start-trial
+ * Start a free 90-day trial for new users
+ * Requires authentication
+ */
+router.post('/user/subscription/start-trial', ensureAuthenticated, async (req, res) => {
+  try {
+    const userEmail = req.user.email;
+    const db = getPool();
+
+    if (!db) {
+      return res.status(500).json(errorResponse('Database not available'));
+    }
+
+    // Check if user already has a subscription
+    const existingSubResult = await db.query(`
+      SELECT id, status, trial_end_date, end_date
+      FROM user_subscriptions
+      WHERE user_email = $1
+      ORDER BY created_at DESC
+      LIMIT 1
+    `, [userEmail]);
+
+    if (existingSubResult.rows.length > 0) {
+      const existingSub = existingSubResult.rows[0];
+
+      // If they already have an active trial or subscription, don't create a new one
+      if (existingSub.status === 'trial' || existingSub.status === 'active') {
+        return res.status(400).json(errorResponse('You already have an active subscription or trial', 'ALREADY_SUBSCRIBED'));
+      }
+    }
+
+    // Get the FREE plan details
+    const planResult = await db.query(`
+      SELECT id, plan_code, plan_name, region, currency, trial_days
+      FROM subscription_plans
+      WHERE plan_code = 'FREE' AND is_active = true
+      LIMIT 1
+    `);
+
+    if (planResult.rows.length === 0) {
+      return res.status(500).json(errorResponse('Free trial plan not found', 'PLAN_NOT_FOUND'));
+    }
+
+    const plan = planResult.rows[0];
+    const trialDays = plan.trial_days || 90;
+
+    // Calculate trial end date
+    const trialStartDate = new Date();
+    const trialEndDate = new Date();
+    trialEndDate.setDate(trialEndDate.getDate() + trialDays);
+
+    // Create trial subscription
+    const insertResult = await db.query(`
+      INSERT INTO user_subscriptions (
+        user_email,
+        plan_id,
+        plan_code,
+        plan_name,
+        status,
+        billing_period,
+        amount,
+        currency,
+        start_date,
+        trial_start_date,
+        trial_end_date,
+        created_at,
+        updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+      RETURNING id, trial_end_date
+    `, [
+      userEmail,
+      plan.id,
+      plan.plan_code,
+      plan.plan_name,
+      'trial',
+      'trial',
+      0,
+      plan.currency,
+      trialStartDate,
+      trialStartDate,
+      trialEndDate
+    ]);
+
+    const newSubscription = insertResult.rows[0];
+
+    // Log to subscription history
+    await db.query(`
+      INSERT INTO subscription_history
+      (subscription_id, user_email, event_type, old_status, new_status, description)
+      VALUES ($1, $2, 'created', NULL, 'trial', 'Free 90-day trial started')
+    `, [newSubscription.id, userEmail]);
+
+    // Update user record
+    await db.query(`
+      UPDATE users
+      SET
+        subscription_status = 'trial',
+        subscription_end_date = $2,
+        updated_at = NOW()
+      WHERE email = $1
+    `, [userEmail, trialEndDate]);
+
+    res.json(successResponse({
+      trialStarted: true,
+      subscriptionId: newSubscription.id,
+      trialEndDate: newSubscription.trial_end_date,
+      daysRemaining: trialDays,
+      message: `Your ${trialDays}-day free trial has started! Enjoy full access to all features.`
+    }));
+
+  } catch (error) {
+    console.error('Error starting trial:', error);
+    res.status(500).json(errorResponse('Failed to start trial'));
+  }
+});
+
 module.exports = router;

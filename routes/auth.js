@@ -17,30 +17,69 @@ router.get('/auth/google',
 );
 
 router.get('/auth/google/callback',
-    passport.authenticate('google', { 
+    passport.authenticate('google', {
         failureRedirect: '/login?error=auth_failed',
-        failureMessage: true 
+        failureMessage: true
     }),
-    (req, res) => {
+    async (req, res) => {
         console.log('OAuth callback success handler called');
         console.log('User authenticated:', req.user);
         console.log('Session ID:', req.sessionID);
-        
-        // Save session explicitly before redirecting
-        req.session.save((err) => {
-            if (err) {
-                console.error('Session save error:', err);
-                return res.status(500).send('Session save failed');
-            }
-            
-            // Successful authentication, redirect to home or intended page
-            const redirectTo = req.session.returnTo || '/';
-            delete req.session.returnTo;
-            
-            console.log('Session saved successfully');
-            console.log('Redirecting to:', redirectTo);
-            res.redirect(redirectTo);
-        });
+
+        try {
+            // Check if user has a subscription
+            const { getUserSubscriptionStatus } = require('../middleware/subscription');
+            const subscription = await getUserSubscriptionStatus(req.user.email);
+
+            // Admin bypass - admin always gets redirected to home
+            const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'ketanjoshisahs@gmail.com';
+            const isAdmin = req.user.email === ADMIN_EMAIL;
+
+            // Save session explicitly before redirecting
+            req.session.save((err) => {
+                if (err) {
+                    console.error('Session save error:', err);
+                    return res.status(500).send('Session save failed');
+                }
+
+                let redirectTo;
+
+                // Determine redirect location based on subscription status
+                if (isAdmin) {
+                    // Admin always goes to home or intended page
+                    redirectTo = req.session.returnTo || '/';
+                } else if (!subscription || !subscription.isActive) {
+                    // No subscription or inactive - redirect to trial activation
+                    console.log('User has no active subscription - redirecting to trial activation');
+                    redirectTo = '/trial-activation.html';
+                } else {
+                    // Has active subscription - redirect to home or intended page
+                    redirectTo = req.session.returnTo || '/';
+                }
+
+                delete req.session.returnTo;
+
+                console.log('Session saved successfully');
+                console.log('Redirecting to:', redirectTo);
+                res.redirect(redirectTo);
+            });
+        } catch (error) {
+            console.error('Error checking subscription status:', error);
+
+            // On error, save session and redirect to home (fail open)
+            req.session.save((err) => {
+                if (err) {
+                    console.error('Session save error:', err);
+                    return res.status(500).send('Session save failed');
+                }
+
+                const redirectTo = req.session.returnTo || '/';
+                delete req.session.returnTo;
+
+                console.log('Redirecting to:', redirectTo, '(error fallback)');
+                res.redirect(redirectTo);
+            });
+        }
     }
 );
 

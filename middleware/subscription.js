@@ -147,12 +147,17 @@ function ensureSubscriptionActive(req, res, next) {
     '/api/check-subscription-setup',
     '/api/subscription/status',
     '/api/subscription/plans',
+    '/api/subscription-plans',
+    '/api/user/subscription/start-trial',
+    '/api/user/location',
     '/api/payment',
     '/api/admin',
     '/login',
     '/auth',
     '/logout',
-    '/health'
+    '/health',
+    '/trial-activation.html',
+    '/pricing.html'
   ];
 
   // Check if current path is exempt
@@ -184,15 +189,16 @@ function ensureSubscriptionActive(req, res, next) {
   getUserSubscriptionStatus(req.user.email)
     .then(subscription => {
       if (!subscription) {
-        // No subscription record found - treat as expired
+        // No subscription record found - redirect to trial activation
         req.subscription = {
           status: 'none',
           isActive: false,
           isPremium: false
         };
-        return res.status(403).json({ 
-          error: 'No subscription found',
-          redirect: '/subscription/expired',
+        return res.status(403).json({
+          error: 'No subscription found. Please start your free trial.',
+          redirect: '/trial-activation.html',
+          requiresTrial: true,
           subscription: req.subscription
         });
       }
@@ -205,10 +211,10 @@ function ensureSubscriptionActive(req, res, next) {
         return next();
       }
 
-      // Subscription expired
-      return res.status(403).json({ 
+      // Subscription expired - redirect to pricing page
+      return res.status(403).json({
         error: 'Subscription expired',
-        redirect: '/subscription/expired',
+        redirect: '/pricing.html',
         subscription: req.subscription
       });
     })

@@ -30,6 +30,7 @@
     <script src="/js/admin-analytics-v2.js"></script>
     <script src="/js/admin-dashboard.js"></script>
     <script src="/js/admin-users.js"></script>
+    <script src="/js/admin-complimentary.js"></script>
     <script src="/js/admin-subscriptions.js"></script>
     <script src="/js/admin-payments.js"></script>
     <script src="/js/admin-audit.js"></script>
@@ -206,6 +207,64 @@
                 </div>
 
                 <div id="users-table-container"></div>
+
+                <!-- Complimentary Access Section -->
+                <div class="admin-section" style="margin-top: 3rem;">
+                    <div class="tab-header">
+                        <h3>Complimentary Access Management</h3>
+                        <p class="text-secondary">Grant or revoke lifetime/temporary access for beta testers and special users</p>
+                    </div>
+
+                    <!-- Grant Access Form -->
+                    <div class="form-card">
+                        <h4>Grant Complimentary Access</h4>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="comp-user-email">User Email</label>
+                                <input type="email" id="comp-user-email" placeholder="user@example.com" class="form-input" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="comp-access-type">Access Type</label>
+                                <select id="comp-access-type" class="form-input">
+                                    <option value="lifetime">Lifetime Access</option>
+                                    <option value="temporary">Temporary Access</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group" id="comp-expiry-group" style="display: none;">
+                                <label for="comp-expiry-date">Expiry Date</label>
+                                <input type="date" id="comp-expiry-date" class="form-input">
+                            </div>
+
+                            <div class="form-group" style="grid-column: 1 / -1;">
+                                <label for="comp-reason">Reason</label>
+                                <textarea id="comp-reason" placeholder="e.g., Beta tester, Special promotion, etc." class="form-input" rows="2"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button class="btn-primary" onclick="AdminComplimentary.grantAccess()">
+                                <span class="material-icons">verified</span>
+                                Grant Access
+                            </button>
+                        </div>
+
+                        <div id="comp-grant-status" class="status-message"></div>
+                    </div>
+
+                    <!-- Complimentary Users List -->
+                    <div class="table-card" style="margin-top: 2rem;">
+                        <div class="table-header">
+                            <h4>Users with Complimentary Access</h4>
+                            <button class="btn-secondary" onclick="AdminComplimentary.refresh()">
+                                <span class="material-icons">refresh</span>
+                                Refresh
+                            </button>
+                        </div>
+                        <div id="complimentary-users-container"></div>
+                    </div>
+                </div>
             </div>
 
             <!-- Subscriptions Tab -->
@@ -463,6 +522,9 @@
                     case 'users':
                         if (typeof AdminUsers !== 'undefined' && AdminUsers.init) {
                             AdminUsers.init();
+                        }
+                        if (typeof AdminComplimentary !== 'undefined' && AdminComplimentary.init) {
+                            AdminComplimentary.init();
                         }
                         break;
                     case 'subscriptions':

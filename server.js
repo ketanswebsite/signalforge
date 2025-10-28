@@ -3,6 +3,7 @@ const cors = require('cors');
 const axios = require('axios');
 const path = require('path');
 const session = require('express-session');
+const geoip = require('geoip-lite');
 
 // Load environment variables
 require('dotenv').config();
@@ -334,6 +335,83 @@ app.get('/api/user', ensureAuthenticatedAPI, (req, res) => {
       isAdmin: req.user.email === ADMIN_EMAIL  // Add admin flag
     }
   });
+});
+
+// Location detection endpoint (public - no auth required)
+app.get('/api/user/location', (req, res) => {
+  try {
+    // Get IP address from request
+    // Check for X-Forwarded-For header first (for proxies/load balancers)
+    const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() ||
+               req.headers['x-real-ip'] ||
+               req.connection.remoteAddress ||
+               req.socket.remoteAddress;
+
+    // For localhost/development, return a default region
+    if (!ip || ip === '::1' || ip === '127.0.0.1' || ip.startsWith('::ffff:127.')) {
+      return res.json({
+        country: 'US',
+        region: 'US',
+        currency: 'USD',
+        currencySymbol: '$',
+        detected: false,
+        ip: 'localhost'
+      });
+    }
+
+    // Look up geolocation data
+    const geo = geoip.lookup(ip);
+
+    if (geo && geo.country) {
+      let region, currency, currencySymbol;
+
+      // Map country to our supported regions
+      if (geo.country === 'GB') {
+        region = 'UK';
+        currency = 'GBP';
+        currencySymbol = '£';
+      } else if (geo.country === 'IN') {
+        region = 'India';
+        currency = 'INR';
+        currencySymbol = '₹';
+      } else {
+        // Default to US for all other countries
+        region = 'US';
+        currency = 'USD';
+        currencySymbol = '$';
+      }
+
+      res.json({
+        country: geo.country,
+        region,
+        currency,
+        currencySymbol,
+        detected: true,
+        ip: ip.replace('::ffff:', '')  // Clean IPv4-mapped IPv6 addresses
+      });
+    } else {
+      // Fallback to US if geolocation fails
+      res.json({
+        country: 'US',
+        region: 'US',
+        currency: 'USD',
+        currencySymbol: '$',
+        detected: false,
+        ip: ip
+      });
+    }
+  } catch (error) {
+    console.error('Location detection error:', error);
+    // Fallback to US on error
+    res.json({
+      country: 'US',
+      region: 'US',
+      currency: 'USD',
+      currencySymbol: '$',
+      detected: false,
+      error: 'Location detection failed'
+    });
+  }
 });
 
 // Debug endpoint to check all trades (admin only)

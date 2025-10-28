@@ -6,37 +6,32 @@
 class PricingPage {
     constructor() {
         this.plans = [];
-        this.currentRegion = 'US';
+        this.currentRegion = 'US'; // Default fallback
+        this.locationInfo = null;
         this.init();
     }
 
-    init() {
-        this.setupEventListeners();
-        this.loadPlans();
+    async init() {
+        // Detect user's location first
+        await this.detectLocation();
+        // Then load and render plans
+        await this.loadPlans();
     }
 
-    setupEventListeners() {
-        // Region selector buttons
-        const regionButtons = document.querySelectorAll('.region-btn');
-        regionButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const region = e.currentTarget.dataset.region;
-                this.selectRegion(region);
-            });
-        });
-    }
+    async detectLocation() {
+        try {
+            const response = await fetch('/api/user/location');
+            const data = await response.json();
 
-    selectRegion(region) {
-        // Update button states
-        document.querySelectorAll('.region-btn').forEach(btn => {
-            btn.classList.remove('active');
-            if (btn.dataset.region === region) {
-                btn.classList.add('active');
+            if (data && data.region) {
+                this.currentRegion = data.region;
+                this.locationInfo = data;
+                console.log('Location detected:', data.region, data.detected ? '(auto-detected)' : '(default)');
             }
-        });
-
-        this.currentRegion = region;
-        this.renderPlans();
+        } catch (error) {
+            console.error('Error detecting location:', error);
+            // Keep default region (US)
+        }
     }
 
     async loadPlans() {
@@ -253,7 +248,7 @@ class PricingPage {
         const info = {
             'UK': { symbol: '£', basic: '9.99', pro: '19.99' },
             'US': { symbol: '$', basic: '12.99', pro: '24.99' },
-            'IN': { symbol: '₹', basic: '999', pro: '1999' }
+            'India': { symbol: '₹', basic: '799', pro: '1599' }
         };
         return info[region] || info['US'];
     }

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f172a">
+    <title>Start Your Free Trial - SutrAlgo</title>
+
+    <!-- Google Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="icon" type="image/png" href="/images/favicon.PNG">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800;900&family=Work+Sans:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="/css/main.css">
+
+    <!-- Theme Toggle Script -->
+    <script src="js/theme-toggle.js"></script>
+
+    <!-- Modern Effects -->
+    <script src="/js/modern-effects.js" defer></script>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="landing-background">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+        <canvas id="particles-canvas"></canvas>
+    </div>
+
+    <div class="app-container">
+        <!-- Trial Activation Section -->
+        <div class="trial-activation-container">
+            <div class="trial-activation-card">
+                <div class="trial-icon">
+                    <span class="material-icons">rocket_launch</span>
+                </div>
+
+                <h1>Start Your Free Trial</h1>
+                <p class="trial-description">
+                    Welcome to SutrAlgo! To access the platform, please activate your <strong>free 90-day trial</strong>.
+                    No credit card required.
+                </p>
+
+                <div class="trial-features">
+                    <div class="trial-feature">
+                        <span class="material-icons">check_circle</span>
+                        <span>Full access to all features</span>
+                    </div>
+                    <div class="trial-feature">
+                        <span class="material-icons">check_circle</span>
+                        <span>Unlimited trading signals</span>
+                    </div>
+                    <div class="trial-feature">
+                        <span class="material-icons">check_circle</span>
+                        <span>Real-time Telegram notifications</span>
+                    </div>
+                    <div class="trial-feature">
+                        <span class="material-icons">check_circle</span>
+                        <span>All technical indicators</span>
+                    </div>
+                    <div class="trial-feature">
+                        <span class="material-icons">check_circle</span>
+                        <span>Portfolio backtesting tools</span>
+                    </div>
+                </div>
+
+                <div class="trial-cta">
+                    <button id="start-trial-btn" class="btn btn-primary btn-large">
+                        <span class="material-icons">play_arrow</span>
+                        Start My Free 90-Day Trial
+                    </button>
+                    <p class="trial-note">No credit card required • Cancel anytime</p>
+                </div>
+
+                <div id="trial-status" class="trial-status"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dark Mode Toggle -->
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+        <span class="material-icons sun-icon">light_mode</span>
+        <span class="material-icons moon-icon">dark_mode</span>
+    </button>
+
+    <script>
+        // Trial activation logic
+        const startTrialBtn = document.getElementById('start-trial-btn');
+        const trialStatus = document.getElementById('trial-status');
+
+        startTrialBtn.addEventListener('click', async () => {
+            // Disable button and show loading state
+            startTrialBtn.disabled = true;
+            startTrialBtn.innerHTML = '<span class="material-icons rotating">refresh</span> Activating...';
+            trialStatus.innerHTML = '';
+
+            try {
+                const response = await fetch('/api/user/subscription/start-trial', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Success - show success message and redirect
+                    trialStatus.className = 'trial-status success';
+                    trialStatus.innerHTML = `
+                        <span class="material-icons">check_circle</span>
+                        <span>${data.message || 'Trial activated successfully!'}</span>
+                    `;
+
+                    // Redirect to home page after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
+                } else {
+                    // Error from API
+                    const errorMessage = data.error?.message || data.error || 'Failed to start trial';
+                    trialStatus.className = 'trial-status error';
+                    trialStatus.innerHTML = `
+                        <span class="material-icons">error</span>
+                        <span>${errorMessage}</span>
+                    `;
+
+                    // Re-enable button
+                    startTrialBtn.disabled = false;
+                    startTrialBtn.innerHTML = '<span class="material-icons">play_arrow</span> Start My Free 90-Day Trial';
+
+                    // If already subscribed, redirect after showing message
+                    if (data.error?.code === 'ALREADY_SUBSCRIBED') {
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 3000);
+                    }
+                }
+            } catch (error) {
+                console.error('Error starting trial:', error);
+                trialStatus.className = 'trial-status error';
+                trialStatus.innerHTML = `
+                    <span class="material-icons">error</span>
+                    <span>An error occurred. Please try again or contact support.</span>
+                `;
+
+                // Re-enable button
+                startTrialBtn.disabled = false;
+                startTrialBtn.innerHTML = '<span class="material-icons">play_arrow</span> Start My Free 90-Day Trial';
+            }
+        });
+
+        // Check if user is authenticated on load
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch('/api/user', {
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    // Not authenticated - redirect to login
+                    window.location.href = '/login.html?redirect=/trial-activation.html';
+                }
+            } catch (error) {
+                // Error checking auth - redirect to login
+                window.location.href = '/login.html?redirect=/trial-activation.html';
+            }
+        });
+    </script>
+</body>
+</html>
