@@ -625,7 +625,7 @@ function renderActiveTrades() {
                     <div class="statistic-label">Active Trades</div>
                 </div>
                 <div class="statistic-card">
-                    <div class="statistic-value" data-stat="invested">${currencySymbol}${currencySymbol === '£' ? (stats.totalInvested / 100).toFixed(2) : stats.totalInvested.toFixed(2)}</div>
+                    <div class="statistic-value" data-stat="invested">${currencySymbol}${stats.totalInvested.toFixed(2)}</div>
                     <div class="statistic-label">Total Invested</div>
                 </div>
                 <div class="statistic-card ${stats.openPLPercent > 0 ? 'success' : (stats.openPLPercent < 0 ? 'danger' : '')}">
@@ -731,10 +731,10 @@ function renderActiveTrades() {
             if (currencyCount > 1) {
                 totalInvested.textContent = 'Multi-currency';
             } else if (currencyCount === 1) {
-                // Single currency - show with proper conversion
+                // Single currency - display amount as-is (already in base currency)
                 const currency = Object.keys(currencyStats.currencies)[0];
                 const amount = currencyStats.overall.totalInvested;
-                const displayAmount = currency === '£' ? (amount / 100).toFixed(2) : amount.toFixed(2);
+                const displayAmount = amount.toFixed(2);
                 totalInvested.textContent = `${currency}${displayAmount}`;
             } else {
                 totalInvested.textContent = `${TradeCore.CURRENCY_SYMBOL}0.00`;
@@ -825,7 +825,7 @@ function renderActiveTrades() {
                 
                 if (elements.active) elements.active.textContent = stats.totalActive;
                 if (elements.invested) {
-                    const displayInvested = currencySymbol === '£' ? (stats.totalInvested / 100).toFixed(2) : stats.totalInvested.toFixed(2);
+                    const displayInvested = stats.totalInvested.toFixed(2);
                     elements.invested.textContent = `${currencySymbol}${displayInvested}`;
                 }
                 if (elements.openPL) {
