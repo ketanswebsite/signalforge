@@ -14,6 +14,8 @@ class PricingPage {
     async init() {
         // Detect user's location first
         await this.detectLocation();
+        // Check subscription status
+        await this.loadSubscriptionStatus();
         // Then load and render plans
         await this.loadPlans();
     }
@@ -186,6 +188,76 @@ class PricingPage {
     selectPlan(planCode) {
         // Redirect to checkout page with selected plan
         window.location.href = `/checkout.html?plan=${planCode}`;
+    }
+
+    async loadSubscriptionStatus() {
+        try {
+            const response = await fetch('/api/user/subscription', {
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                this.showSubscriptionBanner(data);
+            }
+        } catch (error) {
+            // Not logged in or error - don't show banner
+            console.log('No subscription status to display');
+        }
+    }
+
+    showSubscriptionBanner(data) {
+        const banner = document.getElementById('subscription-status-banner');
+        if (!banner) return;
+
+        let html = '';
+
+        if (data.isAdmin) {
+            // Admin banner
+            html = `
+                <div class="alert alert-success" style="margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem;">
+                    <span class="material-icons" style="font-size: 2rem;">verified_user</span>
+                    <div style="flex: 1;">
+                        <strong style="font-size: 1.125rem;">Admin Access - Unlimited</strong><br>
+                        <span style="opacity: 0.9;">You have full access to all features with no restrictions.</span>
+                    </div>
+                </div>
+            `;
+        } else if (data.hasSubscription && data.subscription) {
+            const sub = data.subscription;
+
+            if (sub.status === 'trial') {
+                // Trial banner
+                const daysRemaining = sub.daysRemaining || 0;
+                html = `
+                    <div class="alert alert-info" style="margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem;">
+                        <span class="material-icons" style="font-size: 2rem;">schedule</span>
+                        <div style="flex: 1;">
+                            <strong style="font-size: 1.125rem;">Free Trial Active</strong><br>
+                            <span style="opacity: 0.9;">You have ${daysRemaining} days remaining in your 90-day free trial.</span>
+                        </div>
+                        <a href="/account.html" class="btn btn-secondary">View Details</a>
+                    </div>
+                `;
+            } else if (sub.status === 'active') {
+                // Active subscription banner
+                html = `
+                    <div class="alert alert-success" style="margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem;">
+                        <span class="material-icons" style="font-size: 2rem;">check_circle</span>
+                        <div style="flex: 1;">
+                            <strong style="font-size: 1.125rem;">Active Subscription</strong><br>
+                            <span style="opacity: 0.9;">You're currently subscribed to ${sub.plan_name || 'a plan'}.</span>
+                        </div>
+                        <a href="/account.html" class="btn btn-secondary">Manage</a>
+                    </div>
+                `;
+            }
+        }
+
+        if (html) {
+            banner.innerHTML = html;
+            banner.style.display = 'block';
+        }
     }
 
     showFallbackPlans() {

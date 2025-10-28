@@ -535,11 +535,18 @@ class AccountPage {
 
             const data = await response.json();
 
+            // Store admin status
+            this.isAdmin = data.isAdmin || false;
+
             if (data.success && data.hasSubscription) {
                 this.subscription = data.subscription;
                 this.renderHeroSubscriptionCard();
                 this.renderFullSubscriptionDetails();
                 this.renderQuickStats();
+            } else if (this.isAdmin) {
+                // Admin with no subscription - show admin status
+                document.getElementById('subscription-hero').innerHTML = this.renderAdminStatus();
+                document.getElementById('subscription-full-details').innerHTML = this.renderAdminStatus();
             } else {
                 document.getElementById('subscription-hero').innerHTML = this.renderNoSubscription();
                 document.getElementById('subscription-full-details').innerHTML = this.renderNoSubscription();
@@ -599,7 +606,17 @@ class AccountPage {
         `;
 
         let alertHTML = '';
-        if (isTrial) {
+        if (this.isAdmin) {
+            alertHTML = `
+                <div class="alert alert-success" style="margin-bottom: 1.5rem;">
+                    <span class="material-icons">verified_user</span>
+                    <div>
+                        <strong>Admin Access - Unlimited</strong><br>
+                        You have administrator privileges with full access to all features.
+                    </div>
+                </div>
+            `;
+        } else if (isTrial) {
             alertHTML = `
                 <div class="alert alert-info" style="margin-bottom: 1.5rem;">
                     <span class="material-icons">info</span>
@@ -906,6 +923,44 @@ class AccountPage {
                 <a href="/login" class="btn btn-primary mt-2">
                     Log In
                 </a>
+            </div>
+        `;
+    }
+
+    renderAdminStatus() {
+        return `
+            <div class="hero-subscription-card" style="border: 2px solid var(--success-color);">
+                <div class="alert alert-success" style="margin-bottom: 1.5rem;">
+                    <span class="material-icons">verified_user</span>
+                    <div>
+                        <strong>Admin Access - Unlimited</strong><br>
+                        You have full access to all features with no restrictions.
+                    </div>
+                </div>
+                <div class="hero-subscription-header">
+                    <div class="hero-plan-info">
+                        <h2>Administrator</h2>
+                        <div class="plan-price">Unlimited Access</div>
+                    </div>
+                    <div class="status-badge active" style="background: var(--success-color); color: white;">
+                        <span class="material-icons" style="font-size: 1rem;">admin_panel_settings</span>
+                        Admin
+                    </div>
+                </div>
+                <div class="hero-stats-grid">
+                    <div class="hero-stat-item">
+                        <div class="hero-stat-label">Access Level</div>
+                        <div class="hero-stat-value highlight">Full Access</div>
+                    </div>
+                    <div class="hero-stat-item">
+                        <div class="hero-stat-label">Expiry</div>
+                        <div class="hero-stat-value">Never</div>
+                    </div>
+                    <div class="hero-stat-item">
+                        <div class="hero-stat-label">Features</div>
+                        <div class="hero-stat-value">All Unlocked</div>
+                    </div>
+                </div>
             </div>
         `;
     }

@@ -170,18 +170,24 @@ router.get('/user/subscription', ensureAuthenticated, async (req, res) => {
     const userEmail = req.user.email;
     const { getUserSubscriptionStatus } = require('../middleware/subscription');
 
+    // Check if user is admin
+    const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'ketanjoshisahs@gmail.com';
+    const isAdmin = userEmail === ADMIN_EMAIL;
+
     const subscription = await getUserSubscriptionStatus(userEmail);
 
     if (!subscription) {
       return res.json(successResponse({
         hasSubscription: false,
         status: 'none',
-        message: 'No active subscription found'
+        isAdmin: isAdmin,
+        message: isAdmin ? 'Admin - Unlimited Access' : 'No active subscription found'
       }));
     }
 
     res.json(successResponse({
       hasSubscription: true,
+      isAdmin: isAdmin,
       subscription
     }));
 
