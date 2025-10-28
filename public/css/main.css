@@ -10349,6 +10349,26 @@ body.light-theme .stripe-element {
    PRICING PAGE STYLES
    ======================================== */
 
+/* ===== Subscription Status Banner ===== */
+#subscription-status-banner {
+    margin-top: 90px; /* Clear the fixed navbar */
+    padding: 0 var(--spacing-lg);
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#subscription-status-banner .alert {
+    animation: fadeInDown 0.5s var(--transition-base);
+}
+
+@media (max-width: 768px) {
+    #subscription-status-banner {
+        margin-top: 80px;
+        padding: 0 var(--spacing-md);
+    }
+}
+
 /* ===== 1. Pricing Hero Section ===== */
 .pricing-hero {
     text-align: center;
