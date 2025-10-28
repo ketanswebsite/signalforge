@@ -427,7 +427,7 @@ router.post('/user/subscription/start-trial', ensureAuthenticated, async (req, r
         plan_name,
         status,
         billing_period,
-        amount,
+        amount_paid,
         currency,
         start_date,
         trial_start_date,
