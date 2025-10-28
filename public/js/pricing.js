@@ -212,7 +212,7 @@ class PricingPage {
 
         let html = '';
 
-        if (data.isAdmin) {
+        if (data.data.isAdmin) {
             // Admin banner
             html = `
                 <div class="alert alert-success" style="margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem;">
@@ -223,8 +223,8 @@ class PricingPage {
                     </div>
                 </div>
             `;
-        } else if (data.hasSubscription && data.subscription) {
-            const sub = data.subscription;
+        } else if (data.data.hasSubscription && data.data.subscription) {
+            const sub = data.data.subscription;
 
             if (sub.status === 'trial') {
                 // Trial banner

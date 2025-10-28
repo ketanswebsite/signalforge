@@ -536,10 +536,10 @@ class AccountPage {
             const data = await response.json();
 
             // Store admin status
-            this.isAdmin = data.isAdmin || false;
+            this.isAdmin = data.data.isAdmin || false;
 
-            if (data.success && data.hasSubscription) {
-                this.subscription = data.subscription;
+            if (data.success && data.data.hasSubscription) {
+                this.subscription = data.data.subscription;
                 this.renderHeroSubscriptionCard();
                 this.renderFullSubscriptionDetails();
                 this.renderQuickStats();
