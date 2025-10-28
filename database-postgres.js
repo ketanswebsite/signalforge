@@ -1064,11 +1064,79 @@ async function reactivateTelegramSubscription() {
   }
 }
 
+// Auto-migration: Migrate 'system' capital to primary user (one-time)
+async function migrateSystemCapitalToUser() {
+  if (!dbConnected || !pool) return;
+
+  try {
+    // Check if migration already applied
+    const migrationCheck = await pool.query(`
+      SELECT * FROM schema_migrations
+      WHERE filename = '020_migrate_system_capital_to_user.sql'
+    `);
+
+    if (migrationCheck.rows.length > 0) {
+      console.log('✅ Capital migration already applied');
+      return;
+    }
+
+    console.log('🔄 Running auto-migration: Migrating system capital to primary user...');
+
+    // Check if 'system' capital exists
+    const systemCapital = await pool.query(`
+      SELECT COUNT(*) as count FROM portfolio_capital WHERE user_id = 'system'
+    `);
+
+    if (systemCapital.rows[0].count === '0') {
+      console.log('⏭️  No system capital found - skipping migration');
+      // Mark as applied anyway
+      await pool.query(`
+        INSERT INTO schema_migrations (filename, applied_at)
+        VALUES ('020_migrate_system_capital_to_user.sql', NOW())
+      `);
+      return;
+    }
+
+    // Migrate 'system' to primary user
+    await pool.query(`
+      UPDATE portfolio_capital
+      SET user_id = 'ketanjoshisahs@gmail.com'
+      WHERE user_id = 'system'
+    `);
+
+    console.log('✅ Migrated system capital to ketanjoshisahs@gmail.com');
+
+    // Add NOT NULL constraint
+    try {
+      await pool.query(`
+        ALTER TABLE portfolio_capital ALTER COLUMN user_id SET NOT NULL
+      `);
+      console.log('✅ Added NOT NULL constraint to user_id');
+    } catch (err) {
+      // Constraint might already exist
+      console.log('ℹ️  NOT NULL constraint may already exist');
+    }
+
+    // Mark migration as applied
+    await pool.query(`
+      INSERT INTO schema_migrations (filename, applied_at)
+      VALUES ('020_migrate_system_capital_to_user.sql', NOW())
+    `);
+
+    console.log('✅ Capital migration complete!');
+
+  } catch (error) {
+    console.error('❌ Capital migration error:', error.message);
+    // Don't throw - let server continue starting
+  }
+}
+
 // Database operations
 const TradeDB = {
   // Initialize database on module load
   async init() {
     await initializeDatabase();
+    await migrateSystemCapitalToUser();  // Auto-migrate on startup
   },
   
   // Check if database is connected
