@@ -596,6 +596,7 @@ class AccountPage {
         const currencySymbol = this.getCurrencySymbol(sub.currency);
         const nextBillingDate = new Date(sub.subscription_end_date);
         const daysUntilRenewal = Math.ceil((nextBillingDate - new Date()) / (1000 * 60 * 60 * 24));
+        const amountPaid = parseFloat(sub.amount_paid) || 0;
 
         const statusClass = isTrial ? 'trial' : isActive ? 'active' : isCancelled ? 'cancelled' : 'expired';
         const statusBadgeHTML = `
@@ -654,9 +655,9 @@ class AccountPage {
                 <div class="hero-subscription-header">
                     <div class="hero-plan-info">
                         <h2>${sub.plan_name}</h2>
-                        ${sub.amount_paid > 0 ? `
+                        ${amountPaid > 0 ? `
                             <div class="plan-price">
-                                <span class="currency">${currencySymbol}</span>${sub.amount_paid.toFixed(2)}
+                                <span class="currency">${currencySymbol}</span>${amountPaid.toFixed(2)}
                                 <span class="currency">/ ${sub.billing_period || 'month'}</span>
                             </div>
                         ` : '<div class="plan-price">Free Trial</div>'}
@@ -746,13 +747,14 @@ class AccountPage {
 
         const currencySymbol = this.getCurrencySymbol(sub.currency);
         const nextBillingDate = new Date(sub.subscription_end_date);
+        const amountPaid = parseFloat(sub.amount_paid) || 0;
 
         const html = `
             <div class="subscription-card">
                 <div class="plan-name-large">${sub.plan_name}</div>
-                ${sub.amount_paid > 0 ? `
+                ${amountPaid > 0 ? `
                     <div class="plan-price-large">
-                        ${currencySymbol}${sub.amount_paid.toFixed(2)} / ${sub.billing_period || 'month'}
+                        ${currencySymbol}${amountPaid.toFixed(2)} / ${sub.billing_period || 'month'}
                     </div>
                 ` : ''}
 
