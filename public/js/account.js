@@ -538,15 +538,15 @@ class AccountPage {
             // Store admin status
             this.isAdmin = data.data.isAdmin || false;
 
-            if (data.success && data.data.hasSubscription) {
+            // Admin always gets admin status, regardless of subscription records
+            if (this.isAdmin) {
+                document.getElementById('subscription-hero').innerHTML = this.renderAdminStatus();
+                document.getElementById('subscription-full-details').innerHTML = this.renderAdminStatus();
+            } else if (data.success && data.data.hasSubscription) {
                 this.subscription = data.data.subscription;
                 this.renderHeroSubscriptionCard();
                 this.renderFullSubscriptionDetails();
                 this.renderQuickStats();
-            } else if (this.isAdmin) {
-                // Admin with no subscription - show admin status
-                document.getElementById('subscription-hero').innerHTML = this.renderAdminStatus();
-                document.getElementById('subscription-full-details').innerHTML = this.renderAdminStatus();
             } else {
                 document.getElementById('subscription-hero').innerHTML = this.renderNoSubscription();
                 document.getElementById('subscription-full-details').innerHTML = this.renderNoSubscription();
