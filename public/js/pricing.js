@@ -112,9 +112,7 @@ class PricingPage {
                 <ul class="plan-features">
                     ${features.map(feature => `
                         <li>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="check-icon">
-                                <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
+                            <span class="material-icons check-icon">check_circle</span>
                             <span>${feature}</span>
                         </li>
                     `).join('')}
@@ -266,9 +264,9 @@ class PricingPage {
                     <div class="trial-badge">90-Day Trial</div>
                 </div>
                 <ul class="plan-features">
-                    <li><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="check-icon"><polyline points="20 6 9 17 4 12"></polyline></svg><span>90-day full access</span></li>
-                    <li><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="check-icon"><polyline points="20 6 9 17 4 12"></polyline></svg><span>Unlimited signals</span></li>
-                    <li><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="check-icon"><polyline points="20 6 9 17 4 12"></polyline></svg><span>Telegram notifications</span></li>
+                    <li><span class="material-icons check-icon">check_circle</span><span>90-day full access</span></li>
+                    <li><span class="material-icons check-icon">check_circle</span><span>Unlimited signals</span></li>
+                    <li><span class="material-icons check-icon">check_circle</span><span>Telegram notifications</span></li>
                 </ul>
                 <button class="plan-cta secondary" onclick="window.location.href='/login.html'">Start Free Trial</button>
             </div>
@@ -283,9 +281,9 @@ class PricingPage {
                     <span class="price-period">/month</span>
                 </div>
                 <ul class="plan-features">
-                    <li><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="check-icon"><polyline points="20 6 9 17 4 12"></polyline></svg><span>Unlimited signals</span></li>
-                    <li><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="check-icon"><polyline points="20 6 9 17 4 12"></polyline></svg><span>Real-time notifications</span></li>
-                    <li><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="check-icon"><polyline points="20 6 9 17 4 12"></polyline></svg><span>20 custom alerts</span></li>
+                    <li><span class="material-icons check-icon">check_circle</span><span>Unlimited signals</span></li>
+                    <li><span class="material-icons check-icon">check_circle</span><span>Real-time notifications</span></li>
+                    <li><span class="material-icons check-icon">check_circle</span><span>20 custom alerts</span></li>
                 </ul>
                 <button class="plan-cta" onclick="window.location.href='/login.html'">Get Started</button>
             </div>
@@ -299,9 +297,9 @@ class PricingPage {
                     <span class="price-period">/month</span>
                 </div>
                 <ul class="plan-features">
-                    <li><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="check-icon"><polyline points="20 6 9 17 4 12"></polyline></svg><span>Everything in Basic</span></li>
-                    <li><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="check-icon"><polyline points="20 6 9 17 4 12"></polyline></svg><span>API access</span></li>
-                    <li><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="check-icon"><polyline points="20 6 9 17 4 12"></polyline></svg><span>Priority support</span></li>
+                    <li><span class="material-icons check-icon">check_circle</span><span>Everything in Basic</span></li>
+                    <li><span class="material-icons check-icon">check_circle</span><span>API access</span></li>
+                    <li><span class="material-icons check-icon">check_circle</span><span>Priority support</span></li>
                 </ul>
                 <button class="plan-cta" onclick="window.location.href='/login.html'">Get Started</button>
             </div>

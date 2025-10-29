@@ -10437,9 +10437,10 @@ body.light-theme .stripe-element {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: var(--spacing-xl);
-    max-width: 1200px;
+    max-width: 800px; /* Optimized for 2-tier layout */
     margin: var(--spacing-3xl) auto;
     padding: 0 var(--spacing-lg);
+    justify-items: center; /* Center cards horizontally */
 }
 
 /* ===== 4. Pricing Card ===== */
@@ -10917,7 +10918,7 @@ body.light-theme .stripe-element {
 
 @media (min-width: 1025px) {
     .pricing-plans {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(2, 1fr); /* 2-tier layout: Explorer & Trader */
     }
 }
 
