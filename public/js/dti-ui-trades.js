@@ -165,13 +165,12 @@ function displayBuyingOpportunities() {
                 const plPercentClass = trade.currentPlPercent >= 0 ? 'positive' : 'negative';
                 const plPercent = trade.currentPlPercent ? trade.currentPlPercent.toFixed(2) : '0.00';
                 
-                // Get index display name for multi-index scan
-                const indexDisplay = scanType !== 'current' ? 
-                    `<span class="stock-index-badge">${DTIUI.getIndexDisplayNameFromSymbol(stock.symbol)}</span>` : '';
-                
+                // Get market indicator based on symbol
+                const market = getMarketFromSymbol(stock.symbol);
+
                 // Get the appropriate currency symbol for this specific stock
                 const stockCurrencySymbol = getCurrencySymbolForDisplay(stock.symbol);
-                
+
                 // Get the win rate for this stock
                 const winRate = stockWinRates[stock.symbol] || 0;
                 const winRateClass = winRate > 75 ? 'high-conviction' : winRate >= 50 ? 'moderate-conviction' : 'low-conviction';
@@ -179,8 +178,11 @@ function displayBuyingOpportunities() {
                 section += `
                     <div class="opportunity-card ${levelClass}" style="opacity: 0; transform: translateY(20px);" data-index="${index}">
                         <div class="opportunity-header">
-                            <div class="stock-name">${stock.name}${indexDisplay}</div>
-                            <div class="stock-symbol ${DTIBacktester.currentStockIndex}">${stock.symbol}</div>
+                            <div class="stock-name">${stock.name}</div>
+                            <div class="stock-badges">
+                                <span class="market-badge">${market}</span>
+                                <span class="stock-symbol ${DTIBacktester.currentStockIndex}">${stock.symbol}</span>
+                            </div>
                         </div>
                         <div class="opportunity-details">
                             <div class="detail-row">

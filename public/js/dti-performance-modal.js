@@ -378,15 +378,13 @@ DTIUI.PerformanceModal = (function() {
      */
     function updateModalContent() {
         const { allStocksData, indexName } = window.performanceModalData;
-        
+
         // Filter entry month trades for current offset
         let entryMonthTrades = filterEntryMonthTrades(allStocksData, currentMonthOffset);
-        
-        // For "All Global Stocks", filter only high conviction trades
+
+        // Always filter only high conviction trades for all scan types
+        entryMonthTrades = filterHighConvictionTrades(entryMonthTrades, allStocksData);
         const isAllGlobalIndices = indexName === 'All Global Stocks';
-        if (isAllGlobalIndices) {
-            entryMonthTrades = filterHighConvictionTrades(entryMonthTrades, allStocksData);
-        }
         
         const metrics = calculatePerformanceMetrics(entryMonthTrades, allStocksData);
         const { entryMonthName, currentMonthName, prevMonthName, nextMonthName, monthsAgo } = getEntryMonthRange();
@@ -440,15 +438,11 @@ DTIUI.PerformanceModal = (function() {
             </div>
         ` : '';
 
-        // Build trades list HTML split by conviction level
+        // Build trades list HTML - only high conviction trades
         let tradesListHTML = '';
         if (entryMonthTrades.length > 0) {
-            // Group trades by conviction level
-            const highConvictionTrades = [];
-            const moderateConvictionTrades = [];
-            const lowConvictionTrades = [];
-
-            entryMonthTrades.forEach(({ stock, trade }) => {
+            // Calculate win rates for all trades
+            const tradesWithWinRates = entryMonthTrades.map(({ stock, trade }) => {
                 // Calculate stock win rate from historical trades
                 const stockData = allStocksData.find(data => data.stock.name === stock.name);
                 let winRate = 0;
@@ -461,24 +455,14 @@ DTIUI.PerformanceModal = (function() {
                     }
                 }
 
-                // Categorize by conviction level
-                const tradeWithWinRate = { stock, trade, winRate };
-                if (winRate > 75) {
-                    highConvictionTrades.push(tradeWithWinRate);
-                } else if (winRate >= 50) {
-                    moderateConvictionTrades.push(tradeWithWinRate);
-                } else {
-                    lowConvictionTrades.push(tradeWithWinRate);
-                }
+                return { stock, trade, winRate };
             });
 
-            // Helper function to generate table HTML for a conviction level
-            const generateConvictionTable = (trades, convictionClass, convictionTitle) => {
-                if (trades.length === 0) return '';
-
-                return `
-                    <div class="performance-section ${convictionClass}">
-                        <h4 class="performance-section-title">${convictionTitle} (${trades.length})</h4>
+            // Generate HTML for high conviction trades only
+            tradesListHTML = `
+                <div class="performance-trades-sections">
+                    <div class="performance-section high-conviction">
+                        <h4 class="performance-section-title">High Conviction Trades (${tradesWithWinRates.length})</h4>
                         <table class="performance-trades-table">
                             <thead>
                                 <tr>
@@ -494,7 +478,7 @@ DTIUI.PerformanceModal = (function() {
                                 </tr>
                             </thead>
                             <tbody>
-                                ${trades.map(({ stock, trade, winRate }) => {
+                                ${tradesWithWinRates.map(({ stock, trade, winRate }) => {
                                     return `
                                     <tr class="${trade.plPercent >= 0 ? 'profit' : (trade.plPercent < 0 ? 'loss' : 'neutral')} ${trade.exitMonthClass}">
                                         <td>${stock.name}</td>
@@ -511,24 +495,12 @@ DTIUI.PerformanceModal = (function() {
                             </tbody>
                         </table>
                     </div>
-                `;
-            };
-
-            // Generate HTML for each conviction level
-            tradesListHTML = `
-                <div class="performance-trades-sections">
-                    ${generateConvictionTable(highConvictionTrades, 'high-conviction', 'High Conviction Trades')}
-                    ${generateConvictionTable(moderateConvictionTrades, 'moderate-conviction', 'Moderate Conviction Trades')}
-                    ${generateConvictionTable(lowConvictionTrades, 'low-conviction', 'Low Conviction Trades')}
                 </div>
             `;
         } else {
             tradesListHTML = `
                 <div class="no-trades-message">
-                    <p>${isAllGlobalIndices ? 
-                        `No high conviction trading signals were generated across global indices in ${entryMonthName}.` : 
-                        `No trading signals were generated for ${indexName} stocks in ${entryMonthName}.`
-                    }</p>
+                    <p>No high conviction trading signals were generated for ${indexName} in ${entryMonthName}.</p>
                 </div>
             `;
         }
@@ -568,15 +540,8 @@ DTIUI.PerformanceModal = (function() {
             <div class="modal-body">
                 <div class="performance-summary">
                     <p class="summary-intro">
-                        ${isAllGlobalIndices ? 
-                            `This strategy generated <strong>${metrics.totalTrades}</strong> high conviction trading signals across all global indices in <strong>${entryMonthName}</strong>. 
-                            ${metrics.completedTrades > 0 ? `Of these, <strong>${metrics.completedTrades}</strong> trades have been completed and <strong>${metrics.activeTrades}</strong> are still active.` : ''}` 
-                            : 
-                            `This strategy generated <strong>${metrics.convictionCounts.high}</strong> high conviction trades, 
-                            <strong>${metrics.convictionCounts.moderate}</strong> moderate conviction trades, and 
-                            <strong>${metrics.convictionCounts.low}</strong> low conviction trading signals for ${indexName} stocks in <strong>${entryMonthName}</strong>. 
-                            ${metrics.completedTrades > 0 ? `Of these, <strong>${metrics.completedTrades}</strong> trades have been completed and <strong>${metrics.activeTrades}</strong> are still active.` : ''}`
-                        }
+                        This strategy generated <strong>${metrics.totalTrades}</strong> high conviction trading signals for ${indexName} in <strong>${entryMonthName}</strong>.
+                        ${metrics.completedTrades > 0 ? `Of these, <strong>${metrics.completedTrades}</strong> trades have been completed and <strong>${metrics.activeTrades}</strong> are still active.` : ''}
                     </p>
                     
                     ${metrics.totalTrades > 0 ? `
@@ -633,146 +598,6 @@ DTIUI.PerformanceModal = (function() {
                         </div>
                         
                         <div class="analysis-sections">
-                            <!-- Conviction Performance Analysis -->
-                            ${!isAllGlobalIndices ? `
-                            <div class="conviction-performance-analysis">
-                                <h4>Performance by Conviction Level</h4>
-                                <div class="conviction-performance-cards">
-                                    ${metrics.convictionMetrics.high.totalTrades > 0 ? `
-                                        <div class="conviction-perf-card high-conviction">
-                                            <h5>High Conviction Trades</h5>
-                                            <div class="conviction-metrics-grid">
-                                                <div class="metric-item">
-                                                    <span class="metric-label">Total Trades:</span>
-                                                    <span class="metric-value">${metrics.convictionMetrics.high.totalTrades}</span>
-                                                </div>
-                                                <div class="metric-item">
-                                                    <span class="metric-label">Win Rate:</span>
-                                                    <span class="metric-value">${metrics.convictionMetrics.high.winRate}%</span>
-                                                </div>
-                                                <div class="metric-item">
-                                                    <span class="metric-label">Profitable:</span>
-                                                    <span class="metric-value profit">${metrics.convictionMetrics.high.profitableTrades}</span>
-                                                </div>
-                                                <div class="metric-item">
-                                                    <span class="metric-label">Loss:</span>
-                                                    <span class="metric-value loss">${metrics.convictionMetrics.high.lossTrades}</span>
-                                                </div>
-                                                ${metrics.convictionMetrics.high.activeTrades > 0 ? `
-                                                    <div class="metric-item">
-                                                        <span class="metric-label">Active:</span>
-                                                        <span class="metric-value active">${metrics.convictionMetrics.high.activeTrades}</span>
-                                                    </div>
-                                                ` : ''}
-                                                <div class="metric-item">
-                                                    <span class="metric-label">Avg Profit:</span>
-                                                    <span class="metric-value profit">+${metrics.convictionMetrics.high.avgProfit}%</span>
-                                                </div>
-                                                <div class="metric-item">
-                                                    <span class="metric-label">Avg Loss:</span>
-                                                    <span class="metric-value loss">${metrics.convictionMetrics.high.avgLoss}%</span>
-                                                </div>
-                                                <div class="metric-item total">
-                                                    <span class="metric-label">Total Return:</span>
-                                                    <span class="metric-value ${metrics.convictionMetrics.high.totalReturn >= 0 ? 'profit' : 'loss'}">
-                                                        ${metrics.convictionMetrics.high.totalReturn >= 0 ? '+' : ''}${metrics.convictionMetrics.high.totalReturn}%
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ` : ''}
-                                    
-                                    ${metrics.convictionMetrics.moderate.totalTrades > 0 ? `
-                                        <div class="conviction-perf-card moderate-conviction">
-                                            <h5>Moderate Conviction Trades</h5>
-                                            <div class="conviction-metrics-grid">
-                                                <div class="metric-item">
-                                                    <span class="metric-label">Total Trades:</span>
-                                                    <span class="metric-value">${metrics.convictionMetrics.moderate.totalTrades}</span>
-                                                </div>
-                                                <div class="metric-item">
-                                                    <span class="metric-label">Win Rate:</span>
-                                                    <span class="metric-value">${metrics.convictionMetrics.moderate.winRate}%</span>
-                                                </div>
-                                                <div class="metric-item">
-                                                    <span class="metric-label">Profitable:</span>
-                                                    <span class="metric-value profit">${metrics.convictionMetrics.moderate.profitableTrades}</span>
-                                                </div>
-                                                <div class="metric-item">
-                                                    <span class="metric-label">Loss:</span>
-                                                    <span class="metric-value loss">${metrics.convictionMetrics.moderate.lossTrades}</span>
-                                                </div>
-                                                ${metrics.convictionMetrics.moderate.activeTrades > 0 ? `
-                                                    <div class="metric-item">
-                                                        <span class="metric-label">Active:</span>
-                                                        <span class="metric-value active">${metrics.convictionMetrics.moderate.activeTrades}</span>
-                                                    </div>
-                                                ` : ''}
-                                                <div class="metric-item">
-                                                    <span class="metric-label">Avg Profit:</span>
-                                                    <span class="metric-value profit">+${metrics.convictionMetrics.moderate.avgProfit}%</span>
-                                                </div>
-                                                <div class="metric-item">
-                                                    <span class="metric-label">Avg Loss:</span>
-                                                    <span class="metric-value loss">${metrics.convictionMetrics.moderate.avgLoss}%</span>
-                                                </div>
-                                                <div class="metric-item total">
-                                                    <span class="metric-label">Total Return:</span>
-                                                    <span class="metric-value ${metrics.convictionMetrics.moderate.totalReturn >= 0 ? 'profit' : 'loss'}">
-                                                        ${metrics.convictionMetrics.moderate.totalReturn >= 0 ? '+' : ''}${metrics.convictionMetrics.moderate.totalReturn}%
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ` : ''}
-                                    
-                                    ${metrics.convictionMetrics.low.totalTrades > 0 ? `
-                                        <div class="conviction-perf-card low-conviction">
-                                            <h5>Low Conviction Trades</h5>
-                                            <div class="conviction-metrics-grid">
-                                                <div class="metric-item">
-                                                    <span class="metric-label">Total Trades:</span>
-                                                    <span class="metric-value">${metrics.convictionMetrics.low.totalTrades}</span>
-                                                </div>
-                                                <div class="metric-item">
-                                                    <span class="metric-label">Win Rate:</span>
-                                                    <span class="metric-value">${metrics.convictionMetrics.low.winRate}%</span>
-                                                </div>
-                                                <div class="metric-item">
-                                                    <span class="metric-label">Profitable:</span>
-                                                    <span class="metric-value profit">${metrics.convictionMetrics.low.profitableTrades}</span>
-                                                </div>
-                                                <div class="metric-item">
-                                                    <span class="metric-label">Loss:</span>
-                                                    <span class="metric-value loss">${metrics.convictionMetrics.low.lossTrades}</span>
-                                                </div>
-                                                ${metrics.convictionMetrics.low.activeTrades > 0 ? `
-                                                    <div class="metric-item">
-                                                        <span class="metric-label">Active:</span>
-                                                        <span class="metric-value active">${metrics.convictionMetrics.low.activeTrades}</span>
-                                                    </div>
-                                                ` : ''}
-                                                <div class="metric-item">
-                                                    <span class="metric-label">Avg Profit:</span>
-                                                    <span class="metric-value profit">+${metrics.convictionMetrics.low.avgProfit}%</span>
-                                                </div>
-                                                <div class="metric-item">
-                                                    <span class="metric-label">Avg Loss:</span>
-                                                    <span class="metric-value loss">${metrics.convictionMetrics.low.avgLoss}%</span>
-                                                </div>
-                                                <div class="metric-item total">
-                                                    <span class="metric-label">Total Return:</span>
-                                                    <span class="metric-value ${metrics.convictionMetrics.low.totalReturn >= 0 ? 'profit' : 'loss'}">
-                                                        ${metrics.convictionMetrics.low.totalReturn >= 0 ? '+' : ''}${metrics.convictionMetrics.low.totalReturn}%
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ` : ''}
-                                </div>
-                            </div>
-                            ` : ''}
-                            
                             ${exitTimelineHTML}
                             ${exitReasonsHTML}
                         </div>
