@@ -3259,17 +3259,17 @@ a .material-icons {
     flex: 1 1 auto;
 }
 
-/* Selector containers (scan type, period) - don't need to grow much */
-#stock-index-selector-container,
-#period-selector-container {
+/* Scan type selector container - compact size */
+#stock-index-selector-container {
     flex: 0 1 auto;
-    max-width: 250px;
+    max-width: 300px;
+    min-width: 250px;
 }
 
-/* Button container - needs more space for long button text */
+/* Button container - takes remaining space for long button text */
 #batch-process-container {
     flex: 1 1 auto;
-    min-width: 220px;
+    min-width: 250px;
 }
 
 .control-group label {
@@ -3325,13 +3325,12 @@ a .material-icons {
         min-width: 180px;
     }
 
-    #stock-index-selector-container,
-    #period-selector-container {
-        max-width: 220px;
+    #stock-index-selector-container {
+        max-width: 250px;
     }
 
     #batch-process-container {
-        min-width: 200px;
+        min-width: 220px;
     }
 }
 
@@ -3356,7 +3355,6 @@ a .material-icons {
     }
 
     #stock-index-selector-container,
-    #period-selector-container,
     #batch-process-container {
         max-width: 100%;
         min-width: 100%;

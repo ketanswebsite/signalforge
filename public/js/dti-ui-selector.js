@@ -134,52 +134,10 @@ DTIUI.StockSelector = (function() {
         // Create scan type selector
         const scanTypeSelector = createScanTypeSelector();
 
-        // Add the period selector
-        const periodDiv = document.createElement('div');
-        periodDiv.className = 'parameter-group';
-
-        const periodLabel = document.createElement('label');
-        periodLabel.htmlFor = 'period-selector';
-        periodLabel.textContent = 'Data Period';
-
-        const periodSelect = document.createElement('select');
-        periodSelect.id = 'period-selector';
-
-        // Add period options
-        const periods = [
-            { value: '1mo', text: '1 Month' },
-            { value: '3mo', text: '3 Months' },
-            { value: '6mo', text: '6 Months' },
-            { value: '1y', text: '1 Year' },
-            { value: '2y', text: '2 Years' },
-            { value: '5y', text: '5 Years' },
-            { value: 'max', text: 'Max Available' }
-        ];
-
-        periods.forEach(period => {
-            const option = document.createElement('option');
-            option.value = period.value;
-            option.textContent = period.text;
-            if (period.value === '5y') {
-                option.selected = true;
-            }
-            periodSelect.appendChild(option);
-        });
-
-        periodDiv.appendChild(periodLabel);
-        periodDiv.appendChild(periodSelect);
-
-        // Append elements to the new scan control panel containers
+        // Append scan type selector to container
         const scanTypeContainer = document.getElementById('stock-index-selector-container');
-        const periodContainer = document.getElementById('period-selector-container');
-
-        // Add scan type selector and period selector to their respective containers
         if (scanTypeContainer) {
             scanTypeContainer.appendChild(scanTypeSelector);
-        }
-
-        if (periodContainer) {
-            periodContainer.appendChild(periodDiv);
         }
 
         // Add batch process button
