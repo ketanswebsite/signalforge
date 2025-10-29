@@ -126,7 +126,17 @@ DTIUI.Charts = (function() {
      */
     function createChartsInternal(dates, prices, dti, sevenDayDTIData, ohlcData) {
         try {
-        
+
+        // Check if Chart.js library is loaded
+        if (typeof Chart === 'undefined') {
+            console.error('[CHART ERROR] Chart.js library not loaded');
+            DTIBacktester.utils.showNotification('Chart library not loaded. Please refresh the page.', 'error');
+            return;
+        }
+
+        console.log('[CHART FIX] Starting chart creation');
+        console.log('[CHART FIX] Chart.js version:', Chart.version);
+
         const daily7DayDTI = sevenDayDTIData.daily7DayDTI;
         
         // Get trades for chart markers
@@ -508,6 +518,8 @@ DTIUI.Charts = (function() {
         // Create Enhanced Price Chart with dynamic background and professional styling
         const priceCanvasElement = document.getElementById('price-chart');
         if (!priceCanvasElement) {
+            console.error('[CHART ERROR] Price chart canvas element not found in DOM');
+            DTIBacktester.utils.showNotification('Unable to load price chart. Canvas element missing.', 'error');
             return;
         }
         const priceCtx = priceCanvasElement.getContext('2d');
@@ -775,6 +787,8 @@ DTIUI.Charts = (function() {
         // Create Enhanced Daily DTI Chart
         const dtiCanvasElement = document.getElementById('dti-chart');
         if (!dtiCanvasElement) {
+            console.error('[CHART ERROR] DTI chart canvas element not found in DOM');
+            DTIBacktester.utils.showNotification('Unable to load DTI chart. Canvas element missing.', 'error');
             return;
         }
         const dtiCtx = dtiCanvasElement.getContext('2d');
@@ -852,6 +866,8 @@ DTIUI.Charts = (function() {
         // Create Enhanced 7-Day DTI Chart
         const weeklyCanvasElement = document.getElementById('weekly-dti-chart');
         if (!weeklyCanvasElement) {
+            console.error('[CHART ERROR] Weekly DTI chart canvas element not found in DOM');
+            DTIBacktester.utils.showNotification('Unable to load weekly DTI chart. Canvas element missing.', 'error');
             return;
         }
         const sevenDayDTICtx = weeklyCanvasElement.getContext('2d');

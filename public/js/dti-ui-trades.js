@@ -329,9 +329,28 @@ function displayBuyingOpportunities() {
 
                 // Find which index this stock belongs to
                 const indexIdentifier = DTIUI.getIndexIdentifierFromSymbol(symbol);
+                console.log('[VIEW DETAILS ERROR CHECK] Index identifier for', symbol, ':', indexIdentifier);
 
                 // Set the index selector to the correct index
                 const indexSelector = document.getElementById('index-selector');
+                console.log('[VIEW DETAILS ERROR CHECK] Index selector found:', !!indexSelector);
+
+                if (!indexIdentifier) {
+                    console.error('[VIEW DETAILS ERROR] Could not find index for symbol:', symbol);
+                    DTIBacktester.utils.showNotification(`Cannot find index for ${symbol}. Please scan for opportunities first.`, 'error');
+                    DTIUI.isViewingOpportunityDetails = false;
+                    clearTimeout(clearFlagTimer);
+                    return false;
+                }
+
+                if (!indexSelector) {
+                    console.error('[VIEW DETAILS ERROR] Index selector element not found in DOM');
+                    DTIBacktester.utils.showNotification('Index selector not found. Please refresh the page.', 'error');
+                    DTIUI.isViewingOpportunityDetails = false;
+                    clearTimeout(clearFlagTimer);
+                    return false;
+                }
+
                 if (indexSelector && indexIdentifier) {
                     indexSelector.value = indexIdentifier;
                     // Trigger the change event to update the stock selector
@@ -342,8 +361,19 @@ function displayBuyingOpportunities() {
                     setTimeout(async () => {
                         // Now find the selected stock in the updated dropdown
                         const stockSelector = document.getElementById('stock-selector');
+                        console.log('[VIEW DETAILS ERROR CHECK] Stock selector found:', !!stockSelector);
+
+                        if (!stockSelector) {
+                            console.error('[VIEW DETAILS ERROR] Stock selector element not found in DOM');
+                            DTIBacktester.utils.showNotification('Stock selector not found. Please refresh the page.', 'error');
+                            DTIUI.isViewingOpportunityDetails = false;
+                            clearTimeout(clearFlagTimer);
+                            return;
+                        }
+
                         if (stockSelector) {
                             stockSelector.value = symbol;
+                            console.log('[VIEW DETAILS ERROR CHECK] Stock selector value set to:', symbol);
 
                             // Direct data processing without CSV simulation
                             // Wrap everything in a timeout handler to catch stuck operations

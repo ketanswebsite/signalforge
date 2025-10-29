@@ -1,6 +1,6 @@
 /**
  * Unified Navigation Bar
- * Combines all navigation items (Signal Management, Telegram, Profile, etc.) into a single navbar
+ * Combines all navigation items (Opportunities, Trades, Telegram, Profile, etc.) into a single navbar
  * Desktop: Horizontal navbar with all items
  * Mobile: Hamburger menu with slide-out drawer
  */
@@ -45,18 +45,18 @@
                     <div class="navbar-links">
                         <a href="/index.html" class="nav-item ${currentPage === 'index.html' ? 'active' : ''}">
                             <span class="material-icons nav-icon icon-sm" aria-hidden="true">analytics</span>
-                            <span>DTI Backtest</span>
+                            <span>Opportunities</span>
                         </a>
 
                         <a href="/trades.html" class="nav-item ${currentPage === 'trades.html' ? 'active' : ''}">
                             <span class="material-icons nav-icon icon-sm" aria-hidden="true">notifications_active</span>
-                            <span>Signal Management</span>
+                            <span>Trades</span>
                             <span class="nav-badge" id="nav-trades-count">0</span>
                         </a>
 
                         <a href="/portfolio-backtest.html" class="nav-item ${currentPage === 'portfolio-backtest.html' ? 'active' : ''}">
                             <span class="material-icons nav-icon icon-sm" aria-hidden="true">assessment</span>
-                            <span>Backtested Chart</span>
+                            <span>Backtested Simulation</span>
                         </a>
 
                         <a href="/telegram-subscribe.html" class="nav-item ${currentPage === 'telegram-subscribe.html' ? 'active' : ''}">
@@ -130,16 +130,16 @@
                 <div class="drawer-nav">
                     <a href="/index.html" class="drawer-nav-item ${currentPage === 'index.html' ? 'active' : ''}">
                         <span class="material-icons nav-icon icon-sm" aria-hidden="true">analytics</span>
-                        <span>DTI Backtest</span>
+                        <span>Opportunities</span>
                     </a>
                     <a href="/trades.html" class="drawer-nav-item ${currentPage === 'trades.html' ? 'active' : ''}">
                         <span class="material-icons nav-icon icon-sm" aria-hidden="true">notifications_active</span>
-                        <span>Signal Management</span>
+                        <span>Trades</span>
                         <span class="drawer-badge" id="drawer-trades-count">0</span>
                     </a>
                     <a href="/portfolio-backtest.html" class="drawer-nav-item ${currentPage === 'portfolio-backtest.html' ? 'active' : ''}">
                         <span class="material-icons nav-icon icon-sm" aria-hidden="true">assessment</span>
-                        <span>Backtested Chart</span>
+                        <span>Backtested Simulation</span>
                     </a>
                     <a href="/telegram-subscribe.html" class="drawer-nav-item ${currentPage === 'telegram-subscribe.html' ? 'active' : ''}">
                         <span class="material-icons nav-icon icon-sm" aria-hidden="true">send</span>
