@@ -327,208 +327,158 @@ function displayBuyingOpportunities() {
                     console.log('[VIEW DETAILS FIX] View details flag cleared');
                 }, 5000);
 
-                // Find which index this stock belongs to
-                const indexIdentifier = DTIUI.getIndexIdentifierFromSymbol(symbol);
-                console.log('[VIEW DETAILS ERROR CHECK] Index identifier for', symbol, ':', indexIdentifier);
-
-                // Set the index selector to the correct index
-                const indexSelector = document.getElementById('index-selector');
-                console.log('[VIEW DETAILS ERROR CHECK] Index selector found:', !!indexSelector);
-
-                if (!indexIdentifier) {
-                    console.error('[VIEW DETAILS ERROR] Could not find index for symbol:', symbol);
-                    DTIBacktester.utils.showNotification(`Cannot find index for ${symbol}. Please scan for opportunities first.`, 'error');
+                // Direct data processing without selector manipulation
+                // The new simplified UI doesn't use index/stock selectors
+                // Wrap everything in a timeout handler to catch stuck operations
+                const operationTimeout = setTimeout(() => {
+                    console.error('[VIEW DETAILS FIX] Operation timed out after 30 seconds');
+                    DTIBacktester.utils.showNotification(`Operation timed out for ${symbol}. Please try again.`, 'error');
                     DTIUI.isViewingOpportunityDetails = false;
                     clearTimeout(clearFlagTimer);
-                    return false;
-                }
+                }, 30000); // 30 second timeout
 
-                if (!indexSelector) {
-                    console.error('[VIEW DETAILS ERROR] Index selector element not found in DOM');
-                    DTIBacktester.utils.showNotification('Index selector not found. Please refresh the page.', 'error');
-                    DTIUI.isViewingOpportunityDetails = false;
+                try {
+                    console.log('[VIEW DETAILS DEBUG] Starting View Details workflow for symbol:', symbol);
+
+                    // Show loading state
+                    console.log('[VIEW DETAILS DEBUG] Showing loading notification');
+                    DTIBacktester.utils.showNotification(`Loading data for ${symbol}...`, 'info');
+
+                    // Use default period of 5 years (simplified UI no longer has period selector)
+                    const period = '5y';
+                    console.log('[VIEW DETAILS DEBUG] Using period:', period);
+
+                    // Find the selected stock object
+                    console.log('[VIEW DETAILS DEBUG] Finding selected stock');
+                    console.log('[VIEW DETAILS DEBUG] DTIData available:', typeof DTIData !== 'undefined');
+                    console.log('[VIEW DETAILS DEBUG] DTIData.getCurrentStockList available:', typeof DTIData?.getCurrentStockList === 'function');
+
+                    const selectedStock = DTIData.getCurrentStockList().find(s => s.symbol === symbol);
+                    console.log('[VIEW DETAILS DEBUG] Selected stock found:', selectedStock);
+
+                    if (!selectedStock) {
+                        throw new Error('Stock not found in list');
+                    }
+
+                    // Fetch stock data
+                    console.log('[VIEW DETAILS DEBUG] Fetching stock data for:', symbol);
+                    console.log('[VIEW DETAILS DEBUG] DTIData.fetchStockData available:', typeof DTIData?.fetchStockData === 'function');
+
+                    const data = await DTIData.fetchStockData(symbol, period);
+                    console.log('[VIEW DETAILS DEBUG] Stock data fetched:', data ? 'SUCCESS' : 'FAILED');
+                    console.log('[VIEW DETAILS DEBUG] Data type:', typeof data);
+
+                    if (!data) {
+                        throw new Error('Failed to fetch stock data');
+                    }
+
+                    // Process data directly
+                    console.log('[VIEW DETAILS DEBUG] Processing stock CSV data');
+                    console.log('[VIEW DETAILS DEBUG] DTIData.processStockCSV available:', typeof DTIData?.processStockCSV === 'function');
+
+                    const processedData = DTIData.processStockCSV(data, selectedStock);
+                    console.log('[VIEW DETAILS DEBUG] Data processed:', processedData ? 'SUCCESS' : 'FAILED');
+                    console.log('[VIEW DETAILS DEBUG] Processed data keys:', processedData ? Object.keys(processedData) : 'null');
+                    console.log('[VIEW DETAILS DEBUG] Processed data trades count:', processedData?.trades?.length);
+
+                    if (!processedData) {
+                        throw new Error('Failed to process stock data');
+                    }
+
+                    // Combine all trades (completed + active)
+                    console.log('[VIEW DETAILS DEBUG] Combining trades');
+                    const allTrades = [...processedData.trades];
+                    if (processedData.activeTrade) {
+                        allTrades.push(processedData.activeTrade);
+                    }
+                    console.log('[VIEW DETAILS DEBUG] Total trades (including active):', allTrades.length);
+
+                    // Store OHLC data globally for chart access
+                    console.log('[VIEW DETAILS DEBUG] Storing OHLC data');
+                    console.log('[VIEW DETAILS DEBUG] Checking for real OHLC data - open:', processedData.open ? 'available' : 'not available');
+
+                    // Use real OHLC data if available, otherwise fall back to close prices
+                    DTIBacktester.ohlcData = {
+                        dates: processedData.dates,
+                        open: processedData.open || processedData.close,
+                        high: processedData.high || processedData.close,
+                        low: processedData.low || processedData.close,
+                        close: processedData.close
+                    };
+                    console.log('[VIEW DETAILS DEBUG] OHLC data stored, dates count:', processedData.dates?.length);
+                    console.log('[VIEW DETAILS DEBUG] Using real OHLC data:', processedData.open ? 'YES' : 'NO (fallback to close)');
+
+                    // Display results
+                    console.log('[VIEW DETAILS DEBUG] Creating charts');
+                    console.log('[VIEW DETAILS DEBUG] DTIUI available:', typeof DTIUI !== 'undefined');
+                    console.log('[VIEW DETAILS DEBUG] DTIUI.createCharts available:', typeof DTIUI?.createCharts === 'function');
+
+                    // Prepare OHLC data object for chart creation
+                    const ohlcDataForCharts = {
+                        open: processedData.open || processedData.close,
+                        high: processedData.high || processedData.close,
+                        low: processedData.low || processedData.close
+                    };
+                    console.log('[VIEW DETAILS DEBUG] Passing OHLC data to createCharts:', ohlcDataForCharts.open ? 'with real OHLC data' : 'with close prices');
+
+                    DTIUI.createCharts(
+                        processedData.dates,
+                        processedData.close,
+                        processedData.dti,
+                        processedData.sevenDayDTIData,
+                        ohlcDataForCharts
+                    );
+                    console.log('[VIEW DETAILS DEBUG] Charts created successfully');
+
+                    console.log('[VIEW DETAILS DEBUG] Displaying statistics');
+                    console.log('[VIEW DETAILS DEBUG] DTIUI.displayStatistics available:', typeof DTIUI?.displayStatistics === 'function');
+                    DTIUI.displayStatistics(allTrades);
+                    console.log('[VIEW DETAILS DEBUG] Statistics displayed');
+
+                    console.log('[VIEW DETAILS DEBUG] Displaying trades table');
+                    console.log('[VIEW DETAILS DEBUG] DTIUI.displayTrades available:', typeof DTIUI?.displayTrades === 'function');
+                    DTIUI.displayTrades(allTrades);
+                    console.log('[VIEW DETAILS DEBUG] Trades table displayed');
+
+                    // Clear the timeout since operation completed successfully
+                    clearTimeout(operationTimeout);
                     clearTimeout(clearFlagTimer);
-                    return false;
-                }
 
-                if (indexSelector && indexIdentifier) {
-                    indexSelector.value = indexIdentifier;
-                    // Trigger the change event to update the stock selector
-                    const event = new Event('change');
-                    indexSelector.dispatchEvent(event);
+                    // Show success notification
+                    console.log('[VIEW DETAILS DEBUG] Showing success notification');
+                    DTIBacktester.utils.showNotification(`Loaded ${symbol} successfully`, 'success');
 
-                    // Wait for the stock selector to update before continuing
-                    setTimeout(async () => {
-                        // Now find the selected stock in the updated dropdown
-                        const stockSelector = document.getElementById('stock-selector');
-                        console.log('[VIEW DETAILS ERROR CHECK] Stock selector found:', !!stockSelector);
+                    // Scroll to top on mobile to see the results
+                    if (window.innerWidth <= 768) {
+                        console.log('[VIEW DETAILS DEBUG] Scrolling to top (mobile)');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
 
-                        if (!stockSelector) {
-                            console.error('[VIEW DETAILS ERROR] Stock selector element not found in DOM');
-                            DTIBacktester.utils.showNotification('Stock selector not found. Please refresh the page.', 'error');
-                            DTIUI.isViewingOpportunityDetails = false;
-                            clearTimeout(clearFlagTimer);
-                            return;
-                        }
+                    console.log('[VIEW DETAILS DEBUG] View Details workflow completed successfully');
 
-                        if (stockSelector) {
-                            stockSelector.value = symbol;
-                            console.log('[VIEW DETAILS ERROR CHECK] Stock selector value set to:', symbol);
+                } catch (error) {
+                    // Clear the timeout on error
+                    clearTimeout(operationTimeout);
+                    clearTimeout(clearFlagTimer);
 
-                            // Direct data processing without CSV simulation
-                            // Wrap everything in a timeout handler to catch stuck operations
-                            const operationTimeout = setTimeout(() => {
-                                console.error('[VIEW DETAILS FIX] Operation timed out after 30 seconds');
-                                DTIBacktester.utils.showNotification(`Operation timed out for ${symbol}. Please try again.`, 'error');
-                                DTIUI.isViewingOpportunityDetails = false;
-                            }, 30000); // 30 second timeout
+                    console.error('[VIEW DETAILS DEBUG] Error caught:', error);
+                    console.error('[VIEW DETAILS DEBUG] Error message:', error.message);
+                    console.error('[VIEW DETAILS DEBUG] Error stack:', error.stack);
 
-                            try {
-                                console.log('[VIEW DETAILS DEBUG] Starting View Details workflow for symbol:', symbol);
+                    // Provide more specific error messages
+                    let errorMessage = error.message;
+                    if (error.message.includes('Stock not found')) {
+                        errorMessage = `Stock ${symbol} not found in the list. Please try scanning again.`;
+                    } else if (error.message.includes('Failed to fetch')) {
+                        errorMessage = `Failed to fetch data for ${symbol}. Please check your connection and try again.`;
+                    } else if (error.message.includes('Failed to process')) {
+                        errorMessage = `Failed to process data for ${symbol}. The data may be incomplete or invalid.`;
+                    }
 
-                                // Show loading state
-                                console.log('[VIEW DETAILS DEBUG] Showing loading notification');
-                                DTIBacktester.utils.showNotification(`Loading data for ${symbol}...`, 'info');
+                    DTIBacktester.utils.showNotification(`Error: ${errorMessage}`, 'error');
 
-                                // Get period from selector
-                                console.log('[VIEW DETAILS DEBUG] Getting period selector');
-                                const periodSelector = document.getElementById('period-selector');
-                                const period = periodSelector ? periodSelector.value : '5y';
-                                console.log('[VIEW DETAILS DEBUG] Period:', period);
-
-                                // Find the selected stock object
-                                console.log('[VIEW DETAILS DEBUG] Finding selected stock');
-                                console.log('[VIEW DETAILS DEBUG] DTIData available:', typeof DTIData !== 'undefined');
-                                console.log('[VIEW DETAILS DEBUG] DTIData.getCurrentStockList available:', typeof DTIData?.getCurrentStockList === 'function');
-
-                                const selectedStock = DTIData.getCurrentStockList().find(s => s.symbol === symbol);
-                                console.log('[VIEW DETAILS DEBUG] Selected stock found:', selectedStock);
-
-                                if (!selectedStock) {
-                                    throw new Error('Stock not found in list');
-                                }
-
-                                // Fetch stock data
-                                console.log('[VIEW DETAILS DEBUG] Fetching stock data for:', symbol);
-                                console.log('[VIEW DETAILS DEBUG] DTIData.fetchStockData available:', typeof DTIData?.fetchStockData === 'function');
-
-                                const data = await DTIData.fetchStockData(symbol, period);
-                                console.log('[VIEW DETAILS DEBUG] Stock data fetched:', data ? 'SUCCESS' : 'FAILED');
-                                console.log('[VIEW DETAILS DEBUG] Data type:', typeof data);
-
-                                if (!data) {
-                                    throw new Error('Failed to fetch stock data');
-                                }
-
-                                // Process data directly
-                                console.log('[VIEW DETAILS DEBUG] Processing stock CSV data');
-                                console.log('[VIEW DETAILS DEBUG] DTIData.processStockCSV available:', typeof DTIData?.processStockCSV === 'function');
-
-                                const processedData = DTIData.processStockCSV(data, selectedStock);
-                                console.log('[VIEW DETAILS DEBUG] Data processed:', processedData ? 'SUCCESS' : 'FAILED');
-                                console.log('[VIEW DETAILS DEBUG] Processed data keys:', processedData ? Object.keys(processedData) : 'null');
-                                console.log('[VIEW DETAILS DEBUG] Processed data trades count:', processedData?.trades?.length);
-
-                                if (!processedData) {
-                                    throw new Error('Failed to process stock data');
-                                }
-
-                                // Combine all trades (completed + active)
-                                console.log('[VIEW DETAILS DEBUG] Combining trades');
-                                const allTrades = [...processedData.trades];
-                                if (processedData.activeTrade) {
-                                    allTrades.push(processedData.activeTrade);
-                                }
-                                console.log('[VIEW DETAILS DEBUG] Total trades (including active):', allTrades.length);
-
-                                // Store OHLC data globally for chart access
-                                console.log('[VIEW DETAILS DEBUG] Storing OHLC data');
-                                console.log('[VIEW DETAILS DEBUG] Checking for real OHLC data - open:', processedData.open ? 'available' : 'not available');
-
-                                // Use real OHLC data if available, otherwise fall back to close prices
-                                DTIBacktester.ohlcData = {
-                                    dates: processedData.dates,
-                                    open: processedData.open || processedData.close,
-                                    high: processedData.high || processedData.close,
-                                    low: processedData.low || processedData.close,
-                                    close: processedData.close
-                                };
-                                console.log('[VIEW DETAILS DEBUG] OHLC data stored, dates count:', processedData.dates?.length);
-                                console.log('[VIEW DETAILS DEBUG] Using real OHLC data:', processedData.open ? 'YES' : 'NO (fallback to close)');
-
-                                // Display results
-                                console.log('[VIEW DETAILS DEBUG] Creating charts');
-                                console.log('[VIEW DETAILS DEBUG] DTIUI available:', typeof DTIUI !== 'undefined');
-                                console.log('[VIEW DETAILS DEBUG] DTIUI.createCharts available:', typeof DTIUI?.createCharts === 'function');
-
-                                // Prepare OHLC data object for chart creation
-                                const ohlcDataForCharts = {
-                                    open: processedData.open || processedData.close,
-                                    high: processedData.high || processedData.close,
-                                    low: processedData.low || processedData.close
-                                };
-                                console.log('[VIEW DETAILS DEBUG] Passing OHLC data to createCharts:', ohlcDataForCharts.open ? 'with real OHLC data' : 'with close prices');
-
-                                DTIUI.createCharts(
-                                    processedData.dates,
-                                    processedData.close,
-                                    processedData.dti,
-                                    processedData.sevenDayDTIData,
-                                    ohlcDataForCharts
-                                );
-                                console.log('[VIEW DETAILS DEBUG] Charts created successfully');
-
-                                console.log('[VIEW DETAILS DEBUG] Displaying statistics');
-                                console.log('[VIEW DETAILS DEBUG] DTIUI.displayStatistics available:', typeof DTIUI?.displayStatistics === 'function');
-                                DTIUI.displayStatistics(allTrades);
-                                console.log('[VIEW DETAILS DEBUG] Statistics displayed');
-
-                                console.log('[VIEW DETAILS DEBUG] Displaying trades table');
-                                console.log('[VIEW DETAILS DEBUG] DTIUI.displayTrades available:', typeof DTIUI?.displayTrades === 'function');
-                                DTIUI.displayTrades(allTrades);
-                                console.log('[VIEW DETAILS DEBUG] Trades table displayed');
-
-                                // Clear the timeout since operation completed successfully
-                                clearTimeout(operationTimeout);
-
-                                // Show success notification
-                                console.log('[VIEW DETAILS DEBUG] Showing success notification');
-                                DTIBacktester.utils.showNotification(`Loaded ${symbol} successfully`, 'success');
-
-                                // Scroll to top on mobile to see the results
-                                if (window.innerWidth <= 768) {
-                                    console.log('[VIEW DETAILS DEBUG] Scrolling to top (mobile)');
-                                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                                }
-
-                                console.log('[VIEW DETAILS DEBUG] View Details workflow completed successfully');
-
-                            } catch (error) {
-                                // Clear the timeout on error
-                                clearTimeout(operationTimeout);
-
-                                console.error('[VIEW DETAILS DEBUG] Error caught:', error);
-                                console.error('[VIEW DETAILS DEBUG] Error message:', error.message);
-                                console.error('[VIEW DETAILS DEBUG] Error stack:', error.stack);
-
-                                // Provide more specific error messages
-                                let errorMessage = error.message;
-                                if (error.message.includes('Stock not found')) {
-                                    errorMessage = `Stock ${symbol} not found in the list. Please try scanning again.`;
-                                } else if (error.message.includes('Failed to fetch')) {
-                                    errorMessage = `Failed to fetch data for ${symbol}. Please check your connection and try again.`;
-                                } else if (error.message.includes('Failed to process')) {
-                                    errorMessage = `Failed to process data for ${symbol}. The data may be incomplete or invalid.`;
-                                }
-
-                                DTIBacktester.utils.showNotification(`Error: ${errorMessage}`, 'error');
-
-                                // Clear the flag on error to allow future operations
-                                DTIUI.isViewingOpportunityDetails = false;
-                                clearTimeout(clearFlagTimer);
-                            }
-                        }
-                    }, 100); // Short delay to ensure the stock selector has updated
+                    // Clear the flag on error to allow future operations
+                    DTIUI.isViewingOpportunityDetails = false;
                 }
             });
         });
