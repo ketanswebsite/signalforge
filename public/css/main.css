@@ -3107,6 +3107,109 @@ a .material-icons {
 }
 
 /* ========================================
+   METHODOLOGY INTRODUCTION
+   ======================================== */
+.methodology-intro {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-gold);
+    display: flex;
+    gap: var(--spacing-lg);
+    align-items: flex-start;
+    transition: all var(--transition-base);
+}
+
+.methodology-intro:hover {
+    box-shadow: var(--shadow-gold-hover);
+    border-color: var(--border-color-hover);
+}
+
+.methodology-intro .intro-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gradient-primary);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-gold);
+}
+
+.methodology-intro .intro-icon .material-icons {
+    color: var(--bg-primary);
+    font-size: 2rem;
+}
+
+.methodology-intro .intro-content {
+    flex: 1;
+}
+
+.methodology-intro .intro-content p {
+    margin: 0 0 var(--spacing-sm) 0;
+    line-height: 1.6;
+    color: var(--text-primary);
+    font-size: 0.9375rem;
+}
+
+.methodology-intro .intro-content p:last-child {
+    margin-bottom: 0;
+}
+
+.methodology-intro .intro-content em {
+    font-style: italic;
+    color: var(--accent-gold);
+    font-weight: 500;
+}
+
+.methodology-intro .intro-note {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: rgba(212, 175, 55, 0.1);
+    border-left: 3px solid var(--accent-gold);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-top: var(--spacing-md);
+}
+
+.methodology-intro .intro-note .material-icons {
+    color: var(--accent-gold);
+    font-size: 1.25rem;
+}
+
+/* Responsive methodology intro */
+@media (max-width: 768px) {
+    .methodology-intro {
+        flex-direction: column;
+        padding: var(--spacing-lg);
+    }
+
+    .methodology-intro .intro-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .methodology-intro .intro-icon .material-icons {
+        font-size: 1.5rem;
+    }
+
+    .methodology-intro .intro-content p {
+        font-size: 0.875rem;
+    }
+
+    .methodology-intro .intro-note {
+        font-size: 0.8125rem;
+    }
+}
+
+/* ========================================
    SCAN CONTROL PANEL
    ======================================== */
 .scan-control-panel {
