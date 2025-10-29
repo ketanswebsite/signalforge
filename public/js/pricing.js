@@ -125,13 +125,10 @@ class PricingPage {
 
     getPlanDescription(plan) {
         const descriptions = {
-            'FREE': 'Perfect for trying out SutrAlgo',
-            'BASIC_UK': 'Essential features for individual traders',
-            'PRO_UK': 'Advanced features for serious traders',
-            'BASIC_US': 'Essential features for individual traders',
-            'PRO_US': 'Advanced features for serious traders',
-            'BASIC_IN': 'Essential features for individual traders',
-            'PRO_IN': 'Advanced features for serious traders'
+            'FREE': 'Start your trading journey with 90 days unlimited access',
+            'BASIC_UK': 'Unlimited access forever. Trade with confidence.',
+            'BASIC_US': 'Unlimited access forever. Trade with confidence.',
+            'BASIC_IN': 'Unlimited access forever. Trade with confidence.'
         };
 
         return descriptions[plan.plan_code] || 'Get started with SutrAlgo';
@@ -140,36 +137,27 @@ class PricingPage {
     getPlanFeatures(plan) {
         const isFree = plan.plan_code === 'FREE';
         const isBasic = plan.plan_code.includes('BASIC');
-        const isPro = plan.plan_code.includes('PRO');
 
         const features = [];
 
         if (isFree) {
-            features.push('90-day full access to all features');
-            features.push('Unlimited trading signals');
-            features.push('Real-time Telegram notifications');
-            features.push('All technical indicators');
-            features.push('5 years historical data');
-            features.push('Basic backtesting');
-            features.push('5 custom alerts');
-            features.push('Email support');
+            features.push('✨ 90 days of unlimited access');
+            features.push('📊 Unlimited trading signals');
+            features.push('🔔 Real-time Telegram alerts');
+            features.push('📈 All technical indicators');
+            features.push('🔄 Unlimited backtesting');
+            features.push('🌍 India, UK & US markets');
+            features.push('📧 Email support');
+            features.push('⚠️ Requires Trader upgrade after 90 days');
         } else if (isBasic) {
-            features.push('Unlimited trading signals');
-            features.push('Real-time Telegram notifications');
-            features.push('All technical indicators');
-            features.push('5 years historical data');
-            features.push('Basic backtesting');
-            features.push('20 custom alerts');
-            features.push('Email support');
-        } else if (isPro) {
-            features.push('Everything in Basic');
-            features.push('Priority Telegram notifications');
-            features.push('10 years historical data');
-            features.push('Advanced backtesting & portfolio analysis');
-            features.push('Unlimited custom alerts');
-            features.push('API access');
-            features.push('Priority email support');
-            features.push('Early access to new features');
+            features.push('♾️ Unlimited access forever');
+            features.push('📊 Unlimited trading signals');
+            features.push('🔔 Real-time Telegram alerts');
+            features.push('📈 All technical indicators');
+            features.push('🔄 Unlimited backtesting');
+            features.push('🌍 India, UK & US markets');
+            features.push('🎯 Unlimited custom alerts');
+            features.push('📧 Email support');
         }
 
         return features;

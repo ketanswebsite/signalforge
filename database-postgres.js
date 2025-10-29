@@ -1261,6 +1261,66 @@ async function dismissOldPendingSignals() {
   }
 }
 
+// Migration function to rename pricing plans to Explorer/Trader
+async function renamePricingPlans() {
+  if (!dbConnected || !pool) return;
+
+  try {
+    // Check if migration already applied
+    const migrationCheck = await pool.query(`
+      SELECT * FROM schema_migrations
+      WHERE filename = '023_rename_pricing_plans_explorer_trader.sql'
+    `);
+
+    if (migrationCheck.rows.length > 0) {
+      return;
+    }
+
+    console.log('🎨 Running auto-migration: Renaming pricing plans to Explorer/Trader...');
+
+    // Rename FREE plan to Explorer
+    const freeResult = await pool.query(`
+      UPDATE subscription_plans
+      SET plan_name = 'Explorer',
+          updated_at = NOW()
+      WHERE plan_code = 'FREE'
+      RETURNING id, plan_name, plan_code
+    `);
+
+    if (freeResult.rows.length > 0) {
+      console.log(`   ✓ Renamed FREE → Explorer`);
+    }
+
+    // Rename all BASIC plans to Trader
+    const basicResult = await pool.query(`
+      UPDATE subscription_plans
+      SET plan_name = 'Trader',
+          updated_at = NOW()
+      WHERE plan_code LIKE 'BASIC_%'
+      RETURNING id, plan_name, plan_code
+    `);
+
+    if (basicResult.rows.length > 0) {
+      console.log(`   ✓ Renamed ${basicResult.rows.length} BASIC plans → Trader`);
+      basicResult.rows.forEach(r => {
+        console.log(`      • ${r.plan_code} → Trader`);
+      });
+    }
+
+    // Mark migration as applied
+    await pool.query(`
+      INSERT INTO schema_migrations (filename, applied_at)
+      VALUES ('023_rename_pricing_plans_explorer_trader.sql', NOW())
+    `);
+
+    console.log('✅ Pricing plan renaming complete!');
+
+  } catch (error) {
+    console.error('❌ Pricing plan renaming error:', error.message);
+    // Don't throw - let server continue starting
+  }
+}
+
 // Database operations
 const TradeDB = {
   // Initialize database on module load
@@ -1269,6 +1329,7 @@ const TradeDB = {
     await migrateSystemCapitalToUser();  // Auto-migrate on startup
     await backfillExistingUsersCapital(); // Backfill capital for existing users
     await dismissOldPendingSignals(); // Dismiss old pending signals from Oct 28
+    await renamePricingPlans(); // Rename plans to Explorer/Trader
   },
   
   // Check if database is connected
