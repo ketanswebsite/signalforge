@@ -303,7 +303,7 @@ function displayBuyingOpportunities() {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             const eventType = isIOS ? 'touchend' : 'click';
             
-            button.addEventListener(eventType, function(e) {
+            button.addEventListener(eventType, async function(e) {
                 // Prevent default action and stop propagation to avoid page refresh on mobile
                 e.preventDefault();
                 e.stopPropagation();
