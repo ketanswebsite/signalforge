@@ -83,15 +83,19 @@ class PricingPage {
 
     createPlanCard(plan, isFeatured = false) {
         const isFree = plan.plan_code === 'FREE';
+        const isBasic = plan.plan_code.includes('BASIC');
         const currencySymbol = this.getCurrencySymbol(plan.currency);
         const price = parseFloat(plan.price_monthly) || 0;
         const features = this.getPlanFeatures(plan);
+
+        // Display unified plan names: Explorer or Trader (regardless of region suffix in DB)
+        const displayName = isFree ? 'Explorer' : (isBasic ? 'Trader' : plan.plan_name);
 
         return `
             <div class="pricing-card ${isFeatured ? 'featured' : ''}">
                 ${isFeatured ? '<div class="featured-badge">Most Popular</div>' : ''}
 
-                <div class="plan-name">${plan.plan_name}</div>
+                <div class="plan-name">${displayName}</div>
                 <div class="plan-description">${this.getPlanDescription(plan)}</div>
 
                 <div class="plan-price">

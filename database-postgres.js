@@ -1266,17 +1266,17 @@ async function renamePricingPlans() {
   if (!dbConnected || !pool) return;
 
   try {
-    // Check if migration already applied
+    // Check if migration already applied (using v2 migration name for retry)
     const migrationCheck = await pool.query(`
       SELECT * FROM schema_migrations
-      WHERE filename = '023_rename_pricing_plans_explorer_trader.sql'
+      WHERE filename = '023_rename_pricing_plans_explorer_trader_v2.sql'
     `);
 
     if (migrationCheck.rows.length > 0) {
       return;
     }
 
-    console.log('🎨 Running auto-migration: Renaming pricing plans to Explorer/Trader...');
+    console.log('🎨 Running auto-migration: Renaming pricing plans to Explorer/Trader (fixed)...');
 
     // Rename FREE plan to Explorer
     const freeResult = await pool.query(`
@@ -1291,26 +1291,44 @@ async function renamePricingPlans() {
       console.log(`   ✓ Renamed FREE → Explorer`);
     }
 
-    // Rename all BASIC plans to Trader
-    const basicResult = await pool.query(`
+    // Rename BASIC plans to region-specific Trader names (unique constraint requirement)
+    const basicUKResult = await pool.query(`
       UPDATE subscription_plans
-      SET plan_name = 'Trader',
+      SET plan_name = 'Trader - UK',
           updated_at = NOW()
-      WHERE plan_code LIKE 'BASIC_%'
+      WHERE plan_code = 'BASIC_UK'
       RETURNING id, plan_name, plan_code
     `);
-
-    if (basicResult.rows.length > 0) {
-      console.log(`   ✓ Renamed ${basicResult.rows.length} BASIC plans → Trader`);
-      basicResult.rows.forEach(r => {
-        console.log(`      • ${r.plan_code} → Trader`);
-      });
+    if (basicUKResult.rows.length > 0) {
+      console.log(`   ✓ Renamed BASIC_UK → Trader - UK`);
     }
 
-    // Mark migration as applied
+    const basicUSResult = await pool.query(`
+      UPDATE subscription_plans
+      SET plan_name = 'Trader - US',
+          updated_at = NOW()
+      WHERE plan_code = 'BASIC_US'
+      RETURNING id, plan_name, plan_code
+    `);
+    if (basicUSResult.rows.length > 0) {
+      console.log(`   ✓ Renamed BASIC_US → Trader - US`);
+    }
+
+    const basicINResult = await pool.query(`
+      UPDATE subscription_plans
+      SET plan_name = 'Trader - India',
+          updated_at = NOW()
+      WHERE plan_code = 'BASIC_IN'
+      RETURNING id, plan_name, plan_code
+    `);
+    if (basicINResult.rows.length > 0) {
+      console.log(`   ✓ Renamed BASIC_IN → Trader - India`);
+    }
+
+    // Mark migration as applied (v2 to allow retry after fix)
     await pool.query(`
       INSERT INTO schema_migrations (filename, applied_at)
-      VALUES ('023_rename_pricing_plans_explorer_trader.sql', NOW())
+      VALUES ('023_rename_pricing_plans_explorer_trader_v2.sql', NOW())
     `);
 
     console.log('✅ Pricing plan renaming complete!');
