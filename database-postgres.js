@@ -1198,6 +1198,69 @@ async function backfillExistingUsersCapital() {
   }
 }
 
+// Migration function to dismiss old pending signals from October 28
+async function dismissOldPendingSignals() {
+  if (!dbConnected || !pool) return;
+
+  try {
+    // Check if migration already applied
+    const migrationCheck = await pool.query(`
+      SELECT * FROM schema_migrations
+      WHERE filename = '022_dismiss_old_pending_signals_oct28.sql'
+    `);
+
+    if (migrationCheck.rows.length > 0) {
+      return;
+    }
+
+    console.log('🧹 Running auto-migration: Dismissing old pending signals from October 28...');
+
+    // Check if there are any pending signals from Oct 28
+    const pendingSignals = await pool.query(`
+      SELECT COUNT(*) as count FROM pending_signals
+      WHERE signal_date = '2025-10-28'
+        AND status = 'pending'
+    `);
+
+    if (pendingSignals.rows[0].count === '0') {
+      console.log('⏭️  No old pending signals found - skipping dismissal');
+      // Mark as applied anyway
+      await pool.query(`
+        INSERT INTO schema_migrations (filename, applied_at)
+        VALUES ('022_dismiss_old_pending_signals_oct28.sql', NOW())
+      `);
+      return;
+    }
+
+    // Dismiss all pending signals from Oct 28
+    const result = await pool.query(`
+      UPDATE pending_signals
+      SET status = 'dismissed',
+          dismissed_at = NOW()
+      WHERE signal_date = '2025-10-28'
+        AND status = 'pending'
+      RETURNING id, symbol, market
+    `);
+
+    console.log(`✅ Dismissed ${result.rows.length} old pending signals from October 28:`);
+    result.rows.forEach(s => {
+      console.log(`   • ID ${s.id}: ${s.symbol} (${s.market})`);
+    });
+
+    // Mark migration as applied
+    await pool.query(`
+      INSERT INTO schema_migrations (filename, applied_at)
+      VALUES ('022_dismiss_old_pending_signals_oct28.sql', NOW())
+    `);
+
+    console.log('✅ Old signals dismissal complete!');
+
+  } catch (error) {
+    console.error('❌ Old signals dismissal error:', error.message);
+    // Don't throw - let server continue starting
+  }
+}
+
 // Database operations
 const TradeDB = {
   // Initialize database on module load
@@ -1205,6 +1268,7 @@ const TradeDB = {
     await initializeDatabase();
     await migrateSystemCapitalToUser();  // Auto-migrate on startup
     await backfillExistingUsersCapital(); // Backfill capital for existing users
+    await dismissOldPendingSignals(); // Dismiss old pending signals from Oct 28
   },
   
   // Check if database is connected
