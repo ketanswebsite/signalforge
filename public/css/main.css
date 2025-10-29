@@ -3256,7 +3256,20 @@ a .material-icons {
     flex-direction: column;
     gap: var(--spacing-sm);
     min-width: 200px;
-    flex: 1;
+    flex: 1 1 auto;
+}
+
+/* Selector containers (scan type, period) - don't need to grow much */
+#stock-index-selector-container,
+#period-selector-container {
+    flex: 0 1 auto;
+    max-width: 250px;
+}
+
+/* Button container - needs more space for long button text */
+#batch-process-container {
+    flex: 1 1 auto;
+    min-width: 220px;
 }
 
 .control-group label {
@@ -3288,6 +3301,9 @@ a .material-icons {
 
 .control-group button {
     white-space: nowrap;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .scan-status {
@@ -3308,6 +3324,15 @@ a .material-icons {
     .control-group {
         min-width: 180px;
     }
+
+    #stock-index-selector-container,
+    #period-selector-container {
+        max-width: 220px;
+    }
+
+    #batch-process-container {
+        min-width: 200px;
+    }
 }
 
 @media (max-width: 768px) {
@@ -3327,6 +3352,14 @@ a .material-icons {
     .control-group {
         min-width: 100%;
         width: 100%;
+        max-width: 100%;
+    }
+
+    #stock-index-selector-container,
+    #period-selector-container,
+    #batch-process-container {
+        max-width: 100%;
+        min-width: 100%;
     }
 
     .control-group button {
