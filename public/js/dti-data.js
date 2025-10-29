@@ -602,11 +602,18 @@ async function fetchCurrentQuote(symbol) {
                 const updateProgress = (processed, total, successes, errors) => {
                     if (statusDiv) {
                         const percentComplete = Math.round((processed / total) * 100);
+                        statusDiv.style.display = 'block';
+                        statusDiv.className = 'batch-status active';
                         statusDiv.innerHTML = `
-                            <div>Processing ${scanDisplayName} (${stockList.length} stocks): ${processed}/${total}</div>
-                            <div class="progress-bar"><div class="progress" ></div></div>
-                            <div>
-                                ${successes} succeeded, ${errors} failed, ${processed} processed
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <span>Processing ${scanDisplayName} (${stockList.length} stocks)</span>
+                                <strong style="color: var(--accent-gold);">${percentComplete}%</strong>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${percentComplete}%;"></div>
+                            </div>
+                            <div style="margin-top: 0.5rem; font-size: 0.8125rem; color: var(--text-muted);">
+                                ${processed}/${total} stocks • ${successes} succeeded • ${errors} failed
                             </div>
                         `;
                     }
