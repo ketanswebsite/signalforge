@@ -98,56 +98,30 @@
         <!-- Navigation bar will be inserted here by unified-navbar.js -->
 
         <div class="dashboard">
-            <div class="sidebar">
-                <h3 class="sidebar-title">
-                    <span class="material-icons">settings</span>
-                    Strategy Parameters
-                </h3>
+            <!-- Hidden inputs for fixed parameters -->
+            <input type="hidden" id="r" value="14">
+            <input type="hidden" id="s" value="10">
+            <input type="hidden" id="u" value="5">
+            <input type="hidden" id="enable-weekly-dti" value="true">
+            <input type="hidden" id="entry-threshold" value="0">
+            <input type="hidden" id="take-profit" value="8">
+            <input type="hidden" id="stop-loss" value="5">
+            <input type="hidden" id="max-days" value="30">
 
-                <!-- Hidden inputs for fixed parameters -->
-                <input type="hidden" id="r" value="14">
-                <input type="hidden" id="s" value="10">
-                <input type="hidden" id="u" value="5">
-                <input type="hidden" id="enable-weekly-dti" value="true">
-
-                <div class="sidebar-section">
-                    <h4 class="sidebar-section-title">Backtest Parameters</h4>
-                    <div class="param-controls">
-                        <div class="param-group">
-                            <label for="entry-threshold" class="param-label">Entry Threshold</label>
-                            <input type="number" id="entry-threshold" value="0" max="0" class="param-input">
-                            <span class="param-hint">Historical entry point when indicator below this value</span>
-                        </div>
-                        <div class="param-group">
-                            <label for="take-profit" class="param-label">Take Profit (%)</label>
-                            <input type="number" id="take-profit" value="8" min="0" step="0.1" class="param-input">
-                            <span class="param-hint">Historical exit point at this percentage gain</span>
-                        </div>
-                        <div class="param-group">
-                            <label for="stop-loss" class="param-label">Stop Loss (%)</label>
-                            <input type="number" id="stop-loss" value="5" min="0" step="0.1" class="param-input">
-                            <span class="param-hint">Historical exit point at this percentage loss</span>
-                        </div>
-                        <div class="param-group">
-                            <label for="max-days" class="param-label">Max Holding Period (days)</label>
-                            <input type="number" id="max-days" value="30" min="1" class="param-input">
-                            <span class="param-hint">Historical position duration limit for analysis</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="sidebar-section">
-                    <h4 class="sidebar-section-title">Data Source</h4>
-                    <div class="param-controls">
-                        <!-- Stock index and selector will be added here by JavaScript -->
-                        <div id="data-fetch-status" class="param-hint"></div>
-                        <!-- Batch process button will be added here by JavaScript -->
-                        <!-- Batch status indicator will be added here by JavaScript -->
-                    </div>
-                </div>
-            </div>
-            
             <div class="main-content-wrapper">
+                <!-- Scan Control Panel -->
+                <div class="scan-control-panel">
+                    <h2 class="scan-title">
+                        <span class="material-icons">radar</span>
+                        Market Scanner
+                    </h2>
+                    <div class="scan-controls">
+                        <div id="stock-index-selector-container" class="control-group"></div>
+                        <div id="period-selector-container" class="control-group"></div>
+                        <div id="batch-process-container" class="control-group"></div>
+                    </div>
+                    <div id="data-fetch-status" class="scan-status"></div>
+                </div>
                 <!-- App Description and Legal Compliance - AT TOP -->
                 <div class="page-header">
                     <p class="app-description">

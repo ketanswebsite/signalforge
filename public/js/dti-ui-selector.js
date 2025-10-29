@@ -169,23 +169,21 @@ DTIUI.StockSelector = (function() {
         periodDiv.appendChild(periodLabel);
         periodDiv.appendChild(periodSelect);
 
-        // Append elements to the Data Import section
-        const dataImportSection = document.querySelector('.sidebar-section:last-child .param-controls');
+        // Append elements to the new scan control panel containers
+        const scanTypeContainer = document.getElementById('stock-index-selector-container');
+        const periodContainer = document.getElementById('period-selector-container');
 
-        // Add scan type selector and period selector
-        dataImportSection.insertBefore(periodDiv, dataImportSection.firstChild);
-        dataImportSection.insertBefore(scanTypeSelector, dataImportSection.firstChild);
+        // Add scan type selector and period selector to their respective containers
+        if (scanTypeContainer) {
+            scanTypeContainer.appendChild(scanTypeSelector);
+        }
+
+        if (periodContainer) {
+            periodContainer.appendChild(periodDiv);
+        }
 
         // Add batch process button
         addBatchProcessButton();
-
-        // Create status indicator
-        const statusDiv = document.createElement('div');
-        statusDiv.id = 'data-fetch-status';
-        statusDiv.className = 'csv-info';
-        statusDiv.style.display = 'none';
-
-        dataImportSection.appendChild(statusDiv);
     }
 
 
@@ -282,18 +280,20 @@ batchButton.addEventListener('click', async function() {
     }
 });
 
-        
+
         // Add batch status indicator
         const batchStatus = document.createElement('div');
         batchStatus.id = 'batch-status';
         batchStatus.className = 'batch-status';
         batchStatus.style.display = 'none';
 
-        // Append button to the UI
-        const dataImportSection = document.querySelector('.sidebar-section:last-child .param-controls');
-        if (dataImportSection) {
-            dataImportSection.appendChild(batchButton);
-            dataImportSection.appendChild(batchStatus);
+        // Append button to the new batch process container
+        const batchContainer = document.getElementById('batch-process-container');
+        const statusContainer = document.getElementById('data-fetch-status');
+
+        if (batchContainer) {
+            batchContainer.appendChild(batchButton);
+            batchContainer.appendChild(batchStatus);
         }
     }
 
