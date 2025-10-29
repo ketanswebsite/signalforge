@@ -348,17 +348,20 @@ function displayBuyingOpportunities() {
                     const period = '5y';
                     console.log('[VIEW DETAILS DEBUG] Using period:', period);
 
-                    // Find the selected stock object
-                    console.log('[VIEW DETAILS DEBUG] Finding selected stock');
-                    console.log('[VIEW DETAILS DEBUG] DTIData available:', typeof DTIData !== 'undefined');
-                    console.log('[VIEW DETAILS DEBUG] DTIData.getCurrentStockList available:', typeof DTIData?.getCurrentStockList === 'function');
+                    // Find the stock object from the opportunities array (not from current stock list)
+                    console.log('[VIEW DETAILS DEBUG] Finding stock from opportunities array');
+                    console.log('[VIEW DETAILS DEBUG] DTIBacktester.activeTradeOpportunities available:', !!DTIBacktester.activeTradeOpportunities);
+                    console.log('[VIEW DETAILS DEBUG] Opportunities count:', DTIBacktester.activeTradeOpportunities?.length);
 
-                    const selectedStock = DTIData.getCurrentStockList().find(s => s.symbol === symbol);
-                    console.log('[VIEW DETAILS DEBUG] Selected stock found:', selectedStock);
+                    const opportunity = DTIBacktester.activeTradeOpportunities.find(opp => opp.stock.symbol === symbol);
+                    console.log('[VIEW DETAILS DEBUG] Opportunity found:', !!opportunity);
 
-                    if (!selectedStock) {
-                        throw new Error('Stock not found in list');
+                    if (!opportunity) {
+                        throw new Error('Stock not found in opportunities list');
                     }
+
+                    const selectedStock = opportunity.stock;
+                    console.log('[VIEW DETAILS DEBUG] Selected stock:', selectedStock);
 
                     // Fetch stock data
                     console.log('[VIEW DETAILS DEBUG] Fetching stock data for:', symbol);
