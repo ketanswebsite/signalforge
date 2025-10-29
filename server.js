@@ -3442,6 +3442,67 @@ app.post('/api/test-7am-scan', ensureAuthenticatedAPI, ensureSubscriptionActive,
   }
 });
 
+// Dismiss old pending signals - admin endpoint
+app.post('/api/admin/dismiss-old-signals', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.email !== ADMIN_EMAIL) {
+      return res.status(403).json({ error: 'Admin privileges required' });
+    }
+
+    const { date } = req.body;
+
+    if (!date) {
+      return res.status(400).json({ error: 'Date parameter required (format: YYYY-MM-DD)' });
+    }
+
+    console.log(`🧹 [ADMIN] Dismissing old pending signals from ${date}...`);
+
+    // Get signals to dismiss
+    const signals = await TradeDB.pool.query(`
+      SELECT id, symbol, signal_date, market, status
+      FROM pending_signals
+      WHERE signal_date = $1
+        AND status = 'pending'
+      ORDER BY id
+    `, [date]);
+
+    if (signals.rows.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No pending signals found for this date',
+        dismissed: 0
+      });
+    }
+
+    // Dismiss all signals
+    const result = await TradeDB.pool.query(`
+      UPDATE pending_signals
+      SET status = 'dismissed',
+          dismissed_at = NOW()
+      WHERE signal_date = $1
+        AND status = 'pending'
+      RETURNING id, symbol, market
+    `, [date]);
+
+    console.log(`✅ [ADMIN] Dismissed ${result.rows.length} signals from ${date}`);
+    result.rows.forEach(s => {
+      console.log(`   • ID ${s.id}: ${s.symbol} (${s.market})`);
+    });
+
+    res.json({
+      success: true,
+      message: `Dismissed ${result.rows.length} pending signals from ${date}`,
+      dismissed: result.rows.length,
+      signals: result.rows
+    });
+
+  } catch (error) {
+    console.error('❌ [ADMIN] Error dismissing old signals:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Manual execution endpoint - execute pending signals for a market NOW
 app.post('/api/execute-signals/:market', ensureAuthenticatedAPI, async (req, res) => {
   try {
