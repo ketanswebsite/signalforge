@@ -232,15 +232,9 @@ app.post('/api/signals/from-scan', async (req, res) => {
           continue;
         }
 
-        // Check if user already has active position
-        const activePosition = await TradeDB.getActiveTradeBySymbol(signal.symbol);
-        if (activePosition) {
-          duplicates.push({
-            symbol: signal.symbol,
-            reason: 'Already have active position'
-          });
-          continue;
-        }
+        // Note: Removed active position check here - let the 1 PM executor validate in real-time
+        // This allows signals to be stored even if position exists at 7 AM, because it might close before 1 PM
+        // The capital-manager.js validation will properly check limits and duplicates at execution time
 
         // Store signal
         const result = await TradeDB.storePendingSignal(signal);
@@ -252,6 +246,12 @@ app.post('/api/signals/from-scan', async (req, res) => {
           reason: error.message
         });
       }
+    }
+
+    // Log signal storage results for monitoring
+    console.log(`[7 AM Signal Storage] Stored: ${stored.length}, Duplicates: ${duplicates.length}, Errors: ${errors.length}`);
+    if (stored.length > 0) {
+      console.log(`[7 AM Signal Storage] Stored symbols: ${stored.map(s => s.symbol).join(', ')}`);
     }
 
     res.json({
