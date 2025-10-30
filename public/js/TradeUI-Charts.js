@@ -579,8 +579,7 @@ window.TradeUIModules.charts = (function() {
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
-                aspectRatio: 1.5,
+                maintainAspectRatio: false,
                 cutout: '65%',
                 layout: {
                     padding: 20
@@ -755,8 +754,7 @@ window.TradeUIModules.charts = (function() {
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
-                aspectRatio: 2,
+                maintainAspectRatio: false,
                 interaction: {
                     mode: 'index',
                     intersect: false,
@@ -1292,8 +1290,7 @@ window.TradeUIModules.charts = (function() {
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
-                aspectRatio: 2,
+                maintainAspectRatio: false,
                 interaction: {
                     mode: 'index',
                     intersect: false,

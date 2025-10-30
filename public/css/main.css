@@ -3590,12 +3590,16 @@ a .material-icons {
 
 .chart-container {
     width: 100%;
-    min-height: 350px;
+    height: 400px;
+    max-height: 450px;
+    min-height: 300px;
     position: relative;
     background: var(--bg-surface);
     border-radius: var(--radius-md);
     padding: var(--spacing-md) var(--spacing-md) var(--spacing-lg) var(--spacing-md);
     overflow: visible;
+    display: flex;
+    flex-direction: column;
 }
 
 .chart-container h4 {
@@ -3604,12 +3608,15 @@ a .material-icons {
     font-family: var(--font-heading);
     font-size: 1.1rem;
     font-weight: 700;
+    flex-shrink: 0;
 }
 
 /* Ensure canvas elements respect container height */
 .chart-container canvas {
     max-width: 100% !important;
+    max-height: 100% !important;
     margin-bottom: 0.5rem;
+    flex: 1;
 }
 
 /* Chart wrapper for portfolio backtest and other chart displays */
@@ -5692,11 +5699,12 @@ button .spinner {
     /* Base styles from .card */
     background: var(--bg-surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-lg);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
     transition: all var(--transition-base);
     position: relative;
     overflow: hidden;
+    margin-bottom: var(--spacing-sm);
     /* Trade-specific styles */
     cursor: pointer;
 }
@@ -5716,8 +5724,8 @@ button .spinner {
 }
 
 .trade-card:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow-lg);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
     border-color: var(--accent-gold);
 }
 
@@ -5777,12 +5785,35 @@ button .spinner {
 
 .trade-info-label {
     color: var(--text-muted);
+    font-size: 0.75rem;
 }
 
 .trade-info-value {
     color: var(--text-primary);
     font-weight: 600;
     font-family: var(--font-mono);
+    font-size: 0.875rem;
+}
+
+/* Active trades container - 2 column layout on larger screens */
+#active-trades-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+}
+
+@media (min-width: 1024px) {
+    #active-trades-container {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-md);
+    }
+}
+
+@media (min-width: 1440px) {
+    #active-trades-container {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-md);
+    }
 }
 
 /* Trade grid layout */
@@ -6651,14 +6682,14 @@ button .spinner {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: var(--spacing-md);
-    padding-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+    padding-bottom: var(--spacing-sm);
     border-bottom: 1px solid var(--border);
 }
 
 .trade-card-header h4 {
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     color: var(--text-primary);
 }
 
@@ -6680,15 +6711,15 @@ button .spinner {
 
 .trade-info-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-md);
-    margin-bottom: var(--spacing-md);
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
 }
 
 .trade-info-item {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.15rem;
 }
 
 
