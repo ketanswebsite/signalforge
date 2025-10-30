@@ -1,0 +1,411 @@
+/**
+ * Trade Analytics Metric Cards
+ * Compact metric cards with sparklines for analytics dashboard
+ */
+
+const TradeUIMetricCards = (function() {
+    'use strict';
+
+    /**
+     * Render all analytics metric cards
+     */
+    function renderMetricCards(trades) {
+        const container = document.getElementById('analytics-metrics-grid');
+        if (!container) return;
+
+        const metrics = calculateMetrics(trades);
+        container.innerHTML = '';
+
+        const cards = [
+            createMetricCard('Win Rate', metrics.winRate, 'positive', 'trending_up', metrics.winRateTrend, metrics.winRateData),
+            createMetricCard('Total P&L', metrics.totalPL, metrics.totalPL >= 0 ? 'positive' : 'negative', 'account_balance', metrics.plTrend, metrics.plData),
+            createMetricCard('Avg Return', metrics.avgReturn, metrics.avgReturn >= 0 ? 'positive' : 'negative', 'percent', metrics.returnTrend, metrics.returnData),
+            createMetricCard('Total Trades', metrics.totalTrades, 'neutral', 'bar_chart', null, metrics.tradeCountData),
+            createMetricCard('Best Market', metrics.bestMarket.name, 'positive', 'public', `${metrics.bestMarket.winRate}% WR`),
+            createMetricCard('Avg Duration', metrics.avgDuration, 'neutral', 'schedule', `${metrics.avgDuration} days`),
+            createMetricCard('Main Exit', metrics.mainExit.reason, metrics.mainExit.type, 'exit_to_app', `${metrics.mainExit.count} exits`),
+            createMetricCard('Max Drawdown', metrics.maxDrawdown, 'negative', 'trending_down', null, metrics.drawdownData)
+        ];
+
+        cards.forEach(card => container.appendChild(card));
+    }
+
+    /**
+     * Calculate all metrics from trades data
+     */
+    function calculateMetrics(trades) {
+        if (!trades || trades.length === 0) {
+            return getEmptyMetrics();
+        }
+
+        const closedTrades = trades.filter(t => t.status === 'closed');
+        const winningTrades = closedTrades.filter(t => parseFloat(t.pl_percent || 0) > 0);
+        const losingTrades = closedTrades.filter(t => parseFloat(t.pl_percent || 0) < 0);
+
+        // Win Rate
+        const winRate = closedTrades.length > 0
+            ? ((winningTrades.length / closedTrades.length) * 100).toFixed(1) + '%'
+            : '0%';
+
+        // Total P&L
+        const totalPL = closedTrades.reduce((sum, t) => sum + parseFloat(t.pl_amount || 0), 0);
+        const totalPLFormatted = '₹' + totalPL.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+
+        // Average Return
+        const avgReturn = closedTrades.length > 0
+            ? (closedTrades.reduce((sum, t) => sum + parseFloat(t.pl_percent || 0), 0) / closedTrades.length).toFixed(2) + '%'
+            : '0%';
+
+        // Best Market
+        const marketStats = {};
+        closedTrades.forEach(t => {
+            const market = t.market || 'Unknown';
+            if (!marketStats[market]) {
+                marketStats[market] = { wins: 0, total: 0 };
+            }
+            marketStats[market].total++;
+            if (parseFloat(t.pl_percent || 0) > 0) {
+                marketStats[market].wins++;
+            }
+        });
+
+        let bestMarket = { name: 'N/A', winRate: 0 };
+        Object.keys(marketStats).forEach(market => {
+            const winRate = (marketStats[market].wins / marketStats[market].total) * 100;
+            if (winRate > bestMarket.winRate) {
+                bestMarket = { name: market, winRate: winRate.toFixed(0) };
+            }
+        });
+
+        // Average Duration
+        const durations = closedTrades
+            .filter(t => t.entry_date && t.exit_date)
+            .map(t => {
+                const entry = new Date(t.entry_date);
+                const exit = new Date(t.exit_date);
+                return Math.floor((exit - entry) / (1000 * 60 * 60 * 24));
+            });
+        const avgDuration = durations.length > 0
+            ? Math.round(durations.reduce((sum, d) => sum + d, 0) / durations.length)
+            : 0;
+
+        // Main Exit Reason
+        const exitReasons = {};
+        closedTrades.forEach(t => {
+            const reason = t.exit_reason || 'Unknown';
+            exitReasons[reason] = (exitReasons[reason] || 0) + 1;
+        });
+
+        let mainExit = { reason: 'N/A', count: 0, type: 'neutral' };
+        Object.keys(exitReasons).forEach(reason => {
+            if (exitReasons[reason] > mainExit.count) {
+                let type = 'neutral';
+                if (reason.toLowerCase().includes('profit') || reason.toLowerCase().includes('target')) {
+                    type = 'positive';
+                } else if (reason.toLowerCase().includes('stop') || reason.toLowerCase().includes('loss')) {
+                    type = 'negative';
+                }
+                mainExit = {
+                    reason: reason.length > 12 ? reason.substring(0, 12) + '...' : reason,
+                    count: exitReasons[reason],
+                    type: type
+                };
+            }
+        });
+
+        // Max Drawdown
+        const drawdowns = calculateDrawdowns(closedTrades);
+        const maxDrawdown = drawdowns.length > 0
+            ? Math.min(...drawdowns).toFixed(1) + '%'
+            : '0%';
+
+        // Trend data (last 30 days)
+        const last30Days = closedTrades.slice(-30);
+        const winRateData = calculateTrend(last30Days, 'winRate');
+        const plData = calculateTrend(last30Days, 'pl');
+        const returnData = calculateTrend(last30Days, 'return');
+        const tradeCountData = calculateTrend(trades.slice(-30), 'count');
+        const drawdownData = drawdowns.slice(-30);
+
+        // Calculate trends
+        const winRateTrend = winRateData.length >= 2
+            ? (winRateData[winRateData.length - 1] > winRateData[0] ? '+' : '') +
+              ((winRateData[winRateData.length - 1] - winRateData[0])).toFixed(1) + '%'
+            : null;
+
+        const plTrend = plData.length >= 2
+            ? (plData[plData.length - 1] > plData[0] ? '+' : '') +
+              ((plData[plData.length - 1] - plData[0]) / 1000).toFixed(1) + 'K'
+            : null;
+
+        const returnTrend = returnData.length >= 2
+            ? (returnData[returnData.length - 1] > returnData[0] ? '+' : '') +
+              ((returnData[returnData.length - 1] - returnData[0])).toFixed(1) + '%'
+            : null;
+
+        return {
+            winRate,
+            winRateTrend,
+            winRateData,
+            totalPL: totalPLFormatted,
+            plTrend,
+            plData,
+            avgReturn,
+            returnTrend,
+            returnData,
+            totalTrades: trades.length,
+            tradeCountData,
+            bestMarket,
+            avgDuration,
+            mainExit,
+            maxDrawdown,
+            drawdownData
+        };
+    }
+
+    /**
+     * Calculate drawdowns from trades
+     */
+    function calculateDrawdowns(trades) {
+        let peak = 0;
+        let equity = 0;
+        const drawdowns = [];
+
+        trades.forEach(t => {
+            equity += parseFloat(t.pl_amount || 0);
+            if (equity > peak) peak = equity;
+            const drawdown = peak > 0 ? ((equity - peak) / peak) * 100 : 0;
+            drawdowns.push(drawdown);
+        });
+
+        return drawdowns;
+    }
+
+    /**
+     * Calculate trend data for sparklines
+     */
+    function calculateTrend(trades, type) {
+        if (type === 'winRate') {
+            const data = [];
+            let wins = 0, total = 0;
+            trades.forEach(t => {
+                if (t.status === 'closed') {
+                    total++;
+                    if (parseFloat(t.pl_percent || 0) > 0) wins++;
+                    data.push((wins / total) * 100);
+                }
+            });
+            return data;
+        } else if (type === 'pl') {
+            let cumulative = 0;
+            return trades.map(t => {
+                cumulative += parseFloat(t.pl_amount || 0);
+                return cumulative;
+            });
+        } else if (type === 'return') {
+            const data = [];
+            let sum = 0, count = 0;
+            trades.forEach(t => {
+                if (t.status === 'closed') {
+                    sum += parseFloat(t.pl_percent || 0);
+                    count++;
+                    data.push(sum / count);
+                }
+            });
+            return data;
+        } else if (type === 'count') {
+            return trades.map((_, i) => i + 1);
+        }
+        return [];
+    }
+
+    /**
+     * Create a metric card element
+     */
+    function createMetricCard(label, value, valueType, icon, changeText, sparklineData) {
+        const card = document.createElement('div');
+        card.className = 'metric-card';
+
+        const iconHtml = icon ? `<span class="material-icons metric-card-icon">${icon}</span>` : '';
+
+        const sparklineHtml = sparklineData && sparklineData.length > 0
+            ? `<div class="metric-card-sparkline"><canvas id="sparkline-${label.replace(/\s/g, '-').toLowerCase()}"></canvas></div>`
+            : '';
+
+        const changeHtml = changeText
+            ? `<div class="metric-card-change ${valueType}">${changeText}</div>`
+            : '';
+
+        card.innerHTML = `
+            <div class="metric-card-header">
+                <div class="metric-card-label">${label}</div>
+                ${iconHtml}
+            </div>
+            <div class="metric-card-value ${valueType}">${value}</div>
+            ${sparklineData && sparklineData.length > 0 ? `
+            <div class="metric-card-footer">
+                ${changeHtml}
+                ${sparklineHtml}
+            </div>
+            ` : (changeHtml ? `<div class="metric-card-detail">${changeHtml}</div>` : '')}
+        `;
+
+        // Render sparkline after adding to DOM
+        if (sparklineData && sparklineData.length > 0) {
+            setTimeout(() => {
+                renderSparkline(`sparkline-${label.replace(/\s/g, '-').toLowerCase()}`, sparklineData, valueType);
+            }, 100);
+        }
+
+        return card;
+    }
+
+    /**
+     * Render a miniature sparkline chart
+     */
+    function renderSparkline(canvasId, data, type) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        const width = canvas.parentElement.clientWidth;
+        const height = canvas.parentElement.clientHeight;
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const max = Math.max(...data);
+        const min = Math.min(...data);
+        const range = max - min || 1;
+
+        ctx.clearRect(0, 0, width, height);
+        ctx.beginPath();
+        ctx.strokeStyle = type === 'positive' ? '#22C55E' : type === 'negative' ? '#DC2626' : '#D4AF37';
+        ctx.lineWidth = 1.5;
+
+        data.forEach((value, i) => {
+            const x = (i / (data.length - 1)) * width;
+            const y = height - ((value - min) / range) * height;
+
+            if (i === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+
+        ctx.stroke();
+    }
+
+    /**
+     * Render compact calendar heatmap (12 mini grids)
+     */
+    function renderCompactCalendar(trades, year = new Date().getFullYear()) {
+        const container = document.getElementById('compact-calendar-container');
+        if (!container) return;
+
+        container.innerHTML = '<div class="compact-calendar-grid" id="compact-calendar-grid"></div>';
+        const grid = document.getElementById('compact-calendar-grid');
+
+        // Create data map for quick lookup
+        const tradesByDate = {};
+        trades.filter(t => t.exit_date).forEach(t => {
+            const date = new Date(t.exit_date).toISOString().split('T')[0];
+            if (!tradesByDate[date]) {
+                tradesByDate[date] = [];
+            }
+            tradesByDate[date].push(t);
+        });
+
+        // Render 12 months
+        for (let month = 0; month < 12; month++) {
+            const monthGrid = createMonthMiniGrid(year, month, tradesByDate);
+            grid.appendChild(monthGrid);
+        }
+    }
+
+    /**
+     * Create a mini calendar grid for one month
+     */
+    function createMonthMiniGrid(year, month, tradesByDate) {
+        const monthEl = document.createElement('div');
+        monthEl.className = 'month-mini-grid';
+
+        const monthName = new Date(year, month, 1).toLocaleString('default', { month: 'short' });
+        monthEl.innerHTML = `<div class="month-mini-header">${monthName}</div>`;
+
+        const daysGrid = document.createElement('div');
+        daysGrid.className = 'month-mini-days';
+
+        // Add empty cells for days before first day of month
+        const firstDay = new Date(year, month, 1).getDay();
+        for (let i = 0; i < firstDay; i++) {
+            const emptyCell = document.createElement('div');
+            emptyCell.className = 'mini-day-cell empty';
+            daysGrid.appendChild(emptyCell);
+        }
+
+        // Add day cells
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const dayCell = document.createElement('div');
+            dayCell.className = 'mini-day-cell';
+
+            if (tradesByDate[dateStr]) {
+                const dayPL = tradesByDate[dateStr].reduce((sum, t) => sum + parseFloat(t.pl_amount || 0), 0);
+
+                if (dayPL > 0) {
+                    if (dayPL > 1000) dayCell.classList.add('profit-high');
+                    else if (dayPL > 300) dayCell.classList.add('profit-medium');
+                    else dayCell.classList.add('profit-low');
+                } else if (dayPL < 0) {
+                    if (dayPL < -1000) dayCell.classList.add('loss-high');
+                    else if (dayPL < -300) dayCell.classList.add('loss-medium');
+                    else dayCell.classList.add('loss-low');
+                }
+
+                dayCell.title = `${dateStr}: ₹${dayPL.toFixed(2)} (${tradesByDate[dateStr].length} trades)`;
+            } else {
+                dayCell.classList.add('no-trades');
+            }
+
+            daysGrid.appendChild(dayCell);
+        }
+
+        monthEl.appendChild(daysGrid);
+        return monthEl;
+    }
+
+    /**
+     * Get empty metrics for when there's no data
+     */
+    function getEmptyMetrics() {
+        return {
+            winRate: '0%',
+            winRateTrend: null,
+            winRateData: [],
+            totalPL: '₹0',
+            plTrend: null,
+            plData: [],
+            avgReturn: '0%',
+            returnTrend: null,
+            returnData: [],
+            totalTrades: 0,
+            tradeCountData: [],
+            bestMarket: { name: 'N/A', winRate: 0 },
+            avgDuration: 0,
+            mainExit: { reason: 'N/A', count: 0, type: 'neutral' },
+            maxDrawdown: '0%',
+            drawdownData: []
+        };
+    }
+
+    return {
+        renderMetricCards,
+        renderCompactCalendar
+    };
+})();
+
+// Make available globally
+window.TradeUIMetricCards = TradeUIMetricCards;

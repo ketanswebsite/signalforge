@@ -357,8 +357,47 @@
                 <div class="analytics-tab" data-tab="metrics-tab">Advanced Metrics</div>
             </div>
             
-            <!-- Performance Tab -->
+            <!-- Performance Tab - Radical Redesign -->
             <div class="analytics-tab-content active" id="performance-tab">
+                <!-- Key Metrics Grid - 8 Compact Cards -->
+                <div class="analytics-metrics-grid" id="analytics-metrics-grid">
+                    <!-- Will be populated by JS -->
+                </div>
+
+                <!-- Essential Charts Section -->
+                <div class="analytics-charts-compact">
+                    <!-- Monthly Performance Enhanced -->
+                    <div class="analytics-chart-enhanced">
+                        <h4>Monthly Performance Overview</h4>
+                        <canvas id="monthly-performance-chart"></canvas>
+                    </div>
+
+                    <!-- Compact Calendar Heatmap -->
+                    <div class="analytics-chart-enhanced">
+                        <h4>Calendar Performance Heatmap</h4>
+                        <div id="compact-calendar-container"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Market Analysis Tab - Simplified -->
+            <div class="analytics-tab-content" id="market-tab">
+                <div class="chart-row">
+                    <div class="chart-container chart-full">
+                        <h4>Performance by Market</h4>
+                        <canvas id="market-comparison-chart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-row">
+                    <div class="chart-container chart-full">
+                        <h4>Position Size vs Return Analysis</h4>
+                        <canvas id="size-vs-return-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Patterns & Trends Tab - Simplified -->
+            <div class="analytics-tab-content" id="patterns-tab">
                 <div class="chart-row">
                     <div class="chart-container">
                         <h4>Equity Curve</h4>
@@ -371,52 +410,12 @@
                 </div>
                 <div class="chart-row">
                     <div class="chart-container">
-                        <h4>Monthly Performance</h4>
-                        <canvas id="monthly-performance-chart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <h4>Win/Loss Breakdown</h4>
-                        <canvas id="win-loss-pie-chart"></canvas>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Market Analysis Tab -->
-            <div class="analytics-tab-content" id="market-tab">
-                <div class="chart-row">
-                    <div class="chart-container">
-                        <h4>Performance by Market</h4>
-                        <canvas id="market-comparison-chart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <h4>Size vs. Return Analysis</h4>
-                        <canvas id="size-vs-return-chart"></canvas>
-                    </div>
-                </div>
-                <div class="chart-row">
-                    <div class="chart-container chart-full">
-                        <h4>Calendar Performance</h4>
-                        <div id="calendar-heatmap" class="calendar-heatmap"></div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Patterns & Trends Tab -->
-            <div class="analytics-tab-content" id="patterns-tab">
-                <div class="chart-row">
-                    <div class="chart-container">
                         <h4>P&L Distribution</h4>
                         <canvas id="pl-distribution-chart"></canvas>
                     </div>
                     <div class="chart-container">
                         <h4>Holding Period Analysis</h4>
                         <canvas id="holding-period-chart"></canvas>
-                    </div>
-                </div>
-                <div class="chart-row">
-                    <div class="chart-container chart-full">
-                        <h4>Exit Reason Analysis</h4>
-                        <div id="exit-reason-container" class="exit-reason-container"></div>
                     </div>
                 </div>
             </div>
@@ -830,6 +829,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <script src="js/TradeUI-Trades.js"></script>
 <script src="js/TradeUI-Dialogs.js"></script>
 <script src="js/TradeUI-Charts.js"></script>
+<script src="js/TradeUI-MetricCards.js"></script>
 <script src="js/TradeUI-Export-Metrics.js"></script>
 
    

@@ -7281,6 +7281,261 @@ button .spinner {
     }
 }
 
+/* === Analytics Metric Cards === */
+.analytics-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+}
+
+.metric-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    position: relative;
+    overflow: hidden;
+    transition: all var(--transition-base);
+}
+
+.metric-card:hover {
+    border-color: var(--accent-gold);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.metric-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-xs);
+}
+
+.metric-card-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.metric-card-icon {
+    color: var(--accent-gold);
+    font-size: 1.25rem;
+    opacity: 0.7;
+}
+
+.metric-card-value {
+    font-size: 2rem;
+    font-weight: 700;
+    font-family: var(--font-heading);
+    color: var(--text-primary);
+    line-height: 1.2;
+    margin-bottom: var(--spacing-xs);
+}
+
+.metric-card-value.positive {
+    color: var(--success);
+}
+
+.metric-card-value.negative {
+    color: var(--error);
+}
+
+.metric-card-value.neutral {
+    color: var(--accent-gold);
+}
+
+.metric-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: var(--spacing-sm);
+}
+
+.metric-card-change {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.metric-card-change.positive {
+    color: var(--success);
+}
+
+.metric-card-change.negative {
+    color: var(--error);
+}
+
+.metric-card-change .material-icons {
+    font-size: 1rem;
+}
+
+.metric-card-sparkline {
+    width: 60px;
+    height: 24px;
+}
+
+.metric-card-sparkline canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.metric-card-detail {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: var(--spacing-xs);
+}
+
+/* Compact Analytics Charts Section */
+.analytics-charts-compact {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.analytics-chart-enhanced {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    min-height: 400px;
+    max-height: 500px;
+}
+
+.analytics-chart-enhanced h4 {
+    margin-bottom: var(--spacing-md);
+    color: var(--accent-gold);
+    font-family: var(--font-heading);
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+/* Compact Calendar Redesign */
+.compact-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+}
+
+.month-mini-grid {
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-xs);
+    border: 1px solid var(--border-color);
+}
+
+.month-mini-header {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--accent-gold);
+    text-align: center;
+    margin-bottom: var(--spacing-xs);
+}
+
+.month-mini-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+
+.mini-day-cell {
+    aspect-ratio: 1;
+    border-radius: 2px;
+    font-size: 0;
+    cursor: pointer;
+    transition: transform var(--transition-fast);
+}
+
+.mini-day-cell:hover {
+    transform: scale(1.3);
+    z-index: 10;
+}
+
+.mini-day-cell.empty {
+    background: transparent;
+}
+
+.mini-day-cell.no-trades {
+    background: var(--surface-light);
+    opacity: 0.3;
+}
+
+.mini-day-cell.profit-low {
+    background: rgba(34, 197, 94, 0.3);
+}
+
+.mini-day-cell.profit-medium {
+    background: rgba(34, 197, 94, 0.6);
+}
+
+.mini-day-cell.profit-high {
+    background: rgba(34, 197, 94, 0.9);
+}
+
+.mini-day-cell.loss-low {
+    background: rgba(220, 38, 38, 0.3);
+}
+
+.mini-day-cell.loss-medium {
+    background: rgba(220, 38, 38, 0.6);
+}
+
+.mini-day-cell.loss-high {
+    background: rgba(220, 38, 38, 0.9);
+}
+
+/* Responsive Metric Cards */
+@media (max-width: 1440px) {
+    .analytics-metrics-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 1024px) {
+    .analytics-metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .compact-calendar-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .analytics-metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-sm);
+    }
+
+    .metric-card {
+        padding: var(--spacing-sm);
+    }
+
+    .metric-card-value {
+        font-size: 1.5rem;
+    }
+
+    .compact-calendar-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .analytics-metrics-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .compact-calendar-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 /* === Advanced Metrics === */
 #advanced-metrics-container {
     display: grid;

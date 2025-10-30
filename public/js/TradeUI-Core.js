@@ -66,13 +66,19 @@ window.TradeUI = (function() {
      * Initialize analytics UI components
      */
     function initializeAnalytics() {
+        // Render new metric cards
+        if (window.TradeUIMetricCards && window.TradeCore) {
+            const trades = window.TradeCore.getTrades();
+            window.TradeUIMetricCards.renderMetricCards(trades);
+            window.TradeUIMetricCards.renderCompactCalendar(trades);
+        }
+
         if (modules.charts) {
             modules.charts.renderAllCharts();
         }
-        
+
         if (modules.metrics) {
             modules.metrics.renderAdvancedMetricsCards();
-            modules.metrics.initializeCalendarHeatmap();
         }
     }
     
@@ -165,6 +171,13 @@ window.TradeUI = (function() {
      * Refresh all charts and visualizations
      */
     function refreshAllCharts() {
+        // Refresh metric cards
+        if (window.TradeUIMetricCards && window.TradeCore) {
+            const trades = window.TradeCore.getTrades();
+            window.TradeUIMetricCards.renderMetricCards(trades);
+            window.TradeUIMetricCards.renderCompactCalendar(trades);
+        }
+
         if (modules.charts) {
             modules.charts.renderAllCharts();
         }
