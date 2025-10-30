@@ -572,31 +572,34 @@ window.TradeUIModules.charts = (function() {
                     data: data.data,
                     backgroundColor: customColors,
                     borderColor: colors.bgSecondary,
-                    borderWidth: 2,
-                    borderRadius: 4,
-                    hoverOffset: 8
+                    borderWidth: 3,
+                    borderRadius: 6,
+                    hoverOffset: 12
                 }]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
-                cutout: '60%',
+                maintainAspectRatio: true,
+                aspectRatio: 1.5,
+                cutout: '65%',
                 layout: {
-                    padding: 15
+                    padding: 20
                 },
                 plugins: {
                     legend: {
-                        position: 'right',
+                        position: 'bottom',
                         labels: {
-                            padding: 20,
+                            padding: 15,
                             usePointStyle: true,
                             pointStyle: 'circle',
                             color: colors.textPrimary,
                             font: {
                                 family: "'Exo 2', sans-serif",
-                                size: 13,
+                                size: 14,
                                 weight: 'bold'
-                            }
+                            },
+                            boxWidth: 12,
+                            boxHeight: 12
                         }
                     },
                     tooltip: {
@@ -605,31 +608,32 @@ window.TradeUIModules.charts = (function() {
                         bodyColor: colors.tooltipText,
                         borderColor: colors.tooltipBorder,
                         borderWidth: 1,
-                        padding: 12,
+                        padding: 14,
                         cornerRadius: 8,
                         titleFont: {
                             family: "'Work Sans', sans-serif",
                             weight: '600',
-                            size: 13
+                            size: 14
                         },
                         bodyFont: {
                             family: "'Roboto Mono', monospace",
                             weight: '500',
-                            size: 12
+                            size: 13
                         },
                         callbacks: {
                             label: function(context) {
                                 const value = context.parsed;
                                 const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                 const percentage = Math.round((value / total) * 100);
-                                return `${context.label}: ${value} (${percentage}%)`;
+                                return `${context.label}: ${value} trades (${percentage}%)`;
                             }
                         }
                     }
                 },
                 animation: {
                     animateRotate: true,
-                    animateScale: true
+                    animateScale: true,
+                    duration: 800
                 }
             }
         });
@@ -730,8 +734,8 @@ window.TradeUIModules.charts = (function() {
                     backgroundColor: barColors,
                     borderColor: barColors.map(c => c.replace(/[0-9].[0-9]/, '1')),
                     borderWidth: 1,
-                    borderRadius: 4,
-                    maxBarThickness: 40
+                    borderRadius: 6,
+                    maxBarThickness: 45
                 }, {
                     label: 'Trade Count',
                     data: tradeCountData,
@@ -739,19 +743,20 @@ window.TradeUIModules.charts = (function() {
                     yAxisID: 'y1',
                     borderColor: colors.primary,
                     backgroundColor: colors.primaryVeryLight,
-                    borderWidth: 2,
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
+                    borderWidth: 3,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
                     pointBackgroundColor: colors.pointBg,
                     pointBorderColor: colors.pointBorder,
                     pointBorderWidth: 2,
-                    tension: 0.2,
+                    tension: 0.3,
                     order: 0
                 }]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
+                maintainAspectRatio: true,
+                aspectRatio: 2,
                 interaction: {
                     mode: 'index',
                     intersect: false,
@@ -767,8 +772,11 @@ window.TradeUIModules.charts = (function() {
                             font: {
                                 family: "'Exo 2', sans-serif",
                                 weight: 'bold',
-                                size: 12
-                            }
+                                size: 13
+                            },
+                            padding: 15,
+                            boxWidth: 10,
+                            boxHeight: 10
                         }
                     },
                     tooltip: {
@@ -967,9 +975,9 @@ window.TradeUIModules.charts = (function() {
                         backgroundColor: barColors,
                         borderColor: barColors.map(c => c.replace(/[0-9].[0-9]/, '1')),
                         borderWidth: 1,
-                        borderRadius: 4,
+                        borderRadius: 6,
                         yAxisID: 'y',
-                        maxBarThickness: 40
+                        maxBarThickness: 45
                     },
                     {
                         label: 'Win Rate (%)',
@@ -977,13 +985,13 @@ window.TradeUIModules.charts = (function() {
                         type: 'line',
                         borderColor: colors.primary,
                         backgroundColor: colors.primaryVeryLight,
-                        borderWidth: 2,
-                        pointRadius: 4,
-                        pointHoverRadius: 6,
+                        borderWidth: 3,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
                         pointBackgroundColor: colors.pointBg,
                         pointBorderColor: colors.pointBorder,
                         pointBorderWidth: 2,
-                        tension: 0.2,
+                        tension: 0.3,
                         yAxisID: 'y1'
                     },
                     {
@@ -1004,7 +1012,8 @@ window.TradeUIModules.charts = (function() {
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
+                maintainAspectRatio: true,
+                aspectRatio: 2,
                 interaction: {
                     mode: 'index',
                     intersect: false,
@@ -1020,8 +1029,11 @@ window.TradeUIModules.charts = (function() {
                             font: {
                                 family: "'Exo 2', sans-serif",
                                 weight: 'bold',
-                                size: 12
-                            }
+                                size: 13
+                            },
+                            padding: 15,
+                            boxWidth: 10,
+                            boxHeight: 10
                         },
                         onClick: function(e, legendItem, legend) {
                             const index = legendItem.datasetIndex;
@@ -1259,7 +1271,8 @@ window.TradeUIModules.charts = (function() {
                     borderColor: barColors.map(c => c.replace('0.7', '1')),
                     borderWidth: 2,
                     borderRadius: 6,
-                    yAxisID: 'y'
+                    yAxisID: 'y',
+                    maxBarThickness: 60
                 }, {
                     label: 'Win Rate (%)',
                     data: winRates,
@@ -1279,7 +1292,8 @@ window.TradeUIModules.charts = (function() {
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
+                maintainAspectRatio: true,
+                aspectRatio: 2,
                 interaction: {
                     mode: 'index',
                     intersect: false,
@@ -1295,8 +1309,11 @@ window.TradeUIModules.charts = (function() {
                             font: {
                                 family: "'Exo 2', sans-serif",
                                 weight: 'bold',
-                                size: 12
-                            }
+                                size: 13
+                            },
+                            padding: 15,
+                            boxWidth: 10,
+                            boxHeight: 10
                         }
                     },
                     tooltip: {
