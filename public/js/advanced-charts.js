@@ -366,7 +366,7 @@ class ChartDrawingTools {
     initializeToolbar() {
         // Find the chart wrapper (should be .chart-wrapper)
         let container = this.chart.canvas.parentElement;
-        
+
         // If the parent isn't the chart-wrapper, look for it
         if (!container.classList.contains('chart-wrapper')) {
             const wrapper = container.closest('.chart-wrapper');
@@ -374,10 +374,26 @@ class ChartDrawingTools {
                 container = wrapper;
             }
         }
-        
+
         // Check if toolbar already exists
         if (container.querySelector('.chart-toolbar')) return;
-        
+
+        // Skip toolbar for analytics dashboard charts
+        const analyticsChartIds = [
+            'equity-curve-chart',
+            'drawdown-chart',
+            'monthly-performance-chart',
+            'win-loss-pie-chart',
+            'market-comparison-chart',
+            'size-vs-return-chart',
+            'holding-period-chart',
+            'pl-distribution-chart'
+        ];
+
+        if (analyticsChartIds.includes(this.chart.canvas.id)) {
+            return; // Skip toolbar creation for analytics dashboard charts
+        }
+
         const toolbar = document.createElement('div');
         toolbar.className = 'chart-toolbar';
         toolbar.innerHTML = `
@@ -415,7 +431,7 @@ class ChartDrawingTools {
                 </button>
             </div>
         `;
-        
+
         container.appendChild(toolbar);
         this.attachToolbarEvents(toolbar);
     }
