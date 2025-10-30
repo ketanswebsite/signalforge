@@ -82,6 +82,9 @@ try {
   exitMonitor = null;
 }
 
+// Load Capital Manager for capital allocation/release
+const CapitalManager = require('./lib/portfolio/capital-manager');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -2009,19 +2012,36 @@ app.post('/api/trades', ensureAuthenticatedAPI, ensureSubscriptionActive, async 
 // Update trade
 app.put('/api/trades/:id', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
-    
+
     const userId = req.user ? req.user.email : 'default';
-    
+
     // First check if trade exists
     const existingTrade = await TradeDB.getTradeById(req.params.id, userId);
     if (!existingTrade) {
       return res.status(404).json({ error: 'Trade not found' });
     }
-    
+
+    // Check if trade is being closed (status changing from 'active' to 'closed')
+    const isBeingClosed = existingTrade.status === 'active' && req.body.status === 'closed';
+
+    // Update the trade
     const success = await TradeDB.updateTrade(req.params.id, req.body, userId);
     if (!success) {
       return res.status(404).json({ error: 'Trade not found' });
     }
+
+    // If trade was closed, release capital to free up position slot
+    if (isBeingClosed) {
+      try {
+        console.log(`[TRADE UPDATE] Trade ${req.params.id} (${existingTrade.symbol}) closed - releasing capital`);
+        await CapitalManager.releaseFromTrade(existingTrade, userId);
+        console.log(`[TRADE UPDATE] Capital released successfully for ${existingTrade.symbol}`);
+      } catch (releaseError) {
+        console.error(`[TRADE UPDATE] Error releasing capital for trade ${req.params.id}:`, releaseError.message);
+        // Don't fail the request - trade is already updated, but log the error
+      }
+    }
+
     res.json({ message: 'Trade updated successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -4174,6 +4194,43 @@ app.listen(PORT, async () => {
     console.log('✅ [MIGRATION] Shares and profit_loss migration completed');
   } catch (error) {
     console.error('❌ [MIGRATION] Failed to fix shares and profit_loss:', error.message);
+  }
+
+  // Run migration to sync active_positions counters
+  try {
+    console.log('🔧 [MIGRATION] Syncing active_positions counters...');
+
+    const syncResult = await TradeDB.pool.query(`
+      UPDATE portfolio_capital pc
+      SET active_positions = (
+        SELECT COUNT(*)
+        FROM trades t
+        WHERE t.status = 'active'
+          AND t.user_id = pc.user_id
+          AND t.market = pc.market
+      )
+      WHERE EXISTS (
+        SELECT 1
+        FROM trades t
+        WHERE t.user_id = pc.user_id
+          AND t.market = pc.market
+          AND t.status = 'active'
+        GROUP BY t.user_id, t.market
+        HAVING COUNT(*) != pc.active_positions
+      )
+      RETURNING market, active_positions
+    `);
+
+    if (syncResult.rows.length > 0) {
+      console.log(`✅ [MIGRATION] Synced ${syncResult.rows.length} market counters:`);
+      syncResult.rows.forEach(row => {
+        console.log(`   - ${row.market}: updated to ${row.active_positions} active positions`);
+      });
+    } else {
+      console.log('✅ [MIGRATION] All counters already in sync');
+    }
+  } catch (error) {
+    console.error('❌ [MIGRATION] Failed to sync active_positions:', error.message);
   }
 
   try {
