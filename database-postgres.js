@@ -1475,12 +1475,22 @@ const TradeDB = {
   },
 
   // Get active trades for a user
-  async getActiveTrades(userId = 'default') {
+  async getActiveTrades(userId = null) {
     try {
-      const result = await pool.query(
-        'SELECT * FROM trades WHERE user_id = $1 AND status = $2 ORDER BY entry_date DESC',
-        [userId, 'active']
-      );
+      // If userId provided, get trades for that user
+      // If userId is null, get ALL active trades (for exit monitor)
+      let result;
+      if (userId) {
+        result = await pool.query(
+          'SELECT * FROM trades WHERE user_id = $1 AND status = $2 ORDER BY entry_date DESC',
+          [userId, 'active']
+        );
+      } else {
+        result = await pool.query(
+          'SELECT * FROM trades WHERE status = $1 ORDER BY entry_date DESC',
+          ['active']
+        );
+      }
       return result.rows.map(row => ({
         id: row.id,
         symbol: row.symbol,
