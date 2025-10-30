@@ -304,7 +304,17 @@ const TradeUIMetricCards = (function() {
         const container = document.getElementById('compact-calendar-container');
         if (!container) return;
 
-        container.innerHTML = '<div class="compact-calendar-grid" id="compact-calendar-grid"></div>';
+        // Create calendar header with year selector and legend
+        const header = createCalendarHeader(trades, year);
+
+        container.innerHTML = '';
+        container.appendChild(header);
+
+        // Create calendar grid container
+        const gridWrapper = document.createElement('div');
+        gridWrapper.innerHTML = '<div class="compact-calendar-grid" id="compact-calendar-grid"></div>';
+        container.appendChild(gridWrapper);
+
         const grid = document.getElementById('compact-calendar-grid');
 
         // Create data map for quick lookup
@@ -322,6 +332,133 @@ const TradeUIMetricCards = (function() {
             const monthGrid = createMonthMiniGrid(year, month, tradesByDate);
             grid.appendChild(monthGrid);
         }
+
+        // Add legend at bottom
+        const legend = createCalendarLegend();
+        container.appendChild(legend);
+    }
+
+    /**
+     * Create calendar header with year selector
+     */
+    function createCalendarHeader(trades, currentYear) {
+        const header = document.createElement('div');
+        header.className = 'calendar-header';
+
+        // Get available years from trades
+        const years = [...new Set(trades
+            .filter(t => t.exit_date)
+            .map(t => new Date(t.exit_date).getFullYear())
+        )].sort((a, b) => b - a);
+
+        if (years.length === 0) {
+            years.push(new Date().getFullYear());
+        }
+
+        header.innerHTML = `
+            <div class="calendar-year-selector">
+                <button class="year-nav-btn" id="prev-year" data-year="${currentYear - 1}">
+                    <span class="material-icons">chevron_left</span>
+                </button>
+                <select id="calendar-year-select" class="year-select">
+                    ${years.map(y => `<option value="${y}" ${y === currentYear ? 'selected' : ''}>${y}</option>`).join('')}
+                </select>
+                <button class="year-nav-btn" id="next-year" data-year="${currentYear + 1}">
+                    <span class="material-icons">chevron_right</span>
+                </button>
+            </div>
+        `;
+
+        // Add event listeners for year navigation
+        setTimeout(() => {
+            const yearSelect = document.getElementById('calendar-year-select');
+            const prevBtn = document.getElementById('prev-year');
+            const nextBtn = document.getElementById('next-year');
+
+            if (yearSelect) {
+                yearSelect.addEventListener('change', (e) => {
+                    const year = parseInt(e.target.value);
+                    if (window.TradeCore) {
+                        const trades = window.TradeCore.getTrades();
+                        renderCompactCalendar(trades, year);
+                    }
+                });
+            }
+
+            if (prevBtn) {
+                prevBtn.addEventListener('click', () => {
+                    const year = parseInt(prevBtn.dataset.year);
+                    if (window.TradeCore) {
+                        const trades = window.TradeCore.getTrades();
+                        renderCompactCalendar(trades, year);
+                    }
+                });
+            }
+
+            if (nextBtn) {
+                nextBtn.addEventListener('click', () => {
+                    const year = parseInt(nextBtn.dataset.year);
+                    if (window.TradeCore) {
+                        const trades = window.TradeCore.getTrades();
+                        renderCompactCalendar(trades, year);
+                    }
+                });
+            }
+        }, 100);
+
+        return header;
+    }
+
+    /**
+     * Create calendar legend
+     */
+    function createCalendarLegend() {
+        const legend = document.createElement('div');
+        legend.className = 'calendar-legend';
+
+        legend.innerHTML = `
+            <div class="legend-title">Daily P&L</div>
+            <div class="legend-items">
+                <div class="legend-group">
+                    <div class="legend-label">Profit:</div>
+                    <div class="legend-item">
+                        <div class="legend-color profit-low"></div>
+                        <span>₹1-300</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color profit-medium"></div>
+                        <span>₹300-1K</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color profit-high"></div>
+                        <span>₹1K+</span>
+                    </div>
+                </div>
+                <div class="legend-group">
+                    <div class="legend-label">Loss:</div>
+                    <div class="legend-item">
+                        <div class="legend-color loss-low"></div>
+                        <span>-₹1-300</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color loss-medium"></div>
+                        <span>-₹300-1K</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color loss-high"></div>
+                        <span>-₹1K+</span>
+                    </div>
+                </div>
+                <div class="legend-group">
+                    <div class="legend-item">
+                        <div class="legend-color no-trades"></div>
+                        <span>No Trades</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        return legend;
     }
 
     /**

@@ -281,6 +281,15 @@ window.TradeUI = (function() {
                 // For non-silent updates, do full update immediately
                 renderTrades();
                 updateStatistics();
+
+                // Render metric cards with fresh data
+                if (window.TradeUIMetricCards && window.TradeCore) {
+                    const trades = window.TradeCore.getTrades();
+                    console.log('Rendering metric cards with', trades.length, 'trades');
+                    window.TradeUIMetricCards.renderMetricCards(trades);
+                    window.TradeUIMetricCards.renderCompactCalendar(trades);
+                }
+
                 refreshAllCharts();
                 updateMarketStatus();
                 lastFullUpdate = now;
