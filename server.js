@@ -3166,7 +3166,6 @@ app.use((req, res, next) => {
       req.path === '/styles.css' ||
       req.path === '/css/main.css' ||
       req.path === '/js/modern-effects.js' ||
-      req.path === '/js/theme-toggle.js' ||
       req.path === '/js/landing.js' ||
       req.path.startsWith('/lib/')) {
     return next();

@@ -2064,54 +2064,6 @@ tbody td.negative {
 }
 
 /* ========================================
-   14. THEME TOGGLE
-   ======================================== */
-.theme-toggle {
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: var(--gradient-primary);
-    border: none;
-    cursor: pointer;
-    box-shadow: var(--shadow-gold);
-    z-index: var(--z-fixed);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all var(--transition-base);
-}
-
-.theme-toggle:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-gold-hover);
-}
-
-.theme-toggle svg {
-    width: 24px;
-    height: 24px;
-    color: white;
-}
-
-.sun-icon {
-    display: none;
-}
-
-.moon-icon {
-    display: block;
-}
-
-.light-theme .sun-icon {
-    display: block;
-}
-
-.light-theme .moon-icon {
-    display: none;
-}
-
-/* ========================================
    15. STATUS INDICATORS
    ======================================== */
 .status-indicator {
@@ -2497,13 +2449,6 @@ a .material-icons {
     .btn {
         padding: 0.75rem 1.5rem;
         font-size: 0.9375rem;
-    }
-
-    .theme-toggle {
-        bottom: 1rem;
-        right: 1rem;
-        width: 48px;
-        height: 48px;
     }
 
     /* Mobile-specific adjustments for new elements */
