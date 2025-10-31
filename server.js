@@ -274,6 +274,27 @@ app.post('/api/signals/from-scan', async (req, res) => {
   }
 });
 
+// Auth status endpoint (public - no auth required) - MUST be before authentication middleware
+app.get('/api/auth/status', (req, res) => {
+  // Check if user is authenticated via session
+  const isAuthenticated = req.isAuthenticated && req.isAuthenticated();
+
+  if (isAuthenticated) {
+    res.json({
+      authenticated: true,
+      user: {
+        email: req.user.email,
+        name: req.user.name,
+        isAdmin: req.user.email === ADMIN_EMAIL
+      }
+    });
+  } else {
+    res.json({
+      authenticated: false
+    });
+  }
+});
+
 // Protect all API routes except auth routes and telegram webhook
 app.use('/api', ensureAuthenticatedAPI);
 
