@@ -25,6 +25,9 @@ const CONFIG = {
     }
 };
 
+// Health check user for database operations
+const HEALTH_CHECK_USER = process.env.ADMIN_EMAIL || 'ketanjoshisahs@gmail.com';
+
 // Health check results
 const healthStatus = {
     overall: 'healthy',
@@ -231,7 +234,7 @@ function checkMemoryUsage() {
 async function checkPortfolioCapital() {
     try {
         const start = performance.now();
-        const capital = await TradeDB.getPortfolioCapital();
+        const capital = await TradeDB.getPortfolioCapital(null, HEALTH_CHECK_USER);
         const duration = performance.now() - start;
 
         // Verify structure

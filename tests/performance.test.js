@@ -7,6 +7,9 @@ const { performance } = require('perf_hooks');
 const assert = require('assert');
 const TradeDB = require('../database-postgres');
 
+// Test user for database operations
+const TEST_USER = 'perf-test@example.com';
+
 console.log('🚀 Starting Performance Tests...\n');
 
 /**
@@ -21,7 +24,7 @@ async function testCapitalCalculationPerformance() {
 
         for (let i = 0; i < iterations; i++) {
             const start = performance.now();
-            await TradeDB.getPortfolioCapital();
+            await TradeDB.getPortfolioCapital(null, TEST_USER);
             const duration = performance.now() - start;
             timings.push(duration);
         }
@@ -57,7 +60,7 @@ async function testDatabaseQueryPerformance() {
             { name: 'Get All Trades', fn: () => TradeDB.getAllTrades('default') },
             { name: 'Get Active Trades', fn: () => TradeDB.getActiveTrades('default') },
             { name: 'Get Closed Trades', fn: () => TradeDB.getClosedTrades('default') },
-            { name: 'Get Portfolio Capital', fn: () => TradeDB.getPortfolioCapital() },
+            { name: 'Get Portfolio Capital', fn: () => TradeDB.getPortfolioCapital(null, TEST_USER) },
             { name: 'Get Pending Signals', fn: () => TradeDB.getPendingSignals('pending') }
         ];
 
@@ -92,7 +95,7 @@ async function testConcurrentOperations() {
 
         // Run multiple operations concurrently
         const promises = Array(concurrentRequests).fill(null).map((_, i) =>
-            TradeDB.getPortfolioCapital()
+            TradeDB.getPortfolioCapital(null, TEST_USER)
         );
 
         await Promise.all(promises);
@@ -171,7 +174,7 @@ async function testMemoryUsage() {
         // Perform memory-intensive operations
         for (let i = 0; i < 100; i++) {
             await TradeDB.getAllTrades('default');
-            await TradeDB.getPortfolioCapital();
+            await TradeDB.getPortfolioCapital(null, TEST_USER);
             await TradeDB.getPendingSignals('pending');
         }
 

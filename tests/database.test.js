@@ -6,6 +6,9 @@
 const assert = require('assert');
 const TradeDB = require('../database-postgres');
 
+// Test user for database operations
+const TEST_USER = 'test@example.com';
+
 console.log('🧪 Starting Database Integration Tests...\n');
 
 /**
@@ -110,7 +113,7 @@ async function testPortfolioCapital() {
 
     try {
         // Test 1: Get capital for all markets
-        const capital = await TradeDB.getPortfolioCapital();
+        const capital = await TradeDB.getPortfolioCapital(null, TEST_USER);
         assert.ok(capital, 'Capital data should exist');
         assert.ok(capital.India, 'India capital should exist');
         assert.ok(capital.UK, 'UK capital should exist');
@@ -124,7 +127,7 @@ async function testPortfolioCapital() {
         console.log('  ✅ Capital structure valid');
 
         // Test 3: Check position limits
-        const canAdd = await TradeDB.canAddPosition('India', 50000);
+        const canAdd = await TradeDB.canAddPosition('India', 50000, TEST_USER);
         assert.ok('canAdd' in canAdd, 'Should return canAdd property');
         console.log('  ✅ Position limit check working');
 
