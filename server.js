@@ -1433,6 +1433,29 @@ app.post('/api/admin/migrate-capital', ensureAuthenticatedAPI, async (req, res) 
   }
 });
 
+// Fix Position Count (fixes stuck active_positions counter)
+app.post('/api/admin/fix-position-count', ensureAuthenticatedAPI, async (req, res) => {
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+  }
+
+  try {
+    const fixPositionCount = require('./fix-india-position-count');
+    const result = await fixPositionCount();
+
+    res.json({
+      success: result,
+      message: result ? 'Position count fixed successfully' : 'Position count fix failed - check logs'
+    });
+  } catch (error) {
+    console.error('Fix position count error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Run Database Tests API endpoint
 app.post('/api/admin/tests/database', ensureAuthenticatedAPI, async (req, res) => {
   if (req.user.email !== ADMIN_EMAIL) {
