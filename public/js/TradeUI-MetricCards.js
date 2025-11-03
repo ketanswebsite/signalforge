@@ -355,8 +355,8 @@ const TradeUIMetricCards = (function() {
             grid.appendChild(monthGrid);
         }
 
-        // Add legend at bottom
-        const legend = createCalendarLegend();
+        // Add legend at bottom with auto-detected currency
+        const legend = createCalendarLegend(trades);
         container.appendChild(legend);
     }
 
@@ -432,11 +432,43 @@ const TradeUIMetricCards = (function() {
     }
 
     /**
-     * Create calendar legend
+     * Create calendar legend with auto-detected currency
+     * @param {Array} trades - Array of trade objects to detect currencies from
+     * @returns {HTMLElement} Legend element
      */
-    function createCalendarLegend() {
+    function createCalendarLegend(trades = []) {
         const legend = document.createElement('div');
         legend.className = 'calendar-legend';
+
+        // Auto-detect currencies from trades
+        const markets = new Set();
+        trades.forEach(trade => {
+            if (trade.market) {
+                markets.add(trade.market);
+            }
+        });
+
+        // Determine currency symbols and ranges
+        let currencyInfo = [];
+        if (markets.has('India')) {
+            currencyInfo.push({ symbol: '₹', lowHigh: '1-300', medHigh: '300-1K', highPlus: '1K+' });
+        }
+        if (markets.has('US')) {
+            currencyInfo.push({ symbol: '$', lowHigh: '1-100', medHigh: '100-500', highPlus: '500+' });
+        }
+        if (markets.has('UK')) {
+            currencyInfo.push({ symbol: '£', lowHigh: '1-100', medHigh: '100-500', highPlus: '500+' });
+        }
+
+        // Default to India if no markets detected
+        if (currencyInfo.length === 0) {
+            currencyInfo = [{ symbol: '₹', lowHigh: '1-300', medHigh: '300-1K', highPlus: '1K+' }];
+        }
+
+        // Format legend ranges (combine multiple currencies if needed)
+        const formatRange = (rangeKey) => {
+            return currencyInfo.map(c => `${c.symbol}${c[rangeKey]}`).join(' | ');
+        };
 
         legend.innerHTML = `
             <div class="legend-title">Daily P&L</div>
@@ -445,30 +477,30 @@ const TradeUIMetricCards = (function() {
                     <div class="legend-label">Profit:</div>
                     <div class="legend-item">
                         <div class="legend-color profit-low"></div>
-                        <span>₹1-300</span>
+                        <span>${formatRange('lowHigh')}</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-color profit-medium"></div>
-                        <span>₹300-1K</span>
+                        <span>${formatRange('medHigh')}</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-color profit-high"></div>
-                        <span>₹1K+</span>
+                        <span>${formatRange('highPlus')}</span>
                     </div>
                 </div>
                 <div class="legend-group">
                     <div class="legend-label">Loss:</div>
                     <div class="legend-item">
                         <div class="legend-color loss-low"></div>
-                        <span>-₹1-300</span>
+                        <span>-${formatRange('lowHigh')}</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-color loss-medium"></div>
-                        <span>-₹300-1K</span>
+                        <span>-${formatRange('medHigh')}</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-color loss-high"></div>
-                        <span>-₹1K+</span>
+                        <span>-${formatRange('highPlus')}</span>
                     </div>
                 </div>
                 <div class="legend-group">

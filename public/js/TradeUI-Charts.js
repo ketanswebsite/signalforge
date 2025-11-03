@@ -18,6 +18,145 @@ window.TradeUIModules.charts = (function() {
     let holdingTimeChart = null;
 
     /**
+     * Chart registry to track all chart instances and their event listeners
+     * @type {Map<string, {chart: Chart, listeners: Array}>}
+     */
+    const chartRegistry = new Map();
+
+    /**
+     * Register a chart instance with cleanup tracking
+     * @param {string} id - Chart identifier
+     * @param {Chart} chartInstance - Chart.js instance
+     * @param {Array} listeners - Array of event listeners to cleanup
+     */
+    function registerChart(id, chartInstance, listeners = []) {
+        // Cleanup existing chart if present
+        if (chartRegistry.has(id)) {
+            cleanupChart(id);
+        }
+        chartRegistry.set(id, { chart: chartInstance, listeners });
+    }
+
+    /**
+     * Cleanup a specific chart and its event listeners
+     * @param {string} id - Chart identifier
+     */
+    function cleanupChart(id) {
+        const entry = chartRegistry.get(id);
+        if (entry) {
+            // Remove all event listeners
+            entry.listeners.forEach(({ element, event, handler }) => {
+                element.removeEventListener(event, handler);
+            });
+            // Destroy chart instance
+            if (entry.chart) {
+                entry.chart.destroy();
+            }
+            chartRegistry.delete(id);
+        }
+    }
+
+    /**
+     * Cleanup all charts
+     */
+    function cleanupAllCharts() {
+        chartRegistry.forEach((entry, id) => {
+            cleanupChart(id);
+        });
+    }
+
+    /**
+     * Show error message in chart container
+     * @param {HTMLElement} container - Container element
+     * @param {string} message - Error message to display
+     */
+    function showError(container, message) {
+        if (!container) return;
+        container.innerHTML = `
+            <div class="chart-error-state" style="
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 200px;
+                padding: var(--spacing-lg);
+                text-align: center;
+                color: var(--error);
+            ">
+                <span class="material-icons" style="font-size: 48px; margin-bottom: var(--spacing-md); opacity: 0.5;">error_outline</span>
+                <div style="font-size: 0.875rem; color: var(--text-secondary);">${message}</div>
+            </div>
+        `;
+    }
+
+    /**
+     * Show loading state in chart container
+     * @param {HTMLElement} container - Container element
+     */
+    function showLoading(container) {
+        if (!container) return;
+        container.innerHTML = `
+            <div class="chart-loading-state" style="
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 200px;
+                padding: var(--spacing-lg);
+            ">
+                <div class="loading-spinner" style="
+                    width: 40px;
+                    height: 40px;
+                    border: 3px solid var(--border-color);
+                    border-top-color: var(--accent-gold);
+                    border-radius: 50%;
+                    animation: spin 0.8s linear infinite;
+                "></div>
+                <div style="margin-top: var(--spacing-md); font-size: 0.875rem; color: var(--text-secondary);">Loading chart...</div>
+            </div>
+        `;
+    }
+
+    /**
+     * Show empty state in chart container
+     * @param {HTMLElement} container - Container element
+     * @param {string} message - Message to display
+     */
+    function showEmptyState(container, message = "No trade data available") {
+        if (!container) return;
+        container.innerHTML = `
+            <div class="chart-empty-state" style="
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 200px;
+                padding: var(--spacing-lg);
+                text-align: center;
+            ">
+                <span class="material-icons" style="font-size: 48px; margin-bottom: var(--spacing-md); opacity: 0.3; color: var(--text-muted);">insert_chart_outlined</span>
+                <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: var(--spacing-xs);">${message}</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Add trades to see analytics</div>
+            </div>
+        `;
+    }
+
+    /**
+     * Safe chart render wrapper with error handling and validation
+     * @param {Function} renderFn - Chart rendering function
+     * @param {string} chartName - Name of chart for error reporting
+     */
+    function safeRender(renderFn, chartName) {
+        try {
+            renderFn();
+        } catch (error) {
+            console.error(`Error rendering ${chartName}:`, error);
+            // Don't show error to user for individual chart failures
+            // This prevents breaking the entire page if one chart fails
+        }
+    }
+
+    /**
      * Get theme-aware colors based on current theme
      * Returns color palette optimized for Black & Gold theme
      */
@@ -84,55 +223,17 @@ window.TradeUIModules.charts = (function() {
     
     /**
      * Render all available charts
+     * Uses safeRender wrapper to handle errors gracefully
      */
     function renderAllCharts() {
-        try {
-            renderEquityCurve();
-        } catch (error) {
-            console.error('Error rendering equity curve:', error);
-        }
-
-        try {
-            renderDrawdownChart();
-        } catch (error) {
-            console.error('Error rendering drawdown chart:', error);
-        }
-
-        try {
-            renderPLDistribution();
-        } catch (error) {
-            console.error('Error rendering P/L distribution:', error);
-        }
-
-        try {
-            renderWinLossPieChart();
-        } catch (error) {
-            console.error('Error rendering win/loss pie chart:', error);
-        }
-
-        try {
-            renderMonthlyPerformance();
-        } catch (error) {
-            console.error('Error rendering monthly performance:', error);
-        }
-
-        try {
-            renderMarketComparison();
-        } catch (error) {
-            console.error('Error rendering market comparison:', error);
-        }
-
-        try {
-            renderTradeSizeVsReturn();
-        } catch (error) {
-            console.error('Error rendering trade size vs return:', error);
-        }
-
-        try {
-            renderHoldingPeriodAnalysis();
-        } catch (error) {
-            console.error('Error rendering holding period analysis:', error);
-        }
+        safeRender(renderEquityCurve, 'Equity Curve');
+        safeRender(renderDrawdownChart, 'Drawdown Chart');
+        safeRender(renderPLDistribution, 'P/L Distribution');
+        safeRender(renderWinLossPieChart, 'Win/Loss Pie Chart');
+        safeRender(renderMonthlyPerformance, 'Monthly Performance');
+        safeRender(renderMarketComparison, 'Market Comparison');
+        safeRender(renderTradeSizeVsReturn, 'Trade Size vs Return');
+        safeRender(renderHoldingPeriodAnalysis, 'Holding Period Analysis');
     }
     
     /**
@@ -678,22 +779,39 @@ window.TradeUIModules.charts = (function() {
     
     /**
      * Render monthly performance chart with gold trade count line
+     * @throws {Error} If TradeCore is not available or data fetch fails
      */
     function renderMonthlyPerformance() {
         const container = document.getElementById('monthly-performance-chart');
-        if (!container) return;
-
-        const data = TradeCore.getMonthlyPerformanceData();
-
-        if (data.length === 0) {
-            container.innerHTML = '<div class="no-data-message">No closed trades available for monthly performance</div>';
+        if (!container) {
+            console.warn('Monthly performance chart container not found');
             return;
         }
 
-        // Clear previous chart if it exists
-        if (monthlyPerformanceChart) {
-            monthlyPerformanceChart.destroy();
+        // Validate TradeCore availability
+        if (!window.TradeCore || typeof window.TradeCore.getMonthlyPerformanceData !== 'function') {
+            showError(container, 'Chart data service unavailable');
+            return;
         }
+
+        // Fetch data with error handling
+        let data;
+        try {
+            data = window.TradeCore.getMonthlyPerformanceData();
+        } catch (error) {
+            console.error('Error fetching monthly performance data:', error);
+            showError(container, 'Failed to load chart data');
+            return;
+        }
+
+        // Validate data
+        if (!data || !Array.isArray(data) || data.length === 0) {
+            showEmptyState(container, 'No monthly performance data');
+            return;
+        }
+
+        // Cleanup previous chart instance properly
+        cleanupChart('monthly-performance');
 
         // Get theme colors
         const colors = getThemeColors();
@@ -912,8 +1030,11 @@ window.TradeUIModules.charts = (function() {
                 }
             }
         });
+
+        // Register chart for proper cleanup
+        registerChart('monthly-performance', monthlyPerformanceChart);
     }
-    
+
     /**
      * Render market comparison chart with gold win rate line
      */
