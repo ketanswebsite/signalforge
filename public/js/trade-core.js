@@ -509,27 +509,40 @@ const TradeCore = (function() {
             const trade = allTrades.find(t => t.id === tradeId);
             if (trade && trade.symbol && trade.symbol.endsWith('.L') && updates.status === 'closed') {
             }
-            
+
             await TradeAPI.updateTrade(tradeId, updates);
-            
+
             // Update local copy
             if (trade) {
                 Object.assign(trade, updates);
-                
+
+                // BUGFIX: Sync derived fields used by statistics calculations
+                // When profitLoss is updated, also update trade.profit (used in winRate calculation)
+                if (updates.profitLoss !== undefined) {
+                    trade.profit = updates.profitLoss;
+                }
+                if (updates.profitLossPercentage !== undefined) {
+                    trade.percentGain = updates.profitLossPercentage;
+                    trade.plPercent = updates.profitLossPercentage;
+                }
+                if (updates.profitLoss !== undefined && trade.shares) {
+                    trade.plValue = updates.profitLoss;
+                }
+
                 // Re-categorize if status changed
                 if (updates.status) {
                     activeTrades = allTrades.filter(t => t.status === 'active');
                     closedTrades = allTrades.filter(t => t.status !== 'active');
                 }
             }
-            
+
             // Clear cached analytics data
             equityCurveData = null;
             drawdownData = null;
-            
+
             // Trigger UI refresh
             refreshUI();
-            
+
             return true;
         } catch (error) {
             showNotification('Error updating trade: ' + error.message, 'error');
