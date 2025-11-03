@@ -13,14 +13,7 @@ const TradeUIMetricCards = (function() {
         const container = document.getElementById('analytics-metrics-grid');
         if (!container) return;
 
-        console.log('[TradeUI-MetricCards] Total trades received:', trades?.length || 0);
-        if (trades && trades.length > 0) {
-            console.log('[TradeUI-MetricCards] First trade sample:', trades[0]);
-            console.log('[TradeUI-MetricCards] Closed trades:', trades.filter(t => t.status === 'closed').length);
-        }
-
         const metrics = calculateMetrics(trades);
-        console.log('[TradeUI-MetricCards] Calculated metrics:', metrics);
         container.innerHTML = '';
 
         const cards = [

@@ -191,9 +191,7 @@ const TradeCore = (function() {
      */
     async function loadTradesFromAPI() {
         try {
-            console.log('[TradeCore] Fetching trades from API...');
             allTrades = await TradeAPI.getAllTrades();
-            console.log('[TradeCore] API returned:', allTrades.length, 'trades');
 
             // Debug: Log sample trade from SQLite
             if (allTrades.length > 0) {

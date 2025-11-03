@@ -17,13 +17,18 @@ window.TradeUI = (function() {
     /**
      * Initialize the trade UI
      */
-    function init() {
-        
+    async function init() {
+
         // Only initialize if we're on the trades page
         if (!isTradesPage()) {
             return;
         }
-        
+
+        // Wait for TradeCore to initialize and load trades from API first
+        if (window.TradeCore && typeof window.TradeCore.init === 'function') {
+            await window.TradeCore.init();
+        }
+
         // Initialize all submodules if they exist
         for (const key in modules) {
             if (window.TradeUIModules && window.TradeUIModules[key] && typeof window.TradeUIModules[key].init === 'function') {
@@ -31,27 +36,27 @@ window.TradeUI = (function() {
                 modules[key].init();
             }
         }
-        
+
         // Set up event listeners
         setupEventListeners();
-        
-        // Render initial UI
+
+        // Render initial UI with loaded trade data
         renderTrades();
         updateStatistics();
         updateMarketStatus();
-        
-        // Initialize analytics components
+
+        // Initialize analytics components (now has trade data)
         initializeAnalytics();
-        
+
         // Add page load animations
         addPageLoadAnimations();
-        
+
         // Update market status every minute (60000ms) for accurate time display
         setInterval(updateMarketStatus, 60000);
-        
+
         // Start real-time price and statistics updates every second
         startRealTimeUpdates();
-        
+
     }
     
     /**
@@ -1088,10 +1093,10 @@ window.TradeUI = (function() {
 })();
 
 // Initialize the trade UI
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // Create the modules namespace if it doesn't exist
     window.TradeUIModules = window.TradeUIModules || {};
-    
-    // Initialize UI
-    TradeUI.init();
+
+    // Initialize UI and wait for trade data to load
+    await TradeUI.init();
 });
