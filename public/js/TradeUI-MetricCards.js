@@ -18,8 +18,8 @@ const TradeUIMetricCards = (function() {
 
         const cards = [
             createMetricCard('Win Rate', metrics.winRate, 'positive', 'trending_up', metrics.winRateTrend, metrics.winRateData),
-            createMetricCard('Total P&L', metrics.totalPL, metrics.totalPL >= 0 ? 'positive' : 'negative', 'account_balance', metrics.plTrend, metrics.plData),
-            createMetricCard('Avg Return', metrics.avgReturn, metrics.avgReturn >= 0 ? 'positive' : 'negative', 'percent', metrics.returnTrend, metrics.returnData),
+            createMetricCard('Total P&L', metrics.totalPL, metrics.totalPLSign >= 0 ? 'positive' : 'negative', 'account_balance', metrics.plTrend, metrics.plData),
+            createMetricCard('Avg Return', metrics.avgReturn, parseFloat(metrics.avgReturn) >= 0 ? 'positive' : 'negative', 'percent', metrics.returnTrend, metrics.returnData),
             createMetricCard('Total Trades', metrics.totalTrades, 'neutral', 'bar_chart', null, metrics.tradeCountData),
             createMetricCard('Best Market', metrics.bestMarket.name, 'positive', 'public', `${metrics.bestMarket.winRate}% WR`),
             createMetricCard('Avg Duration', metrics.avgDuration, 'neutral', 'schedule', `${metrics.avgDuration} days`),
@@ -47,9 +47,28 @@ const TradeUIMetricCards = (function() {
             ? ((winningTrades.length / closedTrades.length) * 100).toFixed(1) + '%'
             : '0%';
 
-        // Total P&L
-        const totalPL = closedTrades.reduce((sum, t) => sum + parseFloat(t.profitLoss || t.plValue || 0), 0);
-        const totalPLFormatted = '₹' + totalPL.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+        // Total P&L - Separate by market to handle multiple currencies
+        const indiaTrades = closedTrades.filter(t => t.market === 'India');
+        const usTrades = closedTrades.filter(t => t.market === 'US');
+
+        const indiaPL = indiaTrades.reduce((sum, t) => sum + parseFloat(t.profitLoss || t.plValue || 0), 0);
+        const usPL = usTrades.reduce((sum, t) => sum + parseFloat(t.profitLoss || t.plValue || 0), 0);
+
+        // Format with currency symbols
+        const indiaPLFormatted = '₹' + indiaPL.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+        const usPLFormatted = '$' + usPL.toLocaleString('en-US', { maximumFractionDigits: 0 });
+
+        // Combined display showing both markets
+        let totalPLFormatted;
+        if (indiaTrades.length > 0 && usTrades.length > 0) {
+            totalPLFormatted = `${indiaPLFormatted} | ${usPLFormatted}`;
+        } else if (indiaTrades.length > 0) {
+            totalPLFormatted = indiaPLFormatted;
+        } else if (usTrades.length > 0) {
+            totalPLFormatted = usPLFormatted;
+        } else {
+            totalPLFormatted = '₹0';
+        }
 
         // Average Return
         const avgReturn = closedTrades.length > 0
@@ -148,11 +167,15 @@ const TradeUIMetricCards = (function() {
               ((returnData[returnData.length - 1] - returnData[0])).toFixed(1) + '%'
             : null;
 
+        // Determine overall P&L sign for color (prioritize India market if both exist)
+        const totalPLSign = indiaTrades.length > 0 ? indiaPL : usPL;
+
         return {
             winRate,
             winRateTrend,
             winRateData,
             totalPL: totalPLFormatted,
+            totalPLSign,
             plTrend,
             plData,
             avgReturn,
@@ -528,6 +551,7 @@ const TradeUIMetricCards = (function() {
             winRateTrend: null,
             winRateData: [],
             totalPL: '₹0',
+            totalPLSign: 0,
             plTrend: null,
             plData: [],
             avgReturn: '0%',
