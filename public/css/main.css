@@ -7489,10 +7489,11 @@ button .spinner {
 
 .compact-calendar-grid {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: var(--spacing-md);
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-sm);
     margin-top: var(--spacing-md);
     margin-bottom: var(--spacing-lg);
+    width: 100%;
 }
 
 .month-mini-grid {
@@ -7500,6 +7501,7 @@ button .spinner {
     border-radius: var(--radius-sm);
     padding: var(--spacing-xs);
     border: 1px solid var(--border-color);
+    min-width: 0; /* Allow grid items to shrink below content size */
 }
 
 .month-mini-header {
@@ -7513,19 +7515,20 @@ button .spinner {
 .month-mini-days {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 4px; /* Increased from 2px for better click target separation */
-    padding: 2px; /* Add padding fallback for older browsers */
+    gap: 2px;
+    padding: 2px;
 }
 
 .mini-day-cell {
     aspect-ratio: 1;
-    min-width: 24px; /* Accessibility: Minimum touch target size */
-    min-height: 24px; /* WCAG 2.1 guideline for touch targets */
-    border-radius: 3px;
+    width: 100%; /* Let grid determine width */
+    border-radius: 2px;
     font-size: 0;
     cursor: pointer;
     transition: all var(--transition-fast);
     position: relative;
+    min-width: 16px; /* Smaller minimum for desktop, will override for mobile */
+    min-height: 16px;
 }
 
 /* Improve hover feedback for better usability */
@@ -7626,7 +7629,7 @@ button .spinner {
 /* Intermediate breakpoint for smoother calendar grid transitions */
 @media (max-width: 1200px) {
     .compact-calendar-grid {
-        grid-template-columns: repeat(5, 1fr);
+        grid-template-columns: repeat(3, 1fr);
     }
 }
 
@@ -7636,7 +7639,7 @@ button .spinner {
     }
 
     .compact-calendar-grid {
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, 1fr);
     }
 
     /* Reduce chart height on tablets */
@@ -7666,7 +7669,13 @@ button .spinner {
     }
 
     .compact-calendar-grid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* Ensure proper touch targets on mobile */
+    .mini-day-cell {
+        min-width: 20px;
+        min-height: 20px;
     }
 
     .legend-items {
@@ -7697,6 +7706,17 @@ button .spinner {
 
     .compact-calendar-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* Full WCAG compliance on mobile - 24px touch targets */
+    .mini-day-cell {
+        min-width: 24px;
+        min-height: 24px;
+        gap: 3px;
+    }
+
+    .month-mini-days {
+        gap: 3px;
     }
 
     .year-select {
