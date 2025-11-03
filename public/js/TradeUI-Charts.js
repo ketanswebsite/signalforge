@@ -532,22 +532,39 @@ window.TradeUIModules.charts = (function() {
     
     /**
      * Render drawdown chart with theme-aware colors
+     * @throws {Error} If TradeCore is not available or data fetch fails
      */
     function renderDrawdownChart() {
         const container = document.getElementById('drawdown-chart');
-        if (!container) return;
-
-        const data = TradeCore.getDrawdownChartData();
-
-        if (data.length === 0) {
-            container.innerHTML = '<div class="no-data-message">No trade data available for drawdown chart</div>';
+        if (!container) {
+            console.warn('Drawdown chart container not found');
             return;
         }
 
-        // Clear previous chart if it exists
-        if (drawdownChart) {
-            drawdownChart.destroy();
+        // Validate TradeCore availability
+        if (!window.TradeCore || typeof window.TradeCore.getDrawdownChartData !== 'function') {
+            showError(container, 'Chart data service unavailable');
+            return;
         }
+
+        // Fetch data with error handling
+        let data;
+        try {
+            data = window.TradeCore.getDrawdownChartData();
+        } catch (error) {
+            console.error('Error fetching drawdown data:', error);
+            showError(container, 'Failed to load chart data');
+            return;
+        }
+
+        // Validate data
+        if (!data || !Array.isArray(data) || data.length === 0) {
+            showEmptyState(container, 'No drawdown data available');
+            return;
+        }
+
+        // Cleanup previous chart instance properly
+        cleanupChart('drawdown');
 
         // Get theme colors
         const colors = getThemeColors();
@@ -564,7 +581,7 @@ window.TradeUIModules.charts = (function() {
         const gradientFill = ctx.createLinearGradient(0, 0, 0, container.clientHeight);
         gradientFill.addColorStop(0, colors.errorUltraLight);
         gradientFill.addColorStop(0.5, colors.errorVeryLight);
-        gradientFill.addColorStop(1, 'rgba(220, 38, 38, 0.3)');
+        gradientFill.addColorStop(1, colors.errorLight);
 
         // Create chart
         drawdownChart = new Chart(ctx, {
@@ -677,8 +694,11 @@ window.TradeUIModules.charts = (function() {
                 }
             }
         });
+
+        // Register chart for proper cleanup
+        registerChart('drawdown', drawdownChart);
     }
-    
+
     /**
      * Render P&L distribution histogram
      */
@@ -697,17 +717,20 @@ window.TradeUIModules.charts = (function() {
         if (plDistributionChart) {
             plDistributionChart.destroy();
         }
-        
+
+        // Get theme colors
+        const themeColors = getThemeColors();
+
         // Use the bin labels directly from the data
         const binLabels = bins;
-        
+
         // Prepare color array based on whether bin represents positive or negative range
-        const colors = bins.map(bin => {
+        const barColors = bins.map(bin => {
             // Check if this bin is for negative returns
-            return bin.includes('-') && !bin.startsWith('-0.0%') ? 'rgba(239, 68, 68, 0.7)' : 'rgba(34, 197, 94, 0.7)';
+            return bin.includes('-') && !bin.startsWith('-0.0%') ? themeColors.errorLight : themeColors.successLight;
         });
-        const borderColors = colors.map(color => 
-            color.includes('239, 68, 68') ? 'rgb(220, 38, 38)' : 'rgb(22, 163, 74)'
+        const borderColors = bins.map(bin =>
+            bin.includes('-') && !bin.startsWith('-0.0%') ? themeColors.error : themeColors.success
         );
         
         // Create chart
@@ -719,7 +742,7 @@ window.TradeUIModules.charts = (function() {
                 datasets: [{
                     label: 'Number of Trades',
                     data: counts,
-                    backgroundColor: colors,
+                    backgroundColor: barColors,
                     borderColor: borderColors,
                     borderWidth: 1
                 }]
