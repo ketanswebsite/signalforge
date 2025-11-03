@@ -39,8 +39,8 @@ const TradeUIMetricCards = (function() {
         }
 
         const closedTrades = trades.filter(t => t.status === 'closed');
-        const winningTrades = closedTrades.filter(t => parseFloat(t.pl_percent || 0) > 0);
-        const losingTrades = closedTrades.filter(t => parseFloat(t.pl_percent || 0) < 0);
+        const winningTrades = closedTrades.filter(t => parseFloat(t.profitLossPercentage || t.plPercent || 0) > 0);
+        const losingTrades = closedTrades.filter(t => parseFloat(t.profitLossPercentage || t.plPercent || 0) < 0);
 
         // Win Rate
         const winRate = closedTrades.length > 0
@@ -48,23 +48,28 @@ const TradeUIMetricCards = (function() {
             : '0%';
 
         // Total P&L
-        const totalPL = closedTrades.reduce((sum, t) => sum + parseFloat(t.pl_amount || 0), 0);
+        const totalPL = closedTrades.reduce((sum, t) => sum + parseFloat(t.profitLoss || t.plValue || 0), 0);
         const totalPLFormatted = '₹' + totalPL.toLocaleString('en-IN', { maximumFractionDigits: 0 });
 
         // Average Return
         const avgReturn = closedTrades.length > 0
-            ? (closedTrades.reduce((sum, t) => sum + parseFloat(t.pl_percent || 0), 0) / closedTrades.length).toFixed(2) + '%'
+            ? (closedTrades.reduce((sum, t) => sum + parseFloat(t.profitLossPercentage || t.plPercent || 0), 0) / closedTrades.length).toFixed(2) + '%'
             : '0%';
 
         // Best Market
         const marketStats = {};
         closedTrades.forEach(t => {
-            const market = t.market || 'Unknown';
+            // Determine market from symbol suffix (.NS for India, .L for UK, default to US)
+            let market = 'US';
+            if (t.symbol) {
+                if (t.symbol.endsWith('.NS')) market = 'India';
+                else if (t.symbol.endsWith('.L')) market = 'UK';
+            }
             if (!marketStats[market]) {
                 marketStats[market] = { wins: 0, total: 0 };
             }
             marketStats[market].total++;
-            if (parseFloat(t.pl_percent || 0) > 0) {
+            if (parseFloat(t.profitLossPercentage || t.plPercent || 0) > 0) {
                 marketStats[market].wins++;
             }
         });
@@ -79,10 +84,10 @@ const TradeUIMetricCards = (function() {
 
         // Average Duration
         const durations = closedTrades
-            .filter(t => t.entry_date && t.exit_date)
+            .filter(t => t.entryDate && t.exitDate)
             .map(t => {
-                const entry = new Date(t.entry_date);
-                const exit = new Date(t.exit_date);
+                const entry = new Date(t.entryDate);
+                const exit = new Date(t.exitDate);
                 return Math.floor((exit - entry) / (1000 * 60 * 60 * 24));
             });
         const avgDuration = durations.length > 0
@@ -92,7 +97,7 @@ const TradeUIMetricCards = (function() {
         // Main Exit Reason
         const exitReasons = {};
         closedTrades.forEach(t => {
-            const reason = t.exit_reason || 'Unknown';
+            const reason = t.exitReason || 'Unknown';
             exitReasons[reason] = (exitReasons[reason] || 0) + 1;
         });
 
@@ -172,7 +177,7 @@ const TradeUIMetricCards = (function() {
         const drawdowns = [];
 
         trades.forEach(t => {
-            equity += parseFloat(t.pl_amount || 0);
+            equity += parseFloat(t.profitLoss || t.plValue || 0);
             if (equity > peak) peak = equity;
             const drawdown = peak > 0 ? ((equity - peak) / peak) * 100 : 0;
             drawdowns.push(drawdown);
@@ -191,7 +196,7 @@ const TradeUIMetricCards = (function() {
             trades.forEach(t => {
                 if (t.status === 'closed') {
                     total++;
-                    if (parseFloat(t.pl_percent || 0) > 0) wins++;
+                    if (parseFloat(t.profitLossPercentage || t.plPercent || 0) > 0) wins++;
                     data.push((wins / total) * 100);
                 }
             });
@@ -199,7 +204,7 @@ const TradeUIMetricCards = (function() {
         } else if (type === 'pl') {
             let cumulative = 0;
             return trades.map(t => {
-                cumulative += parseFloat(t.pl_amount || 0);
+                cumulative += parseFloat(t.profitLoss || t.plValue || 0);
                 return cumulative;
             });
         } else if (type === 'return') {
@@ -207,7 +212,7 @@ const TradeUIMetricCards = (function() {
             let sum = 0, count = 0;
             trades.forEach(t => {
                 if (t.status === 'closed') {
-                    sum += parseFloat(t.pl_percent || 0);
+                    sum += parseFloat(t.profitLossPercentage || t.plPercent || 0);
                     count++;
                     data.push(sum / count);
                 }
@@ -319,8 +324,8 @@ const TradeUIMetricCards = (function() {
 
         // Create data map for quick lookup
         const tradesByDate = {};
-        trades.filter(t => t.exit_date).forEach(t => {
-            const date = new Date(t.exit_date).toISOString().split('T')[0];
+        trades.filter(t => t.exitDate).forEach(t => {
+            const date = new Date(t.exitDate).toISOString().split('T')[0];
             if (!tradesByDate[date]) {
                 tradesByDate[date] = [];
             }
@@ -347,8 +352,8 @@ const TradeUIMetricCards = (function() {
 
         // Get available years from trades
         const years = [...new Set(trades
-            .filter(t => t.exit_date)
-            .map(t => new Date(t.exit_date).getFullYear())
+            .filter(t => t.exitDate)
+            .map(t => new Date(t.exitDate).getFullYear())
         )].sort((a, b) => b - a);
 
         if (years.length === 0) {
@@ -490,7 +495,7 @@ const TradeUIMetricCards = (function() {
             dayCell.className = 'mini-day-cell';
 
             if (tradesByDate[dateStr]) {
-                const dayPL = tradesByDate[dateStr].reduce((sum, t) => sum + parseFloat(t.pl_amount || 0), 0);
+                const dayPL = tradesByDate[dateStr].reduce((sum, t) => sum + parseFloat(t.profitLoss || t.plValue || 0), 0);
 
                 if (dayPL > 0) {
                     if (dayPL > 1000) dayCell.classList.add('profit-high');
