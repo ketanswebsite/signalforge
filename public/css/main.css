@@ -44,6 +44,14 @@
     --warning: #F59E0B;
     --info: #D4AF37;
 
+    /* === Semantic Color Variants (for calendar heatmap & charts) === */
+    --success-light-30: rgba(34, 197, 94, 0.3);
+    --success-light-60: rgba(34, 197, 94, 0.6);
+    --success-light-90: rgba(34, 197, 94, 0.9);
+    --error-light-30: rgba(220, 38, 38, 0.3);
+    --error-light-60: rgba(220, 38, 38, 0.6);
+    --error-light-90: rgba(220, 38, 38, 0.9);
+
     /* === Gradients (Gold-based) === */
     --gradient-primary: linear-gradient(135deg, #D4AF37, #FFA500);
     --gradient-success: linear-gradient(135deg, #22C55E, #16A34A);
@@ -132,6 +140,20 @@ body.light-theme {
     --text-secondary: var(--grey-700);
     --text-muted: var(--grey-500);
     --border: var(--border-color-light);
+}
+
+/* === Accessibility Utilities === */
+/* Screen reader only - hides content visually but keeps it accessible to assistive technologies */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
 }
 
 /* ========================================
@@ -3622,29 +3644,29 @@ a .material-icons {
     flex-shrink: 0; /* Prevent squishing */
 }
 
-/* Calendar-specific legend color modifiers */
+/* Calendar-specific legend color modifiers - using shared CSS variables */
 .legend-color.profit-low {
-    background: rgba(34, 197, 94, 0.3);
+    background: var(--success-light-30);
 }
 
 .legend-color.profit-medium {
-    background: rgba(34, 197, 94, 0.6);
+    background: var(--success-light-60);
 }
 
 .legend-color.profit-high {
-    background: rgba(34, 197, 94, 0.9);
+    background: var(--success-light-90);
 }
 
 .legend-color.loss-low {
-    background: rgba(220, 38, 38, 0.3);
+    background: var(--error-light-30);
 }
 
 .legend-color.loss-medium {
-    background: rgba(220, 38, 38, 0.6);
+    background: var(--error-light-60);
 }
 
 .legend-color.loss-high {
-    background: rgba(220, 38, 38, 0.9);
+    background: var(--error-light-90);
 }
 
 .legend-color.no-trades {
@@ -7530,27 +7552,27 @@ button .spinner {
 }
 
 .mini-day-cell.profit-low {
-    background: rgba(34, 197, 94, 0.3);
+    background: var(--success-light-30);
 }
 
 .mini-day-cell.profit-medium {
-    background: rgba(34, 197, 94, 0.6);
+    background: var(--success-light-60);
 }
 
 .mini-day-cell.profit-high {
-    background: rgba(34, 197, 94, 0.9);
+    background: var(--success-light-90);
 }
 
 .mini-day-cell.loss-low {
-    background: rgba(220, 38, 38, 0.3);
+    background: var(--error-light-30);
 }
 
 .mini-day-cell.loss-medium {
-    background: rgba(220, 38, 38, 0.6);
+    background: var(--error-light-60);
 }
 
 .mini-day-cell.loss-high {
-    background: rgba(220, 38, 38, 0.9);
+    background: var(--error-light-90);
 }
 
 /* Calendar Legend */

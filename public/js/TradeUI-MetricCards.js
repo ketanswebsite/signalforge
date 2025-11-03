@@ -7,6 +7,82 @@ const TradeUIMetricCards = (function() {
     'use strict';
 
     /**
+     * Show error message in container
+     * @param {HTMLElement} container - Container element
+     * @param {string} message - Error message to display
+     */
+    function showError(container, message) {
+        if (!container) return;
+        container.innerHTML = `
+            <div class="chart-error-state" style="
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 200px;
+                padding: var(--spacing-lg);
+                text-align: center;
+                color: var(--error);
+            ">
+                <span class="material-icons" style="font-size: 48px; margin-bottom: var(--spacing-md); opacity: 0.5;">error_outline</span>
+                <div style="font-size: 0.875rem; color: var(--text-secondary);">${message}</div>
+            </div>
+        `;
+    }
+
+    /**
+     * Show loading state in container
+     * @param {HTMLElement} container - Container element
+     */
+    function showLoading(container) {
+        if (!container) return;
+        container.innerHTML = `
+            <div class="chart-loading-state" style="
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 200px;
+                padding: var(--spacing-lg);
+            ">
+                <div class="loading-spinner" style="
+                    width: 40px;
+                    height: 40px;
+                    border: 3px solid var(--border-color);
+                    border-top-color: var(--accent-gold);
+                    border-radius: 50%;
+                    animation: spin 0.8s linear infinite;
+                "></div>
+                <div style="margin-top: var(--spacing-md); font-size: 0.875rem; color: var(--text-secondary);">Loading calendar...</div>
+            </div>
+        `;
+    }
+
+    /**
+     * Show empty state in container
+     * @param {HTMLElement} container - Container element
+     * @param {string} message - Message to display
+     */
+    function showEmptyState(container, message = "No trade data available") {
+        if (!container) return;
+        container.innerHTML = `
+            <div class="chart-empty-state" style="
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 200px;
+                padding: var(--spacing-lg);
+                text-align: center;
+            ">
+                <span class="material-icons" style="font-size: 48px; margin-bottom: var(--spacing-md); opacity: 0.3; color: var(--text-muted);">calendar_today</span>
+                <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: var(--spacing-xs);">${message}</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Add trades to see the calendar heatmap</div>
+            </div>
+        `;
+    }
+
+    /**
      * Render all analytics metric cards
      */
     function renderMetricCards(trades) {
@@ -300,9 +376,15 @@ const TradeUIMetricCards = (function() {
         const min = Math.min(...data);
         const range = max - min || 1;
 
+        // Get theme colors from CSS variables instead of hardcoded values
+        const styles = getComputedStyle(document.documentElement);
+        const successColor = styles.getPropertyValue('--success').trim() || '#22C55E';
+        const errorColor = styles.getPropertyValue('--error').trim() || '#DC2626';
+        const infoColor = styles.getPropertyValue('--info').trim() || '#D4AF37';
+
         ctx.clearRect(0, 0, width, height);
         ctx.beginPath();
-        ctx.strokeStyle = type === 'positive' ? '#22C55E' : type === 'negative' ? '#DC2626' : '#D4AF37';
+        ctx.strokeStyle = type === 'positive' ? successColor : type === 'negative' ? errorColor : infoColor;
         ctx.lineWidth = 1.5;
 
         data.forEach((value, i) => {
@@ -321,43 +403,81 @@ const TradeUIMetricCards = (function() {
 
     /**
      * Render compact calendar heatmap (12 mini grids)
+     * @throws {Error} If calendar rendering fails
      */
     function renderCompactCalendar(trades, year = new Date().getFullYear()) {
         const container = document.getElementById('compact-calendar-container');
-        if (!container) return;
-
-        // Create calendar header with year selector and legend
-        const header = createCalendarHeader(trades, year);
-
-        container.innerHTML = '';
-        container.appendChild(header);
-
-        // Create calendar grid container
-        const gridWrapper = document.createElement('div');
-        gridWrapper.innerHTML = '<div class="compact-calendar-grid" id="compact-calendar-grid"></div>';
-        container.appendChild(gridWrapper);
-
-        const grid = document.getElementById('compact-calendar-grid');
-
-        // Create data map for quick lookup
-        const tradesByDate = {};
-        trades.filter(t => t.exitDate).forEach(t => {
-            const date = new Date(t.exitDate).toISOString().split('T')[0];
-            if (!tradesByDate[date]) {
-                tradesByDate[date] = [];
-            }
-            tradesByDate[date].push(t);
-        });
-
-        // Render 12 months
-        for (let month = 0; month < 12; month++) {
-            const monthGrid = createMonthMiniGrid(year, month, tradesByDate);
-            grid.appendChild(monthGrid);
+        if (!container) {
+            console.warn('Compact calendar container not found');
+            return;
         }
 
-        // Add legend at bottom with auto-detected currency
-        const legend = createCalendarLegend(trades);
-        container.appendChild(legend);
+        // Validate trades data
+        if (!trades) {
+            showError(container, 'No trade data provided');
+            return;
+        }
+
+        if (!Array.isArray(trades)) {
+            showError(container, 'Invalid trade data format');
+            return;
+        }
+
+        // Show empty state if no trades
+        if (trades.length === 0) {
+            showEmptyState(container, 'No trades to display on calendar');
+            return;
+        }
+
+        // Show loading state briefly
+        showLoading(container);
+
+        // Wrap rendering in try-catch for error handling
+        try {
+            // Small delay to show loading state (makes UX feel more responsive)
+            setTimeout(() => {
+                try {
+                    // Create calendar header with year selector and legend
+                    const header = createCalendarHeader(trades, year);
+
+                    container.innerHTML = '';
+                    container.appendChild(header);
+
+                    // Create calendar grid container
+                    const gridWrapper = document.createElement('div');
+                    gridWrapper.innerHTML = '<div class="compact-calendar-grid" id="compact-calendar-grid"></div>';
+                    container.appendChild(gridWrapper);
+
+                    const grid = document.getElementById('compact-calendar-grid');
+
+                    // Create data map for quick lookup
+                    const tradesByDate = {};
+                    trades.filter(t => t.exitDate).forEach(t => {
+                        const date = new Date(t.exitDate).toISOString().split('T')[0];
+                        if (!tradesByDate[date]) {
+                            tradesByDate[date] = [];
+                        }
+                        tradesByDate[date].push(t);
+                    });
+
+                    // Render 12 months
+                    for (let month = 0; month < 12; month++) {
+                        const monthGrid = createMonthMiniGrid(year, month, tradesByDate);
+                        grid.appendChild(monthGrid);
+                    }
+
+                    // Add legend at bottom with auto-detected currency
+                    const legend = createCalendarLegend(trades);
+                    container.appendChild(legend);
+                } catch (error) {
+                    console.error('Error rendering calendar:', error);
+                    showError(container, 'Failed to render calendar');
+                }
+            }, 100);
+        } catch (error) {
+            console.error('Error initializing calendar render:', error);
+            showError(container, 'Failed to initialize calendar');
+        }
     }
 
     /**
@@ -389,7 +509,20 @@ const TradeUIMetricCards = (function() {
                     <span class="material-icons" aria-hidden="true">chevron_right</span>
                 </button>
             </div>
+            <div id="calendar-year-announcement" class="sr-only" aria-live="polite" aria-atomic="true"></div>
         `;
+
+        // Helper function to announce year changes for screen readers
+        const announceYearChange = (year) => {
+            const announcement = document.getElementById('calendar-year-announcement');
+            if (announcement) {
+                announcement.textContent = `Calendar updated to show trades for year ${year}`;
+                // Clear announcement after a delay so it can be repeated
+                setTimeout(() => {
+                    announcement.textContent = '';
+                }, 1000);
+            }
+        };
 
         // Add event listeners for year navigation
         setTimeout(() => {
@@ -403,6 +536,7 @@ const TradeUIMetricCards = (function() {
                     if (window.TradeCore) {
                         const trades = window.TradeCore.getTrades();
                         renderCompactCalendar(trades, year);
+                        announceYearChange(year);
                     }
                 });
             }
@@ -413,6 +547,7 @@ const TradeUIMetricCards = (function() {
                     if (window.TradeCore) {
                         const trades = window.TradeCore.getTrades();
                         renderCompactCalendar(trades, year);
+                        announceYearChange(year);
                     }
                 });
             }
@@ -423,6 +558,7 @@ const TradeUIMetricCards = (function() {
                     if (window.TradeCore) {
                         const trades = window.TradeCore.getTrades();
                         renderCompactCalendar(trades, year);
+                        announceYearChange(year);
                     }
                 });
             }
@@ -568,6 +704,21 @@ const TradeUIMetricCards = (function() {
                 // Accessibility: Add descriptive ARIA label
                 dayCell.setAttribute('aria-label', `${dateStr}: ${plType} of ${formattedPL}, ${tradeCount} ${tradeCount === 1 ? 'trade' : 'trades'}`);
                 dayCell.title = `${dateStr}: ${dayPL > 0 ? '+' : ''}₹${dayPL.toFixed(2)} (${tradeCount} trades)`;
+
+                // Add keyboard event handler for Enter and Space keys
+                dayCell.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        // Trigger the same action as a click (could be extended to show trade details)
+                        dayCell.click();
+
+                        // Optional: Show a visual feedback
+                        dayCell.style.transform = 'scale(0.95)';
+                        setTimeout(() => {
+                            dayCell.style.transform = '';
+                        }, 100);
+                    }
+                });
             } else {
                 dayCell.classList.add('no-trades');
                 dayCell.setAttribute('aria-label', `${dateStr}: No trades`);
