@@ -137,11 +137,25 @@ const TradeUIMetricCards = (function() {
             }
         });
 
-        // Max Drawdown (largest drop from peak in cumulative returns)
-        const drawdowns = calculateDrawdowns(closedTrades);
-        const maxDrawdown = drawdowns.length > 0
-            ? Math.max(...drawdowns).toFixed(1) + '%'
-            : '0%';
+        // Max Drawdown - Use portfolio-based calculation from TradeCore
+        let maxDrawdown = '0%';
+        let drawdownData = [];
+        if (window.TradeCore && typeof window.TradeCore.getAdvancedMetrics === 'function') {
+            const advancedMetrics = window.TradeCore.getAdvancedMetrics();
+            maxDrawdown = advancedMetrics.maxDrawdown > 0
+                ? advancedMetrics.maxDrawdown.toFixed(2) + '%'
+                : '0%';
+
+            // Get drawdown trend data from equity curve
+            const equityCurve = window.TradeCore.getEquityCurveData ? window.TradeCore.getEquityCurveData() : [];
+            if (equityCurve.length > 1) {
+                let peak = equityCurve[0].equity;
+                drawdownData = equityCurve.map(point => {
+                    if (point.equity > peak) peak = point.equity;
+                    return ((peak - point.equity) / peak) * 100;
+                });
+            }
+        }
 
         // Trend data (last 30 days)
         const last30Days = closedTrades.slice(-30);
@@ -149,7 +163,6 @@ const TradeUIMetricCards = (function() {
         const plData = calculateTrend(last30Days, 'pl');
         const returnData = calculateTrend(last30Days, 'return');
         const tradeCountData = calculateTrend(trades.slice(-30), 'count');
-        const drawdownData = drawdowns.slice(-30);
 
         // Calculate trends
         const winRateTrend = winRateData.length >= 2
@@ -189,25 +202,6 @@ const TradeUIMetricCards = (function() {
             maxDrawdown,
             drawdownData
         };
-    }
-
-    /**
-     * Calculate drawdowns from trades using cumulative percentage returns
-     * This matches the formula from advanced metrics (performance-analytics.js)
-     */
-    function calculateDrawdowns(trades) {
-        let peak = 0;
-        let cumReturn = 0;
-        const drawdowns = [];
-
-        trades.forEach(t => {
-            cumReturn += parseFloat(t.profitLossPercentage || t.plPercent || 0);
-            if (cumReturn > peak) peak = cumReturn;
-            const drawdown = peak - cumReturn;
-            drawdowns.push(drawdown);
-        });
-
-        return drawdowns;
     }
 
     /**
