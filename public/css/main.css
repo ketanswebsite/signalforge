@@ -6378,7 +6378,7 @@ button .spinner {
     margin: 0 auto;
     padding: 0 var(--spacing-lg);
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     gap: var(--spacing-md);
 }
