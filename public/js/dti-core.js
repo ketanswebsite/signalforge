@@ -210,13 +210,13 @@ const DTIBacktester = {
         const appDescription = document.querySelector('.app-description');
         if (appDescription) {
             appDescription.innerHTML = `
-                Based on William Blau's DTI indicator as described in "Momentum, Direction and Divergence" (1995).
-                This tool backtests a long-only strategy using daily & weekly DTI signals on historical stock data.
+                Simulate historical portfolio performance using high conviction DTI signals with realistic position management.
+                See how a diversified portfolio would have performed across global markets.
                 <span class="warmup-note">Note: The first 6 months of data are used as a warm-up period for the indicators; no trades will be taken during this time.</span>
             `;
-            
+
             // Add CSS for the warm-up note
-            
+
         }
     },
     
