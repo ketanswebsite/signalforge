@@ -802,22 +802,39 @@ window.TradeUIModules.charts = (function() {
     
     /**
      * Render win/loss pie chart with gold accent colors
+     * @throws {Error} If TradeCore is not available or data fetch fails
      */
     function renderWinLossPieChart() {
         const container = document.getElementById('win-loss-pie-chart');
-        if (!container) return;
-
-        const data = TradeCore.getWinLossPieChartData();
-
-        if (data.data.length === 0 || data.data.every(d => d === 0)) {
-            container.innerHTML = '<div class="no-data-message">No closed trades available for win/loss breakdown</div>';
+        if (!container) {
+            console.warn('Win/loss pie chart container not found');
             return;
         }
 
-        // Clear previous chart if it exists
-        if (winLossPieChart) {
-            winLossPieChart.destroy();
+        // Validate TradeCore availability
+        if (!window.TradeCore || typeof window.TradeCore.getWinLossPieChartData !== 'function') {
+            showError(container, 'Chart data service unavailable');
+            return;
         }
+
+        // Fetch data with error handling
+        let data;
+        try {
+            data = window.TradeCore.getWinLossPieChartData();
+        } catch (error) {
+            console.error('Error fetching win/loss pie chart data:', error);
+            showError(container, 'Failed to load chart data');
+            return;
+        }
+
+        // Validate data
+        if (!data || !data.data || data.data.length === 0 || data.data.every(d => d === 0)) {
+            showEmptyState(container, 'No closed trades available for win/loss breakdown');
+            return;
+        }
+
+        // Cleanup previous chart instance properly
+        cleanupChart('win-loss-pie');
 
         // Get theme colors
         const colors = getThemeColors();
@@ -941,8 +958,11 @@ window.TradeUIModules.charts = (function() {
             // Add plugin
             Chart.register(centerTextPlugin);
         }
+
+        // Register chart for proper cleanup
+        registerChart('win-loss-pie', winLossPieChart);
     }
-    
+
     /**
      * Render monthly performance chart with gold trade count line
      * @throws {Error} If TradeCore is not available or data fetch fails
@@ -1203,22 +1223,39 @@ window.TradeUIModules.charts = (function() {
 
     /**
      * Render market comparison chart with gold win rate line
+     * @throws {Error} If TradeCore is not available or data fetch fails
      */
     function renderMarketComparison() {
         const container = document.getElementById('market-comparison-chart');
-        if (!container) return;
-
-        const data = TradeCore.getPerformanceByMarket();
-
-        if (data.length === 0) {
-            container.innerHTML = '<div class="no-data-message">No closed trades available for market comparison</div>';
+        if (!container) {
+            console.warn('Market comparison chart container not found');
             return;
         }
 
-        // Clear previous chart if it exists
-        if (marketComparisonChart) {
-            marketComparisonChart.destroy();
+        // Validate TradeCore availability
+        if (!window.TradeCore || typeof window.TradeCore.getPerformanceByMarket !== 'function') {
+            showError(container, 'Chart data service unavailable');
+            return;
         }
+
+        // Fetch data with error handling
+        let data;
+        try {
+            data = window.TradeCore.getPerformanceByMarket();
+        } catch (error) {
+            console.error('Error fetching market comparison data:', error);
+            showError(container, 'Failed to load chart data');
+            return;
+        }
+
+        // Validate data
+        if (!data || !Array.isArray(data) || data.length === 0) {
+            showEmptyState(container, 'No closed trades available for market comparison');
+            return;
+        }
+
+        // Cleanup previous chart instance properly
+        cleanupChart('market-comparison');
 
         // Get theme colors
         const colors = getThemeColors();
@@ -1234,16 +1271,19 @@ window.TradeUIModules.charts = (function() {
         const minPL = Math.min(...plData, -5);
         const absMaxPL = Math.max(Math.abs(maxPL), Math.abs(minPL));
 
-        // Create improved gradient colors based on performance
+        // Create improved gradient colors based on performance using theme colors
         const barColors = plData.map(pl => {
             if (pl >= 0) {
-                // Green gradient for positive values
-                const intensity = Math.min(0.9, 0.5 + (pl / maxPL) * 0.4);
-                return `rgba(34, 197, 94, ${intensity})`;
+                return colors.successLight;
             } else {
-                // Red gradient for negative values
-                const intensity = Math.min(0.9, 0.5 + (Math.abs(pl) / Math.abs(minPL)) * 0.4);
-                return `rgba(220, 38, 38, ${intensity})`;
+                return colors.errorLight;
+            }
+        });
+        const borderColors = plData.map(pl => {
+            if (pl >= 0) {
+                return colors.success;
+            } else {
+                return colors.error;
             }
         });
 
@@ -1258,8 +1298,8 @@ window.TradeUIModules.charts = (function() {
                         label: 'Average P&L (%)',
                         data: plData,
                         backgroundColor: barColors,
-                        borderColor: barColors.map(c => c.replace(/[0-9].[0-9]/, '1')),
-                        borderWidth: 1,
+                        borderColor: borderColors,
+                        borderWidth: 2,
                         borderRadius: 6,
                         yAxisID: 'y',
                         maxBarThickness: 45
@@ -1474,26 +1514,46 @@ window.TradeUIModules.charts = (function() {
                 }
             }
         });
+
+        // Register chart for proper cleanup
+        registerChart('market-comparison', marketComparisonChart);
     }
-    
+
     /**
      * Render trade size vs return chart with gold win rate line
+     * @throws {Error} If TradeCore is not available or data fetch fails
      */
     function renderTradeSizeVsReturn() {
         const container = document.getElementById('size-vs-return-chart');
-        if (!container) return;
-
-        const data = TradeCore.getTradeSizeVsReturnData();
-
-        if (data.length === 0) {
-            container.innerHTML = '<div class="no-data-message">No closed trades available for size vs return analysis</div>';
+        if (!container) {
+            console.warn('Trade size vs return chart container not found');
             return;
         }
 
-        // Clear previous chart if it exists
-        if (sizeVsReturnChart) {
-            sizeVsReturnChart.destroy();
+        // Validate TradeCore availability
+        if (!window.TradeCore || typeof window.TradeCore.getTradeSizeVsReturnData !== 'function') {
+            showError(container, 'Chart data service unavailable');
+            return;
         }
+
+        // Fetch data with error handling
+        let data;
+        try {
+            data = window.TradeCore.getTradeSizeVsReturnData();
+        } catch (error) {
+            console.error('Error fetching trade size vs return data:', error);
+            showError(container, 'Failed to load chart data');
+            return;
+        }
+
+        // Validate data
+        if (!data || !Array.isArray(data) || data.length === 0) {
+            showEmptyState(container, 'No closed trades available for size vs return analysis');
+            return;
+        }
+
+        // Cleanup previous chart instance properly
+        cleanupChart('size-vs-return');
 
         // Get theme colors
         const colors = getThemeColors();
@@ -1715,31 +1775,55 @@ window.TradeUIModules.charts = (function() {
                 }
             }
         });
+
+        // Register chart for proper cleanup
+        registerChart('size-vs-return', sizeVsReturnChart);
     }
-    
+
     /**
      * Render holding period analysis chart with gold win rate line
+     * @throws {Error} If TradeCore is not available or data fetch fails
      */
     function renderHoldingPeriodAnalysis() {
         const container = document.getElementById('holding-period-chart');
-        if (!container) return;
-
-        const holdingStats = TradeCore.getHoldingPeriodStats();
-
-        // Check if we have data
-        const hasData = holdingStats.shortTerm.count > 0 ||
-                         holdingStats.mediumTerm.count > 0 ||
-                         holdingStats.longTerm.count > 0;
-
-        if (!hasData) {
-            container.innerHTML = '<div class="no-data-message">No closed trades available for holding period analysis</div>';
+        if (!container) {
+            console.warn('Holding period analysis chart container not found');
             return;
         }
 
-        // Clear previous chart if it exists
-        if (holdingTimeChart) {
-            holdingTimeChart.destroy();
+        // Validate TradeCore availability
+        if (!window.TradeCore || typeof window.TradeCore.getHoldingPeriodStats !== 'function') {
+            showError(container, 'Chart data service unavailable');
+            return;
         }
+
+        // Fetch data with error handling
+        let holdingStats;
+        try {
+            holdingStats = window.TradeCore.getHoldingPeriodStats();
+        } catch (error) {
+            console.error('Error fetching holding period data:', error);
+            showError(container, 'Failed to load chart data');
+            return;
+        }
+
+        // Validate data
+        if (!holdingStats) {
+            showEmptyState(container, 'No holding period data available');
+            return;
+        }
+
+        const hasData = holdingStats.shortTerm && holdingStats.shortTerm.count > 0 ||
+                        holdingStats.mediumTerm && holdingStats.mediumTerm.count > 0 ||
+                        holdingStats.longTerm && holdingStats.longTerm.count > 0;
+
+        if (!hasData) {
+            showEmptyState(container, 'No closed trades available for holding period analysis');
+            return;
+        }
+
+        // Cleanup previous chart instance properly
+        cleanupChart('holding-period');
 
         // Get theme colors
         const colors = getThemeColors();
@@ -1920,6 +2004,9 @@ window.TradeUIModules.charts = (function() {
                 }
             }
         });
+
+        // Register chart for proper cleanup
+        registerChart('holding-period', holdingTimeChart);
     }
 
     // Return public API
