@@ -7491,19 +7491,32 @@ button .spinner {
 .month-mini-days {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 2px;
+    gap: 4px; /* Increased from 2px for better click target separation */
+    padding: 2px; /* Add padding fallback for older browsers */
 }
 
 .mini-day-cell {
     aspect-ratio: 1;
-    border-radius: 2px;
+    min-width: 24px; /* Accessibility: Minimum touch target size */
+    min-height: 24px; /* WCAG 2.1 guideline for touch targets */
+    border-radius: 3px;
     font-size: 0;
     cursor: pointer;
-    transition: transform var(--transition-fast);
+    transition: all var(--transition-fast);
+    position: relative;
 }
 
+/* Improve hover feedback for better usability */
 .mini-day-cell:hover {
-    transform: scale(1.3);
+    transform: scale(1.2);
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Add focus styles for keyboard navigation */
+.mini-day-cell:focus {
+    outline: 2px solid var(--accent-gold);
+    outline-offset: 2px;
     z-index: 10;
 }
 

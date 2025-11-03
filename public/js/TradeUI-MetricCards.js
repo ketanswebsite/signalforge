@@ -379,14 +379,14 @@ const TradeUIMetricCards = (function() {
 
         header.innerHTML = `
             <div class="calendar-year-selector">
-                <button class="year-nav-btn" id="prev-year" data-year="${currentYear - 1}">
-                    <span class="material-icons">chevron_left</span>
+                <button class="year-nav-btn" id="prev-year" data-year="${currentYear - 1}" aria-label="Previous year (${currentYear - 1})" title="Go to ${currentYear - 1}">
+                    <span class="material-icons" aria-hidden="true">chevron_left</span>
                 </button>
-                <select id="calendar-year-select" class="year-select">
+                <select id="calendar-year-select" class="year-select" aria-label="Select year to view trades">
                     ${years.map(y => `<option value="${y}" ${y === currentYear ? 'selected' : ''}>${y}</option>`).join('')}
                 </select>
-                <button class="year-nav-btn" id="next-year" data-year="${currentYear + 1}">
-                    <span class="material-icons">chevron_right</span>
+                <button class="year-nav-btn" id="next-year" data-year="${currentYear + 1}" aria-label="Next year (${currentYear + 1})" title="Go to ${currentYear + 1}">
+                    <span class="material-icons" aria-hidden="true">chevron_right</span>
                 </button>
             </div>
         `;
@@ -543,8 +543,17 @@ const TradeUIMetricCards = (function() {
             const dayCell = document.createElement('div');
             dayCell.className = 'mini-day-cell';
 
+            // Accessibility: Make focusable for keyboard navigation
+            dayCell.setAttribute('tabindex', '0');
+            dayCell.setAttribute('role', 'button');
+
             if (tradesByDate[dateStr]) {
                 const dayPL = tradesByDate[dateStr].reduce((sum, t) => sum + parseFloat(t.profitLoss || t.plValue || 0), 0);
+                const tradeCount = tradesByDate[dateStr].length;
+                const plType = dayPL > 0 ? 'profit' : 'loss';
+
+                // Format P&L with currency symbol
+                const formattedPL = '₹' + Math.abs(dayPL).toFixed(2);
 
                 if (dayPL > 0) {
                     if (dayPL > 1000) dayCell.classList.add('profit-high');
@@ -556,9 +565,13 @@ const TradeUIMetricCards = (function() {
                     else dayCell.classList.add('loss-low');
                 }
 
-                dayCell.title = `${dateStr}: ₹${dayPL.toFixed(2)} (${tradesByDate[dateStr].length} trades)`;
+                // Accessibility: Add descriptive ARIA label
+                dayCell.setAttribute('aria-label', `${dateStr}: ${plType} of ${formattedPL}, ${tradeCount} ${tradeCount === 1 ? 'trade' : 'trades'}`);
+                dayCell.title = `${dateStr}: ${dayPL > 0 ? '+' : ''}₹${dayPL.toFixed(2)} (${tradeCount} trades)`;
             } else {
                 dayCell.classList.add('no-trades');
+                dayCell.setAttribute('aria-label', `${dateStr}: No trades`);
+                dayCell.setAttribute('tabindex', '-1'); // Don't tab to empty days
             }
 
             daysGrid.appendChild(dayCell);

@@ -7,6 +7,74 @@
 // Create Charts module
 window.TradeUIModules = window.TradeUIModules || {};
 window.TradeUIModules.charts = (function() {
+    // ==================== CONSTANTS ====================
+
+    /**
+     * Chart configuration constants
+     * Centralized to ensure consistency and easy maintenance
+     */
+    const CHART_CONSTANTS = {
+        // Font families
+        FONTS: {
+            HEADING: "'Exo 2', sans-serif",
+            BODY: "'Work Sans', sans-serif",
+            MONO: "'Roboto Mono', monospace"
+        },
+
+        // Font sizes
+        FONT_SIZES: {
+            LEGEND: 12,
+            TOOLTIP_TITLE: 13,
+            TOOLTIP_BODY: 12,
+            TICK_LABEL: 11
+        },
+
+        // Tooltip configuration
+        TOOLTIP: {
+            PADDING: 12,
+            CORNER_RADIUS: 8,
+            BORDER_WIDTH: 1
+        },
+
+        // Point styling
+        POINTS: {
+            RADIUS: 4,
+            HOVER_RADIUS: 7,
+            BORDER_WIDTH: 2
+        },
+
+        // Line styling
+        LINES: {
+            WIDTH: 3,
+            TENSION: 0.3
+        },
+
+        // Calendar thresholds (for P&L coloring)
+        CALENDAR_THRESHOLDS: {
+            INDIA: {
+                LOW: 300,
+                MEDIUM: 1000,
+                HIGH: 3000
+            },
+            US: {
+                LOW: 100,
+                MEDIUM: 500,
+                HIGH: 1500
+            },
+            UK: {
+                LOW: 100,
+                MEDIUM: 500,
+                HIGH: 1500
+            }
+        },
+
+        // Animation durations
+        ANIMATION: {
+            DURATION: 750,
+            EASING: 'easeInOutQuart'
+        }
+    };
+
     // Private variables for chart instances
     let equityChart = null;
     let drawdownChart = null;
@@ -157,6 +225,63 @@ window.TradeUIModules.charts = (function() {
     }
 
     /**
+     * Create standardized tooltip configuration
+     * @param {Object} colors - Theme colors object
+     * @param {Function} labelCallback - Custom label callback function
+     * @returns {Object} Tooltip configuration
+     */
+    function createTooltipConfig(colors, labelCallback = null) {
+        const config = {
+            mode: 'index',
+            intersect: false,
+            backgroundColor: colors.tooltipBg,
+            titleColor: colors.tooltipText,
+            bodyColor: colors.tooltipText,
+            borderColor: colors.tooltipBorder,
+            borderWidth: CHART_CONSTANTS.TOOLTIP.BORDER_WIDTH,
+            padding: CHART_CONSTANTS.TOOLTIP.PADDING,
+            cornerRadius: CHART_CONSTANTS.TOOLTIP.CORNER_RADIUS,
+            titleFont: {
+                family: CHART_CONSTANTS.FONTS.BODY,
+                weight: '600',
+                size: CHART_CONSTANTS.FONT_SIZES.TOOLTIP_TITLE
+            },
+            bodyFont: {
+                family: CHART_CONSTANTS.FONTS.MONO,
+                weight: '500',
+                size: CHART_CONSTANTS.FONT_SIZES.TOOLTIP_BODY
+            }
+        };
+
+        if (labelCallback) {
+            config.callbacks = { label: labelCallback };
+        }
+
+        return config;
+    }
+
+    /**
+     * Create standardized legend configuration
+     * @param {Object} colors - Theme colors object
+     * @returns {Object} Legend configuration
+     */
+    function createLegendConfig(colors) {
+        return {
+            display: true,
+            position: 'top',
+            labels: {
+                usePointStyle: true,
+                color: colors.textPrimary,
+                font: {
+                    family: CHART_CONSTANTS.FONTS.HEADING,
+                    weight: 'bold',
+                    size: CHART_CONSTANTS.FONT_SIZES.LEGEND
+                }
+            }
+        };
+    }
+
+    /**
      * Get theme-aware colors based on current theme
      * Returns color palette optimized for Black & Gold theme
      */
@@ -238,24 +363,39 @@ window.TradeUIModules.charts = (function() {
     
     /**
      * Render equity curve chart with gold gradient
+     * @throws {Error} If TradeCore is not available or data fetch fails
      */
     function renderEquityCurve() {
         const container = document.getElementById('equity-curve-chart');
         if (!container) {
+            console.warn('Equity curve chart container not found');
             return;
         }
 
-        const data = TradeCore.getEquityCurveData();
-
-        if (data.length === 0) {
-            container.innerHTML = '<div class="no-data-message">No trade data available for equity curve</div>';
+        // Validate TradeCore availability
+        if (!window.TradeCore || typeof window.TradeCore.getEquityCurveData !== 'function') {
+            showError(container, 'Chart data service unavailable');
             return;
         }
 
-        // Clear previous chart if it exists
-        if (equityChart) {
-            equityChart.destroy();
+        // Fetch data with error handling
+        let data;
+        try {
+            data = window.TradeCore.getEquityCurveData();
+        } catch (error) {
+            console.error('Error fetching equity curve data:', error);
+            showError(container, 'Failed to load chart data');
+            return;
         }
+
+        // Validate data
+        if (!data || !Array.isArray(data) || data.length === 0) {
+            showEmptyState(container, 'No trade data available');
+            return;
+        }
+
+        // Cleanup previous chart instance properly
+        cleanupChart('equity-curve');
 
         // Get theme colors
         const colors = getThemeColors();
@@ -385,6 +525,9 @@ window.TradeUIModules.charts = (function() {
                 }
             }
         });
+
+        // Register chart for proper cleanup
+        registerChart('equity-curve', equityChart);
     }
     
     /**
