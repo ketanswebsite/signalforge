@@ -137,10 +137,10 @@ const TradeUIMetricCards = (function() {
             }
         });
 
-        // Max Drawdown (show as positive percentage)
+        // Max Drawdown (largest drop from peak in cumulative returns)
         const drawdowns = calculateDrawdowns(closedTrades);
         const maxDrawdown = drawdowns.length > 0
-            ? Math.abs(Math.min(...drawdowns)).toFixed(1) + '%'
+            ? Math.max(...drawdowns).toFixed(1) + '%'
             : '0%';
 
         // Trend data (last 30 days)
@@ -192,17 +192,18 @@ const TradeUIMetricCards = (function() {
     }
 
     /**
-     * Calculate drawdowns from trades
+     * Calculate drawdowns from trades using cumulative percentage returns
+     * This matches the formula from advanced metrics (performance-analytics.js)
      */
     function calculateDrawdowns(trades) {
         let peak = 0;
-        let equity = 0;
+        let cumReturn = 0;
         const drawdowns = [];
 
         trades.forEach(t => {
-            equity += parseFloat(t.profitLoss || t.plValue || 0);
-            if (equity > peak) peak = equity;
-            const drawdown = peak > 0 ? ((equity - peak) / peak) * 100 : 0;
+            cumReturn += parseFloat(t.profitLossPercentage || t.plPercent || 0);
+            if (cumReturn > peak) peak = cumReturn;
+            const drawdown = peak - cumReturn;
             drawdowns.push(drawdown);
         });
 
@@ -272,7 +273,6 @@ const TradeUIMetricCards = (function() {
             <div class="metric-card-value ${valueType}">${value}</div>
             ${sparklineData && sparklineData.length > 0 ? `
             <div class="metric-card-footer">
-                ${changeHtml}
                 ${sparklineHtml}
             </div>
             ` : (changeHtml ? `<div class="metric-card-detail">${changeHtml}</div>` : '')}
