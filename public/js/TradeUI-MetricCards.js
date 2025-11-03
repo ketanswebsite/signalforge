@@ -38,7 +38,29 @@ const TradeUIMetricCards = (function() {
             return getEmptyMetrics();
         }
 
+        console.log('[TradeUI-MetricCards] DEBUG: All trades count:', trades.length);
+        console.log('[TradeUI-MetricCards] DEBUG: Sample trade object keys:', Object.keys(trades[0]));
+        console.log('[TradeUI-MetricCards] DEBUG: Sample trade data:', {
+            status: trades[0].status,
+            profitLoss: trades[0].profitLoss,
+            profitLossPercentage: trades[0].profitLossPercentage,
+            plValue: trades[0].plValue,
+            plPercent: trades[0].plPercent
+        });
+
         const closedTrades = trades.filter(t => t.status === 'closed');
+        console.log('[TradeUI-MetricCards] DEBUG: Closed trades count:', closedTrades.length);
+
+        if (closedTrades.length > 0) {
+            console.log('[TradeUI-MetricCards] DEBUG: Sample closed trade:', {
+                symbol: closedTrades[0].symbol,
+                profitLoss: closedTrades[0].profitLoss,
+                profitLossPercentage: closedTrades[0].profitLossPercentage,
+                plValue: closedTrades[0].plValue,
+                plPercent: closedTrades[0].plPercent
+            });
+        }
+
         const winningTrades = closedTrades.filter(t => parseFloat(t.profitLossPercentage || t.plPercent || 0) > 0);
         const losingTrades = closedTrades.filter(t => parseFloat(t.profitLossPercentage || t.plPercent || 0) < 0);
 
@@ -49,6 +71,7 @@ const TradeUIMetricCards = (function() {
 
         // Total P&L
         const totalPL = closedTrades.reduce((sum, t) => sum + parseFloat(t.profitLoss || t.plValue || 0), 0);
+        console.log('[TradeUI-MetricCards] DEBUG: Total P&L calculated:', totalPL);
         const totalPLFormatted = '₹' + totalPL.toLocaleString('en-IN', { maximumFractionDigits: 0 });
 
         // Average Return
@@ -182,6 +205,9 @@ const TradeUIMetricCards = (function() {
             const drawdown = peak > 0 ? ((equity - peak) / peak) * 100 : 0;
             drawdowns.push(drawdown);
         });
+
+        console.log('[TradeUI-MetricCards] DEBUG: Drawdowns array:', drawdowns);
+        console.log('[TradeUI-MetricCards] DEBUG: Max drawdown value:', drawdowns.length > 0 ? Math.min(...drawdowns) : 'N/A');
 
         return drawdowns;
     }
