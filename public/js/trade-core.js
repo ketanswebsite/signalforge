@@ -191,8 +191,10 @@ const TradeCore = (function() {
      */
     async function loadTradesFromAPI() {
         try {
+            console.log('[TradeCore] Fetching trades from API...');
             allTrades = await TradeAPI.getAllTrades();
-            
+            console.log('[TradeCore] API returned:', allTrades.length, 'trades');
+
             // Debug: Log sample trade from SQLite
             if (allTrades.length > 0) {
                 
@@ -426,8 +428,9 @@ const TradeCore = (function() {
                 }
             }
         } catch (error) {
+            console.error('[TradeCore] Error loading trades:', error);
             showNotification('Error loading trades from database. ' + error.message, 'error');
-            
+
             // Initialize empty arrays if there was an error
             allTrades = [];
             activeTrades = [];
