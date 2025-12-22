@@ -3,6 +3,16 @@
  * Provides comprehensive testing and diagnostics for 7 AM signal → 1 PM execution flow
  */
 
+/**
+ * Safe number formatting helper
+ * Handles strings, nulls, and undefined values safely
+ */
+function formatNumber(value, decimals = 2, fallback = 'N/A') {
+    if (value == null) return fallback;
+    const num = Number(value);
+    return isNaN(num) ? fallback : num.toFixed(decimals);
+}
+
 const AdminSignalTesting = {
     // State
     state: {
@@ -154,216 +164,6 @@ const AdminSignalTesting = {
                     </div>
                 </div>
             </div>
-
-            <style>
-                .signal-testing-container {
-                    padding: 20px;
-                }
-
-                .testing-controls-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                    gap: 20px;
-                    margin-bottom: 20px;
-                }
-
-                .test-control-card {
-                    padding: 20px;
-                    border: 2px solid var(--border-color, #ddd);
-                    border-radius: 8px;
-                    background: var(--card-bg, #fff);
-                }
-
-                .test-control-card h3 {
-                    margin-top: 0;
-                    color: var(--text-color, #333);
-                }
-
-                .test-control-card p {
-                    color: var(--text-secondary, #666);
-                    margin-bottom: 15px;
-                }
-
-                .execution-buttons {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 10px;
-                }
-
-                .log-display {
-                    margin-top: 20px;
-                    border: 1px solid var(--border-color, #ddd);
-                    border-radius: 8px;
-                    overflow: hidden;
-                }
-
-                .log-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    padding: 10px 15px;
-                    background: var(--bg-secondary, #f5f5f5);
-                    border-bottom: 1px solid var(--border-color, #ddd);
-                }
-
-                .log-header h4 {
-                    margin: 0;
-                }
-
-                .log-content {
-                    padding: 15px;
-                    max-height: 400px;
-                    overflow-y: auto;
-                    font-family: 'Roboto Mono', monospace;
-                    font-size: 13px;
-                    background: var(--bg-dark, #1e1e1e);
-                    color: var(--text-light, #f0f0f0);
-                }
-
-                .log-entry {
-                    padding: 5px 10px;
-                    margin: 2px 0;
-                    border-left: 3px solid transparent;
-                    border-radius: 3px;
-                }
-
-                .log-entry.log-info {
-                    border-left-color: #0dcaf0;
-                    background: rgba(13, 202, 240, 0.1);
-                }
-
-                .log-entry.log-success {
-                    border-left-color: #198754;
-                    background: rgba(25, 135, 84, 0.1);
-                }
-
-                .log-entry.log-warning {
-                    border-left-color: #ffc107;
-                    background: rgba(255, 193, 7, 0.1);
-                }
-
-                .log-entry.log-error {
-                    border-left-color: #dc3545;
-                    background: rgba(220, 53, 69, 0.1);
-                }
-
-                .diagnostics-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                    gap: 15px;
-                }
-
-                .diagnostic-card {
-                    padding: 15px;
-                    border: 1px solid var(--border-color, #ddd);
-                    border-radius: 6px;
-                    background: var(--card-bg, #fff);
-                }
-
-                .diagnostic-card h4 {
-                    margin-top: 0;
-                    font-size: 14px;
-                    color: var(--text-secondary, #666);
-                    text-transform: uppercase;
-                }
-
-                .diagnostic-value {
-                    font-size: 24px;
-                    font-weight: bold;
-                    color: var(--primary-color, #0d6efd);
-                }
-
-                .diagnostic-detail {
-                    font-size: 12px;
-                    color: var(--text-secondary, #666);
-                    margin-top: 5px;
-                }
-
-                .signals-table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin-top: 10px;
-                }
-
-                .signals-table th,
-                .signals-table td {
-                    padding: 10px;
-                    text-align: left;
-                    border-bottom: 1px solid var(--border-color, #ddd);
-                }
-
-                .signals-table th {
-                    background: var(--bg-secondary, #f5f5f5);
-                    font-weight: 600;
-                    font-size: 12px;
-                    text-transform: uppercase;
-                }
-
-                .signals-table tr:hover {
-                    background: var(--bg-hover, #f9f9f9);
-                }
-
-                .badge {
-                    padding: 4px 8px;
-                    border-radius: 4px;
-                    font-size: 11px;
-                    font-weight: 600;
-                    text-transform: uppercase;
-                }
-
-                .badge-pending {
-                    background: #ffc107;
-                    color: #000;
-                }
-
-                .badge-added {
-                    background: #198754;
-                    color: #fff;
-                }
-
-                .badge-dismissed {
-                    background: #6c757d;
-                    color: #fff;
-                }
-
-                .badge-today {
-                    background: #0dcaf0;
-                    color: #000;
-                }
-
-                .badge-old {
-                    background: #dc3545;
-                    color: #fff;
-                }
-
-                .filter-controls {
-                    display: flex;
-                    gap: 10px;
-                    align-items: center;
-                }
-
-                .form-select {
-                    padding: 6px 12px;
-                    border: 1px solid var(--border-color, #ddd);
-                    border-radius: 4px;
-                    background: var(--bg-white, #fff);
-                    color: var(--text-color, #333);
-                }
-
-                .validation-result {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                }
-
-                .validation-result.valid {
-                    color: #198754;
-                }
-
-                .validation-result.invalid {
-                    color: #dc3545;
-                }
-            </style>
         `;
     },
 
@@ -583,8 +383,8 @@ const AdminSignalTesting = {
                         ${signal.days_old > 0 ? `<span class="badge ${dateClass}">${signal.days_old} days old</span>` : '<span class="badge badge-today">Today</span>'}
                     </td>
                     <td><span class="badge ${statusClass}">${signal.status}</span></td>
-                    <td>${signal.win_rate?.toFixed(1)}%</td>
-                    <td>${signal.entry_price?.toFixed(2)}</td>
+                    <td>${formatNumber(signal.win_rate, 1)}%</td>
+                    <td>${formatNumber(signal.entry_price, 2)}</td>
                     <td>${signal.will_execute ? '✅ Yes' : '❌ No'}</td>
                 </tr>
             `;
@@ -651,9 +451,9 @@ const AdminSignalTesting = {
                         <td><strong>${trade.symbol}</strong></td>
                         <td>${trade.market}</td>
                         <td>${entryTime}</td>
-                        <td>${trade.entry_price?.toFixed(2)}</td>
-                        <td>${trade.trade_size?.toFixed(0)}</td>
-                        <td>${trade.win_rate?.toFixed(1)}%</td>
+                        <td>${formatNumber(trade.entry_price, 2)}</td>
+                        <td>${formatNumber(trade.trade_size, 0)}</td>
+                        <td>${formatNumber(trade.win_rate, 1)}%</td>
                     </tr>
                 `;
             });
@@ -665,7 +465,7 @@ const AdminSignalTesting = {
         }
 
         if (data.executionLogs && data.executionLogs.length > 0) {
-            html += '<h4 style="margin-top: 30px;">Recent Execution History</h4>';
+            html += '<h4 class="admin-section-spaced">Recent Execution History</h4>';
             html += '<div class="execution-logs-list">';
 
             data.executionLogs.forEach(log => {
@@ -765,10 +565,10 @@ const AdminSignalTesting = {
                 html += `
                     <div class="diagnostic-card">
                         <h4>${market} Capital</h4>
-                        <div class="diagnostic-value">${cap.available.toFixed(0)}</div>
+                        <div class="diagnostic-value">${formatNumber(cap?.available, 0)}</div>
                         <div class="diagnostic-detail">
-                            Positions: ${cap.positions}/${cap.maxPositions}<br>
-                            Currency: ${cap.currency}
+                            Positions: ${cap.positions || 0}/${cap.maxPositions || 0}<br>
+                            Currency: ${cap.currency || 'N/A'}
                         </div>
                     </div>
                 `;
@@ -779,9 +579,9 @@ const AdminSignalTesting = {
 
         // Timezone Info
         html += `
-            <div style="margin-top: 20px;">
+            <div class="admin-section-spaced">
                 <h4>⏰ Timezone Information</h4>
-                <div class="timezone-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                <div class="timezone-grid">
                     <div><strong>Server:</strong> ${d.cronStatus.serverTime}</div>
                     <div><strong>UK Time:</strong> ${d.cronStatus.ukTime}</div>
                     <div><strong>India Time:</strong> ${d.cronStatus.indiaTime}</div>
@@ -793,7 +593,7 @@ const AdminSignalTesting = {
         // Validation Results
         if (d.validationResults && d.validationResults.length > 0) {
             html += `
-                <div style="margin-top: 20px;">
+                <div class="admin-section-spaced">
                     <h4>🔍 Validation Results for Today's Signals</h4>
                     <table class="signals-table">
                         <thead>
@@ -815,7 +615,7 @@ const AdminSignalTesting = {
                     <tr>
                         <td><strong>${result.symbol}</strong></td>
                         <td>${result.market}</td>
-                        <td>${result.win_rate?.toFixed(1)}%</td>
+                        <td>${formatNumber(result.win_rate, 1)}%</td>
                         <td class="validation-result ${statusClass}">${icon} ${result.valid ? 'Valid' : 'Invalid'}</td>
                         <td>${result.reason}</td>
                     </tr>

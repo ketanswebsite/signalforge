@@ -209,7 +209,7 @@
                 <div id="users-table-container"></div>
 
                 <!-- Complimentary Access Section -->
-                <div class="admin-section" style="margin-top: 3rem;">
+                <div class="admin-section admin-section-spaced">
                     <div class="tab-header">
                         <h3>Complimentary Access Management</h3>
                         <p class="text-secondary">Grant or revoke lifetime/temporary access for beta testers and special users</p>
@@ -232,12 +232,12 @@
                                 </select>
                             </div>
 
-                            <div class="form-group" id="comp-expiry-group" style="display: none;">
+                            <div class="form-group hidden" id="comp-expiry-group">
                                 <label for="comp-expiry-date">Expiry Date</label>
                                 <input type="date" id="comp-expiry-date" class="form-input">
                             </div>
 
-                            <div class="form-group" style="grid-column: 1 / -1;">
+                            <div class="form-group form-group-full">
                                 <label for="comp-reason">Reason</label>
                                 <textarea id="comp-reason" placeholder="e.g., Beta tester, Special promotion, etc." class="form-input" rows="2"></textarea>
                             </div>
@@ -254,7 +254,7 @@
                     </div>
 
                     <!-- Complimentary Users List -->
-                    <div class="table-card" style="margin-top: 2rem;">
+                    <div class="table-card table-card-spaced">
                         <div class="table-header">
                             <h4>Users with Complimentary Access</h4>
                             <button class="btn-secondary" onclick="AdminComplimentary.refresh()">

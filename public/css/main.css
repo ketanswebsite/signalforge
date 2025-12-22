@@ -21097,16 +21097,298 @@ body.screen-reader-mode [aria-label]::after {
     .trial-activation-card {
         padding: 2rem 1.5rem;
     }
-    
+
     .form-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .form-actions {
         flex-direction: column;
     }
-    
+
     .form-actions .btn {
         width: 100%;
+    }
+}
+
+/* ========================================
+   Admin Signal Testing Page Styles
+   ======================================== */
+
+.signal-testing-container {
+    padding: var(--spacing-lg);
+}
+
+.testing-controls-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+}
+
+.test-control-card {
+    padding: var(--spacing-lg);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+}
+
+.test-control-card h3 {
+    margin-top: 0;
+    color: var(--text-primary);
+}
+
+.test-control-card p {
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-md);
+}
+
+.execution-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.log-display {
+    margin-top: var(--spacing-lg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.log-header h4 {
+    margin: 0;
+}
+
+.log-content {
+    padding: var(--spacing-md);
+    max-height: 400px;
+    overflow-y: auto;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.log-entry {
+    padding: 5px 10px;
+    margin: 2px 0;
+    border-left: 3px solid transparent;
+    border-radius: var(--radius-sm);
+}
+
+.log-entry.log-info {
+    border-left-color: #0dcaf0;
+    background: rgba(13, 202, 240, 0.1);
+}
+
+.log-entry.log-success {
+    border-left-color: var(--success);
+    background: rgba(25, 135, 84, 0.1);
+}
+
+.log-entry.log-warning {
+    border-left-color: var(--warning);
+    background: rgba(255, 193, 7, 0.1);
+}
+
+.log-entry.log-error {
+    border-left-color: var(--error);
+    background: rgba(220, 53, 69, 0.1);
+}
+
+.diagnostics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.diagnostic-card {
+    padding: var(--spacing-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+}
+
+.diagnostic-card h4 {
+    margin-top: 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.diagnostic-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--accent-gold);
+}
+
+.diagnostic-detail {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 5px;
+}
+
+.signals-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: var(--spacing-sm);
+}
+
+.signals-table th,
+.signals-table td {
+    padding: var(--spacing-sm);
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.signals-table th {
+    background: var(--surface);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.signals-table tr:hover {
+    background: rgba(212, 175, 55, 0.05);
+}
+
+/* Signal Testing Badges */
+.badge-pending {
+    background: var(--warning);
+    color: var(--primary-dark);
+}
+
+.badge-added {
+    background: var(--success);
+    color: var(--white);
+}
+
+.badge-dismissed {
+    background: var(--text-secondary);
+    color: var(--white);
+}
+
+.badge-today {
+    background: #0dcaf0;
+    color: var(--primary-dark);
+}
+
+.badge-old {
+    background: var(--error);
+    color: var(--white);
+}
+
+.signal-filter-controls {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: center;
+}
+
+.signal-filter-controls .form-select {
+    padding: 6px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text-primary);
+}
+
+.validation-result {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.validation-result.valid {
+    color: var(--success);
+}
+
+.validation-result.invalid {
+    color: var(--error);
+}
+
+/* Signal Testing Timezone Grid */
+.timezone-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+}
+
+/* Execution Logs List */
+.execution-logs-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.log-card {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.log-card-header {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.log-card-body {
+    padding: var(--spacing-md);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--spacing-sm);
+}
+
+/* Admin Section Utility Classes */
+.admin-section-spaced {
+    margin-top: 3rem;
+}
+
+.form-group-full {
+    grid-column: 1 / -1;
+}
+
+.table-card-spaced {
+    margin-top: 2rem;
+}
+
+/* Signal Testing Responsive */
+@media (max-width: 768px) {
+    .testing-controls-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .diagnostics-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .signals-table {
+        font-size: 12px;
+    }
+
+    .signals-table th,
+    .signals-table td {
+        padding: var(--spacing-xs);
+    }
+
+    .signal-filter-controls {
+        flex-wrap: wrap;
+    }
+
+    .timezone-grid {
+        grid-template-columns: 1fr 1fr;
     }
 }

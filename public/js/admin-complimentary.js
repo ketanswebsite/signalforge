@@ -21,12 +21,12 @@ const AdminComplimentary = {
         const accessTypeSelect = document.getElementById('comp-access-type');
         const expiryGroup = document.getElementById('comp-expiry-group');
 
-        if (accessTypeSelect) {
+        if (accessTypeSelect && expiryGroup) {
             accessTypeSelect.addEventListener('change', (e) => {
                 if (e.target.value === 'temporary') {
-                    expiryGroup.style.display = 'block';
+                    expiryGroup.classList.remove('hidden');
                 } else {
-                    expiryGroup.style.display = 'none';
+                    expiryGroup.classList.add('hidden');
                 }
             });
         }
