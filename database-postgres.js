@@ -249,6 +249,19 @@ async function initializeDatabase() {
       )
     `);
 
+    // Create stock_market_caps table for market cap data caching
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS stock_market_caps (
+        id SERIAL PRIMARY KEY,
+        symbol VARCHAR(50) NOT NULL UNIQUE,
+        market_cap DECIMAL(20, 2),
+        market_cap_usd DECIMAL(20, 2),
+        market_cap_category VARCHAR(20) CHECK(market_cap_category IN ('mega', 'large', 'mid', 'small', 'micro')),
+        currency VARCHAR(10),
+        last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Initialize default settings for default user
     await pool.query(`
       INSERT INTO user_settings (user_id, setting_key, setting_value) VALUES
@@ -282,6 +295,14 @@ async function initializeDatabase() {
       // Columns might already exist
     }
 
+    // Add market cap columns to pending_signals table
+    try {
+      await pool.query(`ALTER TABLE pending_signals ADD COLUMN IF NOT EXISTS market_cap_usd DECIMAL(20, 2)`);
+      await pool.query(`ALTER TABLE pending_signals ADD COLUMN IF NOT EXISTS market_cap_rank INTEGER`);
+    } catch (err) {
+      // Columns might already exist
+    }
+
     // Create index on user_id for better performance
     await pool.query('CREATE INDEX IF NOT EXISTS idx_trades_user_id ON trades(user_id)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_trades_status ON trades(status)');
@@ -299,6 +320,9 @@ async function initializeDatabase() {
     await pool.query('CREATE INDEX IF NOT EXISTS idx_portfolio_capital_market ON portfolio_capital(market)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_exit_checks_trade ON trade_exit_checks(trade_id, check_time DESC)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_user_settings_user_key ON user_settings(user_id, setting_key)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_stock_market_caps_symbol ON stock_market_caps(symbol)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_stock_market_caps_usd ON stock_market_caps(market_cap_usd DESC)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_pending_signals_market_cap_rank ON pending_signals(market_cap_rank ASC)');
 
     // Migrate existing users from trades table
     await migrateExistingUsers();
@@ -2689,8 +2713,9 @@ const TradeDB = {
         INSERT INTO pending_signals
         (symbol, signal_date, entry_price, target_price, stop_loss,
          square_off_date, market, win_rate, historical_signal_count,
-         entry_dti, entry_7day_dti, prev_dti, prev_7day_dti)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+         entry_dti, entry_7day_dti, prev_dti, prev_7day_dti,
+         market_cap_usd, market_cap_rank)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
         RETURNING *
       `, [
         signal.symbol,
@@ -2705,7 +2730,9 @@ const TradeDB = {
         signal.entryDTI || null,
         signal.entry7DayDTI || null,
         signal.prevDTI || null,
-        signal.prev7DayDTI || null
+        signal.prev7DayDTI || null,
+        signal.marketCapUSD || null,
+        signal.marketCapRank || null
       ]);
       console.log(`[DB] New pending signal stored: ${signal.symbol} for ${signal.signalDate}`);
       return result.rows[0];
@@ -2743,7 +2770,8 @@ const TradeDB = {
         params.push(market);
       }
 
-      query += ' ORDER BY signal_date DESC, win_rate DESC';
+      // Order by market cap rank first (lower rank = higher market cap), then by win rate
+      query += ' ORDER BY COALESCE(market_cap_rank, 999999) ASC, win_rate DESC, signal_date DESC';
 
       const result = await pool.query(query, params);
       return result.rows;
@@ -3072,6 +3100,129 @@ const TradeDB = {
     } catch (error) {
       console.error('Raw query error:', error);
       throw error;
+    }
+  },
+
+  // ============================================
+  // MARKET CAP FUNCTIONS
+  // ============================================
+
+  // Store or update market cap data for a stock
+  async storeMarketCap(symbol, marketCap, marketCapUSD, category, currency) {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        INSERT INTO stock_market_caps
+        (symbol, market_cap, market_cap_usd, market_cap_category, currency, last_updated)
+        VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+        ON CONFLICT (symbol) DO UPDATE SET
+            market_cap = EXCLUDED.market_cap,
+            market_cap_usd = EXCLUDED.market_cap_usd,
+            market_cap_category = EXCLUDED.market_cap_category,
+            currency = EXCLUDED.currency,
+            last_updated = CURRENT_TIMESTAMP
+        RETURNING *
+      `, [symbol, marketCap, marketCapUSD, category, currency]);
+      return result.rows[0];
+    } catch (error) {
+      console.error(`[DB] Error storing market cap for ${symbol}:`, error.message);
+      throw error;
+    }
+  },
+
+  // Get market cap for a single symbol
+  async getMarketCap(symbol) {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        SELECT * FROM stock_market_caps WHERE symbol = $1
+      `, [symbol]);
+      return result.rows[0] || null;
+    } catch (error) {
+      console.error(`[DB] Error getting market cap for ${symbol}:`, error.message);
+      return null;
+    }
+  },
+
+  // Get market caps for multiple symbols (bulk fetch)
+  async getMarketCaps(symbols) {
+    checkConnection();
+    try {
+      if (!symbols || symbols.length === 0) return {};
+
+      const result = await pool.query(`
+        SELECT symbol, market_cap, market_cap_usd, market_cap_category, currency
+        FROM stock_market_caps
+        WHERE symbol = ANY($1)
+      `, [symbols]);
+
+      const capMap = {};
+      for (const row of result.rows) {
+        capMap[row.symbol] = {
+          marketCap: parseFloat(row.market_cap) || null,
+          marketCapUSD: parseFloat(row.market_cap_usd) || null,
+          category: row.market_cap_category,
+          currency: row.currency
+        };
+      }
+      return capMap;
+    } catch (error) {
+      console.error('[DB] Error getting bulk market caps:', error.message);
+      return {};
+    }
+  },
+
+  // Get all market caps (for admin/stats)
+  async getAllMarketCaps() {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        SELECT * FROM stock_market_caps
+        ORDER BY market_cap_usd DESC NULLS LAST
+      `);
+      return result.rows;
+    } catch (error) {
+      console.error('[DB] Error getting all market caps:', error.message);
+      return [];
+    }
+  },
+
+  // Get market cap statistics
+  async getMarketCapStats() {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        SELECT
+          COUNT(*) as total_stocks,
+          COUNT(CASE WHEN market_cap_category = 'mega' THEN 1 END) as mega_cap,
+          COUNT(CASE WHEN market_cap_category = 'large' THEN 1 END) as large_cap,
+          COUNT(CASE WHEN market_cap_category = 'mid' THEN 1 END) as mid_cap,
+          COUNT(CASE WHEN market_cap_category = 'small' THEN 1 END) as small_cap,
+          COUNT(CASE WHEN market_cap_category = 'micro' THEN 1 END) as micro_cap,
+          COUNT(CASE WHEN market_cap_usd IS NULL THEN 1 END) as no_data,
+          MAX(last_updated) as last_update
+        FROM stock_market_caps
+      `);
+      return result.rows[0];
+    } catch (error) {
+      console.error('[DB] Error getting market cap stats:', error.message);
+      return null;
+    }
+  },
+
+  // Delete stale market cap data (older than specified days)
+  async deleteStaleMarketCaps(daysOld = 7) {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        DELETE FROM stock_market_caps
+        WHERE last_updated < NOW() - INTERVAL '${daysOld} days'
+      `);
+      console.log(`[DB] Deleted ${result.rowCount} stale market cap records`);
+      return result.rowCount;
+    } catch (error) {
+      console.error('[DB] Error deleting stale market caps:', error.message);
+      return 0;
     }
   },
 

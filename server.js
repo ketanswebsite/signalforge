@@ -68,6 +68,20 @@ try {
   tradeExecutor = null;
 }
 
+// Load Market Cap Updater for 6 AM market cap refresh
+let marketCapUpdater;
+try {
+  marketCapUpdater = require('./lib/scheduler/market-cap-updater');
+
+  // Initialize market cap updates (6 AM UK time, before 7 AM scanner)
+  marketCapUpdater.initialize();
+
+  console.log('✅ Market Cap Updater loaded successfully');
+} catch (err) {
+  console.error('⚠️  Failed to load Market Cap Updater:', err.message);
+  marketCapUpdater = null;
+}
+
 // Load Exit Monitor for automated exit alerts
 let exitMonitor;
 try {
@@ -2458,6 +2472,96 @@ app.post('/api/admin/test-execution', ensureAuthenticatedAPI, async (req, res) =
     });
   } catch (error) {
     console.error(`❌ [TEST] Execution failed:`, error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// MARKET CAP API ENDPOINTS
+// ============================================
+
+// Get market cap for a single symbol
+app.get('/api/market-cap/:symbol', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    const data = await TradeDB.getMarketCap(symbol);
+
+    if (!data) {
+      return res.status(404).json({ error: 'Market cap data not found for this symbol' });
+    }
+
+    res.json({
+      symbol: data.symbol,
+      marketCap: parseFloat(data.market_cap) || null,
+      marketCapUSD: parseFloat(data.market_cap_usd) || null,
+      category: data.market_cap_category,
+      currency: data.currency,
+      lastUpdated: data.last_updated
+    });
+  } catch (error) {
+    console.error('Error fetching market cap:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get market caps for multiple symbols
+app.post('/api/market-cap/bulk', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const { symbols } = req.body;
+
+    if (!symbols || !Array.isArray(symbols)) {
+      return res.status(400).json({ error: 'symbols array is required' });
+    }
+
+    const data = await TradeDB.getMarketCaps(symbols);
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching bulk market caps:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get market cap statistics
+app.get('/api/admin/market-cap/stats', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const stats = await TradeDB.getMarketCapStats();
+    const updaterStatus = marketCapUpdater ? marketCapUpdater.getStatus() : { isInitialized: false };
+
+    res.json({
+      stats,
+      updater: updaterStatus
+    });
+  } catch (error) {
+    console.error('Error fetching market cap stats:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Trigger manual market cap refresh (admin only)
+app.post('/api/admin/refresh-market-caps', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const { market } = req.body;
+
+    if (!marketCapUpdater) {
+      return res.status(503).json({ error: 'Market Cap Updater not available' });
+    }
+
+    console.log(`📊 [MARKET CAP] Manual refresh triggered by ${req.user?.email || 'user'}`);
+
+    let result;
+    if (market && ['India', 'UK', 'US'].includes(market)) {
+      result = await marketCapUpdater.updateMarketCapsByMarket(market);
+    } else {
+      result = await marketCapUpdater.updateAllMarketCaps();
+    }
+
+    res.json({
+      success: true,
+      message: market ? `Market cap update completed for ${market}` : 'Full market cap update completed',
+      ...result
+    });
+  } catch (error) {
+    console.error('Error refreshing market caps:', error);
     res.status(500).json({ error: error.message });
   }
 });

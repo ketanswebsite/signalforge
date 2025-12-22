@@ -90,6 +90,16 @@ const TradeModal = (function() {
                             </div>
                             <div id="trade-shares" class="detail-value">0</div>
                         </div>
+                        <div class="detail-row" id="market-cap-row">
+                            <div class="detail-label">
+                                <span class="material-icons-outlined" style="font-size: 14px;">trending_up</span>
+                                Market Cap
+                            </div>
+                            <div id="trade-market-cap" class="detail-value">
+                                <span id="market-cap-value">-</span>
+                                <span id="market-cap-category" class="market-cap-badge"></span>
+                            </div>
+                        </div>
                         <div class="detail-row">
                             <div class="detail-label">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -331,13 +341,50 @@ if (formHint) {
         
         // Clear notes
         document.getElementById('trade-notes').value = '';
-        
+
+        // Populate market cap if available
+        const marketCapValue = document.getElementById('market-cap-value');
+        const marketCapCategory = document.getElementById('market-cap-category');
+        if (marketCapValue && marketCapCategory) {
+            const marketCapUSD = opportunity.marketCapUSD;
+            const category = opportunity.marketCapCategory;
+
+            if (marketCapUSD && marketCapUSD > 0) {
+                // Format market cap
+                let formattedCap;
+                if (marketCapUSD >= 1e12) {
+                    formattedCap = `$${(marketCapUSD / 1e12).toFixed(2)}T`;
+                } else if (marketCapUSD >= 1e9) {
+                    formattedCap = `$${(marketCapUSD / 1e9).toFixed(2)}B`;
+                } else if (marketCapUSD >= 1e6) {
+                    formattedCap = `$${(marketCapUSD / 1e6).toFixed(2)}M`;
+                } else {
+                    formattedCap = `$${marketCapUSD.toLocaleString()}`;
+                }
+
+                marketCapValue.textContent = formattedCap;
+
+                // Set category badge
+                if (category) {
+                    marketCapCategory.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+                    marketCapCategory.className = `market-cap-badge market-cap-${category}`;
+                } else {
+                    marketCapCategory.textContent = '';
+                    marketCapCategory.className = 'market-cap-badge';
+                }
+            } else {
+                marketCapValue.textContent = 'N/A';
+                marketCapCategory.textContent = '';
+                marketCapCategory.className = 'market-cap-badge';
+            }
+        }
+
         // Reset confirm button state
         if (confirmButton) {
             confirmButton.disabled = false;
             confirmButton.textContent = 'Confirm Trade';
         }
-        
+
         // Show the modal with animation
         modalElement.classList.add('active');
         
