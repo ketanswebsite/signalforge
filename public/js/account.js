@@ -155,6 +155,9 @@ class SettingsManager {
                 }
             }
         });
+
+        // Sync push notification status with server
+        this.syncPushNotificationStatus();
     }
 
     settingIdMap(settingKey) {
@@ -211,10 +214,43 @@ class SettingsManager {
         });
 
         this.addListener('browser-notifications', async (checked) => {
-            if (checked && 'Notification' in window) {
-                const permission = await Notification.requestPermission();
-                this.currentSettings.browserNotifications = permission === 'granted';
+            if (checked) {
+                // Use PushNotifications library if available
+                if (typeof PushNotifications !== 'undefined') {
+                    try {
+                        const result = await PushNotifications.subscribe();
+                        if (result.success) {
+                            this.currentSettings.browserNotifications = true;
+                            this.showNotification('Push notifications enabled!', 'success');
+                        } else {
+                            this.currentSettings.browserNotifications = false;
+                            this.showNotification(result.error || 'Failed to enable notifications', 'error');
+                            // Uncheck the toggle
+                            const toggle = document.getElementById('browser-notifications');
+                            if (toggle) toggle.checked = false;
+                        }
+                    } catch (error) {
+                        console.error('[PUSH] Subscribe error:', error);
+                        this.currentSettings.browserNotifications = false;
+                        this.showNotification('Failed to enable push notifications', 'error');
+                        const toggle = document.getElementById('browser-notifications');
+                        if (toggle) toggle.checked = false;
+                    }
+                } else if ('Notification' in window) {
+                    // Fallback to basic notification permission
+                    const permission = await Notification.requestPermission();
+                    this.currentSettings.browserNotifications = permission === 'granted';
+                }
             } else {
+                // Unsubscribe from push notifications
+                if (typeof PushNotifications !== 'undefined') {
+                    try {
+                        await PushNotifications.unsubscribe();
+                        this.showNotification('Push notifications disabled', 'info');
+                    } catch (error) {
+                        console.error('[PUSH] Unsubscribe error:', error);
+                    }
+                }
                 this.currentSettings.browserNotifications = false;
             }
         });
@@ -405,6 +441,40 @@ class SettingsManager {
             document.body.classList.add('screen-reader-mode');
         } else {
             document.body.classList.remove('screen-reader-mode');
+        }
+    }
+
+    async syncPushNotificationStatus() {
+        // Check if push notifications library is available
+        if (typeof PushNotifications === 'undefined') {
+            return;
+        }
+
+        try {
+            // Initialize PushNotifications if not already done
+            await PushNotifications.init();
+
+            // Check if user is subscribed
+            const isSubscribed = await PushNotifications.isSubscribed();
+            const toggle = document.getElementById('browser-notifications');
+
+            if (toggle) {
+                toggle.checked = isSubscribed;
+                this.currentSettings.browserNotifications = isSubscribed;
+            }
+
+            // Also check server status if authenticated
+            try {
+                const status = await PushNotifications.getServerStatus();
+                if (status && toggle) {
+                    toggle.checked = status.subscribed;
+                    this.currentSettings.browserNotifications = status.subscribed;
+                }
+            } catch (e) {
+                // Server status check failed, use local status
+            }
+        } catch (error) {
+            console.warn('[PUSH] Error syncing push notification status:', error);
         }
     }
 

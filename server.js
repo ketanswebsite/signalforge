@@ -4,6 +4,7 @@ const axios = require('axios');
 const path = require('path');
 const session = require('express-session');
 const geoip = require('geoip-lite');
+const rateLimit = require('express-rate-limit');
 
 // Load environment variables
 require('dotenv').config();
@@ -37,6 +38,17 @@ try {
   }
 } catch (err) {
   telegramBot = null;
+}
+
+// Load Push Notification Service
+let pushService;
+try {
+  const PushService = require('./lib/push/push-service');
+  pushService = new PushService(TradeDB);
+  console.log('✅ Push Notification Service loaded');
+} catch (err) {
+  console.warn('⚠️  Push Service not loaded:', err.message);
+  pushService = null;
 }
 
 // Load Stock Scanner Service
@@ -191,10 +203,32 @@ async function ensureUserInDatabase(user) {
 
 // === API ROUTES ===
 
+// Telegram webhook secret for verification (prevents spoofed requests)
+const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
+
+// Rate limiter for Telegram webhook (prevents DoS attacks)
+// Telegram sends max 30 updates/second, so we allow 50/second with some buffer
+const telegramWebhookLimiter = rateLimit({
+  windowMs: 1000, // 1 second window
+  max: 50, // Max 50 requests per second
+  message: 'Too many webhook requests',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // IMPORTANT: Telegram webhook must come BEFORE authentication middleware!
-// Telegram webhook endpoint for production (NO AUTH REQUIRED)
-app.post('/api/telegram/webhook', express.json(), (req, res) => {
-  console.log('📨 [WEBHOOK] Received update from Telegram');
+// Telegram webhook endpoint for production (NO AUTH REQUIRED but SECRET VERIFIED)
+app.post('/api/telegram/webhook', telegramWebhookLimiter, express.json(), (req, res) => {
+  // Verify webhook secret token (Telegram sends this in header when configured)
+  if (TELEGRAM_WEBHOOK_SECRET) {
+    const secretHeader = req.headers['x-telegram-bot-api-secret-token'];
+    if (secretHeader !== TELEGRAM_WEBHOOK_SECRET) {
+      console.warn('⚠️ [WEBHOOK] Invalid or missing secret token - rejecting request');
+      return res.status(403).send('Forbidden');
+    }
+  }
+
+  console.log('📨 [WEBHOOK] Received verified update from Telegram');
 
   try {
     const update = req.body;
@@ -3176,6 +3210,139 @@ app.post('/api/alerts/send-custom', ensureAuthenticatedAPI, ensureSubscriptionAc
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== Push Notification Endpoints ====================
+
+// Get VAPID public key for client
+app.get('/api/push/vapid-public-key', (req, res) => {
+  const publicKey = process.env.VAPID_PUBLIC_KEY;
+  if (!publicKey) {
+    return res.status(503).json({ error: 'Push notifications not configured' });
+  }
+  res.json({ publicKey });
+});
+
+// Subscribe to push notifications
+app.post('/api/push/subscribe', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const { subscription, userAgent } = req.body;
+
+    if (!subscription || !subscription.endpoint || !subscription.keys) {
+      return res.status(400).json({ error: 'Invalid subscription data' });
+    }
+
+    const userId = req.user.id;
+    await TradeDB.savePushSubscription(userId, subscription, userAgent);
+
+    console.log(`[PUSH] User ${userId} subscribed to push notifications`);
+    res.json({ success: true, message: 'Subscribed successfully' });
+  } catch (error) {
+    console.error('[PUSH] Subscribe error:', error.message);
+    res.status(500).json({ error: 'Failed to save subscription' });
+  }
+});
+
+// Unsubscribe from push notifications
+app.post('/api/push/unsubscribe', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const { endpoint } = req.body;
+
+    if (!endpoint) {
+      return res.status(400).json({ error: 'Endpoint required' });
+    }
+
+    await TradeDB.removePushSubscription(endpoint);
+
+    console.log(`[PUSH] User ${req.user.id} unsubscribed from push notifications`);
+    res.json({ success: true, message: 'Unsubscribed successfully' });
+  } catch (error) {
+    console.error('[PUSH] Unsubscribe error:', error.message);
+    res.status(500).json({ error: 'Failed to remove subscription' });
+  }
+});
+
+// Get push subscription status for current user
+app.get('/api/push/status', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const subscriptions = await TradeDB.countPushSubscriptions(userId);
+    const hasSubscription = await TradeDB.hasPushSubscription(userId);
+
+    res.json({
+      subscribed: hasSubscription,
+      subscriptions: subscriptions,
+      configured: !!process.env.VAPID_PUBLIC_KEY
+    });
+  } catch (error) {
+    console.error('[PUSH] Status error:', error.message);
+    res.status(500).json({ error: 'Failed to get status' });
+  }
+});
+
+// Send test push notification
+app.post('/api/push/test', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    if (!pushService) {
+      return res.status(503).json({ error: 'Push service not available' });
+    }
+
+    const userId = req.user.id;
+    const result = await pushService.sendTestNotification(userId);
+
+    if (result.sent > 0) {
+      res.json({ success: true, message: 'Test notification sent', ...result });
+    } else {
+      res.status(400).json({
+        error: 'No active subscriptions found. Please enable push notifications first.',
+        ...result
+      });
+    }
+  } catch (error) {
+    console.error('[PUSH] Test notification error:', error.message);
+    res.status(500).json({ error: 'Failed to send test notification' });
+  }
+});
+
+// Admin endpoint: broadcast notification to all users
+app.post('/api/admin/push/broadcast', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    // Check if user is admin
+    const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase());
+    if (!adminEmails.includes(req.user.email.toLowerCase())) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    if (!pushService) {
+      return res.status(503).json({ error: 'Push service not available' });
+    }
+
+    const { title, body, url } = req.body;
+
+    if (!title || !body) {
+      return res.status(400).json({ error: 'Title and body required' });
+    }
+
+    const payload = {
+      title,
+      body,
+      icon: '/images/favicon.PNG',
+      badge: '/images/favicon.PNG',
+      url: url || '/account',
+      requireInteraction: false
+    };
+
+    const result = await pushService.broadcast(payload);
+
+    res.json({
+      success: true,
+      message: `Broadcast sent to ${result.sent} devices`,
+      ...result
+    });
+  } catch (error) {
+    console.error('[PUSH] Broadcast error:', error.message);
+    res.status(500).json({ error: 'Failed to broadcast' });
   }
 });
 

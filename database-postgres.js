@@ -3226,6 +3226,146 @@ const TradeDB = {
     }
   },
 
+  // ==================== Push Subscription Functions ====================
+
+  // Save a push subscription for a user
+  async savePushSubscription(userId, subscription, userAgent = null) {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        INSERT INTO push_subscriptions (user_id, endpoint, keys_p256dh, keys_auth, user_agent)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (endpoint)
+        DO UPDATE SET
+          user_id = $1,
+          keys_p256dh = $3,
+          keys_auth = $4,
+          user_agent = $5,
+          is_active = true,
+          last_used_at = CURRENT_TIMESTAMP
+        RETURNING *
+      `, [
+        userId,
+        subscription.endpoint,
+        subscription.keys.p256dh,
+        subscription.keys.auth,
+        userAgent
+      ]);
+
+      console.log(`[DB] Saved push subscription for user ${userId}`);
+      return result.rows[0];
+    } catch (error) {
+      console.error('[DB] Error saving push subscription:', error.message);
+      throw error;
+    }
+  },
+
+  // Remove a push subscription by endpoint
+  async removePushSubscription(endpoint) {
+    checkConnection();
+    try {
+      const result = await pool.query(
+        'DELETE FROM push_subscriptions WHERE endpoint = $1 RETURNING *',
+        [endpoint]
+      );
+      console.log(`[DB] Removed push subscription: ${result.rowCount} rows`);
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error('[DB] Error removing push subscription:', error.message);
+      return false;
+    }
+  },
+
+  // Deactivate a push subscription (for expired/invalid subscriptions)
+  async deactivatePushSubscription(endpoint) {
+    checkConnection();
+    try {
+      await pool.query(
+        'UPDATE push_subscriptions SET is_active = false WHERE endpoint = $1',
+        [endpoint]
+      );
+      console.log(`[DB] Deactivated push subscription`);
+      return true;
+    } catch (error) {
+      console.error('[DB] Error deactivating push subscription:', error.message);
+      return false;
+    }
+  },
+
+  // Get all push subscriptions for a user
+  async getPushSubscriptionsByUser(userId) {
+    checkConnection();
+    try {
+      const result = await pool.query(
+        'SELECT * FROM push_subscriptions WHERE user_id = $1 AND is_active = true',
+        [userId]
+      );
+      return result.rows;
+    } catch (error) {
+      console.error('[DB] Error getting push subscriptions:', error.message);
+      return [];
+    }
+  },
+
+  // Get all active push subscriptions
+  async getAllActivePushSubscriptions() {
+    checkConnection();
+    try {
+      const result = await pool.query(
+        'SELECT * FROM push_subscriptions WHERE is_active = true'
+      );
+      return result.rows;
+    } catch (error) {
+      console.error('[DB] Error getting all push subscriptions:', error.message);
+      return [];
+    }
+  },
+
+  // Update last_used_at timestamp for a subscription
+  async updatePushSubscriptionLastUsed(endpoint) {
+    checkConnection();
+    try {
+      await pool.query(
+        'UPDATE push_subscriptions SET last_used_at = CURRENT_TIMESTAMP WHERE endpoint = $1',
+        [endpoint]
+      );
+      return true;
+    } catch (error) {
+      console.error('[DB] Error updating push subscription last used:', error.message);
+      return false;
+    }
+  },
+
+  // Count push subscriptions for a user
+  async countPushSubscriptions(userId) {
+    checkConnection();
+    try {
+      const result = await pool.query(
+        'SELECT COUNT(*) FROM push_subscriptions WHERE user_id = $1 AND is_active = true',
+        [userId]
+      );
+      return parseInt(result.rows[0].count) || 0;
+    } catch (error) {
+      console.error('[DB] Error counting push subscriptions:', error.message);
+      return 0;
+    }
+  },
+
+  // Check if a subscription exists for a user
+  async hasPushSubscription(userId) {
+    checkConnection();
+    try {
+      const result = await pool.query(
+        'SELECT 1 FROM push_subscriptions WHERE user_id = $1 AND is_active = true LIMIT 1',
+        [userId]
+      );
+      return result.rows.length > 0;
+    } catch (error) {
+      console.error('[DB] Error checking push subscription:', error.message);
+      return false;
+    }
+  },
+
   // Close connection
   async close() {
     await pool.end();
