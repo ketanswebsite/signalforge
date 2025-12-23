@@ -3452,13 +3452,17 @@ app.get('/', (req, res) => {
 
 // Protect static files except landing page, login page, and lib directory
 app.use((req, res, next) => {
-  // Allow access to landing page, login page, lib directory, and specific assets without authentication
+  // Allow access to landing page, login page, lib directory, PWA assets, and specific assets without authentication
   if (req.path === '/landing.html' ||
       req.path === '/login.html' ||
       req.path === '/styles.css' ||
       req.path === '/css/main.css' ||
       req.path === '/js/modern-effects.js' ||
       req.path === '/js/landing.js' ||
+      req.path === '/service-worker.js' ||
+      req.path === '/manifest.json' ||
+      req.path === '/js/push-notifications.js' ||
+      req.path.startsWith('/images/') ||
       req.path.startsWith('/lib/')) {
     return next();
   }
