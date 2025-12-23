@@ -3233,10 +3233,10 @@ app.post('/api/push/subscribe', ensureAuthenticatedAPI, async (req, res) => {
       return res.status(400).json({ error: 'Invalid subscription data' });
     }
 
-    const userId = req.user.id;
-    await TradeDB.savePushSubscription(userId, subscription, userAgent);
+    const userEmail = req.user.email;
+    await TradeDB.savePushSubscription(userEmail, subscription, userAgent);
 
-    console.log(`[PUSH] User ${userId} subscribed to push notifications`);
+    console.log(`[PUSH] User ${userEmail} subscribed to push notifications`);
     res.json({ success: true, message: 'Subscribed successfully' });
   } catch (error) {
     console.error('[PUSH] Subscribe error:', error.message);
@@ -3255,7 +3255,7 @@ app.post('/api/push/unsubscribe', ensureAuthenticatedAPI, async (req, res) => {
 
     await TradeDB.removePushSubscription(endpoint);
 
-    console.log(`[PUSH] User ${req.user.id} unsubscribed from push notifications`);
+    console.log(`[PUSH] User ${req.user.email} unsubscribed from push notifications`);
     res.json({ success: true, message: 'Unsubscribed successfully' });
   } catch (error) {
     console.error('[PUSH] Unsubscribe error:', error.message);
@@ -3266,9 +3266,9 @@ app.post('/api/push/unsubscribe', ensureAuthenticatedAPI, async (req, res) => {
 // Get push subscription status for current user
 app.get('/api/push/status', ensureAuthenticatedAPI, async (req, res) => {
   try {
-    const userId = req.user.id;
-    const subscriptions = await TradeDB.countPushSubscriptions(userId);
-    const hasSubscription = await TradeDB.hasPushSubscription(userId);
+    const userEmail = req.user.email;
+    const subscriptions = await TradeDB.countPushSubscriptions(userEmail);
+    const hasSubscription = await TradeDB.hasPushSubscription(userEmail);
 
     res.json({
       subscribed: hasSubscription,
@@ -3288,8 +3288,8 @@ app.post('/api/push/test', ensureAuthenticatedAPI, async (req, res) => {
       return res.status(503).json({ error: 'Push service not available' });
     }
 
-    const userId = req.user.id;
-    const result = await pushService.sendTestNotification(userId);
+    const userEmail = req.user.email;
+    const result = await pushService.sendTestNotification(userEmail);
 
     if (result.sent > 0) {
       res.json({ success: true, message: 'Test notification sent', ...result });

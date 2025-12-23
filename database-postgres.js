@@ -325,10 +325,24 @@ async function initializeDatabase() {
     await pool.query('CREATE INDEX IF NOT EXISTS idx_pending_signals_market_cap_rank ON pending_signals(market_cap_rank ASC)');
 
     // Create push_subscriptions table for web push notifications
+    // Drop old table if it has wrong schema (user_id INTEGER instead of user_email VARCHAR)
+    try {
+      const checkColumn = await pool.query(`
+        SELECT column_name FROM information_schema.columns
+        WHERE table_name = 'push_subscriptions' AND column_name = 'user_id'
+      `);
+      if (checkColumn.rows.length > 0) {
+        console.log('[DB] Dropping old push_subscriptions table with wrong schema...');
+        await pool.query('DROP TABLE IF EXISTS push_subscriptions CASCADE');
+      }
+    } catch (err) {
+      // Table might not exist, that's fine
+    }
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS push_subscriptions (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        user_email VARCHAR(255) NOT NULL,
         endpoint TEXT NOT NULL,
         keys_p256dh TEXT NOT NULL,
         keys_auth TEXT NOT NULL,
@@ -339,7 +353,7 @@ async function initializeDatabase() {
         UNIQUE(endpoint)
       )
     `);
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user_id ON push_subscriptions(user_id)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user_email ON push_subscriptions(user_email)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_push_subscriptions_active ON push_subscriptions(is_active)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_push_subscriptions_endpoint ON push_subscriptions(endpoint)');
 
@@ -3248,15 +3262,15 @@ const TradeDB = {
   // ==================== Push Subscription Functions ====================
 
   // Save a push subscription for a user
-  async savePushSubscription(userId, subscription, userAgent = null) {
+  async savePushSubscription(userEmail, subscription, userAgent = null) {
     checkConnection();
     try {
       const result = await pool.query(`
-        INSERT INTO push_subscriptions (user_id, endpoint, keys_p256dh, keys_auth, user_agent)
+        INSERT INTO push_subscriptions (user_email, endpoint, keys_p256dh, keys_auth, user_agent)
         VALUES ($1, $2, $3, $4, $5)
         ON CONFLICT (endpoint)
         DO UPDATE SET
-          user_id = $1,
+          user_email = $1,
           keys_p256dh = $3,
           keys_auth = $4,
           user_agent = $5,
@@ -3264,14 +3278,14 @@ const TradeDB = {
           last_used_at = CURRENT_TIMESTAMP
         RETURNING *
       `, [
-        userId,
+        userEmail,
         subscription.endpoint,
         subscription.keys.p256dh,
         subscription.keys.auth,
         userAgent
       ]);
 
-      console.log(`[DB] Saved push subscription for user ${userId}`);
+      console.log(`[DB] Saved push subscription for user ${userEmail}`);
       return result.rows[0];
     } catch (error) {
       console.error('[DB] Error saving push subscription:', error.message);
@@ -3312,12 +3326,12 @@ const TradeDB = {
   },
 
   // Get all push subscriptions for a user
-  async getPushSubscriptionsByUser(userId) {
+  async getPushSubscriptionsByUser(userEmail) {
     checkConnection();
     try {
       const result = await pool.query(
-        'SELECT * FROM push_subscriptions WHERE user_id = $1 AND is_active = true',
-        [userId]
+        'SELECT * FROM push_subscriptions WHERE user_email = $1 AND is_active = true',
+        [userEmail]
       );
       return result.rows;
     } catch (error) {
@@ -3356,12 +3370,12 @@ const TradeDB = {
   },
 
   // Count push subscriptions for a user
-  async countPushSubscriptions(userId) {
+  async countPushSubscriptions(userEmail) {
     checkConnection();
     try {
       const result = await pool.query(
-        'SELECT COUNT(*) FROM push_subscriptions WHERE user_id = $1 AND is_active = true',
-        [userId]
+        'SELECT COUNT(*) FROM push_subscriptions WHERE user_email = $1 AND is_active = true',
+        [userEmail]
       );
       return parseInt(result.rows[0].count) || 0;
     } catch (error) {
@@ -3371,12 +3385,12 @@ const TradeDB = {
   },
 
   // Check if a subscription exists for a user
-  async hasPushSubscription(userId) {
+  async hasPushSubscription(userEmail) {
     checkConnection();
     try {
       const result = await pool.query(
-        'SELECT 1 FROM push_subscriptions WHERE user_id = $1 AND is_active = true LIMIT 1',
-        [userId]
+        'SELECT 1 FROM push_subscriptions WHERE user_email = $1 AND is_active = true LIMIT 1',
+        [userEmail]
       );
       return result.rows.length > 0;
     } catch (error) {
