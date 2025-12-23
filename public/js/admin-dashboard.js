@@ -55,9 +55,9 @@ const AdminDashboard = {
       document.getElementById('metric-subs').textContent = AdminComponents.formatNumber(metrics.activeSubscriptions);
       document.getElementById('metric-subs-change').textContent = metrics.changes?.subscriptions || '+0';
 
-      // Update Payments
-      document.getElementById('metric-payments').textContent = AdminComponents.formatNumber(metrics.paymentsThisMonth);
-      document.getElementById('metric-payments-change').textContent = metrics.changes?.payments || '+0';
+      // Update Trades
+      document.getElementById('metric-trades').textContent = AdminComponents.formatNumber(metrics.totalTrades);
+      document.getElementById('metric-trades-change').textContent = metrics.changes?.trades || '+0';
 
     } catch (error) {
 
@@ -65,7 +65,7 @@ const AdminDashboard = {
       document.getElementById('metric-mrr').textContent = '£0.00';
       document.getElementById('metric-users').textContent = '0';
       document.getElementById('metric-subs').textContent = '0';
-      document.getElementById('metric-payments').textContent = '0';
+      document.getElementById('metric-trades').textContent = '0';
     }
   },
 
@@ -179,8 +179,8 @@ const AdminDashboard = {
     if (metrics.activeSubscriptions !== undefined) {
       document.getElementById('metric-subs').textContent = AdminComponents.formatNumber(metrics.activeSubscriptions);
     }
-    if (metrics.paymentsThisMonth !== undefined) {
-      document.getElementById('metric-payments').textContent = AdminComponents.formatNumber(metrics.paymentsThisMonth);
+    if (metrics.totalTrades !== undefined) {
+      document.getElementById('metric-trades').textContent = AdminComponents.formatNumber(metrics.totalTrades);
     }
   },
 

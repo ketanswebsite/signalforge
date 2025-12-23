@@ -17,8 +17,29 @@ const AdminUsers = {
    * Initialize user management page
    */
   async init() {
-    this.render();
-    await this.loadUsers();
+    // Check if we're on the admin-v2 page with existing HTML structure
+    const existingContainer = document.getElementById('users-table-container');
+    const searchInput = document.getElementById('user-search');
+
+    if (existingContainer && searchInput) {
+      // Use existing HTML structure - don't replace
+      this.setupExistingEventListeners();
+      await this.loadUsers();
+    } else {
+      // Fallback: render complete UI for standalone use
+      this.render();
+      await this.loadUsers();
+    }
+  },
+
+  /**
+   * Setup event listeners for existing HTML structure
+   */
+  setupExistingEventListeners() {
+    const searchInput = document.getElementById('user-search');
+    if (searchInput) {
+      searchInput.addEventListener('keyup', (e) => this.handleSearch(e));
+    }
   },
 
   /**
