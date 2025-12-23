@@ -324,6 +324,25 @@ async function initializeDatabase() {
     await pool.query('CREATE INDEX IF NOT EXISTS idx_stock_market_caps_usd ON stock_market_caps(market_cap_usd DESC)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_pending_signals_market_cap_rank ON pending_signals(market_cap_rank ASC)');
 
+    // Create push_subscriptions table for web push notifications
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        endpoint TEXT NOT NULL,
+        keys_p256dh TEXT NOT NULL,
+        keys_auth TEXT NOT NULL,
+        user_agent VARCHAR(500),
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_used_at TIMESTAMP,
+        UNIQUE(endpoint)
+      )
+    `);
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user_id ON push_subscriptions(user_id)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_push_subscriptions_active ON push_subscriptions(is_active)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_push_subscriptions_endpoint ON push_subscriptions(endpoint)');
+
     // Migrate existing users from trades table
     await migrateExistingUsers();
 
