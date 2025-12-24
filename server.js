@@ -601,64 +601,7 @@ app.get('/api/admin/subscribers', ensureAuthenticatedAPI, async (req, res) => {
   }
 });
 
-// API endpoint to get all OAuth users (admin only)
-app.get('/api/admin/users', ensureAuthenticatedAPI, async (req, res) => {
-  // Check if user is admin
-  if (req.user.email !== ADMIN_EMAIL) {
-    return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
-  }
-
-  try {
-    // Use TradeDB's pool connection
-    const { Pool } = require('pg');
-    const pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-    });
-
-    // First check if telegram columns exist, if not add them
-    try {
-      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_chat_id VARCHAR(100)`);
-      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_username VARCHAR(100)`);
-      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS linking_token VARCHAR(100)`);
-      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_linked_at TIMESTAMP`);
-    } catch (migrationError) {
-      // Columns might already exist, that's fine
-      console.log('Migration check:', migrationError.message);
-    }
-
-    // Get all registered users from the users table with Telegram link status
-    const result = await pool.query(`
-      SELECT
-        u.email,
-        u.name,
-        u.first_login,
-        u.last_login,
-        u.created_at,
-        u.telegram_chat_id,
-        u.telegram_username,
-        u.telegram_linked_at,
-        COUNT(t.id) as trade_count,
-        MAX(t.created_at) as last_trade_date
-      FROM users u
-      LEFT JOIN trades t ON u.email = t.user_id
-      GROUP BY u.email, u.name, u.first_login, u.last_login, u.created_at,
-               u.telegram_chat_id, u.telegram_username, u.telegram_linked_at
-      ORDER BY u.last_login DESC
-    `);
-
-    await pool.end(); // Close the connection
-
-    res.json({
-      success: true,
-      total: result.rows.length,
-      users: result.rows
-    });
-  } catch (error) {
-    console.error('Error fetching users:', error);
-    res.status(500).json({ error: 'Failed to fetch users', details: error.message });
-  }
-});
+// Note: /api/admin/users endpoint is now handled by routes/admin.js with proper pagination
 
 // OAuth-Telegram Linking Endpoints
 // Generate linking token for current user
