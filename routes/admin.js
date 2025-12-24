@@ -145,6 +145,30 @@ router.get('/users', asyncHandler(async (req, res) => {
   res.json(paginationResponse(usersResult.rows, page, limit, total));
 }));
 
+// Get all users with complimentary access (must be before /users/:email to avoid route conflict)
+router.get('/users/complimentary', asyncHandler(async (req, res) => {
+  const result = await TradeDB.pool.query(`
+    SELECT
+      email,
+      name,
+      is_complimentary,
+      complimentary_until,
+      complimentary_reason,
+      granted_by,
+      granted_at,
+      CASE
+        WHEN complimentary_until IS NULL THEN 'lifetime'
+        WHEN complimentary_until > NOW() THEN 'active'
+        ELSE 'expired'
+      END as status
+    FROM users
+    WHERE is_complimentary = true
+    ORDER BY granted_at DESC
+  `);
+
+  res.json(successResponse({ users: result.rows }));
+}));
+
 router.get('/users/:email', asyncHandler(async (req, res) => {
   const email = req.params.email;
 
@@ -467,30 +491,6 @@ router.post('/users/:email/revoke-access', asyncHandler(async (req, res) => {
   `, [userEmail, 'Access revoked', adminEmail, adminEmail, reason]);
 
   res.json(successResponse(userUpdate.rows[0], 'Complimentary access revoked successfully'));
-}));
-
-// Get all users with complimentary access
-router.get('/users/complimentary', asyncHandler(async (req, res) => {
-  const result = await TradeDB.pool.query(`
-    SELECT
-      email,
-      name,
-      is_complimentary,
-      complimentary_until,
-      complimentary_reason,
-      granted_by,
-      granted_at,
-      CASE
-        WHEN complimentary_until IS NULL THEN 'lifetime'
-        WHEN complimentary_until > NOW() THEN 'active'
-        ELSE 'expired'
-      END as status
-    FROM users
-    WHERE is_complimentary = true
-    ORDER BY granted_at DESC
-  `);
-
-  res.json(successResponse({ users: result.rows }));
 }));
 
 // Extend subscription
