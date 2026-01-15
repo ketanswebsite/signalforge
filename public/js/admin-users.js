@@ -4,19 +4,21 @@
  */
 
 const AdminUsers = {
-  // Store current state
-  currentPage: 1,
-  pageSize: 50,
-  searchQuery: '',
-  filterStatus: 'all',
-  sortBy: 'first_login',
-  sortOrder: 'desc',
+  // Pagination managed by PaginationManager
+  pagination: null,
   selectedUsers: new Set(),
 
   /**
    * Initialize user management page
    */
   async init() {
+    // Initialize pagination
+    this.pagination = PaginationManager.create({
+      pageSize: 50,
+      sortBy: 'first_login',
+      sortOrder: 'desc',
+      onLoad: () => this.loadUsers()
+    });
     // Check if we're on the admin-v2 page with existing HTML structure
     const existingContainer = document.getElementById('users-table-container');
     const searchInput = document.getElementById('user-search');
@@ -47,6 +49,7 @@ const AdminUsers = {
    */
   render() {
     const container = document.getElementById('users-page');
+    const state = this.pagination ? this.pagination.getState() : { searchQuery: '', filterStatus: 'all' };
     container.innerHTML = `
       <!-- Header with Actions -->
       <div class="admin-card">
@@ -70,14 +73,14 @@ const AdminUsers = {
               class="form-control"
               placeholder="Search users by email or name..."
               id="user-search"
-              value="${this.searchQuery}"
+              value="${state.searchQuery}"
               onkeyup="AdminUsers.handleSearch(event)"
             >
             <select class="form-control" id="user-filter" onchange="AdminUsers.handleFilter(event)">
-              <option value="all" ${this.filterStatus === 'all' ? 'selected' : ''}>All Users</option>
-              <option value="active" ${this.filterStatus === 'active' ? 'selected' : ''}>Active</option>
-              <option value="telegram" ${this.filterStatus === 'telegram' ? 'selected' : ''}>Telegram Users</option>
-              <option value="oauth" ${this.filterStatus === 'oauth' ? 'selected' : ''}>OAuth Users</option>
+              <option value="all" ${state.filterStatus === 'all' ? 'selected' : ''}>All Users</option>
+              <option value="active" ${state.filterStatus === 'active' ? 'selected' : ''}>Active</option>
+              <option value="telegram" ${state.filterStatus === 'telegram' ? 'selected' : ''}>Telegram Users</option>
+              <option value="oauth" ${state.filterStatus === 'oauth' ? 'selected' : ''}>OAuth Users</option>
             </select>
           </div>
         </div>
@@ -116,24 +119,9 @@ const AdminUsers = {
    * Load users from API
    */
   async loadUsers() {
-    const params = {
-      page: this.currentPage,
-      limit: this.pageSize,
-      sort: this.sortBy,
-      order: this.sortOrder
-    };
-
-    if (this.searchQuery) {
-      params.search = this.searchQuery;
-    }
-
-    if (this.filterStatus !== 'all') {
-      params.filter = this.filterStatus;
-    }
-
     await ApiClient.fetchAndRender({
       endpoint: '/api/admin/users',
-      params,
+      params: this.pagination.getParams(),
       containerId: 'users-table-container',
       renderFn: (data) => this.renderUsersTable(data.items, data.pagination),
       retryFn: 'AdminUsers.loadUsers()',
@@ -201,48 +189,29 @@ const AdminUsers = {
 
     document.getElementById('users-table-container').innerHTML = tableHTML;
 
-    // Render pagination
-    if (pagination && pagination.pages > 1) {
-      const paginationHTML = AdminComponents.pagination({
-        currentPage: pagination.page,
-        totalPages: pagination.pages,
-        onPageChange: (page) => `AdminUsers.goToPage(${page})`
-      });
-      document.getElementById('users-pagination').innerHTML = paginationHTML;
-    } else {
-      document.getElementById('users-pagination').innerHTML = '';
-    }
+    // Render pagination using PaginationManager
+    this.pagination.renderPagination(pagination, 'users-pagination', 'AdminUsers');
   },
 
   /**
-   * Handle search input
+   * Handle search input (delegates to PaginationManager)
    */
   handleSearch(event) {
-    this.searchQuery = event.target.value;
-    this.currentPage = 1;
-
-    // Debounce search
-    clearTimeout(this.searchTimeout);
-    this.searchTimeout = setTimeout(() => {
-      this.loadUsers();
-    }, 500);
+    this.pagination.handleSearch(event);
   },
 
   /**
-   * Handle filter change
+   * Handle filter change (delegates to PaginationManager)
    */
   handleFilter(event) {
-    this.filterStatus = event.target.value;
-    this.currentPage = 1;
-    this.loadUsers();
+    this.pagination.handleFilter(event);
   },
 
   /**
-   * Go to page
+   * Go to page (delegates to PaginationManager)
    */
   goToPage(page) {
-    this.currentPage = page;
-    this.loadUsers();
+    this.pagination.goToPage(page);
   },
 
   /**
