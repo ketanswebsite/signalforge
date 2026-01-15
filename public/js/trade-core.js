@@ -19,21 +19,17 @@ const TradeCore = (function() {
     const MAX_RETRIES = 3; // Maximum retries for fetching data
 
     /**
-     * Show notification helper
+     * Show notification helper (delegates to NotificationManager)
      * @param {string} message - The message to display
      * @param {string} type - The type of notification (success, error, warning, info)
      */
     function showNotification(message, type = 'info') {
-        // Try to use DTIBacktester's notification system if available
-        if (typeof DTIBacktester !== 'undefined' && DTIBacktester.utils && DTIBacktester.utils.showNotification) {
-            DTIBacktester.utils.showNotification(message, type);
+        if (typeof window.NotificationManager !== 'undefined') {
+            window.NotificationManager.show(message, type);
         } else if (typeof window.showNotification === 'function') {
-            // Use global showNotification if available
             window.showNotification(message, type);
         } else {
-            // Fallback to console
-            const prefix = type.toUpperCase();
-            console[type === 'error' ? 'error' : 'log'](`[${prefix}] ${message}`);
+            console[type === 'error' ? 'error' : 'log'](`[${type.toUpperCase()}] ${message}`);
         }
     }
 

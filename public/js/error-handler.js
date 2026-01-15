@@ -48,15 +48,9 @@
             message = 'Network error. Please check your connection and try again.';
         }
 
-        // Show notification to user
+        // Show notification to user (NotificationManager provides window.showNotification)
         if (typeof window.showNotification === 'function') {
             window.showNotification(message, 'error');
-        } else if (window.TradeCore && window.TradeCore.showNotification) {
-            window.TradeCore.showNotification(message, 'error');
-        } else if (window.DTIBacktester && window.DTIBacktester.utils && window.DTIBacktester.utils.showNotification) {
-            window.DTIBacktester.utils.showNotification(message, 'error');
-        } else {
-            // Fallback to alert if no notification system
         }
 
         // Mark as handled
@@ -91,9 +85,8 @@
         }
 
         // Show notification for development
-        const message = `Error: ${event.message} at ${event.filename}:${event.lineno}`;
-        if (window.TradeCore && window.TradeCore.showNotification) {
-            window.TradeCore.showNotification('An error occurred. Please refresh the page.', 'error');
+        if (typeof window.showNotification === 'function') {
+            window.showNotification('An error occurred. Please refresh the page.', 'error');
         }
     });
 
@@ -125,52 +118,6 @@
         }
     };
 
-    /**
-     * Provide a global showNotification function if none exists
-     */
-    if (typeof window.showNotification !== 'function') {
-        window.showNotification = function(message, type = 'info') {
-            // Try TradeCore first
-            if (window.TradeCore && window.TradeCore.showNotification) {
-                window.TradeCore.showNotification(message, type);
-                return;
-            }
-
-            // Try DTIBacktester
-            if (window.DTIBacktester && window.DTIBacktester.utils && window.DTIBacktester.utils.showNotification) {
-                window.DTIBacktester.utils.showNotification(message, type);
-                return;
-            }
-
-            // Create simple notification
-            const notification = document.createElement('div');
-            notification.className = `global-notification ${type}`;
-            notification.textContent = message;
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 12px 20px;
-                background: ${type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#3b82f6'};
-                color: white;
-                border-radius: 8px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                z-index: 10001;
-                font-size: 14px;
-                max-width: 400px;
-                animation: slideIn 0.3s ease;
-            `;
-
-            document.body.appendChild(notification);
-
-            setTimeout(() => {
-                notification.style.animation = 'slideOut 0.3s ease';
-                setTimeout(() => notification.remove(), 300);
-            }, 5000);
-        };
-
-        // Add animation styles
-        
-    }
+    // Note: window.showNotification is now provided by NotificationManager (utils/notifications.js)
 
 })();
