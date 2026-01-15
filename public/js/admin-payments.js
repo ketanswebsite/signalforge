@@ -6,17 +6,22 @@
 const AdminPayments = {
   // Store current state
   currentTab: 'transactions',
-  currentPage: 1,
-  pageSize: 50,
+  pagination: null,
   filterStatus: 'all',
   filterProvider: 'all',
-  sortBy: 'created_at',
-  sortOrder: 'desc',
 
   /**
    * Initialize payment management page
    */
   async init() {
+    // Initialize pagination
+    this.pagination = PaginationManager.create({
+      pageSize: 50,
+      sortBy: 'created_at',
+      sortOrder: 'desc',
+      onLoad: () => this.loadTransactions()
+    });
+
     this.render();
     await this.loadTransactions();
   },
@@ -176,10 +181,7 @@ const AdminPayments = {
    * Load payment transactions
    */
   async loadTransactions() {
-    const params = {
-      page: this.currentPage,
-      limit: this.pageSize
-    };
+    const params = this.pagination.getParams();
 
     if (this.filterStatus !== 'all') {
       params.status = this.filterStatus;
@@ -568,22 +570,21 @@ const AdminPayments = {
    */
   handleStatusFilter(event) {
     this.filterStatus = event.target.value;
-    this.currentPage = 1;
+    this.pagination.reset();
     this.loadTransactions();
   },
 
   handleProviderFilter(event) {
     this.filterProvider = event.target.value;
-    this.currentPage = 1;
+    this.pagination.reset();
     this.loadTransactions();
   },
 
   /**
-   * Go to page
+   * Go to page (delegates to PaginationManager)
    */
   goToPage(page) {
-    this.currentPage = page;
-    this.loadTransactions();
+    this.pagination.goToPage(page);
   },
 
   /**

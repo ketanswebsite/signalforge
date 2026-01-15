@@ -34,14 +34,8 @@ const AdminDashboard = {
    */
   async loadMetrics() {
     try {
-      const response = await fetch('/api/admin/dashboard/metrics');
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error?.message || 'Failed to load metrics');
-      }
-
-      const metrics = data.data;
+      const data = await ApiClient.get('/api/admin/dashboard/metrics');
+      const metrics = data;
 
       // Update MRR
       document.getElementById('metric-mrr').textContent = AdminComponents.formatCurrency(metrics.mrr, 'GBP');
@@ -60,7 +54,6 @@ const AdminDashboard = {
       document.getElementById('metric-trades-change').textContent = metrics.changes?.trades || '+0';
 
     } catch (error) {
-
       // Show placeholder values
       document.getElementById('metric-mrr').textContent = '£0.00';
       document.getElementById('metric-users').textContent = '0';
@@ -74,14 +67,8 @@ const AdminDashboard = {
    */
   async loadRecentActivity() {
     try {
-      const response = await fetch('/api/admin/audit/logs?limit=10');
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error?.message || 'Failed to load activity');
-      }
-
-      const logs = data.data.logs || [];
+      const data = await ApiClient.get('/api/admin/audit/logs', { limit: 10 });
+      const logs = data.logs || [];
       const activityContainer = document.getElementById('recent-activity');
 
       if (logs.length === 0) {

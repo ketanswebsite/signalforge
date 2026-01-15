@@ -6,16 +6,21 @@
 const AdminSubscriptions = {
   // Store current state
   currentTab: 'plans',
-  currentPage: 1,
-  pageSize: 50,
+  pagination: null,
   filterStatus: 'all',
-  sortBy: 'created_at',
-  sortOrder: 'desc',
 
   /**
    * Initialize subscription management page
    */
   async init() {
+    // Initialize pagination
+    this.pagination = PaginationManager.create({
+      pageSize: 50,
+      sortBy: 'created_at',
+      sortOrder: 'desc',
+      onLoad: () => this.loadSubscriptions()
+    });
+
     this.render();
     await this.loadPlans();
   },
@@ -152,24 +157,14 @@ const AdminSubscriptions = {
    * Load subscription plans
    */
   async loadPlans() {
-    try {
-      const response = await fetch('/api/admin/subscription-plans');
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error?.message || 'Failed to load plans');
-      }
-
-      this.renderPlans(data.data.plans || []);
-
-    } catch (error) {
-      document.getElementById('plans-container').innerHTML = `
-        <div class="text-center text-muted">
-          <p>Failed to load plans</p>
-          <button class="btn btn-primary btn-sm" onclick="AdminSubscriptions.loadPlans()">Retry</button>
-        </div>
-      `;
-    }
+    await ApiClient.fetchAndRender({
+      endpoint: '/api/admin/subscription-plans',
+      containerId: 'plans-container',
+      renderFn: (data) => this.renderPlans(data.plans || []),
+      retryFn: 'AdminSubscriptions.loadPlans()',
+      loadingText: 'Loading plans...',
+      errorMessage: 'Failed to load plans'
+    });
   },
 
   /**
@@ -230,10 +225,7 @@ const AdminSubscriptions = {
    * Load active subscriptions
    */
   async loadSubscriptions() {
-    const params = {
-      page: this.currentPage,
-      limit: this.pageSize
-    };
+    const params = this.pagination.getParams();
 
     if (this.filterStatus !== 'all') {
       params.status = this.filterStatus;
@@ -434,16 +426,15 @@ const AdminSubscriptions = {
    */
   handleFilter(event) {
     this.filterStatus = event.target.value;
-    this.currentPage = 1;
+    this.pagination.reset();
     this.loadSubscriptions();
   },
 
   /**
-   * Go to page
+   * Go to page (delegates to PaginationManager)
    */
   goToPage(page) {
-    this.currentPage = page;
-    this.loadSubscriptions();
+    this.pagination.goToPage(page);
   },
 
   /**

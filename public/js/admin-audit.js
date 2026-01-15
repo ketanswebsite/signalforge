@@ -4,19 +4,25 @@
  */
 
 const AdminAudit = {
-    currentPage: 1,
-    pageSize: 50,
+    pagination: null,
     filterEntity: 'all',
     filterAction: 'all',
     filterUser: '',
     dateFrom: '',
     dateTo: '',
-    searchQuery: '',
 
     /**
      * Initialize the audit log module
      */
     async init() {
+        // Initialize pagination
+        this.pagination = PaginationManager.create({
+            pageSize: 50,
+            sortBy: 'timestamp',
+            sortOrder: 'desc',
+            onLoad: () => this.loadAuditLogs()
+        });
+
         this.render();
         await this.loadAuditLogs();
     },
@@ -134,34 +140,23 @@ const AdminAudit = {
      * Load audit logs from API
      */
     async loadAuditLogs() {
-        try {
-            const params = new URLSearchParams({
-                page: this.currentPage,
-                limit: this.pageSize
-            });
+        // Build params from pagination state and filters
+        const params = this.pagination.getParams();
+        if (this.filterEntity !== 'all') params.entity = this.filterEntity;
+        if (this.filterAction !== 'all') params.action = this.filterAction;
+        if (this.filterUser) params.user = this.filterUser;
+        if (this.dateFrom) params.dateFrom = this.dateFrom;
+        if (this.dateTo) params.dateTo = this.dateTo;
 
-            if (this.filterEntity !== 'all') params.append('entity', this.filterEntity);
-            if (this.filterAction !== 'all') params.append('action', this.filterAction);
-            if (this.filterUser) params.append('user', this.filterUser);
-            if (this.dateFrom) params.append('dateFrom', this.dateFrom);
-            if (this.dateTo) params.append('dateTo', this.dateTo);
-            if (this.searchQuery) params.append('search', this.searchQuery);
-
-            const response = await fetch(`/api/admin/audit/unified?${params}`);
-            const data = await response.json();
-
-            if (data.success) {
-                this.renderAuditTable(data.data.items, data.data.pagination);
-            } else {
-                throw new Error(data.error?.message || 'Failed to load audit logs');
-            }
-        } catch (error) {
-            AdminComponents.alert({
-                type: 'error',
-                message: `Failed to load audit logs: ${error.message}`,
-                autoDismiss: 5000
-            });
-        }
+        await ApiClient.fetchAndRender({
+            endpoint: '/api/admin/audit/unified',
+            params,
+            containerId: 'audit-log-table',
+            renderFn: (data) => this.renderAuditTable(data.items, data.pagination),
+            retryFn: 'AdminAudit.loadAuditLogs()',
+            loadingText: 'Loading audit logs...',
+            errorMessage: 'Failed to load audit logs'
+        });
     },
 
     /**
@@ -376,7 +371,7 @@ const AdminAudit = {
         this.filterUser = document.getElementById('filter-user').value;
         this.dateFrom = document.getElementById('filter-date-from').value;
         this.dateTo = document.getElementById('filter-date-to').value;
-        this.currentPage = 1;
+        this.pagination.reset();
         this.loadAuditLogs();
     },
 
@@ -389,8 +384,6 @@ const AdminAudit = {
         this.filterUser = '';
         this.dateFrom = '';
         this.dateTo = '';
-        this.searchQuery = '';
-        this.currentPage = 1;
 
         document.getElementById('filter-entity').value = 'all';
         document.getElementById('filter-action').value = 'all';
@@ -399,27 +392,22 @@ const AdminAudit = {
         document.getElementById('filter-date-to').value = '';
         document.getElementById('audit-search').value = '';
 
+        this.pagination.reset();
         this.loadAuditLogs();
     },
 
     /**
-     * Handle search input
+     * Handle search input (delegates to PaginationManager)
      */
     handleSearch(event) {
-        clearTimeout(this.searchTimeout);
-        this.searchTimeout = setTimeout(() => {
-            this.searchQuery = event.target.value;
-            this.currentPage = 1;
-            this.loadAuditLogs();
-        }, 300);
+        this.pagination.handleSearch(event);
     },
 
     /**
-     * Change page
+     * Change page (delegates to PaginationManager)
      */
     changePage(page) {
-        this.currentPage = page;
-        this.loadAuditLogs();
+        this.pagination.goToPage(page);
     },
 
     /**
