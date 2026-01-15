@@ -139,32 +139,14 @@ const AdminComplimentary = {
      * Load list of users with complimentary access
      */
     async loadComplimentaryUsers() {
-        const container = document.getElementById('complimentary-users-container');
-
-        if (!container) {
-            console.error('Complimentary users container not found');
-            return;
-        }
-
-        try {
-            container.innerHTML = '<div class="loading-state"><span class="material-icons rotating">refresh</span> Loading...</div>';
-
-            const response = await fetch('/api/admin/users/complimentary', {
-                credentials: 'include'
-            });
-
-            const data = await response.json();
-
-            if (response.ok && data.success) {
-                this.renderComplimentaryUsers(data.data.users);
-            } else {
-                const errorMsg = data.error?.message || data.error || 'Failed to load complimentary users';
-                container.innerHTML = `<div class="error-state"><span class="material-icons">error</span> ${errorMsg}</div>`;
-            }
-        } catch (error) {
-            console.error('Error loading complimentary users:', error);
-            container.innerHTML = '<div class="error-state"><span class="material-icons">error</span> Failed to load complimentary users</div>';
-        }
+        await ApiClient.fetchAndRender({
+            endpoint: '/api/admin/users/complimentary',
+            containerId: 'complimentary-users-container',
+            renderFn: (data) => this.renderComplimentaryUsers(data.users),
+            retryFn: 'AdminComplimentary.loadComplimentaryUsers()',
+            loadingText: 'Loading...',
+            errorMessage: 'Failed to load complimentary users'
+        });
     },
 
     /**

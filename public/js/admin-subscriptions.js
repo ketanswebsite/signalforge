@@ -230,33 +230,24 @@ const AdminSubscriptions = {
    * Load active subscriptions
    */
   async loadSubscriptions() {
-    try {
-      const params = new URLSearchParams({
-        page: this.currentPage,
-        limit: this.pageSize
-      });
+    const params = {
+      page: this.currentPage,
+      limit: this.pageSize
+    };
 
-      if (this.filterStatus !== 'all') {
-        params.append('status', this.filterStatus);
-      }
-
-      const response = await fetch(`/api/admin/subscriptions?${params}`);
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error?.message || 'Failed to load subscriptions');
-      }
-
-      this.renderSubscriptions(data.data.items || [], data.data.pagination);
-
-    } catch (error) {
-      document.getElementById('subscriptions-container').innerHTML = `
-        <div class="text-center text-muted">
-          <p>Failed to load subscriptions</p>
-          <button class="btn btn-primary btn-sm" onclick="AdminSubscriptions.loadSubscriptions()">Retry</button>
-        </div>
-      `;
+    if (this.filterStatus !== 'all') {
+      params.status = this.filterStatus;
     }
+
+    await ApiClient.fetchAndRender({
+      endpoint: '/api/admin/subscriptions',
+      params,
+      containerId: 'subscriptions-container',
+      renderFn: (data) => this.renderSubscriptions(data.items || [], data.pagination),
+      retryFn: 'AdminSubscriptions.loadSubscriptions()',
+      loadingText: 'Loading subscriptions...',
+      errorMessage: 'Failed to load subscriptions'
+    });
   },
 
   /**

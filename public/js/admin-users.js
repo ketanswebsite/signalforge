@@ -116,39 +116,30 @@ const AdminUsers = {
    * Load users from API
    */
   async loadUsers() {
-    try {
-      const params = new URLSearchParams({
-        page: this.currentPage,
-        limit: this.pageSize,
-        sort: this.sortBy,
-        order: this.sortOrder
-      });
+    const params = {
+      page: this.currentPage,
+      limit: this.pageSize,
+      sort: this.sortBy,
+      order: this.sortOrder
+    };
 
-      if (this.searchQuery) {
-        params.append('search', this.searchQuery);
-      }
-
-      if (this.filterStatus !== 'all') {
-        params.append('filter', this.filterStatus);
-      }
-
-      const response = await fetch(`/api/admin/users?${params}`);
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error?.message || 'Failed to load users');
-      }
-
-      this.renderUsersTable(data.data.items, data.data.pagination);
-
-    } catch (error) {
-      document.getElementById('users-table-container').innerHTML = `
-        <div class="text-center text-muted">
-          <p>Failed to load users</p>
-          <button class="btn btn-primary btn-sm" onclick="AdminUsers.loadUsers()">Retry</button>
-        </div>
-      `;
+    if (this.searchQuery) {
+      params.search = this.searchQuery;
     }
+
+    if (this.filterStatus !== 'all') {
+      params.filter = this.filterStatus;
+    }
+
+    await ApiClient.fetchAndRender({
+      endpoint: '/api/admin/users',
+      params,
+      containerId: 'users-table-container',
+      renderFn: (data) => this.renderUsersTable(data.items, data.pagination),
+      retryFn: 'AdminUsers.loadUsers()',
+      loadingText: 'Loading users...',
+      errorMessage: 'Failed to load users'
+    });
   },
 
   /**

@@ -176,37 +176,28 @@ const AdminPayments = {
    * Load payment transactions
    */
   async loadTransactions() {
-    try {
-      const params = new URLSearchParams({
-        page: this.currentPage,
-        limit: this.pageSize
-      });
+    const params = {
+      page: this.currentPage,
+      limit: this.pageSize
+    };
 
-      if (this.filterStatus !== 'all') {
-        params.append('status', this.filterStatus);
-      }
-
-      if (this.filterProvider !== 'all') {
-        params.append('provider', this.filterProvider);
-      }
-
-      const response = await fetch(`/api/admin/payments?${params}`);
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error?.message || 'Failed to load transactions');
-      }
-
-      this.renderTransactions(data.data.items || [], data.data.pagination);
-
-    } catch (error) {
-      document.getElementById('transactions-container').innerHTML = `
-        <div class="text-center text-muted">
-          <p>Failed to load transactions</p>
-          <button class="btn btn-primary btn-sm" onclick="AdminPayments.loadTransactions()">Retry</button>
-        </div>
-      `;
+    if (this.filterStatus !== 'all') {
+      params.status = this.filterStatus;
     }
+
+    if (this.filterProvider !== 'all') {
+      params.provider = this.filterProvider;
+    }
+
+    await ApiClient.fetchAndRender({
+      endpoint: '/api/admin/payments',
+      params,
+      containerId: 'transactions-container',
+      renderFn: (data) => this.renderTransactions(data.items || [], data.pagination),
+      retryFn: 'AdminPayments.loadTransactions()',
+      loadingText: 'Loading transactions...',
+      errorMessage: 'Failed to load transactions'
+    });
   },
 
   /**
@@ -309,24 +300,14 @@ const AdminPayments = {
    * Load verification queue
    */
   async loadVerificationQueue() {
-    try {
-      const response = await fetch('/api/admin/payments/verification-queue');
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error?.message || 'Failed to load verification queue');
-      }
-
-      this.renderVerificationQueue(data.data.queue || []);
-
-    } catch (error) {
-      document.getElementById('verification-container').innerHTML = `
-        <div class="text-center text-muted">
-          <p>Failed to load verification queue</p>
-          <button class="btn btn-primary btn-sm" onclick="AdminPayments.loadVerificationQueue()">Retry</button>
-        </div>
-      `;
-    }
+    await ApiClient.fetchAndRender({
+      endpoint: '/api/admin/payments/verification-queue',
+      containerId: 'verification-container',
+      renderFn: (data) => this.renderVerificationQueue(data.queue || []),
+      retryFn: 'AdminPayments.loadVerificationQueue()',
+      loadingText: 'Loading verification queue...',
+      errorMessage: 'Failed to load verification queue'
+    });
   },
 
   /**
@@ -371,24 +352,14 @@ const AdminPayments = {
    * Load refunds
    */
   async loadRefunds() {
-    try {
-      const response = await fetch('/api/admin/payments/refunds');
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error?.message || 'Failed to load refunds');
-      }
-
-      this.renderRefunds(data.data.refunds || []);
-
-    } catch (error) {
-      document.getElementById('refunds-container').innerHTML = `
-        <div class="text-center text-muted">
-          <p>Failed to load refunds</p>
-          <button class="btn btn-primary btn-sm" onclick="AdminPayments.loadRefunds()">Retry</button>
-        </div>
-      `;
-    }
+    await ApiClient.fetchAndRender({
+      endpoint: '/api/admin/payments/refunds',
+      containerId: 'refunds-container',
+      renderFn: (data) => this.renderRefunds(data.refunds || []),
+      retryFn: 'AdminPayments.loadRefunds()',
+      loadingText: 'Loading refunds...',
+      errorMessage: 'Failed to load refunds'
+    });
   },
 
   /**
