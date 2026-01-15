@@ -175,12 +175,12 @@ const AdminUsers = {
         {
           label: 'First Login',
           key: 'first_login',
-          render: (date) => date ? new Date(date).toLocaleDateString() : '-'
+          render: (date) => DateFormatter.format(date)
         },
         {
           label: 'Last Login',
           key: 'last_login',
-          render: (date) => date ? new Date(date).toLocaleDateString() : '-'
+          render: (date) => DateFormatter.format(date)
         },
         {
           label: 'Telegram',

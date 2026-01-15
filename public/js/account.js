@@ -835,7 +835,7 @@ class AccountPage {
                     </div>
                     <div class="detail-row">
                         <span class="detail-label">Start Date</span>
-                        <span class="detail-value">${new Date(sub.subscription_start_date).toLocaleDateString()}</span>
+                        <span class="detail-value">${DateFormatter.format(sub.subscription_start_date)}</span>
                     </div>
                     <div class="detail-row">
                         <span class="detail-label">${isTrial ? 'Trial Ends' : (isCancelled || isExpired) ? 'Access Until' : 'Next Billing Date'}</span>
@@ -920,7 +920,7 @@ class AccountPage {
                 <tbody>
                     ${this.payments.map(payment => `
                         <tr>
-                            <td>${new Date(payment.payment_date).toLocaleDateString()}</td>
+                            <td>${DateFormatter.format(payment.payment_date)}</td>
                             <td>${payment.plan_name || 'SutrAlgo Subscription'}</td>
                             <td>${this.getCurrencySymbol(payment.currency)}${payment.amount.toFixed(2)}</td>
                             <td>
@@ -1082,7 +1082,7 @@ class AccountPage {
 
             if (data.success) {
                 document.getElementById('cancel-modal').classList.remove('active');
-                alert('Your subscription has been cancelled successfully. You will continue to have access until ' + new Date(data.accessUntil).toLocaleDateString());
+                alert('Your subscription has been cancelled successfully. You will continue to have access until ' + DateFormatter.format(data.accessUntil));
                 await this.loadSubscription();
             } else {
                 throw new Error(data.error?.message || 'Failed to cancel subscription');

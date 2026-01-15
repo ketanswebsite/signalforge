@@ -303,17 +303,17 @@ const AdminSubscriptions = {
         {
           label: 'Start Date',
           key: 'subscription_start_date',
-          render: (date) => date ? new Date(date).toLocaleDateString() : '-'
+          render: (date) => DateFormatter.format(date)
         },
         {
           label: 'End Date',
           key: 'subscription_end_date',
-          render: (date) => date ? new Date(date).toLocaleDateString() : '-'
+          render: (date) => DateFormatter.format(date)
         },
         {
           label: 'Trial End',
           key: 'trial_end_date',
-          render: (date) => date ? new Date(date).toLocaleDateString() : '-'
+          render: (date) => DateFormatter.format(date)
         }
       ],
       data: subscriptions,

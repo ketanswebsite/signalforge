@@ -273,7 +273,7 @@ const AdminPayments = {
         {
           label: 'Date',
           key: 'created_at',
-          render: (date) => new Date(date).toLocaleDateString()
+          render: (date) => DateFormatter.format(date)
         }
       ],
       data: transactions,
@@ -436,7 +436,7 @@ const AdminPayments = {
         {
           label: 'Date',
           key: 'created_at',
-          render: (date) => new Date(date).toLocaleDateString()
+          render: (date) => DateFormatter.format(date)
         }
       ],
       data: refunds,

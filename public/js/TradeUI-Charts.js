@@ -401,7 +401,7 @@ window.TradeUIModules.charts = (function() {
         const colors = getThemeColors();
 
         // Prepare data
-        const labels = data.map(d => new Date(d.date).toLocaleDateString());
+        const labels = data.map(d => DateFormatter.format(d.date));
         const equityData = data.map(d => d.percentGain);
 
         // Calculate min/max for better y-axis scaling with padding
@@ -570,7 +570,7 @@ window.TradeUIModules.charts = (function() {
         const colors = getThemeColors();
 
         // Prepare data - Keep as positive values but invert the y-axis
-        const labels = data.map(d => new Date(d.date).toLocaleDateString());
+        const labels = data.map(d => DateFormatter.format(d.date));
         const drawdownData = data.map(d => d.drawdown);
 
         // Find maximum drawdown for scale setting

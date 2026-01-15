@@ -908,7 +908,7 @@ const AdminAnalyticsV2 = {
                         <div class="report-description">${report.description || 'No description'}</div>
                         <div class="report-meta">
                             <span>📊 ${report.type}</span>
-                            <span>📅 Last run: ${report.lastRun ? new Date(report.lastRun).toLocaleDateString() : 'Never'}</span>
+                            <span>📅 Last run: ${DateFormatter.format(report.lastRun, 'Never')}</span>
                         </div>
                     </div>
                 </div>

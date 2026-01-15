@@ -216,7 +216,7 @@ const TradeManagement = (function() {
 
             return [
                 trade.symbol,
-                trade.entryDate ? new Date(trade.entryDate).toLocaleDateString() : '',
+                DateFormatter.format(trade.entryDate, ''),
                 trade.entryPrice || '',
                 trade.currentPrice || '',
                 trade.stopLossPrice || trade.stopLossPercent || '',
@@ -225,7 +225,7 @@ const TradeManagement = (function() {
                 market,
                 trade.profitLossPercentage || '',
                 trade.status || '',
-                trade.exitDate ? new Date(trade.exitDate).toLocaleDateString() : '',
+                DateFormatter.format(trade.exitDate, ''),
                 trade.exitPrice || '',
                 trade.exitReason || '',
                 (trade.notes || '').replace(/"/g, '""').replace(/\n/g, ' ')

@@ -187,7 +187,7 @@ const BacktestAlerts = (function() {
                     { label: 'Total Opportunities Scanned', value: DTIBacktester.activeTradeOpportunities?.length || 0 },
                     { label: 'Strong Patterns Found', value: opportunities.length },
                     { label: 'Signal Strength', value: 'DTI < -40 (Strong Oversold)' },
-                    { label: 'Scan Date', value: new Date().toLocaleDateString() }
+                    { label: 'Scan Date', value: DateFormatter.format(new Date()) }
                 ]
             };
         }
@@ -231,7 +231,7 @@ const BacktestAlerts = (function() {
                 { label: 'DTI Signal', value: signal.toFixed(2) },
                 { label: 'Current Price', value: `${currencySymbol}${price.toFixed(2)}` },
                 { label: 'Signal Strength', value: convictionLevel },
-                { label: 'Signal Date', value: new Date(opportunity.date).toLocaleDateString() },
+                { label: 'Signal Date', value: DateFormatter.format(opportunity.date) },
                 { label: 'Market', value: symbol.includes('.NS') ? 'Indian' : symbol.includes('.L') ? 'UK' : 'US' }
             ],
             action: 'Technical pattern identified for analysis'

@@ -158,7 +158,7 @@ function displayBuyingOpportunities() {
             
             opportunities.forEach((opportunity, index) => {
                 const { stock, trade } = opportunity;
-                const entryDate = new Date(trade.entryDate).toLocaleDateString();
+                const entryDate = DateFormatter.format(trade.entryDate);
                 const days = trade.holdingDays;
                 const currentPrice = trade.currentPrice ? trade.currentPrice.toFixed(2) : 'N/A';
                 const entryPrice = trade.entryPrice ? trade.entryPrice.toFixed(2) : 'N/A';

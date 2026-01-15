@@ -153,7 +153,7 @@ const AdminUserManagementV2 = {
     const grouped = {};
 
     activities.forEach(activity => {
-      const date = new Date(activity.timestamp).toLocaleDateString();
+      const date = DateFormatter.format(activity.timestamp);
       if (!grouped[date]) {
         grouped[date] = [];
       }

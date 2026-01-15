@@ -205,8 +205,8 @@ const AdminComplimentary = {
      */
     renderComplimentaryUserRow(user) {
         const isLifetime = !user.complimentary_until;
-        const expiryDate = user.complimentary_until ? new Date(user.complimentary_until).toLocaleDateString() : 'Never';
-        const grantedAt = user.granted_at ? new Date(user.granted_at).toLocaleDateString() : 'N/A';
+        const expiryDate = DateFormatter.format(user.complimentary_until, 'Never');
+        const grantedAt = DateFormatter.format(user.granted_at, 'N/A');
         const accessType = isLifetime ? 'Lifetime' : 'Temporary';
         const accessClass = isLifetime ? 'badge-success' : 'badge-warning';
 
