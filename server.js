@@ -2243,6 +2243,43 @@ app.get('/api/signals/pending', ensureAuthenticatedAPI, async (req, res) => {
   }
 });
 
+// Token-guarded read of today's screened signals — for the external AI-analysis
+// routine (cloud Claude Code). Not session-authed: guarded by ANALYSIS_API_TOKEN
+// so a headless cloud job can read without Google OAuth. Read-only, no mutations.
+app.get('/api/signals/screened-today', async (req, res) => {
+  try {
+    const token = req.query.token || req.get('x-analysis-token');
+    if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const all = await TradeDB.getPendingSignals('pending', null);
+    const todays = all.filter(s => new Date(s.signal_date).toISOString().split('T')[0] === today);
+
+    const signals = todays.map(s => ({
+      symbol: s.symbol,
+      market: s.market,
+      signalDate: new Date(s.signal_date).toISOString().split('T')[0],
+      entryPrice: parseFloat(s.entry_price),
+      targetPrice: parseFloat(s.target_price),
+      stopLoss: parseFloat(s.stop_loss),
+      squareOffDate: s.square_off_date,
+      winRate: parseFloat(s.win_rate),
+      historicalSignalCount: parseInt(s.historical_signal_count) || 0,
+      entryDTI: s.entry_dti != null ? parseFloat(s.entry_dti) : null,
+      entry7DayDTI: s.entry_7day_dti != null ? parseFloat(s.entry_7day_dti) : null,
+      marketCapUSD: s.market_cap_usd != null ? parseFloat(s.market_cap_usd) : null,
+      marketCapRank: s.market_cap_rank != null ? parseInt(s.market_cap_rank) : null
+    }));
+
+    res.json({ success: true, date: today, count: signals.length, signals });
+  } catch (error) {
+    console.error('Error getting screened-today signals:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Add signal to portfolio
 app.post('/api/signals/add-to-portfolio/:signalId', ensureAuthenticatedAPI, async (req, res) => {
   try {
