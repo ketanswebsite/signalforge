@@ -1,11 +1,13 @@
 -- Migration: Create push_subscriptions table for Web Push Notifications
 -- This table stores push subscription data for each user's browser
--- Run this migration to enable Web Push Notifications feature
+-- Schema matches database-postgres.js initializeDatabase() (keyed by user_email,
+-- which is what PushService and all queries use). An earlier version of this
+-- migration used user_id INTEGER, which conflicts with the application schema
+-- and fails on any database bootstrapped by the app itself.
 
--- Create push_subscriptions table
 CREATE TABLE IF NOT EXISTS push_subscriptions (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    user_email VARCHAR(255) NOT NULL,
     endpoint TEXT NOT NULL,
     keys_p256dh TEXT NOT NULL,
     keys_auth TEXT NOT NULL,
@@ -16,8 +18,7 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
     UNIQUE(endpoint)
 );
 
--- Create indexes for efficient lookups
-CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user_id ON push_subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user_email ON push_subscriptions(user_email);
 CREATE INDEX IF NOT EXISTS idx_push_subscriptions_active ON push_subscriptions(is_active);
 CREATE INDEX IF NOT EXISTS idx_push_subscriptions_endpoint ON push_subscriptions(endpoint);
 
@@ -32,7 +33,6 @@ BEGIN
     END IF;
 END $$;
 
--- Comment on table
 COMMENT ON TABLE push_subscriptions IS 'Stores Web Push notification subscriptions for users';
 COMMENT ON COLUMN push_subscriptions.endpoint IS 'The push service endpoint URL';
 COMMENT ON COLUMN push_subscriptions.keys_p256dh IS 'Public key for push encryption';
