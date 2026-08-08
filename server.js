@@ -3474,6 +3474,9 @@ app.use((req, res, next) => {
       req.path === '/styles.css' ||
       req.path === '/css/main.css' ||
       req.path === '/css/marketing.css' ||
+      req.path === '/css/commerce.css' ||
+      req.path === '/js/legal-doc.js' ||
+      req.path === '/js/data-page.js' ||
       req.path.startsWith('/css/design-system/') ||
       req.path === '/js/marketing.js' ||
       req.path === '/js/modern-effects.js' ||
@@ -4406,7 +4409,8 @@ app.post('/api/portfolio/close-trade/:symbol', ensureAuthenticatedAPI, async (re
 
 // Global error handler
 app.use((err, req, res, next) => {
-  res.status(500).json({ 
+  console.error(`[ERROR HANDLER] ${req.method} ${req.path}:`, err.status || '', err.message, err.stack ? '\n' + err.stack.split('\n').slice(0, 4).join('\n') : '');
+  res.status(err.status || 500).json({
     error: 'Internal Server Error',
     message: process.env.NODE_ENV === 'development' ? err.message : 'An error occurred',
     path: req.path

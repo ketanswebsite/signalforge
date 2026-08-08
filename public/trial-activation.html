@@ -3,161 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0f172a">
-    <title>Start Your Free Trial - SutrAlgo</title>
-
-    <!-- Google Material Icons -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="icon" type="image/png" href="/images/favicon.PNG">
-
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800;900&family=Work+Sans:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Main Stylesheet -->
-    <link rel="stylesheet" href="/css/main.css"><!-- Modern Effects -->
-    <script src="/js/modern-effects.js" defer></script>
+    <meta name="theme-color" content="#141210">
+    <title>Your 90 days — SutrAlgo</title>
+    <link rel="icon" type="image/png" href="/images/brand/favicon.png">
+    <link rel="stylesheet" href="/css/design-system/index.css">
+    <link rel="stylesheet" href="/css/commerce.css">
+    <script>try{if(localStorage.getItem('sa-theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
 </head>
 <body>
-    <!-- Animated Background -->
-    <div class="landing-background">
-        <div class="gradient-orb orb-1"></div>
-        <div class="gradient-orb orb-2"></div>
-        <div class="gradient-orb orb-3"></div>
-        <canvas id="particles-canvas"></canvas>
-    </div>
 
-    <div class="app-container">
-        <!-- Trial Activation Section -->
-        <div class="trial-activation-container">
-            <div class="trial-activation-card">
-                <div class="trial-icon">
-                    <span class="material-icons">rocket_launch</span>
-                </div>
-
-                <h1>Start Your Free Trial</h1>
-                <p class="trial-description">
-                    Welcome to SutrAlgo! To access the platform, please activate your <strong>free 90-day trial</strong>.
-                    No credit card required.
-                </p>
-
-                <div class="trial-features">
-                    <div class="trial-feature">
-                        <span class="material-icons">check_circle</span>
-                        <span>Full access to all features</span>
-                    </div>
-                    <div class="trial-feature">
-                        <span class="material-icons">check_circle</span>
-                        <span>Unlimited trading signals</span>
-                    </div>
-                    <div class="trial-feature">
-                        <span class="material-icons">check_circle</span>
-                        <span>Real-time Telegram notifications</span>
-                    </div>
-                    <div class="trial-feature">
-                        <span class="material-icons">check_circle</span>
-                        <span>All technical indicators</span>
-                    </div>
-                    <div class="trial-feature">
-                        <span class="material-icons">check_circle</span>
-                        <span>Portfolio backtesting tools</span>
-                    </div>
-                </div>
-
-                <div class="trial-cta">
-                    <button id="start-trial-btn" class="btn btn-primary btn-large">
-                        <span class="material-icons">play_arrow</span>
-                        Start My Free 90-Day Trial
-                    </button>
-                    <p class="trial-note">No credit card required • Cancel anytime</p>
-                </div>
-
-                <div id="trial-status" class="trial-status"></div>
+<div id="state-day0" hidden>
+    <section class="lc-band">
+        <div class="lc-band__in">
+            <span class="lc-band__badge">Explorer · free</span>
+            <h1>Your 90 days start now</h1>
+            <p class="lc-band__lede" id="d0-dates">Every signal, every market, nothing held back — long enough to judge the rule properly.</p>
+            <div class="sa-row" style="justify-content:center">
+                <button class="sa-btn sa-btn--lg sa-btn--onband" id="start-trial"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:18px">radar</span>Start my 90 days</button>
+                <a class="sa-btn sa-btn--lg sa-btn--ghostband" href="/telegram-subscribe.html"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:18px">send</span>Connect Telegram</a>
+            </div>
+            <p class="lc-band__small">The first scan for you runs at 07:00 UK tomorrow. No card on file — day 91 simply asks.</p>
+        </div>
+    </section>
+    <main class="sa-page sa-page--narrow">
+        <div id="trial-error" hidden>
+            <div class="sa-callout sa-callout--loss">
+                <span class="material-symbols-rounded" aria-hidden="true">error</span>
+                <div><strong>That didn't work</strong><span id="trial-error-text">The trial could not be started. Refresh and try again.</span></div>
             </div>
         </div>
-    </div><script>
-        // Trial activation logic
-        const startTrialBtn = document.getElementById('start-trial-btn');
-        const trialStatus = document.getElementById('trial-status');
+    </main>
+</div>
 
-        startTrialBtn.addEventListener('click', async () => {
-            // Disable button and show loading state
-            startTrialBtn.disabled = true;
-            startTrialBtn.innerHTML = '<span class="material-icons rotating">refresh</span> Activating...';
-            trialStatus.innerHTML = '';
+<div id="state-counting" hidden>
+    <main class="sa-page sa-page--narrow" style="padding-top:var(--s-7)">
+        <div class="sa-callout" id="count-callout">
+            <span class="material-symbols-rounded" aria-hidden="true">hourglass_top</span>
+            <div>
+                <strong id="count-title">Your free days are counting</strong>
+                <span id="count-body">No action needed yet — this is just so day 91 is never a surprise. Upgrading now changes nothing until the free days run out.</span>
+                <div style="margin-top:12px"><a class="sa-btn sa-btn--sm sa-btn--secondary" href="/pricing.html">See plans</a></div>
+            </div>
+        </div>
+        <p style="font-size:var(--size-sm);color:var(--text-3);margin-top:var(--s-4)">A countdown chip appears in the app header at 14 days and turns amber at 5. It links straight to plans and never blocks the screen.</p>
+    </main>
+</div>
 
-            try {
-                const response = await fetch('/api/user/subscription/start-trial', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'include'
-                });
+<div id="state-expired" hidden>
+    <main class="sa-page sa-page--narrow" style="padding-top:var(--s-7)">
+        <div class="sa-grid sa-grid--split" style="align-items:start">
+            <div class="sa-stack" style="gap:var(--s-4)">
+                <span class="sa-badge sa-badge--neutral"><span class="material-symbols-rounded" style="font-size:14px" aria-hidden="true">lock</span>Read-only</span>
+                <h1 style="font-size:var(--size-h2)">Your 90 days are done</h1>
+                <p>The scanner has stopped sending you signals, and the app is read-only. Nothing was deleted — every trade, position and simulation is still here, and picking up where you left off is one step.</p>
+                <div class="sa-row">
+                    <a class="sa-btn sa-btn--primary sa-btn--lg" href="/checkout.html"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:18px">workspace_premium</span>Choose Trader</a>
+                </div>
+                <p style="font-size:var(--size-sm);color:var(--text-3)">Prefer to leave? <a href="/data-management.html">Your data page</a> can export everything first.</p>
+            </div>
+            <div class="sa-card sa-card--sunk">
+                <h3 class="sa-card__title" style="margin-bottom:var(--s-4)">Where things stand</h3>
+                <div class="sa-stack" style="gap:var(--s-4)" id="expired-stats">
+                    <div class="sa-stat">
+                        <span class="sa-stat__label">Your history</span>
+                        <span class="sa-stat__value sa-stat__value--sm" id="x-trades">—</span>
+                        <span class="sa-stat__context">Positions and trades, kept exactly as you left them.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
 
-                const data = await response.json();
+<main class="sa-page sa-page--narrow" style="padding-top:0">
+    <div style="margin-top:var(--s-6)">
+        <div class="sa-legal">
+            <button class="sa-legal__btn" type="button" aria-expanded="false" onclick="var b=this.parentElement.querySelector('.sa-legal__body');var x=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',x?'false':'true');b.hidden=x">Educational tool, not investment advice. Your capital is at risk.<span class="material-symbols-rounded" aria-hidden="true">expand_more</span></button>
+            <div class="sa-legal__body" hidden>
+                <p>This service provides informational and educational tools only. Nothing here is investment advice or a recommendation to buy or sell.</p>
+                <p>Past performance is not a reliable indicator of future results. All trading involves risk and you could lose money.</p>
+                <p>Technical indicators can produce false signals, and market conditions can change quickly. You accept full responsibility for all investment decisions.</p>
+            </div>
+        </div>
+    </div>
+</main>
 
-                if (data.success) {
-                    // Success - show success message and redirect
-                    trialStatus.className = 'trial-status success';
-                    trialStatus.innerHTML = `
-                        <span class="material-icons">check_circle</span>
-                        <span>${data.message || 'Trial activated successfully!'}</span>
-                    `;
-
-                    // Redirect to home page after 2 seconds
-                    setTimeout(() => {
-                        window.location.href = '/';
-                    }, 2000);
-                } else {
-                    // Error from API
-                    const errorMessage = data.error?.message || data.error || 'Failed to start trial';
-                    trialStatus.className = 'trial-status error';
-                    trialStatus.innerHTML = `
-                        <span class="material-icons">error</span>
-                        <span>${errorMessage}</span>
-                    `;
-
-                    // Re-enable button
-                    startTrialBtn.disabled = false;
-                    startTrialBtn.innerHTML = '<span class="material-icons">play_arrow</span> Start My Free 90-Day Trial';
-
-                    // If already subscribed, redirect after showing message
-                    if (data.error?.code === 'ALREADY_SUBSCRIBED') {
-                        setTimeout(() => {
-                            window.location.href = '/';
-                        }, 3000);
-                    }
-                }
-            } catch (error) {
-                console.error('Error starting trial:', error);
-                trialStatus.className = 'trial-status error';
-                trialStatus.innerHTML = `
-                    <span class="material-icons">error</span>
-                    <span>An error occurred. Please try again or contact support.</span>
-                `;
-
-                // Re-enable button
-                startTrialBtn.disabled = false;
-                startTrialBtn.innerHTML = '<span class="material-icons">play_arrow</span> Start My Free 90-Day Trial';
-            }
+<script>
+(async function () {
+    function show(id) {
+        ['state-day0', 'state-counting', 'state-expired'].forEach(function (s) {
+            document.getElementById(s).hidden = (s !== id);
         });
+    }
+    function fmt(d) { return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }); }
 
-        // Check if user is authenticated on load
-        window.addEventListener('DOMContentLoaded', async () => {
+    try {
+        var r = await fetch('/api/user/subscription');
+        if (r.status === 401) { location.href = '/login.html'; return; }
+        var s = await r.json();
+        var sub = s.subscription || s;
+        var status = (sub.status || '').toLowerCase();
+        var end = sub.trial_end_date || sub.trialEndDate || sub.current_period_end || sub.currentPeriodEnd;
+        var daysLeft = end ? Math.ceil((new Date(end) - new Date()) / 86400000) : null;
+
+        if (!status || status === 'none' || status === 'pending') {
+            var start = new Date(), endD = new Date(); endD.setDate(endD.getDate() + 90);
+            document.getElementById('d0-dates').textContent = fmt(start) + ' to ' + fmt(endD) + '. Every signal, every market, nothing held back — long enough to judge the rule properly.';
+            show('state-day0');
+        } else if (status === 'expired' || (daysLeft !== null && daysLeft <= 0 && status !== 'active')) {
+            show('state-expired');
             try {
-                const response = await fetch('/api/user', {
-                    credentials: 'include'
-                });
-
-                if (!response.ok) {
-                    // Not authenticated - redirect to login
-                    window.location.href = '/login.html?redirect=/trial-activation.html';
+                var tr = await fetch('/api/trades');
+                if (tr.ok) {
+                    var t = await tr.json();
+                    var list = t.trades || t;
+                    if (Array.isArray(list)) document.getElementById('x-trades').textContent = list.length + ' records';
                 }
-            } catch (error) {
-                // Error checking auth - redirect to login
-                window.location.href = '/login.html?redirect=/trial-activation.html';
+            } catch (e) {}
+        } else {
+            var warn = daysLeft !== null && daysLeft <= 5;
+            var co = document.getElementById('count-callout');
+            if (warn) co.classList.add('sa-callout--warn');
+            document.getElementById('count-title').textContent = daysLeft !== null ? daysLeft + ' free days left' : 'Your plan is active';
+            if (daysLeft !== null && daysLeft <= 14) {
+                document.getElementById('count-body').textContent = warn
+                    ? 'After ' + (end ? fmt(new Date(end)) : 'the last day') + ' the scanner stops sending you signals. Your positions and history stay exactly as they are.'
+                    : 'No action needed yet — this is just so day 91 is never a surprise. Upgrading now changes nothing until the free days run out.';
             }
-        });
-    </script>
+            show('state-counting');
+        }
+    } catch (e) {
+        show('state-day0');
+    }
+
+    var btn = document.getElementById('start-trial');
+    if (btn) btn.addEventListener('click', async function () {
+        btn.disabled = true;
+        try {
+            var resp = await fetch('/api/stripe/start-free-trial', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({})
+            });
+            var out = await resp.json();
+            if (!resp.ok || out.error) throw new Error(out.error || 'The trial could not be started.');
+            location.href = '/index.html';
+        } catch (e) {
+            document.getElementById('trial-error-text').textContent = e.message;
+            document.getElementById('trial-error').hidden = false;
+            btn.disabled = false;
+        }
+    });
+})();
+</script>
+
 </body>
 </html>

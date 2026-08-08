@@ -3,179 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Subscription Successful - SutrAlgo</title>
-
-    <!-- Google Material Icons -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="icon" type="image/png" href="/images/favicon.PNG">
-
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800;900&family=Work+Sans:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Modern CSS -->
-    <link rel="stylesheet" href="/css/main.css">
-
-    <!-- Modern Effects (Custom Cursor, Scroll Progress, Animations) -->
-    <script src="/js/modern-effects.js" defer></script>
-
-    <!-- Animation Controller -->
-    <script src="/js/landing.js" defer></script>
-
-    <!-- Theme Toggle -->
-    
+    <meta name="theme-color" content="#141210">
+    <title>Receipt — SutrAlgo</title>
+    <link rel="icon" type="image/png" href="/images/brand/favicon.png">
+    <link rel="stylesheet" href="/css/design-system/index.css">
+    <link rel="stylesheet" href="/css/commerce.css">
+    <script>try{if(localStorage.getItem('sa-theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
 </head>
 <body>
-    <!-- Animated Background with Particles -->
-    <div class="landing-background">
-        <div class="gradient-orb orb-1"></div>
-        <div class="gradient-orb orb-2"></div>
-        <div class="gradient-orb orb-3"></div>
-        <canvas id="particles-canvas"></canvas>
+
+<header class="sa-appbar">
+    <div class="sa-appbar__in" style="max-width:var(--page-max)">
+        <a class="sa-appbar__brand" href="/"><span class="sa-wordmark" style="font-size:19px"><b>Sutr</b><i>Algo</i></span></a>
+        <div class="sa-appbar__end">
+            <span class="co-note"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:16px">lock</span>Receipt</span>
+        </div>
+    </div>
+</header>
+
+<main class="sa-page sa-page--narrow" style="max-width:660px">
+    <div class="co-center">
+        <span class="sa-empty__icon"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:26px">check</span></span>
+        <h1 style="font-size:var(--size-h2)">You're on Trader</h1>
+        <p style="margin-top:6px">A copy of this receipt is on its way to your email.</p>
     </div>
 
+    <div class="sa-receipt" aria-label="Receipt">
+        <div class="sa-receipt__row"><span class="sa-receipt__k">Plan</span><span class="sa-receipt__v" id="r-plan">Trader — monthly</span></div>
+        <div class="sa-receipt__row"><span class="sa-receipt__k">Paid</span><span class="sa-receipt__v" id="r-paid">Today</span></div>
+        <div class="sa-receipt__row"><span class="sa-receipt__k">Payment method</span><span class="sa-receipt__v" id="r-method">Card</span></div>
+        <div class="sa-receipt__row"><span class="sa-receipt__k">Next billing</span><span class="sa-receipt__v" id="r-next">In one month</span></div>
+        <div class="sa-receipt__row sa-receipt__row--total"><span class="sa-receipt__k">Paid today</span><span class="sa-receipt__v" id="r-amount">—</span></div>
+    </div>
 
-    <div class="success-container">
-        <div class="success-card">
-            <div class="success-icon">
-                <span class="material-icons icon-xl icon-success" role="img" aria-label="Success">check_circle</span>
-            </div>
-
-            <h1 class="success-title">Subscription Successful!</h1>
-            <p class="success-message" id="success-message">
-                Thank you for subscribing to SutrAlgo. Your account has been activated.
-            </p>
-
-            <div id="trial-banner" class="trial-banner">
-                <span class="material-icons icon-lg icon-primary" aria-hidden="true">schedule</span>
-                <div class="trial-banner-content">
-                    <div class="trial-banner-title">90-Day Free Trial Started</div>
-                    <div class="trial-banner-text">
-                        You have full access to all features for 90 days. Your card will not be charged during the trial period.
-                    </div>
-                </div>
-            </div>
-
-            <div class="subscription-details" id="subscription-details">
-                <!-- Populated by JavaScript -->
-            </div>
-
-            <div class="next-steps">
-                <h3>What's Next?</h3>
-                <ul class="step-list">
-                    <li class="step-item">
-                        <div class="step-number">1</div>
-                        <div class="step-content">
-                            <div class="step-title">Connect Telegram</div>
-                            <div class="step-description">
-                                Set up Telegram notifications to receive real-time trading signals directly on your phone.
-                            </div>
-                        </div>
-                    </li>
-                    <li class="step-item">
-                        <div class="step-number">2</div>
-                        <div class="step-content">
-                            <div class="step-title">Explore Trading Signals</div>
-                            <div class="step-description">
-                                Browse our DTI Backtest dashboard and Signal Management tools to find profitable trading opportunities.
-                            </div>
-                        </div>
-                    </li>
-                    <li class="step-item">
-                        <div class="step-number">3</div>
-                        <div class="step-content">
-                            <div class="step-title">Set Up Custom Alerts</div>
-                            <div class="step-description">
-                                Create personalized alerts based on your trading strategy and risk preferences.
-                            </div>
-                        </div>
-                    </li>
-                    <li class="step-item">
-                        <div class="step-number">4</div>
-                        <div class="step-content">
-                            <div class="step-title">Join Our Community</div>
-                            <div class="step-description">
-                                Connect with other traders and get support from our team via email or Telegram.
-                            </div>
-                        </div>
-                    </li>
-                </ul>
-            </div>
-
-            <div class="action-buttons">
-                <a href="/telegram-subscribe.html" class="btn btn-primary">
-                    <span class="material-icons icon-sm icon-mr-xs" aria-hidden="true">send</span>
-                    Connect Telegram
-                </a>
-                <a href="/index.html" class="btn btn-secondary">
-                    <span class="material-icons icon-sm icon-mr-xs" aria-hidden="true">dashboard</span>
-                    Go to Dashboard
-                </a>
-            </div>
+    <div class="sa-card" style="margin-top:var(--s-4)">
+        <h3 class="sa-card__title" style="margin-bottom:var(--s-3)">What happens next</h3>
+        <div class="sa-stack" style="gap:var(--s-3)">
+            <span class="co-next"><span class="material-symbols-rounded" aria-hidden="true">schedule</span>Signals resume with tomorrow's 07:00 UK scan — nothing to set up.</span>
+            <span class="co-next"><span class="material-symbols-rounded" aria-hidden="true">send</span>Not on Telegram yet? Connecting takes a minute and the signals come to your phone.</span>
+        </div>
+        <div class="sa-row" style="margin-top:var(--s-4)">
+            <a class="sa-btn sa-btn--primary" href="/index.html"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:18px">radar</span>Go to the Scanner</a>
+            <a class="sa-btn sa-btn--secondary" href="/telegram-subscribe.html"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:18px">send</span>Connect Telegram</a>
         </div>
     </div>
 
-    <script src="/js/unified-navbar.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const subscriptionId = urlParams.get('subscription_id');
-            const isTrial = urlParams.get('trial') === 'true';
+    <div style="margin-top:var(--s-8)">
+        <div class="sa-legal">
+            <button class="sa-legal__btn" type="button" aria-expanded="false" onclick="var b=this.parentElement.querySelector('.sa-legal__body');var x=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',x?'false':'true');b.hidden=x">Educational tool, not investment advice. Your capital is at risk.<span class="material-symbols-rounded" aria-hidden="true">expand_more</span></button>
+            <div class="sa-legal__body" hidden>
+                <p>This service provides informational and educational tools only. Nothing here is investment advice or a recommendation to buy or sell.</p>
+                <p>Past performance is not a reliable indicator of future results. All trading involves risk and you could lose money.</p>
+                <p>Technical indicators can produce false signals, and market conditions can change quickly. You accept full responsibility for all investment decisions.</p>
+            </div>
+        </div>
+    </div>
+</main>
 
-            if (isTrial) {
-                document.getElementById('trial-banner').style.display = 'flex';
-                document.getElementById('success-message').textContent =
-                    'Your 90-day free trial has been activated! Enjoy full access to all features.';
+<script>
+(async function () {
+    try {
+        var d = new Date();
+        document.getElementById('r-paid').textContent = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+        var nb = new Date(d); nb.setMonth(nb.getMonth() + 1);
+        document.getElementById('r-next').textContent = nb.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+        var pr = await fetch('/api/user/payments');
+        if (pr.ok) {
+            var pays = await pr.json();
+            var list = pays.payments || pays.data || pays;
+            if (Array.isArray(list) && list.length) {
+                var p = list[0];
+                var sym = { GBP: '£', USD: '$', INR: '₹' }[(p.currency || '').toUpperCase()] || '';
+                if (p.amount != null) document.getElementById('r-amount').textContent = sym + Number(p.amount).toLocaleString();
+                if (p.card_brand || p.cardBrand) document.getElementById('r-method').textContent = (p.card_brand || p.cardBrand) + (p.card_last4 || p.cardLast4 ? ' ···· ' + (p.card_last4 || p.cardLast4) : '');
             }
-
-            // Load subscription details
-            try {
-                const response = await fetch('/api/user/subscription');
-                const data = await response.json();
-
-                if (data.success && data.subscription) {
-                    const sub = data.subscription;
-                    const detailsHTML = `
-                        <div class="detail-row">
-                            <span class="detail-label">Plan</span>
-                            <span class="detail-value">${sub.plan_name}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Status</span>
-                            <span class="detail-value">${sub.status === 'trial' ? 'Free Trial' : 'Active'}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Start Date</span>
-                            <span class="detail-value">${new Date(sub.subscription_start_date).toLocaleDateString()}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">${sub.status === 'trial' ? 'Trial Ends' : 'Next Billing Date'}</span>
-                            <span class="detail-value">${new Date(sub.subscription_end_date).toLocaleDateString()}</span>
-                        </div>
-                        ${sub.billing_period ? `
-                        <div class="detail-row">
-                            <span class="detail-label">Billing Period</span>
-                            <span class="detail-value">${sub.billing_period.charAt(0).toUpperCase() + sub.billing_period.slice(1)}</span>
-                        </div>
-                        ` : ''}
-                    `;
-                    document.getElementById('subscription-details').innerHTML = detailsHTML;
-                }
-            } catch (error) {
-                console.error('Error loading subscription details:', error);
-            }
-
-            // Send confirmation email
-            try {
-                await fetch('/api/subscription/send-confirmation', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ subscriptionId })
-                });
-            } catch (error) {
-                console.error('Error sending confirmation email:', error);
-            }
-        });
-    </script>
+        }
+        var sr = await fetch('/api/user/subscription');
+        if (sr.ok) {
+            var s = await sr.json();
+            var plan = (s.subscription && (s.subscription.plan_name || s.subscription.planName)) || s.plan_name || s.planName;
+            if (plan) document.getElementById('r-plan').textContent = plan + ' — monthly';
+        }
+    } catch (e) { /* receipt falls back to static text */ }
+})();
+</script>
 
 </body>
 </html>

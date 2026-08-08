@@ -3,42 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0f172a">
-    <meta name="description" content="Manage your personal data and privacy settings. Exercise your UK GDPR rights including data access, deletion, and portability.">
-    <title>SutrAlgo - Data Management</title>
-
-    <!-- Google Material Icons -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="icon" type="image/png" href="/images/favicon.PNG">
-
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800;900&family=Work+Sans:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Import Google Font (Inter) -->
-    
-    
-    
-    <!-- Main Stylesheet -->
-
-    <!-- Unified Navigation Bar --><!-- Cookie Consent (load early for GDPR compliance) -->
-    <script src="js/cookie-consent.js"></script>
-    
-    
-    <!-- Modern CSS -->
-    <link rel="stylesheet" href="/css/main.css">
-
-    <!-- Modern Effects (Custom Cursor, Scroll Progress, Animations) -->
-    <script src="/js/modern-effects.js" defer></script>
-
-    <!-- Animation Controller -->
-    <script src="/js/landing.js" defer></script>
-
+    <meta name="theme-color" content="#141210">
+    <meta name="description" content="Everything SutrAlgo holds about you, ready to take away — and the way to delete all of it.">
+    <title>Your data — SutrAlgo</title>
+    <link rel="icon" type="image/png" href="/images/brand/favicon.png">
+    <link rel="stylesheet" href="/css/design-system/index.css">
+    <link rel="stylesheet" href="/css/commerce.css">
+    <script>try{if(localStorage.getItem('sa-theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
+    <script src="/js/data-page.js" defer></script>
 </head>
 <body>
-    <!-- Animated Background with Particles -->
-    <div class="landing-background">
-        <div class="gradient-orb orb-1"></div>
-        <div class="gradient-orb orb-2"></div>
-        <canvas id="particles-canvas"></canvas>
+
+<header class="sa-appbar">
+    <div class="sa-appbar__in" style="max-width:var(--page-max)">
+        <a class="sa-appbar__brand" href="/"><span class="sa-wordmark" style="font-size:19px"><b>Sutr</b><i>Algo</i></span></a>
+        <div class="sa-appbar__end">
+            <span class="sa-badge sa-badge--neutral"><span class="material-symbols-rounded" style="font-size:14px" aria-hidden="true">shield</span>Your data</span>
+        </div>
+    </div>
+</header>
+
+<main class="sa-page sa-page--narrow">
+    <h1 style="font-size:var(--size-h2);margin-bottom:6px">Your data</h1>
+    <p style="margin-bottom:var(--s-6);max-width:58ch">Everything SutrAlgo holds about you, ready to take away — and the way to delete all of it.</p>
+
+    <div id="signin-note" hidden>
+        <div class="sa-callout">
+            <span class="material-symbols-rounded" aria-hidden="true">lock</span>
+            <div><strong>Sign in to see your data</strong>Exports and deletion work on your own account, so they need you signed in. <a href="/login.html">Sign in</a> and come back.</div>
+        </div>
     </div>
 
+    <div class="sa-grid sa-grid--split" style="align-items:start" id="data-grid">
+        <div class="sa-stack" style="gap:var(--s-4)">
+            <div class="sa-spread">
+                <h3 class="sa-card__title">Take it with you</h3>
+                <a class="sa-btn sa-btn--primary" href="/api/user/download-data" id="dl-all"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:18px">download</span>Download everything</a>
+            </div>
+            <div class="sa-stack" style="gap:var(--s-3)">
+                <div class="sa-dl">
+                    <span class="sa-dl__icon"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:20px">table_view</span></span>
+                    <span class="sa-dl__meta">
+                        <span class="sa-dl__name">trades.csv</span>
+                        <span class="sa-dl__hint" style="display:block">Every trade — dates, prices, results, exit reasons</span>
+                    </span>
+                    <span class="sa-dl__size" id="sz-trades">—</span>
+                    <a class="sa-btn sa-btn--sm sa-btn--quiet" href="/api/trades/export"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:16px">download</span>CSV</a>
+                </div>
+                <div class="sa-dl">
+                    <span class="sa-dl__icon"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:20px">person</span></span>
+                    <span class="sa-dl__meta">
+                        <span class="sa-dl__name">signalforge-data.json</span>
+                        <span class="sa-dl__hint" style="display:block">Profile, trades, alert settings — the full export in one file</span>
+                    </span>
+                    <span class="sa-dl__size" id="sz-json">—</span>
+                    <a class="sa-btn sa-btn--sm sa-btn--quiet" href="/api/user/download-data"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:16px">download</span>JSON</a>
+                </div>
+            </div>
+            <p style="font-size:var(--size-xs);color:var(--text-3)">Files are generated fresh when you ask — the counts above are from your account right now.</p>
+        </div>
+
+        <div class="sa-stack" style="gap:var(--s-4)">
+            <div class="sa-card sa-card--sunk">
+                <h3 class="sa-card__title" style="margin-bottom:var(--s-3)">What we store, and why</h3>
+                <div class="sa-stack" style="gap:var(--s-3)">
+                    <div class="dm-stored"><strong>Name and email</strong><p>From Google sign-in. It is how your account exists.</p></div>
+                    <div class="dm-stored"><strong>Region</strong><p>Sets your currency and price. Nothing more precise than country.</p></div>
+                    <div class="dm-stored"><strong>Positions and trades</strong><p>Your history in the app — the thing the exports contain.</p></div>
+                    <div class="dm-stored"><strong>Telegram chat id</strong><p>Only if you connected the bot; deleting the link removes it.</p></div>
+                    <p style="font-size:var(--size-xs);color:var(--text-3)">No card numbers (the payment provider keeps those), no broker connections, no browsing analytics beyond page counts.</p>
+                </div>
+            </div>
+
+            <div class="sa-card">
+                <h3 class="sa-card__title" style="margin-bottom:6px">Delete the account</h3>
+                <p class="sa-card__hint" style="margin-bottom:var(--s-4)">Removes everything above, permanently, within 30 days. Export first — there is no undo.</p>
+                <button class="sa-btn sa-btn--danger" id="open-delete"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:18px">delete_forever</span>Delete my account</button>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top:var(--s-8)">
+        <div class="sa-legal">
+            <button class="sa-legal__btn" type="button" aria-expanded="false" onclick="var b=this.parentElement.querySelector('.sa-legal__body');var x=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',x?'false':'true');b.hidden=x">Exports are your personal data under UK GDPR. Deletion is permanent.<span class="material-symbols-rounded" aria-hidden="true">expand_more</span></button>
+            <div class="sa-legal__body" hidden>
+                <p>Exports cover everything SutrAlgo holds that is personal to you.</p>
+                <p>Deletion removes your account and data within 30 days; backups age out within 90. Payment records the law requires us to keep are retained by the payment provider, not by SutrAlgo.</p>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div class="sa-scrim" id="delete-scrim" hidden>
+    <div class="sa-sheet" style="max-width:480px" role="dialog" aria-modal="true" aria-labelledby="del-title">
+        <div class="sa-sheet__head">
+            <h2 class="sa-sheet__title" id="del-title">Delete this account?</h2>
+            <button class="sa-iconbtn" id="close-delete" aria-label="Close"><span class="material-symbols-rounded" aria-hidden="true">close</span></button>
+        </div>
+        <div class="sa-sheet__body">
+            <div class="sa-callout sa-callout--loss">
+                <span class="material-symbols-rounded" aria-hidden="true">warning</span>
+                <div><strong>This cannot be undone</strong>Positions, trades, signals and settings are all removed. Your exports keep working for 24 hours, then the links die too.</div>
+            </div>
+            <div class="sa-field">
+                <label class="sa-field__label" for="delete-confirm">Type DELETE to confirm</label>
+                <input class="sa-input" id="delete-confirm" placeholder="DELETE" autocomplete="off">
+                <span class="sa-field__hint" id="delete-hint">This is deliberate friction.</span>
+            </div>
+            <div id="delete-error" hidden>
+                <div class="sa-callout sa-callout--loss"><span class="material-symbols-rounded" aria-hidden="true">error</span><div id="delete-error-text">Deletion failed. Try again.</div></div>
+            </div>
+        </div>
+        <div class="sa-sheet__foot">
+            <button class="sa-btn sa-btn--secondary" id="keep-account">Keep my account</button>
+            <button class="sa-btn sa-btn--danger" id="confirm-delete" disabled><span class="material-symbols-rounded" aria-hidden="true" style="font-size:18px">delete_forever</span>Delete permanently</button>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

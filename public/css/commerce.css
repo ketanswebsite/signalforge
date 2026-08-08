@@ -1,0 +1,20 @@
+/* Commerce + lifecycle + legal surface — page-level composition only.
+   Components live in design-system/components.css (v3.1 section). */
+
+.co-note{display:inline-flex;align-items:center;gap:7px;color:var(--bg);opacity:.8;font-size:var(--size-xs);font-weight:700}
+.co-agree{font-size:var(--size-xs);color:var(--text-3)}
+.co-center{text-align:center;margin-bottom:var(--s-5)}
+.co-center .sa-empty__icon{margin:0 auto var(--s-3);background:var(--gain-soft)}
+.co-next{display:flex;gap:10px;font-size:var(--size-sm);color:var(--text-2)}
+.co-next .material-symbols-rounded{color:var(--accent);font-size:19px;flex:0 0 auto}
+
+.lc-band{background:var(--text);border-bottom:3px solid var(--frame)}
+.lc-band__in{max-width:var(--page-max);margin:0 auto;padding:var(--s-8) var(--gutter);text-align:center}
+.lc-band__badge{display:inline-block;background:var(--gold-on-band);color:var(--text);font-size:var(--size-xs);font-weight:700;letter-spacing:var(--track-label);text-transform:uppercase;padding:5px 11px;margin-bottom:var(--s-4)}
+.lc-band h1{font-size:var(--size-hero);color:var(--bg);margin-bottom:var(--s-3)}
+.lc-band__lede{color:var(--bg);opacity:.85;font-size:var(--size-body-lg);max-width:44ch;margin:0 auto var(--s-5)}
+.lc-band__small{color:var(--bg);opacity:.6;font-size:var(--size-sm);margin-top:var(--s-4)}
+
+.dm-stored{border-bottom:1.5px solid var(--line);padding-bottom:var(--s-3)}
+.dm-stored strong{font-size:var(--size-sm)}
+.dm-stored p{font-size:var(--size-xs);color:var(--text-3);margin-top:2px}

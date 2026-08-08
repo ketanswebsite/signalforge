@@ -3,185 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment Failed - SutrAlgo</title>
-
-    <!-- Google Material Icons -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="icon" type="image/png" href="/images/favicon.PNG">
-
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800;900&family=Work+Sans:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Modern CSS -->
-    <link rel="stylesheet" href="/css/main.css">
-
-    <!-- Modern Effects (Custom Cursor, Scroll Progress, Animations) -->
-    <script src="/js/modern-effects.js" defer></script>
-
-    <!-- Animation Controller -->
-    <script src="/js/landing.js" defer></script>
-
-    <!-- Theme Toggle -->
-    
+    <meta name="theme-color" content="#141210">
+    <title>Payment — SutrAlgo</title>
+    <link rel="icon" type="image/png" href="/images/brand/favicon.png">
+    <link rel="stylesheet" href="/css/design-system/index.css">
+    <link rel="stylesheet" href="/css/commerce.css">
+    <script>try{if(localStorage.getItem('sa-theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
 </head>
 <body>
-    <!-- Animated Background with Particles -->
-    <div class="landing-background">
-        <div class="gradient-orb orb-1"></div>
-        <div class="gradient-orb orb-2"></div>
-        <div class="gradient-orb orb-3"></div>
-        <canvas id="particles-canvas"></canvas>
+
+<header class="sa-appbar">
+    <div class="sa-appbar__in" style="max-width:var(--page-max)">
+        <a class="sa-appbar__brand" href="/"><span class="sa-wordmark" style="font-size:19px"><b>Sutr</b><i>Algo</i></span></a>
+        <div class="sa-appbar__end">
+            <span class="co-note"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:16px">lock</span>Payment</span>
+        </div>
     </div>
+</header>
 
+<main class="sa-page sa-page--narrow" style="max-width:660px">
+    <h1 style="font-size:var(--size-h2);margin-bottom:6px">The payment didn't complete</h1>
+    <p style="margin-bottom:var(--s-5)">Nothing was charged. It's almost always one of these three.</p>
 
-    <div class="failure-container">
-        <div class="failure-card">
-            <div class="failure-icon">
-                <span class="material-icons icon-xl icon-error" role="img" aria-label="Payment failed">cancel</span>
-            </div>
-
-            <h1 class="failure-title">Payment Failed</h1>
-            <p class="failure-message" id="failure-message">
-                We encountered an issue processing your payment. Don't worry, your card has not been charged.
-            </p>
-
-            <div class="error-details" id="error-details">
-                <div class="error-code" id="error-code"></div>
-                <div class="error-description" id="error-description"></div>
-            </div>
-
-            <div class="common-issues">
-                <h3>
-                    <span class="material-icons icon-md icon-mr-xs icon-error" aria-hidden="true">error</span>
-                    Common Issues & Solutions
-                </h3>
-                <ul class="issue-list">
-                    <li class="issue-item">
-                        <span class="material-icons issue-icon icon-md" aria-hidden="true">visibility</span>
-                        <div class="issue-content">
-                            <div class="issue-title">Incorrect Card Details</div>
-                            <div class="issue-solution">
-                                Double-check your card number, expiry date, and CVV code. Make sure all details match your card exactly.
-                            </div>
-                        </div>
-                    </li>
-                    <li class="issue-item">
-                        <span class="material-icons issue-icon icon-md" aria-hidden="true">schedule</span>
-                        <div class="issue-content">
-                            <div class="issue-title">Insufficient Funds</div>
-                            <div class="issue-solution">
-                                Ensure your card has sufficient funds or available credit limit to cover the subscription amount.
-                            </div>
-                        </div>
-                    </li>
-                    <li class="issue-item">
-                        <span class="material-icons issue-icon icon-md" aria-hidden="true">lock</span>
-                        <div class="issue-content">
-                            <div class="issue-title">Card Declined by Bank</div>
-                            <div class="issue-solution">
-                                Your bank may have declined the transaction for security reasons. Contact your bank to authorize the payment.
-                            </div>
-                        </div>
-                    </li>
-                    <li class="issue-item">
-                        <span class="material-icons issue-icon icon-md" aria-hidden="true">public</span>
-                        <div class="issue-content">
-                            <div class="issue-title">International Payments Blocked</div>
-                            <div class="issue-solution">
-                                Some cards don't support international transactions. Enable international payments or use a different card.
-                            </div>
-                        </div>
-                    </li>
-                    <li class="issue-item">
-                        <span class="material-icons issue-icon icon-md" aria-hidden="true">credit_card</span>
-                        <div class="issue-content">
-                            <div class="issue-title">Expired or Invalid Card</div>
-                            <div class="issue-solution">
-                                Check that your card hasn't expired and is still active. Try using a different payment method if available.
-                            </div>
-                        </div>
-                    </li>
-                </ul>
-            </div>
-
-            <div class="action-buttons">
-                <a href="#" class="btn btn-primary" id="retry-button">
-                    <span class="material-icons icon-sm icon-mr-xs" aria-hidden="true">refresh</span>
-                    Try Again
-                </a>
-                <a href="/pricing.html" class="btn btn-secondary">
-                    <span class="material-icons icon-sm icon-mr-xs" aria-hidden="true">arrow_back</span>
-                    Back to Pricing
-                </a>
-            </div>
-
-            <div class="support-section">
-                <h4>Need Help?</h4>
-                <p>If you continue to experience issues, our support team is here to help.</p>
-                <div class="support-contact">
-                    <a href="mailto:support@sutralgo.com" class="support-link">
-                        <span class="material-icons icon-sm icon-mr-xs" aria-hidden="true">email</span>
-                        Email Support
-                    </a>
-                    <a href="/telegram-subscribe.html" class="support-link">
-                        <span class="material-icons icon-sm icon-mr-xs" aria-hidden="true">send</span>
-                        Telegram Support
-                    </a>
-                </div>
-            </div>
+    <div class="sa-stack" style="gap:var(--s-3);margin-bottom:var(--s-5)">
+        <div class="sa-dl">
+            <span class="sa-dl__icon" style="background:var(--loss-soft)"><span style="font-family:var(--font-display);font-size:15px">1</span></span>
+            <span class="sa-dl__meta">
+                <span class="sa-dl__name" style="font-family:var(--font-sans)">The bank said no</span>
+                <span class="sa-dl__hint" style="display:block">Usually a limit or a block on online payments. A call to your bank, or a different card, clears it.</span>
+            </span>
+        </div>
+        <div class="sa-dl">
+            <span class="sa-dl__icon" style="background:var(--loss-soft)"><span style="font-family:var(--font-display);font-size:15px">2</span></span>
+            <span class="sa-dl__meta">
+                <span class="sa-dl__name" style="font-family:var(--font-sans)">The verification step was closed</span>
+                <span class="sa-dl__hint" style="display:block">Your bank asked for a confirmation and the window was closed before it finished. Trying again restarts it.</span>
+            </span>
+        </div>
+        <div class="sa-dl">
+            <span class="sa-dl__icon" style="background:var(--loss-soft)"><span style="font-family:var(--font-display);font-size:15px">3</span></span>
+            <span class="sa-dl__meta">
+                <span class="sa-dl__name" style="font-family:var(--font-sans)">The connection dropped</span>
+                <span class="sa-dl__hint" style="display:block">Nothing was charged. Check your connection and try again — the payment only completes when you see a receipt.</span>
+            </span>
         </div>
     </div>
 
-    <script src="/js/unified-navbar.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const errorCode = urlParams.get('error');
-            const errorMessage = urlParams.get('message');
-            const planCode = urlParams.get('plan');
+    <div class="sa-row">
+        <a class="sa-btn sa-btn--primary sa-btn--lg" href="/checkout.html"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:18px">refresh</span>Try the payment again</a>
+        <a class="sa-btn sa-btn--secondary sa-btn--lg" href="/checkout.html">Use a different card</a>
+    </div>
+    <p style="font-size:var(--size-sm);color:var(--text-3);margin-top:var(--s-4)">Your free days keep counting in the meantime — you lose nothing by trying tomorrow.</p>
 
-            // Display error details if provided
-            if (errorCode || errorMessage) {
-                const errorDetails = document.getElementById('error-details');
-                const errorCodeEl = document.getElementById('error-code');
-                const errorDescriptionEl = document.getElementById('error-description');
-
-                errorDetails.style.display = 'block';
-
-                if (errorCode) {
-                    errorCodeEl.textContent = `Error Code: ${errorCode}`;
-                }
-
-                if (errorMessage) {
-                    errorDescriptionEl.textContent = decodeURIComponent(errorMessage);
-                }
-            }
-
-            // Update retry button to go back to checkout with the same plan
-            const retryButton = document.getElementById('retry-button');
-            if (planCode) {
-                retryButton.href = `/checkout.html?plan=${planCode}`;
-            } else {
-                retryButton.href = '/pricing.html';
-            }
-
-            // Log failure for analytics
-            try {
-                fetch('/api/analytics/checkout-failure', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        errorCode,
-                        errorMessage,
-                        planCode,
-                        timestamp: new Date().toISOString()
-                    })
-                }).catch(() => {});
-            } catch (error) {
-                // Silent fail for analytics
-            }
-        });
-    </script>
+    <div style="margin-top:var(--s-8)">
+        <div class="sa-legal">
+            <button class="sa-legal__btn" type="button" aria-expanded="false" onclick="var b=this.parentElement.querySelector('.sa-legal__body');var x=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',x?'false':'true');b.hidden=x">Educational tool, not investment advice. Your capital is at risk.<span class="material-symbols-rounded" aria-hidden="true">expand_more</span></button>
+            <div class="sa-legal__body" hidden>
+                <p>This service provides informational and educational tools only. Nothing here is investment advice or a recommendation to buy or sell.</p>
+                <p>Past performance is not a reliable indicator of future results. All trading involves risk and you could lose money.</p>
+                <p>Technical indicators can produce false signals, and market conditions can change quickly. You accept full responsibility for all investment decisions.</p>
+            </div>
+        </div>
+    </div>
+</main>
 
 </body>
 </html>

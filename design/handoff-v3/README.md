@@ -84,3 +84,30 @@ Full set in `tokens/` (each file is one concern; `styles.css` imports the closur
 1. Ship `styles.css` + `tokens/` + `css/components.css` alongside the old `main.css`; add fonts + favicon.
 2. Rebuild the marketing pages (smallest surface, biggest visual payoff), then the five app screens (renaming nav routes/labels), then admin.
 3. Delete `main.css`, `modern-effects.js`, `landing.js` particle/orb code, and the old logo once nothing references them.
+
+
+---
+
+## v3.1 additions — six screens the v3 handoff didn't cover
+
+New screen specs, same conventions (`*.spec.jsx` reads every visual property from `tokens/` or `css/components.css`; prices/currencies always come from `data.js`, never markup):
+
+| Folder | Screens | Notes |
+| --- | --- | --- |
+| `ui_kits/checkout/` | `checkout-flow.spec.jsx` — pay, success (receipt), failure | The payment frame (`.sa-payframe`) hosts the provider's own element — Stripe (UK/US) or Razorpay (India) mounts inside `.sa-payframe__slot`; SutrAlgo never renders card inputs. Decline errors are a loss-tone Callout in plain English. One primary: the pay button, with a `loading` processing state. |
+| `ui_kits/lifecycle/` | `trial-lifecycle.spec.jsx` — day 1, 14-day chip, 5-day warn chip, expired | The countdown chip (`.sa-countdown`, `--warn` at ≤5 days) sits in the app bar's `end` slot from 14 days out. Expired = read-only badge, history intact, exactly one upgrade path. |
+| `ui_kits/account-data/` | `data-management.spec.jsx` | Export rows (`.sa-dl`), plain-language "what we store and why", deletion behind a typed-DELETE `Sheet` (confirm disabled until the text matches — same pattern as the Account danger zone). |
+| `ui_kits/legal/` | `legal-doc.spec.jsx` | One template renders both `terms` and `privacy` from `data.js`. Reading-max measure, ink section numbers (`.sa-doc__secnum`), sticky ToC rail (`.sa-toc`) that becomes a horizontal strip ≤960px. |
+
+### New CSS components (appended to `css/components.css`, diff against your copy)
+
+- `.sa-receipt` / `__row` / `__row--total` — label/amount rows, tabular figures; the total row is an ink band with the amount in gold display type.
+- `.sa-dl` — framed download/list row: icon tile, name + hint, right-aligned size.
+- `.sa-countdown` (+ `--warn`) — app-bar trial chip: ink number tile + link.
+- `.sa-payframe` / `__slot` (+ `--error`) — the frame around a third-party payment element, with dashed mount slot and error border.
+- `.sa-doc` / `.sa-toc` — long-form document grid, sticky contents rail, ink section numbers, `--reading-max` measure.
+
+All five read only existing tokens — no new tokens were added, and both themes work unchanged.
+
+### Rules carried through
+Region-driven prices from data (₹/£/$ never typed), one primary per screen, every stat with a context sentence, one LegalNote per page, tabular numerals on money, sheets become bottom sheets ≤640px, no exclamation marks in failure copy.

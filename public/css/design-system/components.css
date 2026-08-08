@@ -320,3 +320,67 @@
 @media (max-width:720px){.sa-grid--2,.sa-grid--3,.sa-grid--4,.sa-grid--split{grid-template-columns:1fr}}
 .sa-row{display:flex;align-items:center;gap:var(--s-3);flex-wrap:wrap}
 .sa-spread{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--s-4);flex-wrap:wrap}
+
+/* ═══════════ v3.1 components — checkout, lifecycle, data, legal ═══════════
+   Authored in-repo: the v3.1 handoff README specifies these but its exported
+   components.css was stale. Same poster grammar: 2px ink frames, square
+   corners, hard offset shadows, gold as field and highlight. */
+
+/* ---------- receipt (checkout / success) ---------- */
+.sa-receipt{border:2px solid var(--frame);background:var(--surface)}
+.sa-receipt__row{display:flex;justify-content:space-between;align-items:baseline;gap:var(--s-4);padding:12px var(--s-4);border-bottom:1.5px solid var(--line);font-size:var(--size-sm)}
+.sa-receipt__row:last-child{border-bottom:0}
+.sa-receipt__k{color:var(--text-2)}
+.sa-receipt__v{font-variant-numeric:tabular-nums;font-weight:var(--w-bold);color:var(--text);text-align:right}
+.sa-receipt__row--total{border-top:2px solid var(--frame);background:var(--surface-2)}
+.sa-receipt__row--total .sa-receipt__k{color:var(--text);font-weight:var(--w-bold);text-transform:uppercase;font-size:var(--size-xs);letter-spacing:var(--track-label)}
+.sa-receipt__row--total .sa-receipt__v{font-family:var(--font-display);font-weight:var(--w-display);font-size:var(--size-stat-sm)}
+
+/* ---------- payframe (provider-hosted card element) ---------- */
+.sa-payframe{border:2px solid var(--frame);background:var(--surface)}
+.sa-payframe--error{border-color:var(--loss);box-shadow:4px 4px 0 var(--loss-soft)}
+.sa-payframe__head{display:flex;align-items:center;justify-content:space-between;gap:var(--s-3);padding:12px var(--s-4);border-bottom:1.5px solid var(--line)}
+.sa-payframe__slot{min-height:96px;padding:var(--s-4);display:flex;align-items:center;justify-content:center;gap:12px;text-align:center;font-size:var(--size-sm);color:var(--text-3);flex-direction:column}
+.sa-payframe__slot.is-mounted{display:block;text-align:left;color:var(--text)}
+
+/* ---------- countdown chip (trial, in the app bar) ---------- */
+.sa-countdown{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border:1.5px solid var(--gold-on-band);border-radius:var(--r-pill);font-size:var(--size-xs);font-weight:var(--w-bold);color:var(--bg);white-space:nowrap;background:transparent}
+.sa-countdown__num{font-family:var(--font-display);font-weight:var(--w-display);font-size:15px;color:var(--gold-on-band);line-height:1}
+.sa-countdown a{color:var(--gold-on-band);text-decoration:underline;text-underline-offset:3px}
+.sa-countdown--warn{border-color:var(--warn-lit);background:rgba(251,191,36,.12)}
+.sa-countdown--warn .sa-countdown__num,.sa-countdown--warn a{color:var(--warn-lit)}
+
+/* ---------- download / list row (data page, failure reasons) ---------- */
+.sa-dl{display:flex;align-items:center;gap:var(--s-3);border:2px solid var(--frame);background:var(--surface);padding:var(--s-3) var(--s-4)}
+.sa-dl__icon{width:40px;height:40px;flex:0 0 auto;background:var(--accent-soft);border:1.5px solid var(--frame);display:flex;align-items:center;justify-content:center;color:var(--text)}
+.sa-dl__meta{flex:1;min-width:0}
+.sa-dl__name{font-family:var(--font-mono,ui-monospace,monospace);font-size:var(--size-sm);font-weight:600;color:var(--text)}
+.sa-dl__hint{font-size:var(--size-xs);color:var(--text-3)}
+.sa-dl__size{font-size:var(--size-xs);color:var(--text-3);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* ---------- legal document (terms / privacy) ---------- */
+.sa-doc{max-width:var(--page-max);margin:0 auto;padding:var(--s-7) var(--gutter) var(--s-9);display:grid;grid-template-columns:220px minmax(0,1fr);gap:var(--s-7);align-items:start}
+.sa-toc{position:sticky;top:calc(var(--appbar-h) + 16px);display:flex;flex-direction:column;gap:2px;border:2px solid var(--frame);background:var(--surface);padding:var(--s-3)}
+.sa-toc__title{font-size:11px;font-weight:var(--w-bold);text-transform:uppercase;letter-spacing:var(--track-label);color:var(--text-3);padding:4px 10px 8px}
+.sa-toc__item{display:flex;gap:9px;align-items:baseline;padding:8px 10px;border:0;background:none;font-family:var(--font-sans);font-size:var(--size-xs);font-weight:var(--w-medium);color:var(--text-2);cursor:pointer;text-align:left;transition:background var(--dur-1) var(--ease-out),color var(--dur-1) var(--ease-out)}
+.sa-toc__item:hover{background:var(--surface-2);color:var(--text)}
+.sa-toc__item[aria-current="true"]{background:var(--text);color:var(--bg)}
+.sa-toc__n{font-family:var(--font-display);font-size:11px;color:var(--accent);flex:0 0 auto}
+.sa-toc__item[aria-current="true"] .sa-toc__n{color:var(--gold-on-band)}
+.sa-doc__body h1{margin-bottom:10px}
+.sa-doc__updated{font-size:var(--size-sm);color:var(--text-3);margin-bottom:var(--s-6)}
+.sa-doc__body section{margin-bottom:var(--s-6)}
+.sa-doc__sec{display:flex;align-items:baseline;gap:12px;margin-bottom:var(--s-3)}
+.sa-doc__secnum{font-family:var(--font-display);font-weight:var(--w-display);font-size:var(--size-h4);color:var(--accent);flex:0 0 auto}
+.sa-doc__body p{max-width:var(--reading-max);font-size:var(--size-body);margin-bottom:var(--s-3)}
+@media (max-width:960px){
+  .sa-doc{grid-template-columns:1fr;gap:var(--s-4)}
+  .sa-toc{position:static;flex-direction:row;overflow-x:auto;scrollbar-width:none;padding:var(--s-2)}
+  .sa-toc::-webkit-scrollbar{display:none}
+  .sa-toc__title{display:none}
+  .sa-toc__item{white-space:nowrap}
+}
+
+/* hidden must always win over the component display (same fix as .sa-legal__body) */
+.sa-scrim[hidden]{display:none}
+.sa-legal__body[hidden]{display:none}
