@@ -3,186 +3,185 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Account Settings - SutrAlgo</title>
-
-    <!-- Google Material Icons -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="icon" type="image/png" href="/images/favicon.PNG">
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#d4af37">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800;900&family=Work+Sans:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#141210">
+    <meta name="description" content="Your plan, your billing, and everything we hold about you.">
+    <title>Account — SutrAlgo</title>
+    <link rel="icon" type="image/png" href="/images/brand/favicon.png">
+    <link rel="stylesheet" href="/css/design-system/index.css">
+    <link rel="stylesheet" href="/css/app.css">
+    <script>try{if(localStorage.getItem('sa-theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
 
     <!-- Shared Utilities -->
     <script src="/js/utils/date-formatter.js"></script>
 
-    <!-- Modern CSS -->
-    <link rel="stylesheet" href="/css/main.css">
-
-    <!-- Modern Effects (Custom Cursor, Scroll Progress, Animations) -->
-    <script src="/js/modern-effects.js" defer></script>
-
-    <!-- Animation Controller -->
-    <script src="/js/landing.js" defer></script>
-
-    <!-- Theme Toggle -->
-    
+    <!-- App shell (theme, nav, user menu, legal note) -->
+    <script src="/js/app-shell.js" defer></script>
 </head>
-<body>
-    <!-- Animated Background with Particles -->
-    <div class="landing-background">
-        <div class="gradient-orb orb-1"></div>
-        <div class="gradient-orb orb-2"></div>
-        <div class="gradient-orb orb-3"></div>
-        <canvas id="particles-canvas"></canvas>
-    </div>
+<body class="app-body">
 
-    <div class="account-container">
-        <div class="account-header">
-            <h1>Account Settings</h1>
-            <p>Manage your subscription, billing, and preferences</p>
+<header class="sa-appbar">
+    <div class="sa-appbar__in">
+        <a class="sa-appbar__brand" href="/index.html"><span class="sa-wordmark"><b>Sutr</b><i>Algo</i></span></a>
+        <nav class="sa-appbar__nav" aria-label="Main">
+            <a class="sa-appbar__link" href="/index.html"><span class="material-symbols-rounded" aria-hidden="true">radar</span>Scanner</a>
+            <a class="sa-appbar__link" href="/trades.html"><span class="material-symbols-rounded" aria-hidden="true">account_balance_wallet</span>Positions<span class="sa-appbar__count" data-positions-count hidden>0</span></a>
+            <a class="sa-appbar__link" href="/portfolio-backtest.html"><span class="material-symbols-rounded" aria-hidden="true">science</span>Simulator</a>
+            <a class="sa-appbar__link" href="/telegram-subscribe.html"><span class="material-symbols-rounded" aria-hidden="true">notifications</span>Alerts</a>
+            <a class="sa-appbar__link" href="/account.html" aria-current="page"><span class="material-symbols-rounded" aria-hidden="true">person</span>Account</a>
+        </nav>
+        <div class="sa-appbar__end">
+            <button class="sa-iconbtn" type="button" data-theme-toggle aria-label="Switch theme" aria-pressed="false"><span class="material-symbols-rounded" aria-hidden="true">dark_mode</span></button>
+            <div class="app-usermenu">
+                <button class="app-usermenu__btn" type="button" data-usermenu-toggle aria-expanded="false" aria-label="Your account">
+                    <span class="sa-avatar" data-user-avatar>SA</span>
+                </button>
+                <div class="sa-menu" role="menu">
+                    <div class="sa-menu__id">
+                        <span class="sa-avatar sa-avatar--menu" data-user-avatar>SA</span>
+                        <div>
+                            <div class="app-usermenu__name" data-user-name>Signed in</div>
+                            <div class="app-usermenu__email" data-user-email></div>
+                        </div>
+                    </div>
+                    <a class="sa-menu__item" href="/account.html" role="menuitem"><span class="material-symbols-rounded" aria-hidden="true">person</span>Account</a>
+                    <a class="sa-menu__item" href="/landing.html" role="menuitem"><span class="material-symbols-rounded" aria-hidden="true">help</span>How the formula works</a>
+                    <a class="sa-menu__item" href="/admin-portal.html" role="menuitem" data-admin-only hidden><span class="material-symbols-rounded" aria-hidden="true">shield_person</span>Admin portal</a>
+                    <a class="sa-menu__item" href="/logout" role="menuitem"><span class="material-symbols-rounded" aria-hidden="true">logout</span>Sign out</a>
+                </div>
+            </div>
+            <button class="sa-iconbtn sa-appbar__burger" type="button" data-menu-toggle aria-label="Menu" aria-expanded="false"><span class="material-symbols-rounded" aria-hidden="true">menu</span></button>
+        </div>
+    </div>
+    <nav class="app-menu" aria-label="Mobile">
+        <a href="/index.html"><span class="material-symbols-rounded" aria-hidden="true">radar</span>Scanner</a>
+        <a href="/trades.html"><span class="material-symbols-rounded" aria-hidden="true">account_balance_wallet</span>Positions</a>
+        <a href="/portfolio-backtest.html"><span class="material-symbols-rounded" aria-hidden="true">science</span>Simulator</a>
+        <a href="/telegram-subscribe.html"><span class="material-symbols-rounded" aria-hidden="true">notifications</span>Alerts</a>
+        <a href="/account.html" aria-current="page"><span class="material-symbols-rounded" aria-hidden="true">person</span>Account</a>
+    </nav>
+</header>
+
+<main class="app-main">
+    <div class="sa-page sa-page--narrow">
+
+        <div class="sa-spread app-pagehead">
+            <div>
+                <h1>Account</h1>
+                <p>Your plan, your billing, and everything we hold about you.</p>
+            </div>
         </div>
 
         <!-- Tab Navigation -->
-        <div class="tab-navigation" role="tablist">
-            <button class="tab-item active" data-tab="overview" role="tab" aria-selected="true" aria-controls="overview-panel">
-                <span class="material-icons" aria-hidden="true">dashboard</span>
-                <span>Overview</span>
-            </button>
-            <button class="tab-item" data-tab="billing" role="tab" aria-selected="false" aria-controls="billing-panel">
-                <span class="material-icons" aria-hidden="true">payment</span>
-                <span>Billing & Payments</span>
-            </button>
-            <button class="tab-item" data-tab="settings" role="tab" aria-selected="false" aria-controls="settings-panel">
-                <span class="material-icons" aria-hidden="true">tune</span>
-                <span>Settings</span>
-            </button>
-            <button class="tab-item" data-tab="account" role="tab" aria-selected="false" aria-controls="account-panel">
-                <span class="material-icons" aria-hidden="true">manage_accounts</span>
-                <span>Account</span>
-            </button>
+        <div class="sa-tabs tab-navigation ac-tabs" role="tablist">
+            <button class="sa-tab tab-item active" data-tab="overview" role="tab" aria-selected="true" aria-controls="overview-panel">Plan</button>
+            <button class="sa-tab tab-item" data-tab="billing" role="tab" aria-selected="false" aria-controls="billing-panel">Billing</button>
+            <button class="sa-tab tab-item" data-tab="settings" role="tab" aria-selected="false" aria-controls="settings-panel">Settings</button>
+            <button class="sa-tab tab-item" data-tab="account" role="tab" aria-selected="false" aria-controls="account-panel">Your data</button>
         </div>
 
         <!-- Tab Panels -->
         <div class="account-tabs">
 
-            <!-- Overview Tab -->
+            <!-- Plan Tab -->
             <div id="overview-panel" class="tab-panel active" role="tabpanel" aria-labelledby="overview-tab">
 
-                <!-- Hero Subscription Card -->
                 <div id="subscription-hero" class="loading-state">
-                    <div class="spinner"></div>
-                    <p>Loading subscription details...</p>
+                    <div class="spinner" aria-hidden="true"></div>
+                    <p>Fetching your plan…</p>
                 </div>
 
-                <!-- Quick Stats Grid -->
-                <div id="quick-stats-section" style="display: none;">
+                <div id="quick-stats-section" hidden>
                     <div class="quick-stats-grid" id="quick-stats"></div>
                 </div>
 
-                <!-- Recent Payment -->
-                <div id="recent-payment-section" style="display: none;">
-                    <h3 style="margin-bottom: 1rem; color: var(--text-primary);">Recent Payment</h3>
+                <div id="recent-payment-section" hidden>
                     <div id="recent-payment-card"></div>
                 </div>
 
             </div>
 
-            <!-- Billing & Payments Tab -->
+            <!-- Billing Tab -->
             <div id="billing-panel" class="tab-panel" role="tabpanel" aria-labelledby="billing-tab">
 
-                <div class="account-section">
-                    <div class="section-header">
-                        <h2 class="section-title">
-                            <span class="material-icons icon-md icon-mr-xs" aria-hidden="true">credit_card</span>
-                            Payment History
-                        </h2>
+                <section class="sa-card sa-card--flush account-section">
+                    <div class="sa-card__head">
+                        <div>
+                            <h3 class="sa-card__title">Payments</h3>
+                            <p class="sa-card__hint">Everything you've ever been charged.</p>
+                        </div>
                     </div>
-
-                    <div id="payment-history-content" class="loading-state">
-                        <div class="spinner"></div>
-                        <p>Loading payment history...</p>
+                    <div class="app-cardbody">
+                        <div id="payment-history-content" class="loading-state">
+                            <div class="spinner" aria-hidden="true"></div>
+                            <p>Fetching payments…</p>
+                        </div>
                     </div>
-                </div>
+                </section>
 
-                <div class="account-section">
-                    <div class="section-header">
-                        <h2 class="section-title">
-                            <span class="material-icons icon-md icon-mr-xs" aria-hidden="true">card_membership</span>
-                            Full Subscription Details
-                        </h2>
+                <section class="sa-card sa-card--flush account-section">
+                    <div class="sa-card__head">
+                        <div>
+                            <h3 class="sa-card__title">The fine print of your plan</h3>
+                        </div>
                         <div id="subscription-status-badge"></div>
                     </div>
-
-                    <div id="subscription-full-details" class="loading-state">
-                        <div class="spinner"></div>
-                        <p>Loading subscription details...</p>
+                    <div class="app-cardbody">
+                        <div id="subscription-full-details" class="loading-state">
+                            <div class="spinner" aria-hidden="true"></div>
+                            <p>Fetching details…</p>
+                        </div>
                     </div>
-                </div>
+                </section>
 
             </div>
 
             <!-- Settings Tab -->
             <div id="settings-panel" class="tab-panel" role="tabpanel" aria-labelledby="settings-tab">
 
-                <div class="account-section">
-                    <div class="section-header">
-                        <h2 class="section-title">
-                            <span class="material-icons icon-md icon-mr-xs" aria-hidden="true">tune</span>
-                            User Preferences
-                        </h2>
-                    </div>
+                <div class="account-section ac-settings">
 
                     <!-- Display & Theme Settings -->
                     <div class="collapsible-section expanded">
                         <div class="collapsible-header">
-                            <h3 class="collapsible-title">
-                                <span class="material-icons" aria-hidden="true">palette</span>
-                                Display & Theme
-                            </h3>
-                            <div class="collapsible-toggle">
-                                <span class="material-icons" aria-hidden="true">expand_more</span>
-                            </div>
+                            <h3 class="collapsible-title">Look and feel</h3>
+                            <div class="collapsible-toggle"><span class="material-symbols-rounded" aria-hidden="true">expand_more</span></div>
                         </div>
                         <div class="collapsible-content">
                             <div class="collapsible-body">
                                 <div class="settings-section">
                                     <div class="setting-item">
-                                        <label class="checkbox-label">
+                                        <label class="sa-switch checkbox-label">
                                             <input type="checkbox" id="dark-mode-setting" aria-label="Enable dark mode">
-                                            <span>Dark Mode</span>
+                                            <span class="sa-switch__track" aria-hidden="true"></span>
+                                            <span class="sa-switch__text">Dark theme</span>
                                         </label>
-                                        <span class="setting-help">Switch between light and dark theme</span>
+                                        <span class="setting-help">Swap the cream paper for the ink poster.</span>
                                     </div>
-
                                     <div class="setting-item">
-                                        <label class="checkbox-label">
+                                        <label class="sa-switch checkbox-label">
                                             <input type="checkbox" id="reduce-animations" aria-label="Reduce animations">
-                                            <span>Reduce Animations</span>
+                                            <span class="sa-switch__track" aria-hidden="true"></span>
+                                            <span class="sa-switch__text">Calm the motion</span>
                                         </label>
-                                        <span class="setting-help">Minimize motion effects for better performance</span>
+                                        <span class="setting-help">Cuts animation down to almost nothing.</span>
                                     </div>
-
                                     <div class="setting-item">
-                                        <label class="checkbox-label">
+                                        <label class="sa-switch checkbox-label">
                                             <input type="checkbox" id="high-contrast" aria-label="Enable high contrast mode">
-                                            <span>High Contrast Mode</span>
+                                            <span class="sa-switch__track" aria-hidden="true"></span>
+                                            <span class="sa-switch__text">Higher contrast</span>
                                         </label>
-                                        <span class="setting-help">Increase contrast for better visibility</span>
+                                        <span class="setting-help">Stronger edges and darker text.</span>
                                     </div>
-
                                     <div class="setting-item">
-                                        <label for="font-size-setting">Font Size</label>
-                                        <select id="font-size-setting" class="settings-input" aria-label="Select font size">
+                                        <label class="sa-field__label" for="font-size-setting">Text size</label>
+                                        <select id="font-size-setting" class="settings-input sa-select" aria-label="Select font size">
                                             <option value="small">Small</option>
-                                            <option value="medium" selected>Medium (Default)</option>
+                                            <option value="medium" selected>Medium</option>
                                             <option value="large">Large</option>
-                                            <option value="extra-large">Extra Large</option>
+                                            <option value="extra-large">Extra large</option>
                                         </select>
-                                        <span class="setting-help">Adjust text size for better readability</span>
+                                        <span class="setting-help">How big the words are, everywhere.</span>
                                     </div>
                                 </div>
                             </div>
@@ -192,47 +191,43 @@
                     <!-- Notifications & Alerts -->
                     <div class="collapsible-section">
                         <div class="collapsible-header">
-                            <h3 class="collapsible-title">
-                                <span class="material-icons" aria-hidden="true">notifications</span>
-                                Notifications & Alerts
-                            </h3>
-                            <div class="collapsible-toggle">
-                                <span class="material-icons" aria-hidden="true">expand_more</span>
-                            </div>
+                            <h3 class="collapsible-title">What we send you</h3>
+                            <div class="collapsible-toggle"><span class="material-symbols-rounded" aria-hidden="true">expand_more</span></div>
                         </div>
                         <div class="collapsible-content">
                             <div class="collapsible-body">
                                 <div class="settings-section">
                                     <div class="setting-item">
-                                        <label class="checkbox-label">
+                                        <label class="sa-switch checkbox-label">
                                             <input type="checkbox" id="email-notifications" checked aria-label="Enable email notifications">
-                                            <span>Email Notifications</span>
+                                            <span class="sa-switch__track" aria-hidden="true"></span>
+                                            <span class="sa-switch__text">Email</span>
                                         </label>
-                                        <span class="setting-help">Receive updates and alerts via email</span>
+                                        <span class="setting-help">Billing, security, and anything that affects your account.</span>
                                     </div>
-
                                     <div class="setting-item">
-                                        <label class="checkbox-label">
+                                        <label class="sa-switch checkbox-label">
                                             <input type="checkbox" id="browser-notifications" aria-label="Enable browser notifications">
-                                            <span>Browser Notifications</span>
+                                            <span class="sa-switch__track" aria-hidden="true"></span>
+                                            <span class="sa-switch__text">Browser notifications</span>
                                         </label>
-                                        <span class="setting-help">Show desktop notifications for important events</span>
+                                        <span class="setting-help">A desktop nudge when something needs you.</span>
                                     </div>
-
                                     <div class="setting-item">
-                                        <label class="checkbox-label">
+                                        <label class="sa-switch checkbox-label">
                                             <input type="checkbox" id="trade-alerts" checked aria-label="Enable trade alerts">
-                                            <span>Trade Alerts</span>
+                                            <span class="sa-switch__track" aria-hidden="true"></span>
+                                            <span class="sa-switch__text">Signal alerts</span>
                                         </label>
-                                        <span class="setting-help">Get notified about trade opportunities</span>
+                                        <span class="setting-help">Told when the scanner finds a setup.</span>
                                     </div>
-
                                     <div class="setting-item">
-                                        <label class="checkbox-label">
+                                        <label class="sa-switch checkbox-label">
                                             <input type="checkbox" id="newsletter-subscription" aria-label="Subscribe to newsletter">
-                                            <span>Newsletter Subscription</span>
+                                            <span class="sa-switch__track" aria-hidden="true"></span>
+                                            <span class="sa-switch__text">Product updates</span>
                                         </label>
-                                        <span class="setting-help">Receive weekly market insights and updates</span>
+                                        <span class="setting-help">Occasional notes when something new ships. Never more than monthly.</span>
                                     </div>
                                 </div>
                             </div>
@@ -242,49 +237,44 @@
                     <!-- Data & Privacy Settings -->
                     <div class="collapsible-section">
                         <div class="collapsible-header">
-                            <h3 class="collapsible-title">
-                                <span class="material-icons" aria-hidden="true">privacy_tip</span>
-                                Data & Privacy
-                            </h3>
-                            <div class="collapsible-toggle">
-                                <span class="material-icons" aria-hidden="true">expand_more</span>
-                            </div>
+                            <h3 class="collapsible-title">Data and privacy</h3>
+                            <div class="collapsible-toggle"><span class="material-symbols-rounded" aria-hidden="true">expand_more</span></div>
                         </div>
                         <div class="collapsible-content">
                             <div class="collapsible-body">
                                 <div class="settings-section">
                                     <div class="setting-item">
-                                        <label class="checkbox-label">
+                                        <label class="sa-switch checkbox-label">
                                             <input type="checkbox" id="analytics-tracking" checked aria-label="Enable analytics tracking">
-                                            <span>Analytics & Performance Tracking</span>
+                                            <span class="sa-switch__track" aria-hidden="true"></span>
+                                            <span class="sa-switch__text">Anonymous usage data</span>
                                         </label>
-                                        <span class="setting-help">Help us improve by sharing anonymous usage data</span>
+                                        <span class="setting-help">Helps us see what's confusing and fix it.</span>
                                     </div>
-
                                     <div class="setting-item">
-                                        <label class="checkbox-label">
+                                        <label class="sa-switch checkbox-label">
                                             <input type="checkbox" id="cookie-consent" checked aria-label="Accept cookies">
-                                            <span>Cookie Consent</span>
+                                            <span class="sa-switch__track" aria-hidden="true"></span>
+                                            <span class="sa-switch__text">Optional cookies</span>
                                         </label>
-                                        <span class="setting-help">Allow cookies for better experience</span>
+                                        <span class="setting-help">The essential ones stay either way.</span>
                                     </div>
-
                                     <div class="setting-item">
-                                        <label class="checkbox-label">
+                                        <label class="sa-switch checkbox-label">
                                             <input type="checkbox" id="save-preferences" checked aria-label="Save preferences locally">
-                                            <span>Save Preferences Locally</span>
+                                            <span class="sa-switch__track" aria-hidden="true"></span>
+                                            <span class="sa-switch__text">Remember my settings</span>
                                         </label>
-                                        <span class="setting-help">Store your settings in browser storage</span>
+                                        <span class="setting-help">Stored in this browser, nowhere else.</span>
                                     </div>
-
                                     <div class="settings-actions">
-                                        <button class="btn btn-secondary" id="export-data-btn-settings">
-                                            <span class="material-icons icon-sm icon-mr-xs" aria-hidden="true">download</span>
-                                            Export My Data
+                                        <button class="sa-btn sa-btn--quiet sa-btn--sm" id="export-data-btn-settings">
+                                            <span class="material-symbols-rounded" aria-hidden="true">download</span>
+                                            Export my settings
                                         </button>
-                                        <button class="btn btn-secondary" id="clear-cache-btn-settings">
-                                            <span class="material-icons icon-sm icon-mr-xs" aria-hidden="true">delete_sweep</span>
-                                            Clear Cache
+                                        <button class="sa-btn sa-btn--quiet sa-btn--sm" id="clear-cache-btn-settings">
+                                            <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+                                            Clear the cache
                                         </button>
                                     </div>
                                 </div>
@@ -295,47 +285,43 @@
                     <!-- Accessibility Settings -->
                     <div class="collapsible-section">
                         <div class="collapsible-header">
-                            <h3 class="collapsible-title">
-                                <span class="material-icons" aria-hidden="true">accessibility</span>
-                                Accessibility
-                            </h3>
-                            <div class="collapsible-toggle">
-                                <span class="material-icons" aria-hidden="true">expand_more</span>
-                            </div>
+                            <h3 class="collapsible-title">Accessibility</h3>
+                            <div class="collapsible-toggle"><span class="material-symbols-rounded" aria-hidden="true">expand_more</span></div>
                         </div>
                         <div class="collapsible-content">
                             <div class="collapsible-body">
                                 <div class="settings-section">
                                     <div class="setting-item">
-                                        <label class="checkbox-label">
+                                        <label class="sa-switch checkbox-label">
                                             <input type="checkbox" id="screen-reader-mode" aria-label="Enable screen reader optimizations">
-                                            <span>Screen Reader Optimizations</span>
+                                            <span class="sa-switch__track" aria-hidden="true"></span>
+                                            <span class="sa-switch__text">Screen reader mode</span>
                                         </label>
-                                        <span class="setting-help">Optimize interface for screen readers</span>
+                                        <span class="setting-help">Tunes the interface for screen readers.</span>
                                     </div>
-
                                     <div class="setting-item">
-                                        <label class="checkbox-label">
+                                        <label class="sa-switch checkbox-label">
                                             <input type="checkbox" id="keyboard-shortcuts" checked aria-label="Enable keyboard shortcuts">
-                                            <span>Keyboard Shortcuts</span>
+                                            <span class="sa-switch__track" aria-hidden="true"></span>
+                                            <span class="sa-switch__text">Keyboard shortcuts</span>
                                         </label>
-                                        <span class="setting-help">Enable keyboard navigation shortcuts</span>
+                                        <span class="setting-help">Move around without the mouse.</span>
                                     </div>
-
                                     <div class="setting-item">
-                                        <label class="checkbox-label">
+                                        <label class="sa-switch checkbox-label">
                                             <input type="checkbox" id="focus-indicators" checked aria-label="Show focus indicators">
-                                            <span>Enhanced Focus Indicators</span>
+                                            <span class="sa-switch__track" aria-hidden="true"></span>
+                                            <span class="sa-switch__text">Clear focus rings</span>
                                         </label>
-                                        <span class="setting-help">Show clear visual focus for keyboard navigation</span>
+                                        <span class="setting-help">A gold ring around whatever the keyboard is on.</span>
                                     </div>
-
                                     <div class="setting-item">
-                                        <label class="checkbox-label">
+                                        <label class="sa-switch checkbox-label">
                                             <input type="checkbox" id="auto-play-disable" aria-label="Disable auto-play animations">
-                                            <span>Disable Auto-Play</span>
+                                            <span class="sa-switch__track" aria-hidden="true"></span>
+                                            <span class="sa-switch__text">Stop auto-play</span>
                                         </label>
-                                        <span class="setting-help">Prevent charts and animations from auto-playing</span>
+                                        <span class="setting-help">Charts wait for you instead of animating in.</span>
                                     </div>
                                 </div>
                             </div>
@@ -345,55 +331,49 @@
                     <!-- Chart Preferences -->
                     <div class="collapsible-section">
                         <div class="collapsible-header">
-                            <h3 class="collapsible-title">
-                                <span class="material-icons" aria-hidden="true">bar_chart</span>
-                                Chart Preferences
-                            </h3>
-                            <div class="collapsible-toggle">
-                                <span class="material-icons" aria-hidden="true">expand_more</span>
-                            </div>
+                            <h3 class="collapsible-title">Charts</h3>
+                            <div class="collapsible-toggle"><span class="material-symbols-rounded" aria-hidden="true">expand_more</span></div>
                         </div>
                         <div class="collapsible-content">
                             <div class="collapsible-body">
                                 <div class="settings-section">
                                     <div class="setting-item">
-                                        <label for="chart-theme-setting">Chart Theme</label>
-                                        <select id="chart-theme-setting" class="settings-input" aria-label="Select chart theme">
-                                            <option value="auto" selected>Auto (Match Site Theme)</option>
-                                            <option value="light">Light</option>
-                                            <option value="dark">Dark</option>
+                                        <label class="sa-field__label" for="chart-theme-setting">Chart theme</label>
+                                        <select id="chart-theme-setting" class="settings-input sa-select" aria-label="Select chart theme">
+                                            <option value="auto" selected>Match the site</option>
+                                            <option value="light">Always light</option>
+                                            <option value="dark">Always dark</option>
                                         </select>
-                                        <span class="setting-help">Choose your preferred chart color scheme</span>
+                                        <span class="setting-help">What the charts sit on.</span>
                                     </div>
-
                                     <div class="setting-item">
-                                        <label class="checkbox-label">
+                                        <label class="sa-switch checkbox-label">
                                             <input type="checkbox" id="show-grid" checked aria-label="Show chart grid">
-                                            <span>Show Grid Lines</span>
+                                            <span class="sa-switch__track" aria-hidden="true"></span>
+                                            <span class="sa-switch__text">Grid lines</span>
                                         </label>
-                                        <span class="setting-help">Display grid lines on charts for easier reading</span>
+                                        <span class="setting-help">Faint lines that make values easier to read off.</span>
                                     </div>
-
                                     <div class="setting-item">
-                                        <label class="checkbox-label">
+                                        <label class="sa-switch checkbox-label">
                                             <input type="checkbox" id="smooth-animations" checked aria-label="Enable smooth chart animations">
-                                            <span>Smooth Chart Animations</span>
+                                            <span class="sa-switch__track" aria-hidden="true"></span>
+                                            <span class="sa-switch__text">Chart animation</span>
                                         </label>
-                                        <span class="setting-help">Animate chart transitions smoothly</span>
+                                        <span class="setting-help">Bars and lines settle in instead of appearing.</span>
                                     </div>
-
                                     <div class="setting-item">
-                                        <label for="default-timeframe">Default Timeframe</label>
-                                        <select id="default-timeframe" class="settings-input" aria-label="Select default timeframe">
-                                            <option value="1D">1 Day</option>
-                                            <option value="1W">1 Week</option>
-                                            <option value="1M" selected>1 Month</option>
-                                            <option value="3M">3 Months</option>
-                                            <option value="6M">6 Months</option>
-                                            <option value="1Y">1 Year</option>
-                                            <option value="ALL">All Time</option>
+                                        <label class="sa-field__label" for="default-timeframe">Default range</label>
+                                        <select id="default-timeframe" class="settings-input sa-select" aria-label="Select default timeframe">
+                                            <option value="1D">One day</option>
+                                            <option value="1W">One week</option>
+                                            <option value="1M" selected>One month</option>
+                                            <option value="3M">Three months</option>
+                                            <option value="6M">Six months</option>
+                                            <option value="1Y">One year</option>
+                                            <option value="ALL">Everything</option>
                                         </select>
-                                        <span class="setting-help">Default time period for chart display</span>
+                                        <span class="setting-help">How far back charts look when they open.</span>
                                     </div>
                                 </div>
                             </div>
@@ -403,20 +383,15 @@
                     <!-- Language & Region -->
                     <div class="collapsible-section">
                         <div class="collapsible-header">
-                            <h3 class="collapsible-title">
-                                <span class="material-icons" aria-hidden="true">language</span>
-                                Language & Region
-                            </h3>
-                            <div class="collapsible-toggle">
-                                <span class="material-icons" aria-hidden="true">expand_more</span>
-                            </div>
+                            <h3 class="collapsible-title">Language and region</h3>
+                            <div class="collapsible-toggle"><span class="material-symbols-rounded" aria-hidden="true">expand_more</span></div>
                         </div>
                         <div class="collapsible-content">
                             <div class="collapsible-body">
                                 <div class="settings-section">
                                     <div class="setting-item">
-                                        <label for="language-setting">Language</label>
-                                        <select id="language-setting" class="settings-input" aria-label="Select language">
+                                        <label class="sa-field__label" for="language-setting">Language</label>
+                                        <select id="language-setting" class="settings-input sa-select" aria-label="Select language">
                                             <option value="en" selected>English</option>
                                             <option value="es">Español</option>
                                             <option value="fr">Français</option>
@@ -424,12 +399,10 @@
                                             <option value="zh">中文</option>
                                             <option value="ja">日本語</option>
                                         </select>
-                                        <span class="setting-help">Choose your preferred language</span>
                                     </div>
-
                                     <div class="setting-item">
-                                        <label for="timezone-setting">Timezone</label>
-                                        <select id="timezone-setting" class="settings-input" aria-label="Select timezone">
+                                        <label class="sa-field__label" for="timezone-setting">Timezone</label>
+                                        <select id="timezone-setting" class="settings-input sa-select" aria-label="Select timezone">
                                             <option value="UTC">UTC</option>
                                             <option value="America/New_York">Eastern Time (ET)</option>
                                             <option value="America/Chicago">Central Time (CT)</option>
@@ -440,12 +413,11 @@
                                             <option value="Asia/Shanghai">Shanghai</option>
                                             <option value="Asia/Kolkata" selected>India (IST)</option>
                                         </select>
-                                        <span class="setting-help">Your local timezone for displaying times</span>
+                                        <span class="setting-help">Times shown across the app use this.</span>
                                     </div>
-
                                     <div class="setting-item">
-                                        <label for="currency-setting">Currency Display</label>
-                                        <select id="currency-setting" class="settings-input" aria-label="Select currency">
+                                        <label class="sa-field__label" for="currency-setting">Currency</label>
+                                        <select id="currency-setting" class="settings-input sa-select" aria-label="Select currency">
                                             <option value="USD">USD ($)</option>
                                             <option value="EUR">EUR (€)</option>
                                             <option value="GBP">GBP (£)</option>
@@ -453,7 +425,7 @@
                                             <option value="INR" selected>INR (₹)</option>
                                             <option value="CNY">CNY (¥)</option>
                                         </select>
-                                        <span class="setting-help">Preferred currency for displaying values</span>
+                                        <span class="setting-help">For totals that combine markets.</span>
                                     </div>
                                 </div>
                             </div>
@@ -461,143 +433,148 @@
                     </div>
 
                     <!-- Save/Reset Actions -->
-                    <div class="settings-actions" style="margin-top: 2rem;">
-                        <button class="btn btn-primary" id="save-settings-btn">
-                            <span class="material-icons icon-sm icon-mr-xs" aria-hidden="true">save</span>
-                            Save All Settings
-                        </button>
-                        <button class="btn btn-secondary" id="reset-settings-btn">
-                            <span class="material-icons icon-sm icon-mr-xs" aria-hidden="true">refresh</span>
-                            Reset to Defaults
-                        </button>
+                    <div class="settings-actions ac-saverow">
+                        <button class="sa-btn sa-btn--primary" id="save-settings-btn">Save all settings</button>
+                        <button class="sa-btn sa-btn--secondary" id="reset-settings-btn">Back to defaults</button>
                     </div>
 
                 </div>
 
             </div>
 
-            <!-- Account Management Tab -->
+            <!-- Your data Tab -->
             <div id="account-panel" class="tab-panel" role="tabpanel" aria-labelledby="account-tab">
 
-                <div class="account-section">
-                    <div class="section-header">
-                        <h2 class="section-title">
-                            <span class="material-icons icon-md icon-mr-xs" aria-hidden="true">manage_accounts</span>
-                            Account Management
-                        </h2>
-                    </div>
-
-                    <div class="settings-section">
-                        <h3 style="margin-bottom: 1rem; color: var(--text-primary);">Data Management</h3>
-                        <p style="color: var(--text-secondary); margin-bottom: 1rem;">Manage your account data and preferences</p>
-
-                        <div class="settings-actions">
-                            <button class="btn btn-secondary" id="export-data-btn">
-                                <span class="material-icons icon-sm icon-mr-xs" aria-hidden="true">download</span>
-                                Export My Data
+                <div class="sa-grid sa-grid--2 ac-datagrid">
+                    <section class="sa-card">
+                        <div class="sa-card__head">
+                            <div>
+                                <h3 class="sa-card__title">Take your data with you</h3>
+                                <p class="sa-card__hint">A single file with your settings and preferences.</p>
+                            </div>
+                        </div>
+                        <div class="sa-row">
+                            <button class="sa-btn sa-btn--secondary" id="export-data-btn">
+                                <span class="material-symbols-rounded" aria-hidden="true">download</span>
+                                Download everything
                             </button>
-                            <button class="btn btn-secondary" id="clear-cache-btn">
-                                <span class="material-icons icon-sm icon-mr-xs" aria-hidden="true">delete_sweep</span>
-                                Clear Cache
+                            <button class="sa-btn sa-btn--quiet" id="clear-cache-btn">
+                                <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+                                Clear the cache
                             </button>
                         </div>
-                    </div>
-                </div>
+                    </section>
 
-                <div class="account-section">
-                    <div class="section-header">
-                        <h2 class="section-title" style="color: var(--error);">
-                            <span class="material-icons icon-md icon-mr-xs" aria-hidden="true">warning</span>
-                            Danger Zone
-                        </h2>
-                    </div>
+                    <section class="sa-card">
+                        <div class="sa-card__head">
+                            <div>
+                                <h3 class="sa-card__title">Signed in as</h3>
+                            </div>
+                        </div>
+                        <div class="sa-stack ac-identity">
+                            <span class="ac-identity__name" data-user-name>—</span>
+                            <span class="ac-identity__email" data-user-email></span>
+                            <span class="ac-identity__meta">Signed in with Google.</span>
+                        </div>
+                    </section>
 
-                    <div class="settings-section">
-                        <p style="color: var(--text-secondary); margin-bottom: 1rem;">Deleting your account is permanent and cannot be undone.</p>
-
-                        <button class="btn btn-danger" id="delete-account-btn">
-                            <span class="material-icons icon-sm icon-mr-xs" aria-hidden="true">delete_forever</span>
-                            Delete Account
-                        </button>
-                    </div>
+                    <section class="sa-card ac-danger">
+                        <div class="sa-card__head">
+                            <div>
+                                <h3 class="sa-card__title">Close your account</h3>
+                                <p class="sa-card__hint">This removes your data permanently. It cannot be undone.</p>
+                            </div>
+                        </div>
+                        <div class="sa-row">
+                            <button class="sa-btn sa-btn--danger" id="delete-account-btn">
+                                <span class="material-symbols-rounded" aria-hidden="true">delete_forever</span>
+                                Close my account
+                            </button>
+                        </div>
+                    </section>
                 </div>
 
             </div>
 
         </div>
 
-    </div>
-
-    <!-- Cancel Subscription Modal -->
-    <div class="modal-overlay" id="cancel-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Cancel Subscription</h3>
-                <button class="modal-close" onclick="document.getElementById('cancel-modal').classList.remove('active')" aria-label="Close modal">
-                    <span class="material-icons icon-md" aria-hidden="true">close</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>
-                    We're sorry to see you go. Your subscription will remain active until the end of your current billing period.
-                </p>
-                <div class="form-group">
-                    <label class="form-label" for="cancel-reason">Please tell us why you're cancelling (optional)</label>
-                    <textarea id="cancel-reason" class="form-textarea" placeholder="Your feedback helps us improve..."></textarea>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="document.getElementById('cancel-modal').classList.remove('active')">
-                    Keep Subscription
-                </button>
-                <button class="btn btn-danger" id="confirm-cancel-btn">
-                    Confirm Cancellation
-                </button>
+        <div class="sa-legal app-legal">
+            <button class="sa-legal__btn" type="button" aria-expanded="false">
+                Educational tool, not investment advice. Your capital is at risk.
+                <span class="material-symbols-rounded" aria-hidden="true">expand_more</span>
+            </button>
+            <div class="sa-legal__body" hidden>
+                <p>This service provides informational and educational tools only. Nothing here is investment advice or a recommendation to buy or sell.</p>
+                <p>Past performance is not a reliable indicator of future results. All trading involves risk and you could lose money.</p>
+                <p>Technical indicators can produce false signals, and market conditions can change quickly. You accept full responsibility for all investment decisions.</p>
             </div>
         </div>
-    </div>
 
-    <!-- Delete Account Confirmation Modal -->
-    <div class="modal-overlay" id="delete-account-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Delete Account</h3>
-                <button class="modal-close" onclick="document.getElementById('delete-account-modal').classList.remove('active')" aria-label="Close modal">
-                    <span class="material-icons icon-md" aria-hidden="true">close</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p style="color: var(--error); font-weight: 600;">
-                    Warning: This action cannot be undone!
-                </p>
-                <p>
-                    Deleting your account will permanently remove all your data, including:
-                </p>
-                <ul style="margin: 1rem 0; padding-left: 1.5rem;">
-                    <li>Account information</li>
-                    <li>Subscription details</li>
-                    <li>Trade history and preferences</li>
-                    <li>All saved settings</li>
-                </ul>
-                <div class="form-group">
-                    <label class="form-label" for="delete-confirmation">Type "DELETE" to confirm</label>
-                    <input type="text" id="delete-confirmation" class="settings-input" placeholder="Type DELETE" aria-label="Type DELETE to confirm account deletion">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="document.getElementById('delete-account-modal').classList.remove('active')">
-                    Cancel
-                </button>
-                <button class="btn btn-danger" id="confirm-delete-btn" disabled>
-                    Permanently Delete Account
-                </button>
+        <footer class="app-foot">
+            <a href="/terms.html">Terms of service</a>
+            <a href="/privacy.html">Privacy policy</a>
+            <a href="/data-management.html">Data management</a>
+            <span>© 2026 SutrAlgo</span>
+        </footer>
+
+    </div>
+</main>
+
+<nav class="sa-bottomnav" aria-label="Primary">
+    <a class="sa-bottomnav__item" href="/index.html"><span class="material-symbols-rounded" aria-hidden="true">radar</span>Scanner</a>
+    <a class="sa-bottomnav__item" href="/trades.html"><span class="material-symbols-rounded" aria-hidden="true">account_balance_wallet</span>Positions</a>
+    <a class="sa-bottomnav__item" href="/portfolio-backtest.html"><span class="material-symbols-rounded" aria-hidden="true">science</span>Simulator</a>
+    <a class="sa-bottomnav__item" href="/telegram-subscribe.html"><span class="material-symbols-rounded" aria-hidden="true">notifications</span>Alerts</a>
+    <a class="sa-bottomnav__item" href="/account.html" aria-current="page"><span class="material-symbols-rounded" aria-hidden="true">person</span>Account</a>
+</nav>
+
+<!-- Cancel Subscription Modal -->
+<div class="modal-overlay" id="cancel-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Cancel your plan?</h3>
+            <button class="modal-close" onclick="document.getElementById('cancel-modal').classList.remove('active')" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>You keep everything until the end of what you've already paid for. Your history stays either way.</p>
+            <div class="form-group parameter-group">
+                <label for="cancel-reason">Tell us why, if you like</label>
+                <textarea id="cancel-reason" class="form-textarea" placeholder="Anything that wasn't working?"></textarea>
             </div>
         </div>
+        <div class="modal-footer">
+            <button class="sa-btn sa-btn--secondary" onclick="document.getElementById('cancel-modal').classList.remove('active')">Keep my plan</button>
+            <button class="sa-btn sa-btn--danger" id="confirm-cancel-btn">Cancel it</button>
+        </div>
     </div>
+</div>
 
-    <script src="/js/unified-navbar.js"></script>
-    <script src="/js/push-notifications.js"></script>
-    <script src="/js/account.js"></script>
+<!-- Delete Account Confirmation Modal -->
+<div class="modal-overlay" id="delete-account-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Close your account?</h3>
+            <button class="modal-close" onclick="document.getElementById('delete-account-modal').classList.remove('active')" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="sa-callout sa-callout--warn">
+                <span class="material-symbols-rounded" aria-hidden="true">warning</span>
+                <span>This cannot be undone. Your account, your plan, your positions and trades, and every setting go with it.</span>
+            </div>
+            <div class="form-group parameter-group">
+                <label for="delete-confirmation">Type DELETE to confirm</label>
+                <input type="text" id="delete-confirmation" class="settings-input" placeholder="DELETE" aria-label="Type DELETE to confirm account deletion">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="sa-btn sa-btn--secondary" onclick="document.getElementById('delete-account-modal').classList.remove('active')">Keep my account</button>
+            <button class="sa-btn sa-btn--danger" id="confirm-delete-btn" disabled>Close it for good</button>
+        </div>
+    </div>
+</div>
+
+<script src="/js/push-notifications.js"></script>
+<script src="/js/account.js"></script>
 
 </body>
 </html>

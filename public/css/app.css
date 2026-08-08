@@ -45,6 +45,7 @@
 .sa-card--flush .app-cardbody{padding:var(--s-5)}
 
 .app-legal{margin-top:var(--s-8)}
+.sa-legal__body[hidden]{display:none}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 
 .app-foot{border-top:2px solid var(--frame);margin-top:var(--s-8);padding-top:var(--s-4);display:flex;gap:var(--s-4);flex-wrap:wrap;align-items:center;font-size:var(--size-xs);color:var(--text-3)}
@@ -233,6 +234,58 @@
 .capital-grid,.signals-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--s-3)}
 .capital-totals{display:flex;gap:var(--s-4);flex-wrap:wrap;margin-top:var(--s-3);font-size:var(--size-sm);color:var(--text-2)}
 .signal-count{font-size:var(--size-xs);color:var(--text-3);font-family:var(--font-sans);text-transform:none;letter-spacing:0;margin-left:6px}
+
+/* ---------- account ---------- */
+.ac-tabs{margin-bottom:var(--s-5)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+.sa-tab.tab-item.active{color:var(--text)}
+.sa-tab.tab-item.active::after{content:'';position:absolute;left:0;right:0;bottom:-2.5px;height:4px;background:var(--accent-field)}
+.account-section{margin-bottom:var(--s-5)}
+.ac-statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s-3);margin-bottom:var(--s-4)}
+@media (max-width:960px){.ac-statgrid{grid-template-columns:1fr}}
+.ac-callout{margin-bottom:var(--s-4);align-items:center}
+.ac-callout__text{display:grid;gap:2px}
+.ac-callout__action{margin-left:auto;flex:0 0 auto}
+.ac-actions{margin-top:var(--s-2)}
+.ac-details .detail-row{padding:12px 0;border-bottom:1.5px solid var(--line);display:flex;justify-content:space-between;gap:var(--s-3)}
+.ac-details{border:0}
+.ac-details .detail-row:last-child{border-bottom:0}
+.ac-ref{font-size:var(--size-xs);color:var(--text-3)}
+.quick-stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s-3);margin-bottom:var(--s-4)}
+@media (max-width:960px){.quick-stats-grid{grid-template-columns:1fr}}
+#recent-payment-section{margin-bottom:var(--s-4)}
+.ac-adminwrap{display:grid;gap:0}
+
+.loading-state{padding:var(--s-7) var(--s-4);text-align:center;color:var(--text-3);font-size:var(--size-sm)}
+.loading-state .spinner{width:22px;height:22px;border:2px solid var(--text-3);border-right-color:transparent;border-radius:50%;animation:sa-spin .7s linear infinite;margin:0 auto var(--s-3)}
+
+.ac-settings .collapsible-section{border:2px solid var(--frame);background:var(--surface);margin-bottom:var(--s-3)}
+.collapsible-header{display:flex;align-items:center;justify-content:space-between;gap:var(--s-3);padding:var(--s-4) var(--s-5);cursor:pointer;min-height:var(--tap-min)}
+.collapsible-title{font-family:var(--font-display);font-weight:var(--w-display);font-size:14px;text-transform:uppercase;letter-spacing:.02em;margin:0;display:flex;align-items:center;gap:8px}
+.collapsible-toggle .material-symbols-rounded{transition:transform var(--dur-2) var(--ease-out);color:var(--text-3)}
+.collapsible-section.expanded .collapsible-toggle .material-symbols-rounded{transform:rotate(180deg)}
+.collapsible-content{display:none}
+.collapsible-section.expanded .collapsible-content{display:block}
+.collapsible-body{padding:0 var(--s-5) var(--s-5);border-top:1.5px solid var(--line)}
+.settings-section{display:grid;gap:var(--s-4);padding-top:var(--s-4)}
+.setting-item{display:grid;gap:4px}
+.setting-help{font-size:var(--size-xs);color:var(--text-3)}
+.sa-switch__text{font-size:var(--size-sm);color:var(--text);font-weight:var(--w-medium)}
+.settings-input{max-width:340px}
+.settings-actions{display:flex;gap:var(--s-3);flex-wrap:wrap}
+.ac-saverow{margin-top:var(--s-5);border-top:2px solid var(--frame);padding-top:var(--s-4)}
+.ac-datagrid{align-items:start}
+.ac-identity{gap:4px}
+.ac-identity__name{font-weight:var(--w-bold);color:var(--text)}
+.ac-identity__email{font-size:var(--size-sm);color:var(--text-2)}
+.ac-identity__meta{font-size:var(--size-xs);color:var(--text-3)}
+.ac-danger{border-color:var(--loss)}
+.ac-danger .sa-card__title{color:var(--loss)}
+.form-group label{font-size:var(--size-xs);font-weight:var(--w-bold);color:var(--text);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:6px}
+.form-textarea{width:100%;min-height:90px;padding:11px var(--s-3);font-family:var(--font-sans);font-size:var(--size-sm);color:var(--text);background:var(--surface);border:2px solid var(--frame);border-radius:0;resize:vertical}
+.form-textarea:focus{outline:none;border-color:var(--line-focus);box-shadow:var(--ring-focus)}
+.notification--floating{position:fixed;top:calc(var(--appbar-h) + var(--s-3));right:var(--s-4);z-index:var(--z-toast);max-width:min(360px,calc(100vw - 32px))}
 
 /* ---------- legacy bridge: market status pills (market-status-manager.js) ---------- */
 #market-status-container{display:flex;gap:var(--s-2);flex-wrap:wrap}

@@ -3272,6 +3272,10 @@ app.post('/api/push/unsubscribe', ensureAuthenticatedAPI, async (req, res) => {
 // Get push subscription status for current user
 app.get('/api/push/status', ensureAuthenticatedAPI, async (req, res) => {
   try {
+    if (!req.user) {
+      // Auth disabled (local dev) — report unsubscribed instead of crashing.
+      return res.json({ subscribed: false, subscriptions: 0, configured: !!process.env.VAPID_PUBLIC_KEY });
+    }
     const userEmail = req.user.email;
     const subscriptions = await TradeDB.countPushSubscriptions(userEmail);
     const hasSubscription = await TradeDB.hasPushSubscription(userEmail);

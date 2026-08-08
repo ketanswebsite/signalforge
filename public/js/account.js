@@ -4,6 +4,73 @@
  */
 
 /**
+ * Create an element with a class and text content (v3 renderer helper).
+ */
+function acEl(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined && text !== null) node.textContent = text;
+    return node;
+}
+
+/**
+ * Build one v3 stat card: label, value, context sentence, optional bar.
+ */
+function acStat(label, value, context, options) {
+    const opts = options || {};
+    const card = acEl('div', 'sa-card sa-card--sunk statistic-card');
+    const stat = acEl('div', 'sa-stat');
+    stat.appendChild(acEl('span', 'sa-stat__label', label));
+    stat.appendChild(acEl('span', 'sa-stat__value' + (opts.small ? ' sa-stat__value--sm' : '') + (opts.tone ? ' sa-stat__value--' + opts.tone : ''), value));
+    if (typeof opts.barPercent === 'number') {
+        const bar = acEl('div', 'sa-stat__bar');
+        const fill = acEl('i');
+        fill.style.width = Math.max(0, Math.min(100, opts.barPercent)) + '%';
+        bar.appendChild(fill);
+        stat.appendChild(bar);
+    }
+    stat.appendChild(acEl('span', 'sa-stat__context', context));
+    card.appendChild(stat);
+    return card;
+}
+
+/**
+ * Build a v3 callout.
+ */
+function acCallout(tone, icon, title, bodyText, actionEl) {
+    const box = acEl('div', 'sa-callout sa-callout--' + tone + ' ac-callout');
+    const iconEl = acEl('span', 'material-symbols-rounded', icon);
+    iconEl.setAttribute('aria-hidden', 'true');
+    box.appendChild(iconEl);
+    const textWrap = acEl('div', 'ac-callout__text');
+    if (title) textWrap.appendChild(acEl('strong', null, title));
+    if (bodyText) textWrap.appendChild(acEl('span', null, bodyText));
+    box.appendChild(textWrap);
+    if (actionEl) {
+        const actions = acEl('div', 'ac-callout__action');
+        actions.appendChild(actionEl);
+        box.appendChild(actions);
+    }
+    return box;
+}
+
+/**
+ * Build an sa-empty block.
+ */
+function acEmpty(icon, title, bodyText, actionEl) {
+    const empty = acEl('div', 'sa-empty empty-state');
+    const iconBox = acEl('div', 'sa-empty__icon');
+    const glyph = acEl('span', 'material-symbols-rounded', icon);
+    glyph.setAttribute('aria-hidden', 'true');
+    iconBox.appendChild(glyph);
+    empty.appendChild(iconBox);
+    empty.appendChild(acEl('div', 'sa-empty__title', title));
+    if (bodyText) empty.appendChild(acEl('p', null, bodyText));
+    if (actionEl) empty.appendChild(actionEl);
+    return empty;
+}
+
+/**
  * Tab Manager
  * Handles tab switching and URL hash navigation
  */
@@ -112,6 +179,12 @@ class SettingsManager {
         };
 
         this.currentSettings = this.loadSettings();
+        // The shell's theme toggle (sa-theme) is the source of truth at load —
+        // the checkbox mirrors it rather than fighting it.
+        try {
+            const saTheme = localStorage.getItem('sa-theme');
+            if (saTheme) this.currentSettings.darkMode = saTheme === 'dark';
+        } catch (e) {}
         this.init();
     }
 
@@ -392,13 +465,18 @@ class SettingsManager {
     }
 
     applyTheme() {
+        // Drive the v3 theme (data-theme on <html>, persisted as sa-theme) and
+        // keep the legacy body classes for anything still reading them.
         if (this.currentSettings.darkMode) {
+            document.documentElement.setAttribute('data-theme', 'dark');
             document.body.classList.add('dark-theme');
             document.body.classList.remove('light-theme');
         } else {
+            document.documentElement.removeAttribute('data-theme');
             document.body.classList.add('light-theme');
             document.body.classList.remove('dark-theme');
         }
+        try { localStorage.setItem('sa-theme', this.currentSettings.darkMode ? 'dark' : 'light'); } catch (e) {}
     }
 
     applyFontSize() {
@@ -521,7 +599,7 @@ class SettingsManager {
 
     async deleteAccount() {
         try {
-            const response = await fetch('/api/user/delete', {
+            const response = await fetch('/api/user/delete-account', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -543,27 +621,11 @@ class SettingsManager {
     }
 
     showNotification(message, type = 'info') {
-        const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
-        notification.textContent = message;
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 1rem 1.5rem;
-            background: var(--bg-secondary);
-            border-left: 4px solid var(--${type === 'success' ? 'success' : type === 'error' ? 'error' : 'accent-gold'});
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            z-index: 10000;
-            animation: slideIn 0.3s ease-out;
-            color: var(--text-primary);
-        `;
-
+        const notification = acEl('div', 'notification notification-' + type + ' notification--floating', message);
         document.body.appendChild(notification);
 
         setTimeout(() => {
-            notification.style.animation = 'slideOut 0.3s ease-out';
+            notification.classList.add('fade-out');
             setTimeout(() => notification.remove(), 300);
         }, 3000);
     }
@@ -594,65 +656,72 @@ class AccountPage {
     }
 
     async loadSubscription() {
+        const heroEl = document.getElementById('subscription-hero');
+        const detailsEl = document.getElementById('subscription-full-details');
         try {
             const response = await fetch('/api/user/subscription');
 
             if (response.status === 401) {
-                document.getElementById('subscription-hero').innerHTML = this.renderLoginRequired();
-                document.getElementById('subscription-full-details').innerHTML = this.renderLoginRequired();
+                heroEl.replaceChildren(this.renderLoginRequired());
+                detailsEl.replaceChildren(this.renderLoginRequired());
                 return;
             }
 
             const data = await response.json();
 
             // Store admin status
-            this.isAdmin = data.data.isAdmin || false;
+            this.isAdmin = (data.data && data.data.isAdmin) || false;
 
-            // Admin always gets admin status, regardless of subscription records
             if (this.isAdmin) {
-                document.getElementById('subscription-hero').innerHTML = this.renderAdminStatus();
-                document.getElementById('subscription-full-details').innerHTML = this.renderAdminStatus();
-            } else if (data.success && data.data.hasSubscription) {
+                heroEl.replaceChildren(this.renderAdminStatus());
+                detailsEl.replaceChildren(this.renderAdminStatus());
+            } else if (data.success && data.data && data.data.hasSubscription) {
                 this.subscription = data.data.subscription;
                 this.renderHeroSubscriptionCard();
                 this.renderFullSubscriptionDetails();
                 this.renderQuickStats();
             } else {
-                document.getElementById('subscription-hero').innerHTML = this.renderNoSubscription();
-                document.getElementById('subscription-full-details').innerHTML = this.renderNoSubscription();
+                heroEl.replaceChildren(this.renderNoSubscription());
+                detailsEl.replaceChildren(this.renderNoSubscription());
             }
         } catch (error) {
             console.error('Error loading subscription:', error);
-            document.getElementById('subscription-hero').innerHTML = this.renderError('Failed to load subscription');
-            document.getElementById('subscription-full-details').innerHTML = this.renderError('Failed to load subscription');
+            heroEl.replaceChildren(this.renderError('Your plan would not load. Try again in a minute.'));
+            detailsEl.replaceChildren(this.renderError('Your plan would not load. Try again in a minute.'));
+        } finally {
+            heroEl.classList.remove('loading-state');
+            detailsEl.classList.remove('loading-state');
         }
     }
 
     async loadPaymentHistory() {
+        const contentDiv = document.getElementById('payment-history-content');
         try {
             const response = await fetch('/api/user/payments');
 
             if (response.status === 401) {
-                document.getElementById('payment-history-content').innerHTML = this.renderLoginRequired();
+                contentDiv.replaceChildren(this.renderLoginRequired());
                 return;
             }
 
             const data = await response.json();
+            // The API wraps payloads as {success, message, data}
+            const payments = (data.data && data.data.payments) || data.payments || [];
 
-            const contentDiv = document.getElementById('payment-history-content');
-
-            if (data.success && data.payments && data.payments.length > 0) {
-                this.payments = data.payments;
+            if (data.success && payments.length > 0) {
+                this.payments = payments;
                 this.renderPaymentHistory();
                 this.renderRecentPayment();
             } else if (data.success) {
-                contentDiv.innerHTML = this.renderEmptyPayments();
+                contentDiv.replaceChildren(this.renderEmptyPayments());
             } else {
-                contentDiv.innerHTML = this.renderError('Unable to load payment history');
+                contentDiv.replaceChildren(this.renderError('Payments would not load. Try again in a minute.'));
             }
         } catch (error) {
             console.error('Error loading payment history:', error);
-            document.getElementById('payment-history-content').innerHTML = this.renderError('Failed to load payment history');
+            contentDiv.replaceChildren(this.renderError('Payments would not load. Try again in a minute.'));
+        } finally {
+            contentDiv.classList.remove('loading-state');
         }
     }
 
@@ -665,98 +734,47 @@ class AccountPage {
 
         const currencySymbol = this.getCurrencySymbol(sub.currency);
         const nextBillingDate = new Date(sub.subscription_end_date);
-        const daysUntilRenewal = Math.ceil((nextBillingDate - new Date()) / (1000 * 60 * 60 * 24));
+        const daysUntilRenewal = Math.max(0, Math.ceil((nextBillingDate - new Date()) / (1000 * 60 * 60 * 24)));
         const amountPaid = parseFloat(sub.amount_paid) || 0;
+        const endDateText = nextBillingDate.toLocaleDateString();
 
-        const statusClass = isTrial ? 'trial' : isActive ? 'active' : isCancelled ? 'cancelled' : 'expired';
-        const statusBadgeHTML = `
-            <div class="status-badge ${statusClass}">
-                <span class="material-icons" style="font-size: 1rem;">circle</span>
-                ${this.formatStatus(sub.status)}
-            </div>
-        `;
+        const frag = document.createDocumentFragment();
 
-        let alertHTML = '';
-        if (this.isAdmin) {
-            alertHTML = `
-                <div class="alert alert-success" style="margin-bottom: 1.5rem;">
-                    <span class="material-icons">verified_user</span>
-                    <div>
-                        <strong>Admin Access - Unlimited</strong><br>
-                        You have administrator privileges with full access to all features.
-                    </div>
-                </div>
-            `;
-        } else if (isTrial) {
-            alertHTML = `
-                <div class="alert alert-info" style="margin-bottom: 1.5rem;">
-                    <span class="material-icons">info</span>
-                    <div>
-                        <strong>Free Trial Active</strong><br>
-                        You have ${daysUntilRenewal} days remaining in your trial.
-                    </div>
-                </div>
-            `;
+        const seePlans = acEl('a', 'sa-btn sa-btn--secondary sa-btn--sm', 'See plans');
+        seePlans.href = '/pricing.html';
+
+        if (isTrial) {
+            frag.appendChild(acCallout('warn', 'schedule',
+                'Your free days end on ' + endDateText,
+                "That's " + daysUntilRenewal + (daysUntilRenewal === 1 ? ' day' : ' days') +
+                ' away. After that the scanner stops sending signals \u2014 your history stays either way.',
+                seePlans));
         } else if (isCancelled) {
-            alertHTML = `
-                <div class="alert alert-warning" style="margin-bottom: 1.5rem;">
-                    <span class="material-icons">warning</span>
-                    <div>
-                        <strong>Subscription Cancelled</strong><br>
-                        You'll have access until ${nextBillingDate.toLocaleDateString()}.
-                    </div>
-                </div>
-            `;
+            frag.appendChild(acCallout('warn', 'schedule',
+                'Your plan is cancelled',
+                'You keep everything until ' + endDateText + '. Reactivate any time before then.'));
         } else if (isExpired) {
-            alertHTML = `
-                <div class="alert alert-danger" style="margin-bottom: 1.5rem;">
-                    <span class="material-icons">error</span>
-                    <div>
-                        <strong>Subscription Expired</strong><br>
-                        Renew now to regain access to all features.
-                    </div>
-                </div>
-            `;
+            frag.appendChild(acCallout('loss', 'error',
+                'Your plan has ended',
+                'The scanner has stopped sending signals. Choose a plan to start it again.',
+                seePlans));
         }
 
-        const html = `
-            ${alertHTML}
-            <div class="hero-subscription-card">
-                <div class="hero-subscription-header">
-                    <div class="hero-plan-info">
-                        <h2>${sub.plan_name}</h2>
-                        ${amountPaid > 0 ? `
-                            <div class="plan-price">
-                                <span class="currency">${currencySymbol}</span>${amountPaid.toFixed(2)}
-                                <span class="currency">/ ${sub.billing_period || 'month'}</span>
-                            </div>
-                        ` : '<div class="plan-price">Free Trial</div>'}
-                    </div>
-                    ${statusBadgeHTML}
-                </div>
+        const grid = acEl('div', 'ac-statgrid');
+        const planContext = amountPaid > 0
+            ? currencySymbol + amountPaid.toFixed(2) + ' a ' + (sub.billing_period || 'month') + '.'
+            : 'Free for now \u2014 no card on file.';
+        grid.appendChild(acStat('Current plan', sub.plan_name || 'Explorer', planContext, { small: true }));
+        grid.appendChild(acStat('Days left', String(daysUntilRenewal),
+            (isTrial ? 'Trial ends ' : isCancelled || isExpired ? 'Access until ' : 'Renews ') + endDateText + '.',
+            { barPercent: (daysUntilRenewal / 90) * 100 }));
+        grid.appendChild(acStat('Markets you can see', '3',
+            'India, the UK and the US \u2014 the same on every plan.', { small: true }));
+        frag.appendChild(grid);
 
-                <div class="hero-stats-grid">
-                    <div class="hero-stat-item">
-                        <div class="hero-stat-label">${isTrial ? 'Trial Ends' : (isCancelled || isExpired) ? 'Access Until' : 'Next Billing'}</div>
-                        <div class="hero-stat-value highlight">${nextBillingDate.toLocaleDateString()}</div>
-                    </div>
-                    <div class="hero-stat-item">
-                        <div class="hero-stat-label">Days Remaining</div>
-                        <div class="hero-stat-value">${daysUntilRenewal > 0 ? daysUntilRenewal : 0}</div>
-                    </div>
-                    ${sub.auto_renew !== undefined ? `
-                    <div class="hero-stat-item">
-                        <div class="hero-stat-label">Auto-Renew</div>
-                        <div class="hero-stat-value">${sub.auto_renew ? 'Enabled' : 'Disabled'}</div>
-                    </div>
-                    ` : ''}
-                </div>
+        frag.appendChild(this.renderSubscriptionActions());
 
-                ${this.renderSubscriptionActions()}
-            </div>
-        `;
-
-        document.getElementById('subscription-hero').innerHTML = html;
+        document.getElementById('subscription-hero').replaceChildren(frag);
         this.setupSubscriptionButtons();
     }
 
@@ -767,22 +785,10 @@ class AccountPage {
         const startDate = new Date(sub.subscription_start_date);
         const daysSinceMember = Math.floor((new Date() - startDate) / (1000 * 60 * 60 * 24));
 
-        const html = `
-            <h3 style="margin-bottom: 1rem; color: var(--text-primary);">Quick Stats</h3>
-            <div class="stat-card">
-                <div class="stat-card-header">
-                    <div class="stat-card-icon">
-                        <span class="material-icons">event</span>
-                    </div>
-                    <div class="stat-card-title">Member Since</div>
-                </div>
-                <div class="stat-card-value">${startDate.toLocaleDateString()}</div>
-                <div class="stat-card-subtitle">${daysSinceMember} days ago</div>
-            </div>
-        `;
-
-        document.getElementById('quick-stats').innerHTML = html;
-        document.getElementById('quick-stats-section').style.display = 'block';
+        const grid = document.getElementById('quick-stats');
+        grid.replaceChildren(acStat('With the formula since', startDate.toLocaleDateString(),
+            daysSinceMember + (daysSinceMember === 1 ? ' day' : ' days') + ' so far.', { small: true }));
+        document.getElementById('quick-stats-section').hidden = false;
     }
 
     renderRecentPayment() {
@@ -791,73 +797,40 @@ class AccountPage {
         const recentPayment = this.payments[0];
         const paymentDate = new Date(recentPayment.payment_date);
 
-        const html = `
-            <div class="stat-card">
-                <div class="stat-card-header">
-                    <div class="stat-card-icon">
-                        <span class="material-icons">receipt</span>
-                    </div>
-                    <div class="stat-card-title">Last Payment</div>
-                </div>
-                <div class="stat-card-value">${this.getCurrencySymbol(recentPayment.currency)}${recentPayment.amount.toFixed(2)}</div>
-                <div class="stat-card-subtitle">${paymentDate.toLocaleDateString()} - ${this.formatPaymentStatus(recentPayment.status)}</div>
-            </div>
-        `;
-
-        document.getElementById('recent-payment-card').innerHTML = html;
-        document.getElementById('recent-payment-section').style.display = 'block';
+        document.getElementById('recent-payment-card').replaceChildren(
+            acStat('Last payment',
+                this.getCurrencySymbol(recentPayment.currency) + recentPayment.amount.toFixed(2),
+                paymentDate.toLocaleDateString() + ' \u00b7 ' + this.formatPaymentStatus(recentPayment.status) + '.',
+                { small: true }));
+        document.getElementById('recent-payment-section').hidden = false;
     }
 
     renderFullSubscriptionDetails() {
         const sub = this.subscription;
         const isTrial = sub.status === 'trial';
         const isCancelled = sub.status === 'cancelled';
-        const isActive = sub.status === 'active';
         const isExpired = sub.status === 'expired';
 
         const currencySymbol = this.getCurrencySymbol(sub.currency);
         const nextBillingDate = new Date(sub.subscription_end_date);
         const amountPaid = parseFloat(sub.amount_paid) || 0;
 
-        const html = `
-            <div class="subscription-card">
-                <div class="plan-name-large">${sub.plan_name}</div>
-                ${amountPaid > 0 ? `
-                    <div class="plan-price-large">
-                        ${currencySymbol}${amountPaid.toFixed(2)} / ${sub.billing_period || 'month'}
-                    </div>
-                ` : ''}
+        const wrap = acEl('div', 'trade-details ac-details');
+        const addRow = (label, value) => {
+            const row = acEl('div', 'detail-row');
+            row.appendChild(acEl('span', 'detail-label', label));
+            row.appendChild(acEl('span', 'detail-value', value));
+            wrap.appendChild(row);
+        };
 
-                <div class="detail-grid">
-                    <div class="detail-row">
-                        <span class="detail-label">Status</span>
-                        <span class="detail-value">${this.formatStatus(sub.status)}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Start Date</span>
-                        <span class="detail-value">${DateFormatter.format(sub.subscription_start_date)}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">${isTrial ? 'Trial Ends' : (isCancelled || isExpired) ? 'Access Until' : 'Next Billing Date'}</span>
-                        <span class="detail-value">${nextBillingDate.toLocaleDateString()}</span>
-                    </div>
-                    ${sub.billing_period ? `
-                    <div class="detail-row">
-                        <span class="detail-label">Billing Period</span>
-                        <span class="detail-value">${sub.billing_period.charAt(0).toUpperCase() + sub.billing_period.slice(1)}</span>
-                    </div>
-                    ` : ''}
-                    ${sub.auto_renew !== undefined ? `
-                    <div class="detail-row">
-                        <span class="detail-label">Auto-Renew</span>
-                        <span class="detail-value">${sub.auto_renew ? 'Enabled' : 'Disabled'}</span>
-                    </div>
-                    ` : ''}
-                </div>
-            </div>
-        `;
+        addRow('Plan', sub.plan_name || 'Explorer');
+        if (amountPaid > 0) addRow('Price', currencySymbol + amountPaid.toFixed(2) + ' a ' + (sub.billing_period || 'month'));
+        addRow('Status', this.formatStatus(sub.status));
+        addRow('Started', DateFormatter.format(sub.subscription_start_date));
+        addRow(isTrial ? 'Trial ends' : (isCancelled || isExpired) ? 'Access until' : 'Renews on', nextBillingDate.toLocaleDateString());
+        if (sub.auto_renew !== undefined) addRow('Renews itself', sub.auto_renew ? 'Yes' : 'No');
 
-        document.getElementById('subscription-full-details').innerHTML = html;
+        document.getElementById('subscription-full-details').replaceChildren(wrap);
 
         const statusBadge = document.getElementById('subscription-status-badge');
         if (statusBadge) {
@@ -872,169 +845,129 @@ class AccountPage {
         const isActive = sub.status === 'active';
         const isExpired = sub.status === 'expired';
 
-        let actionsHTML = '<div class="btn-group">';
+        const row = acEl('div', 'sa-row btn-group ac-actions');
 
         if (isExpired) {
-            actionsHTML += `
-                <a href="/pricing.html" class="btn btn-primary">
-                    <span class="material-icons icon-sm icon-mr-xs">refresh</span>
-                    Renew Subscription
-                </a>
-            `;
+            const renew = acEl('a', 'sa-btn sa-btn--primary', 'Choose a plan');
+            renew.href = '/pricing.html';
+            row.appendChild(renew);
         } else if (isCancelled) {
-            actionsHTML += `
-                <button class="btn btn-primary" id="reactivate-btn">
-                    <span class="material-icons icon-sm icon-mr-xs">refresh</span>
-                    Reactivate Subscription
-                </button>
-            `;
+            const reactivate = acEl('button', 'sa-btn sa-btn--primary', 'Reactivate my plan');
+            reactivate.id = 'reactivate-btn';
+            reactivate.type = 'button';
+            row.appendChild(reactivate);
         } else if (isActive || isTrial) {
-            actionsHTML += `
-                <a href="/pricing.html" class="btn btn-secondary">
-                    <span class="material-icons icon-sm icon-mr-xs">swap_horiz</span>
-                    Change Plan
-                </a>
-                <button class="btn btn-danger" id="cancel-btn">
-                    <span class="material-icons icon-sm icon-mr-xs">cancel</span>
-                    Cancel Subscription
-                </button>
-            `;
+            const change = acEl('a', 'sa-btn sa-btn--secondary sa-btn--sm', 'Change plan');
+            change.href = '/pricing.html';
+            row.appendChild(change);
+            const cancel = acEl('button', 'sa-btn sa-btn--quiet sa-btn--sm', 'Cancel my plan');
+            cancel.id = 'cancel-btn';
+            cancel.type = 'button';
+            row.appendChild(cancel);
         }
 
-        actionsHTML += '</div>';
-        return actionsHTML;
+        return row;
     }
 
     renderPaymentHistory() {
-        const tableHTML = `
-            <table class="payment-table">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Description</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                        <th>Transaction ID</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${this.payments.map(payment => `
-                        <tr>
-                            <td>${DateFormatter.format(payment.payment_date)}</td>
-                            <td>${payment.plan_name || 'SutrAlgo Subscription'}</td>
-                            <td>${this.getCurrencySymbol(payment.currency)}${payment.amount.toFixed(2)}</td>
-                            <td>
-                                <span class="payment-status ${payment.status}">
-                                    ${this.formatPaymentStatus(payment.status)}
-                                </span>
-                            </td>
-                            <td class="font-mono text-sm text-muted">
-                                ${payment.transaction_id ? payment.transaction_id.substring(0, 12) + '...' : 'N/A'}
-                            </td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `;
+        const wrap = document.createDocumentFragment();
 
-        document.getElementById('payment-history-content').innerHTML = tableHTML;
+        const tableWrap = acEl('div', 'sa-table-wrap');
+        const table = acEl('table', 'sa-table payment-table');
+        const thead = document.createElement('thead');
+        const headRow = document.createElement('tr');
+        [['Date', null], ['What for', null], ['Amount', 'num'], ['Status', null], ['Reference', null]].forEach(pair => {
+            const th = acEl('th', pair[1], pair[0]);
+            headRow.appendChild(th);
+        });
+        thead.appendChild(headRow);
+        table.appendChild(thead);
+        const tbody = document.createElement('tbody');
+
+        const cards = acEl('div', 'sa-table__cards');
+
+        this.payments.forEach(payment => {
+            const amountText = this.getCurrencySymbol(payment.currency) + payment.amount.toFixed(2);
+            const statusText = this.formatPaymentStatus(payment.status);
+            const reference = payment.transaction_id ? payment.transaction_id.substring(0, 12) + '\u2026' : 'N/A';
+            const what = payment.plan_name || 'SutrAlgo subscription';
+            const dateText = DateFormatter.format(payment.payment_date);
+
+            const row = document.createElement('tr');
+            row.appendChild(acEl('td', null, dateText));
+            row.appendChild(acEl('td', null, what));
+            row.appendChild(acEl('td', 'num', amountText));
+            const statusTd = document.createElement('td');
+            statusTd.appendChild(acEl('span', 'sa-badge sa-badge--' + (payment.status === 'completed' || payment.status === 'succeeded' ? 'gain' : payment.status === 'failed' ? 'loss' : 'neutral') + ' payment-status', statusText));
+            row.appendChild(statusTd);
+            row.appendChild(acEl('td', 'ac-ref', reference));
+            tbody.appendChild(row);
+
+            const rc = acEl('div', 'sa-rowcard');
+            const top = acEl('div', 'sa-rowcard__top');
+            top.appendChild(acEl('strong', null, dateText));
+            top.appendChild(acEl('span', 'sa-rowcard__v', amountText));
+            rc.appendChild(top);
+            const grid = acEl('div', 'sa-rowcard__grid');
+            [['What for', what], ['Status', statusText], ['Reference', reference]].forEach(pair => {
+                grid.appendChild(acEl('span', 'sa-rowcard__k', pair[0]));
+                grid.appendChild(acEl('span', 'sa-rowcard__v', pair[1]));
+            });
+            rc.appendChild(grid);
+            cards.appendChild(rc);
+        });
+
+        table.appendChild(tbody);
+        tableWrap.appendChild(table);
+        wrap.appendChild(tableWrap);
+        wrap.appendChild(cards);
+
+        document.getElementById('payment-history-content').replaceChildren(wrap);
     }
 
     renderStatusBadge(container) {
         const sub = this.subscription;
-        const statusClass = sub.status === 'trial' ? 'trial' :
-                           sub.status === 'active' ? 'active' :
-                           sub.status === 'cancelled' ? 'cancelled' : 'expired';
-
-        container.innerHTML = `
-            <div class="status-badge ${statusClass}">
-                <span class="material-icons" style="font-size: 1rem;">circle</span>
-                ${this.formatStatus(sub.status)}
-            </div>
-        `;
+        const tone = sub.status === 'active' ? 'gain' :
+                     sub.status === 'trial' ? 'accent' :
+                     sub.status === 'cancelled' ? 'warn' : 'loss';
+        container.replaceChildren(acEl('span', 'sa-badge sa-badge--' + tone + ' status-badge', this.formatStatus(sub.status)));
     }
 
     renderNoSubscription() {
-        return `
-            <div class="empty-state">
-                <span class="material-icons" style="font-size: 64px; color: var(--accent-gold); margin-bottom: 1rem;">card_membership</span>
-                <p>You don't have an active subscription</p>
-                <a href="/pricing.html" class="btn btn-primary mt-2">
-                    View Plans
-                </a>
-            </div>
-        `;
+        const view = acEl('a', 'sa-btn sa-btn--primary', 'See the plans');
+        view.href = '/pricing.html';
+        return acEmpty('credit_card', 'No plan yet',
+            'Pick one and the scanner starts working for you. The first 90 days are free.', view);
     }
 
     renderEmptyPayments() {
-        return `
-            <div class="empty-state">
-                <span class="material-icons" style="font-size: 64px; color: var(--accent-gold); margin-bottom: 1rem;">receipt</span>
-                <p>No payment history available</p>
-            </div>
-        `;
+        return acEmpty('receipt_long', 'No payments yet',
+            "Nothing has been charged \u2014 you're on the free plan.");
     }
 
     renderError(message) {
-        return `
-            <div class="empty-state">
-                <span class="material-icons" style="font-size: 64px; color: var(--error); margin-bottom: 1rem;">error</span>
-                <p>${message}</p>
-                <button class="btn btn-secondary mt-2" onclick="location.reload()">
-                    Retry
-                </button>
-            </div>
-        `;
+        const retry = acEl('button', 'sa-btn sa-btn--secondary sa-btn--sm', 'Try again');
+        retry.type = 'button';
+        retry.addEventListener('click', () => location.reload());
+        return acEmpty('error', 'Something went wrong', message, retry);
     }
 
     renderLoginRequired() {
-        return `
-            <div class="empty-state">
-                <span class="material-icons" style="font-size: 64px; color: var(--accent-gold); margin-bottom: 1rem;">lock</span>
-                <p style="margin-bottom: 0.5rem;">Please log in to view this information</p>
-                <a href="/login" class="btn btn-primary mt-2">
-                    Log In
-                </a>
-            </div>
-        `;
+        const login = acEl('a', 'sa-btn sa-btn--primary', 'Sign in');
+        login.href = '/login';
+        return acEmpty('lock', 'Signed out', 'Sign in to see this.', login);
     }
 
     renderAdminStatus() {
-        return `
-            <div class="hero-subscription-card" style="border: 2px solid var(--success-color);">
-                <div class="alert alert-success" style="margin-bottom: 1.5rem;">
-                    <span class="material-icons">verified_user</span>
-                    <div>
-                        <strong>Admin Access - Unlimited</strong><br>
-                        You have full access to all features with no restrictions.
-                    </div>
-                </div>
-                <div class="hero-subscription-header">
-                    <div class="hero-plan-info">
-                        <h2>Administrator</h2>
-                        <div class="plan-price">Unlimited Access</div>
-                    </div>
-                    <div class="status-badge active" style="background: var(--success-color); color: white;">
-                        <span class="material-icons" style="font-size: 1rem;">admin_panel_settings</span>
-                        Admin
-                    </div>
-                </div>
-                <div class="hero-stats-grid">
-                    <div class="hero-stat-item">
-                        <div class="hero-stat-label">Access Level</div>
-                        <div class="hero-stat-value highlight">Full Access</div>
-                    </div>
-                    <div class="hero-stat-item">
-                        <div class="hero-stat-label">Expiry</div>
-                        <div class="hero-stat-value">Never</div>
-                    </div>
-                    <div class="hero-stat-item">
-                        <div class="hero-stat-label">Features</div>
-                        <div class="hero-stat-value">All Unlocked</div>
-                    </div>
-                </div>
-            </div>
-        `;
+        const frag = acEl('div', 'ac-adminwrap');
+        frag.appendChild(acCallout('gain', 'shield_person', 'Admin access',
+            'Full access to everything, with nothing to renew.'));
+        const grid = acEl('div', 'ac-statgrid');
+        grid.appendChild(acStat('Current plan', 'Administrator', 'Every feature, every market.', { small: true }));
+        grid.appendChild(acStat('Days left', '\u221e', 'Admin access does not expire.', { small: true }));
+        grid.appendChild(acStat('Markets you can see', '3', 'India, the UK and the US.', { small: true }));
+        frag.appendChild(grid);
+        return frag;
     }
 
     setupEventListeners() {
@@ -1069,7 +1002,7 @@ class AccountPage {
         const confirmBtn = document.getElementById('confirm-cancel-btn');
 
         confirmBtn.disabled = true;
-        confirmBtn.textContent = 'Cancelling...';
+        confirmBtn.textContent = 'Cancelling\u2026';
 
         try {
             const response = await fetch('/api/user/subscription/cancel', {
@@ -1082,7 +1015,7 @@ class AccountPage {
 
             if (data.success) {
                 document.getElementById('cancel-modal').classList.remove('active');
-                alert('Your subscription has been cancelled successfully. You will continue to have access until ' + DateFormatter.format(data.accessUntil));
+                alert('Your plan is cancelled. You keep access until ' + DateFormatter.format((data.data && data.data.accessUntil) || data.accessUntil));
                 await this.loadSubscription();
             } else {
                 throw new Error(data.error?.message || 'Failed to cancel subscription');
@@ -1092,7 +1025,7 @@ class AccountPage {
             alert('Failed to cancel subscription: ' + error.message);
         } finally {
             confirmBtn.disabled = false;
-            confirmBtn.textContent = 'Confirm Cancellation';
+            confirmBtn.textContent = 'Cancel it';
         }
     }
 
@@ -1104,7 +1037,7 @@ class AccountPage {
         }
 
         reactivateBtn.disabled = true;
-        reactivateBtn.textContent = 'Reactivating...';
+        reactivateBtn.textContent = 'Reactivating\u2026';
 
         try {
             const response = await fetch('/api/user/subscription/reactivate', {
@@ -1124,7 +1057,7 @@ class AccountPage {
             console.error('Error reactivating subscription:', error);
             alert('Failed to reactivate subscription: ' + error.message);
             reactivateBtn.disabled = false;
-            reactivateBtn.textContent = 'Reactivate Subscription';
+            reactivateBtn.textContent = 'Reactivate my plan';
         }
     }
 
