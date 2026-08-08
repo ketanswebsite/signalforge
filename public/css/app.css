@@ -155,6 +155,42 @@
 .metrics-details{margin-top:var(--s-5);border-top:1.5px solid var(--line);padding-top:var(--s-4)}
 .metrics-explanation{display:grid;gap:var(--s-2);font-size:var(--size-sm);max-width:var(--reading-max)}
 
+/* ---------- simulator ---------- */
+.hidden{display:none !important}
+.sim-section{margin-bottom:var(--s-5)}
+.sim-callout{margin-bottom:var(--s-5)}
+.sim-callout>div{display:grid;gap:2px}
+.sim-rulesline{font-size:var(--size-xs);color:var(--text-3);margin-top:var(--s-4)}
+.simulation-status{margin-top:var(--s-4);font-size:var(--size-sm)}
+.simulation-status:empty{display:none}
+.simulation-status.success{color:var(--gain);font-weight:600}
+.simulation-status.error{color:var(--loss);font-weight:600}
+.sim-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s-3)}
+@media (max-width:1040px){.sim-stats{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:720px){.sim-stats{grid-template-columns:1fr}}
+.sim-stats .metric-card{display:block}
+.sim-measures{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s-3);margin-bottom:var(--s-5)}
+@media (max-width:960px){.sim-measures{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:720px){.sim-measures{grid-template-columns:1fr}}
+.analytics-metric{display:flex;justify-content:space-between;align-items:baseline;gap:var(--s-3);border:1.5px solid var(--line-strong);background:var(--surface-2);padding:var(--s-3) var(--s-4)}
+.metric-name{font-size:var(--size-xs);font-weight:var(--w-bold);text-transform:uppercase;letter-spacing:var(--track-label);color:var(--text-2)}
+.metric-result{font-family:var(--font-display);font-weight:var(--w-display);font-size:var(--size-stat-sm);font-variant-numeric:tabular-nums}
+.simulation-info-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--s-5)}
+@media (max-width:960px){.simulation-info-grid{grid-template-columns:1fr}}
+.sim-infotitle{font-size:var(--size-sm);margin-bottom:var(--s-2)}
+.info-item{display:flex;justify-content:space-between;gap:var(--s-3);font-size:var(--size-sm);padding:8px 0;border-bottom:1.5px solid var(--line)}
+.info-item:last-child{border-bottom:0}
+.info-label{color:var(--text-2)}
+.info-value{font-weight:var(--w-bold);font-variant-numeric:tabular-nums;text-align:right}
+.trade-filters{margin-bottom:var(--s-4)}
+.filter-select{max-width:220px}
+.position-count{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 7px;border-radius:var(--r-pill);background:var(--gold-on-band);color:var(--text);font-family:var(--font-sans);font-size:11px;font-weight:var(--w-bold);font-variant-numeric:tabular-nums;margin-left:8px;vertical-align:middle}
+[data-theme="dark"] .position-count{color:var(--bg)}
+.sa-table code{font-family:var(--font-sans);font-weight:var(--w-bold);font-size:var(--size-xs);background:var(--surface-2);border:1px solid var(--line-strong);padding:1px 6px}
+.market-badge{display:inline-block;padding:2px 9px;border-radius:var(--r-pill);font-size:11px;font-weight:var(--w-bold);background:var(--surface-2);border:1.5px solid var(--line-strong);color:var(--text-2);white-space:nowrap}
+.sa-card--flush>.sa-table-wrap{margin:0}
+.sa-card>.sa-chart__head{margin-bottom:var(--s-1)}
+
 /* ---------- legacy bridge: metric cards (TradeUI-MetricCards / Export-Metrics) ---------- */
 .metric-card{border:1.5px solid var(--line-strong);background:var(--surface-2);padding:var(--s-3);display:flex;flex-direction:column;gap:4px}
 .metric-card-header{display:flex;justify-content:space-between;align-items:baseline;gap:var(--s-2)}

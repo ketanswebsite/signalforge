@@ -6,6 +6,12 @@
 const PortfolioCharts = (function() {
     'use strict';
 
+    // Resolve a design-system token at chart-build time (poster palette).
+    function chartVar(name, fallback) {
+        const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        return value || fallback;
+    }
+
     let charts = {}; // Store chart instances
 
     /**
@@ -44,8 +50,8 @@ const PortfolioCharts = (function() {
                 datasets: [{
                     label: `Portfolio Value (${currencySymbol})`,
                     data: values,
-                    borderColor: 'rgb(59, 130, 246)',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderColor: chartVar('--accent', '#8A6912'),
+                    backgroundColor: chartVar('--accent-soft', '#F7EBC4'),
                     borderWidth: 2,
                     fill: true,
                     tension: 0.4
@@ -117,7 +123,7 @@ const PortfolioCharts = (function() {
         const returns = monthlyReturns.map(m => m.return);
 
         // Color bars based on positive/negative
-        const backgroundColors = returns.map(r => r >= 0 ? 'rgba(34, 197, 94, 0.8)' : 'rgba(239, 68, 68, 0.8)');
+        const backgroundColors = returns.map(r => r >= 0 ? chartVar('--gain', '#177A4C') : chartVar('--loss', '#C22B1F'));
 
         charts.monthlyReturns = new Chart(ctx, {
             type: 'bar',
@@ -182,9 +188,9 @@ const PortfolioCharts = (function() {
                 datasets: [{
                     data: counts,
                     backgroundColor: [
-                        'rgba(255, 159, 64, 0.8)',  // India - Orange
-                        'rgba(54, 162, 235, 0.8)',  // UK - Blue
-                        'rgba(75, 192, 192, 0.8)'   // US - Teal
+                        chartVar('--gold-brand', '#D4AF37'),  // India
+                        chartVar('--gold-deep', '#8A6912'),   // UK
+                        chartVar('--stone-50', '#8B8371')     // US
                     ],
                     borderWidth: 2
                 }]
@@ -223,7 +229,7 @@ const PortfolioCharts = (function() {
         const markets = Object.keys(plByMarket);
         const plValues = Object.values(plByMarket);
 
-        const backgroundColors = plValues.map(v => v >= 0 ? 'rgba(34, 197, 94, 0.8)' : 'rgba(239, 68, 68, 0.8)');
+        const backgroundColors = plValues.map(v => v >= 0 ? chartVar('--gain', '#177A4C') : chartVar('--loss', '#C22B1F'));
         const currencySymbol = window.PortfolioSimulator.getCurrencySymbol(currency);
 
         charts.plByMarket = new Chart(ctx, {
@@ -290,7 +296,7 @@ const PortfolioCharts = (function() {
                 datasets: [{
                     label: 'Number of Trades',
                     data: bins.counts,
-                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                    backgroundColor: chartVar('--accent', '#8A6912'),
                     borderWidth: 0
                 }]
             },
@@ -346,10 +352,10 @@ const PortfolioCharts = (function() {
                 datasets: [{
                     data: counts,
                     backgroundColor: [
-                        'rgba(34, 197, 94, 0.8)',   // Take Profit - Green
-                        'rgba(239, 68, 68, 0.8)',   // Stop Loss - Red
-                        'rgba(234, 179, 8, 0.8)',   // Max Days - Yellow
-                        'rgba(156, 163, 175, 0.8)'  // Other - Gray
+                        chartVar('--gain', '#177A4C'),   // Hit the target
+                        chartVar('--loss', '#C22B1F'),   // Hit the stop
+                        chartVar('--warn', '#8A5A00'),   // Ran out of time
+                        chartVar('--stone-50', '#8B8371')  // Everything else
                     ],
                     borderWidth: 2
                 }]
@@ -396,8 +402,8 @@ const PortfolioCharts = (function() {
                 datasets: [{
                     label: 'Drawdown %',
                     data: drawdowns,
-                    borderColor: 'rgb(239, 68, 68)',
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    borderColor: chartVar('--loss', '#C22B1F'),
+                    backgroundColor: chartVar('--loss-soft', '#FAE8E4'),
                     borderWidth: 2,
                     fill: true,
                     tension: 0.4

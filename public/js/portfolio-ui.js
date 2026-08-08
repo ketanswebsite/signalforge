@@ -52,29 +52,27 @@ const PortfolioUI = (function() {
         try {
             // Disable button and show loading
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span> Running Simulation...';
+            btn.innerHTML = '<span class="sa-btn__spin" aria-hidden="true"></span> Running\u2026';
             statusDiv.classList.remove('hidden');
             statusDiv.className = 'simulation-status info';
 
             // Progress callback to update UI
             const updateProgress = (progress) => {
-                let message = progress.message || 'Processing...';
-                let html = `<div class="progress-message">${message}</div>`;
+                let message = progress.message || 'Working\u2026';
+                let html = '<div class="sa-prog"><div class="sa-prog__meta"><span></span>'
+                    + (progress.percent !== undefined ? '<span>' + progress.percent + '%</span>' : '')
+                    + '</div>';
 
-                // Add progress bar if percentage is available
                 if (progress.percent !== undefined) {
-                    html += `
-                        <div class="progress-info">
-                            <span>${progress.current || 0} / ${progress.total || 0}</span>
-                            <span>${progress.percent}%</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${progress.percent}%"></div>
-                        </div>
-                    `;
+                    html += '<div class="sa-prog__track"><div class="sa-prog__fill" style="width: '
+                        + progress.percent + '%"></div></div>'
+                        + '<div class="sa-prog__detail">' + (progress.current || 0) + ' of ' + (progress.total || 0) + ' checked</div>';
                 }
+                html += '</div>';
 
                 statusDiv.innerHTML = html;
+                const messageEl = statusDiv.querySelector('.sa-prog__meta span');
+                if (messageEl) messageEl.textContent = message;
             };
 
             // Run simulation with progress updates
@@ -98,7 +96,7 @@ const PortfolioUI = (function() {
             );
 
             // Update UI
-            statusDiv.innerHTML = '✅ Simulation completed successfully!';
+            statusDiv.textContent = 'Done. The results are below.';
             statusDiv.className = 'simulation-status success';
 
             setTimeout(() => {
@@ -109,18 +107,13 @@ const PortfolioUI = (function() {
             displayResults(result, analytics, currency);
 
         } catch (error) {
-            statusDiv.innerHTML = `❌ Simulation failed: ${error.message}`;
+            statusDiv.textContent = 'The simulation stopped: ' + error.message;
             statusDiv.className = 'simulation-status error';
             showNotification('Simulation failed: ' + error.message, 'error');
         } finally {
             // Re-enable button
             btn.disabled = false;
-            btn.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                </svg>
-                Run Simulation
-            `;
+            btn.innerHTML = '<span class="material-symbols-rounded" aria-hidden="true">play_arrow</span> Run it again';
         }
     }
 
@@ -169,7 +162,9 @@ const PortfolioUI = (function() {
         document.getElementById('initial-value').textContent = `${currencySymbol}${initialValue.toFixed(2)}`;
         document.getElementById('final-value').textContent = `${currencySymbol}${finalValue.toFixed(2)}`;
         document.getElementById('total-return').textContent = `${analytics.totalReturn.toFixed(2)}%`;
-        document.getElementById('total-return').className = 'metric-value ' + (analytics.totalReturn >= 0 ? 'positive' : 'negative');
+        const totalReturnEl = document.getElementById('total-return');
+        totalReturnEl.classList.toggle('positive', analytics.totalReturn >= 0);
+        totalReturnEl.classList.toggle('negative', analytics.totalReturn < 0);
         document.getElementById('win-rate').textContent = `${analytics.winRate.toFixed(1)}%`;
         document.getElementById('total-trades').textContent = analytics.totalTrades;
         document.getElementById('max-drawdown').textContent = `-${analytics.maxDrawdown.toFixed(2)}%`;
@@ -270,6 +265,34 @@ const PortfolioUI = (function() {
     }
 
     /**
+     * Exit reasons in words (v3 Poster vocabulary).
+     */
+    function exitReasonLabel(reason) {
+        switch (reason) {
+            case 'Take Profit':
+            case 'Target Reached': return 'Hit the +8% target';
+            case 'Stop Loss':
+            case 'Stop Loss Hit': return 'Hit the \u22125% stop';
+            case 'Max Days':
+            case 'Time Exit': return 'Ran out of time';
+            case 'Force Closed':
+            case 'End of Simulation':
+            case 'Simulation End': return 'Simulation ended';
+            default: return reason || 'Unknown';
+        }
+    }
+
+    function exitReasonTone(reason) {
+        switch (reason) {
+            case 'Take Profit':
+            case 'Target Reached': return 'gain';
+            case 'Stop Loss':
+            case 'Stop Loss Hit': return 'loss';
+            default: return 'neutral';
+        }
+    }
+
+    /**
      * Render active trades table
      */
     async function renderActiveTrades(positions, currency) {
@@ -285,12 +308,14 @@ const PortfolioUI = (function() {
         countSpan.textContent = activePositions.length;
 
         if (activePositions.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" class="no-data">No active positions</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="no-data sa-table__empty">Nothing was still open.</td></tr>';
+            const emptyCards = document.getElementById('active-cards-body');
+            if (emptyCards) emptyCards.replaceChildren();
             return;
         }
 
         // Show loading state
-        tbody.innerHTML = '<tr><td colspan="9" class="no-data">Fetching current prices...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="no-data sa-table__empty">Fetching current prices\u2026</td></tr>';
 
         // Fetch current prices for all positions concurrently
         const pricePromises = activePositions.map(position =>
@@ -301,6 +326,8 @@ const PortfolioUI = (function() {
 
         // Clear loading state
         tbody.innerHTML = '';
+        const activeCards = document.getElementById('active-cards-body');
+        if (activeCards) activeCards.replaceChildren();
 
         // Render each position with real P&L
         for (const { position, currentPrice } of positionsWithPrices) {
@@ -324,14 +351,30 @@ const PortfolioUI = (function() {
                 <td>${position.symbol.split('.')[0]}</td>
                 <td><span class="market-badge market-${position.market.toLowerCase()}">${position.market}</span></td>
                 <td>${formatDate(position.entryDate)}</td>
-                <td>${position.currency}${position.entryPrice.toFixed(2)}</td>
-                <td>${position.currency}${displayPrice.toFixed(2)}</td>
-                <td>${daysHeld}</td>
-                <td class="${plPercent >= 0 ? 'positive' : 'negative'}">${plPercent.toFixed(2)}%</td>
-                <td class="${plValue >= 0 ? 'positive' : 'negative'}">${position.currency}${plValue.toFixed(2)}</td>
+                <td class="num">${position.currency}${position.entryPrice.toFixed(2)}</td>
+                <td class="num">${position.currency}${displayPrice.toFixed(2)}</td>
+                <td class="num">${daysHeld} days</td>
+                <td class="num ${plPercent >= 0 ? 'gain' : 'loss'}">${plPercent.toFixed(2)}%</td>
+                <td class="num ${plValue >= 0 ? 'gain' : 'loss'}">${position.currency}${plValue.toFixed(2)}</td>
             `;
 
             tbody.appendChild(row);
+
+            if (activeCards) {
+                const rc = document.createElement('div');
+                rc.className = 'sa-rowcard';
+                rc.innerHTML = `
+                    <div class="sa-rowcard__top"><strong>${position.symbol}</strong>
+                        <span class="sa-rowcard__v ${plPercent >= 0 ? 'gain' : 'loss'}">${plPercent.toFixed(2)}%</span></div>
+                    <div class="sa-rowcard__grid">
+                        <span class="sa-rowcard__k">Market</span><span class="sa-rowcard__v">${position.market}</span>
+                        <span class="sa-rowcard__k">Bought at</span><span class="sa-rowcard__v">${position.currency}${position.entryPrice.toFixed(2)}</span>
+                        <span class="sa-rowcard__k">Now</span><span class="sa-rowcard__v">${position.currency}${displayPrice.toFixed(2)}</span>
+                        <span class="sa-rowcard__k">Held</span><span class="sa-rowcard__v">${daysHeld} days</span>
+                        <span class="sa-rowcard__k">Result</span><span class="sa-rowcard__v ${plValue >= 0 ? 'gain' : 'loss'}">${position.currency}${plValue.toFixed(2)}</span>
+                    </div>`;
+                activeCards.appendChild(rc);
+            }
         }
     }
 
@@ -358,7 +401,9 @@ const PortfolioUI = (function() {
         countSpan.textContent = completedTrades.length;
 
         if (completedTrades.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="18" class="no-data">No completed trades</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="18" class="no-data sa-table__empty">No completed trades.</td></tr>';
+            const emptyCards2 = document.getElementById('completed-cards-body');
+            if (emptyCards2) emptyCards2.replaceChildren();
             return;
         }
 
@@ -366,6 +411,8 @@ const PortfolioUI = (function() {
         const filteredTrades = getFilteredTrades(completedTrades);
 
         tbody.innerHTML = '';
+        const completedCards = document.getElementById('completed-cards-body');
+        if (completedCards) completedCards.replaceChildren();
 
         for (const trade of filteredTrades) {
             const row = document.createElement('tr');
@@ -381,27 +428,42 @@ const PortfolioUI = (function() {
                 <td>${trade.symbol.split('.')[0]}</td>
                 <td><span class="market-badge market-${trade.market.toLowerCase()}">${trade.market}</span></td>
                 <td>${formatDate(trade.entryDate)}</td>
-                <td>${trade.currency}${trade.entryPrice.toFixed(2)}</td>
+                <td class="num">${trade.currency}${trade.entryPrice.toFixed(2)}</td>
                 <td>${formatDate(trade.exitDate)}</td>
-                <td>${trade.currency}${trade.exitPrice.toFixed(2)}</td>
-                <td>${trade.holdingDays}</td>
-                <td>${trade.prevDTI !== undefined ? trade.prevDTI.toFixed(2) : 'N/A'}</td>
-                <td>${trade.entryDTI !== undefined ? trade.entryDTI.toFixed(2) : 'N/A'}</td>
-                <td>${trade.prev7DayDTI !== undefined ? trade.prev7DayDTI.toFixed(2) : 'N/A'}</td>
-                <td>${trade.entry7DayDTI !== undefined ? trade.entry7DayDTI.toFixed(2) : 'N/A'}</td>
-                <td>${trade.historicalSignalCount || 0}</td>
-                <td class="${trade.plPercent >= 0 ? 'positive' : 'negative'}">${trade.plPercent.toFixed(2)}%</td>
-                <td class="${plINR >= 0 ? 'positive' : 'negative'}">₹${plINR.toFixed(2)}</td>
-                <td class="${plGBP >= 0 ? 'positive' : 'negative'}">£${plGBP.toFixed(2)}</td>
-                <td class="${plUSD >= 0 ? 'positive' : 'negative'}">$${plUSD.toFixed(2)}</td>
-                <td><span class="exit-reason-badge">${trade.exitReason}</span></td>
+                <td class="num">${trade.currency}${trade.exitPrice.toFixed(2)}</td>
+                <td class="num">${trade.holdingDays} days</td>
+                <td class="num">${trade.prevDTI !== undefined ? trade.prevDTI.toFixed(2) : 'N/A'}</td>
+                <td class="num">${trade.entryDTI !== undefined ? trade.entryDTI.toFixed(2) : 'N/A'}</td>
+                <td class="num">${trade.prev7DayDTI !== undefined ? trade.prev7DayDTI.toFixed(2) : 'N/A'}</td>
+                <td class="num">${trade.entry7DayDTI !== undefined ? trade.entry7DayDTI.toFixed(2) : 'N/A'}</td>
+                <td class="num">${trade.historicalSignalCount || 0}</td>
+                <td class="num ${trade.plPercent >= 0 ? 'gain' : 'loss'}">${trade.plPercent.toFixed(2)}%</td>
+                <td class="num ${plINR >= 0 ? 'gain' : 'loss'}">\u20b9${plINR.toFixed(2)}</td>
+                <td class="num ${plGBP >= 0 ? 'gain' : 'loss'}">\u00a3${plGBP.toFixed(2)}</td>
+                <td class="num ${plUSD >= 0 ? 'gain' : 'loss'}">$${plUSD.toFixed(2)}</td>
+                <td><span class="sa-badge sa-badge--${exitReasonTone(trade.exitReason)} exit-reason-badge">${exitReasonLabel(trade.exitReason)}</span></td>
             `;
 
             tbody.appendChild(row);
+
+            if (completedCards) {
+                const rc = document.createElement('div');
+                rc.className = 'sa-rowcard';
+                rc.innerHTML = `
+                    <div class="sa-rowcard__top"><strong>${trade.symbol}</strong>
+                        <span class="sa-rowcard__v ${trade.plPercent >= 0 ? 'gain' : 'loss'}">${trade.plPercent.toFixed(2)}%</span></div>
+                    <div class="sa-rowcard__grid">
+                        <span class="sa-rowcard__k">Market</span><span class="sa-rowcard__v">${trade.market}</span>
+                        <span class="sa-rowcard__k">Sold on</span><span class="sa-rowcard__v">${formatDate(trade.exitDate)}</span>
+                        <span class="sa-rowcard__k">Held</span><span class="sa-rowcard__v">${trade.holdingDays} days</span>
+                        <span class="sa-rowcard__k">Why it sold</span><span class="sa-rowcard__v">${exitReasonLabel(trade.exitReason)}</span>
+                    </div>`;
+                completedCards.appendChild(rc);
+            }
         }
 
         if (filteredTrades.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="18" class="no-data">No trades match the selected filters</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="18" class="no-data sa-table__empty">No trades match this filter.</td></tr>';
         }
     }
 

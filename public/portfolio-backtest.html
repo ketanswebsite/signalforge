@@ -3,477 +3,421 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0f172a">
-    <meta name="description" content="Portfolio Backtest Simulator - Simulate historical portfolio performance using high conviction DTI signals with realistic position management.">
-    <title>Portfolio Backtest Simulator - SutrAlgo</title>
-
-    <!-- Google Material Icons -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="icon" type="image/png" href="/images/favicon.PNG">
-
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800;900&family=Work+Sans:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#141210">
+    <meta name="description" content="Run the formula over real past prices and see every trade it would have made. Nothing here involves real money.">
+    <title>Simulator — SutrAlgo</title>
+    <link rel="icon" type="image/png" href="/images/brand/favicon.png">
+    <link rel="stylesheet" href="/css/design-system/index.css">
+    <link rel="stylesheet" href="/css/app.css">
+    <script>try{if(localStorage.getItem('sa-theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
 
     <!-- XSS Protection -->
     <script src="js/xss-protection.js"></script>
 
     <!-- Shared Utilities -->
-    <script src="js/utils/date-formatter.js"></script>
     <script src="js/utils/notifications.js"></script>
 
-    <!-- Global Error Handler -->
-    <script src="js/error-handler.js"></script><!-- Modern CSS -->
-    <link rel="stylesheet" href="/css/main.css">
+    <!-- Infrastructure -->
+    <script src="js/error-handler.js"></script>
+    <script src="js/chart-theme.js"></script>
 
-    <!-- Modern Effects (Custom Cursor, Scroll Progress, Animations) -->
-    <script src="/js/modern-effects.js" defer></script>
-
-    <!-- Animation Controller -->
-    <script src="/js/landing.js" defer></script>
-
+    <!-- App shell (theme, nav, user menu, legal note) -->
+    <script src="/js/app-shell.js" defer></script>
 </head>
-<body>
-    <!-- Animated Background with Particles -->
-    <div class="landing-background">
-        <div class="gradient-orb orb-1"></div>
-        <div class="gradient-orb orb-2"></div>
-        <div class="gradient-orb orb-3"></div>
-        <canvas id="particles-canvas"></canvas>
+<body class="app-body">
+
+<header class="sa-appbar">
+    <div class="sa-appbar__in">
+        <a class="sa-appbar__brand" href="/index.html"><span class="sa-wordmark"><b>Sutr</b><i>Algo</i></span></a>
+        <nav class="sa-appbar__nav" aria-label="Main">
+            <a class="sa-appbar__link" href="/index.html"><span class="material-symbols-rounded" aria-hidden="true">radar</span>Scanner</a>
+            <a class="sa-appbar__link" href="/trades.html"><span class="material-symbols-rounded" aria-hidden="true">account_balance_wallet</span>Positions<span class="sa-appbar__count" data-positions-count hidden>0</span></a>
+            <a class="sa-appbar__link" href="/portfolio-backtest.html" aria-current="page"><span class="material-symbols-rounded" aria-hidden="true">science</span>Simulator</a>
+            <a class="sa-appbar__link" href="/telegram-subscribe.html"><span class="material-symbols-rounded" aria-hidden="true">notifications</span>Alerts</a>
+            <a class="sa-appbar__link" href="/account.html"><span class="material-symbols-rounded" aria-hidden="true">person</span>Account</a>
+        </nav>
+        <div class="sa-appbar__end">
+            <button class="sa-iconbtn" type="button" data-theme-toggle aria-label="Switch theme" aria-pressed="false"><span class="material-symbols-rounded" aria-hidden="true">dark_mode</span></button>
+            <div class="app-usermenu">
+                <button class="app-usermenu__btn" type="button" data-usermenu-toggle aria-expanded="false" aria-label="Your account">
+                    <span class="sa-avatar" data-user-avatar>SA</span>
+                </button>
+                <div class="sa-menu" role="menu">
+                    <div class="sa-menu__id">
+                        <span class="sa-avatar sa-avatar--menu" data-user-avatar>SA</span>
+                        <div>
+                            <div class="app-usermenu__name" data-user-name>Signed in</div>
+                            <div class="app-usermenu__email" data-user-email></div>
+                        </div>
+                    </div>
+                    <a class="sa-menu__item" href="/account.html" role="menuitem"><span class="material-symbols-rounded" aria-hidden="true">person</span>Account</a>
+                    <a class="sa-menu__item" href="/landing.html" role="menuitem"><span class="material-symbols-rounded" aria-hidden="true">help</span>How the formula works</a>
+                    <a class="sa-menu__item" href="/admin-portal.html" role="menuitem" data-admin-only hidden><span class="material-symbols-rounded" aria-hidden="true">shield_person</span>Admin portal</a>
+                    <a class="sa-menu__item" href="/logout" role="menuitem"><span class="material-symbols-rounded" aria-hidden="true">logout</span>Sign out</a>
+                </div>
+            </div>
+            <button class="sa-iconbtn sa-appbar__burger" type="button" data-menu-toggle aria-label="Menu" aria-expanded="false"><span class="material-symbols-rounded" aria-hidden="true">menu</span></button>
+        </div>
     </div>
+    <nav class="app-menu" aria-label="Mobile">
+        <a href="/index.html"><span class="material-symbols-rounded" aria-hidden="true">radar</span>Scanner</a>
+        <a href="/trades.html"><span class="material-symbols-rounded" aria-hidden="true">account_balance_wallet</span>Positions</a>
+        <a href="/portfolio-backtest.html" aria-current="page"><span class="material-symbols-rounded" aria-hidden="true">science</span>Simulator</a>
+        <a href="/telegram-subscribe.html"><span class="material-symbols-rounded" aria-hidden="true">notifications</span>Alerts</a>
+        <a href="/account.html"><span class="material-symbols-rounded" aria-hidden="true">person</span>Account</a>
+    </nav>
+</header>
 
+<main class="app-main">
+    <div class="sa-page">
 
-    <div class="app-container">
-        <!-- Navigation bar will be inserted here by unified-navbar.js -->
-
-        <!-- Header -->
-        <div class="header">
-            <div class="page-nav">
-                <h1 class="nav-title">Portfolio Backtest Simulator</h1>
+        <div class="sa-spread app-pagehead">
+            <div>
+                <h1>Simulator</h1>
+                <p>Run the formula over real past prices and see every trade it would have made. Nothing here involves real money.</p>
+            </div>
+            <div class="sa-row">
+                <button id="run-simulation-btn" class="sa-btn sa-btn--primary">
+                    <span class="material-symbols-rounded" aria-hidden="true">play_arrow</span>
+                    Run the simulation
+                </button>
             </div>
         </div>
 
-        <!-- Main Content Container with Navbar Spacing -->
-        <div class="portfolio-backtest-container">
-            <p class="app-description">
-                Simulate historical portfolio performance using high conviction DTI signals with realistic position management.
-                See how a diversified portfolio would have performed across global markets.
-            </p>
-
-            <!-- UK Regulatory Compliance Disclaimers -->
-            <div class="legal-disclaimer">
-                <div class="disclaimer-content">
-                    <p><strong>Important Disclaimer:</strong> This is a simulated backtest based on historical data. Past performance is not a reliable indicator of future results. This simulation does not account for slippage, market impact, fees, or taxes. For educational purposes only, not investment advice.</p>
+        <section class="sa-card sc-settings">
+            <div class="sa-card__head">
+                <div>
+                    <h3 class="sa-card__title">Set it up</h3>
+                    <p class="sa-card__hint">Two choices, then run. Everything else follows the live rule.</p>
                 </div>
             </div>
-
-        <!-- Configuration Section -->
-        <div class="card">
-            <h3 class="card-title">
-                <span class="material-icons">settings</span>
-                Simulation Parameters
-            </h3>
-
-            <div class="simulation-config">
-                <div class="config-row">
-                    <div class="parameter-group">
-                        <label for="simulation-start-date">Simulation Start Date</label>
-                        <input type="date" id="simulation-start-date" class="date-input">
-                        <span class="form-hint">Default: 1 year ago</span>
-                    </div>
-
-                    <div class="parameter-group">
-                        <label for="display-currency">Display Currency</label>
-                        <select id="display-currency" class="currency-select">
-                            <option value="GBP" selected>GBP (£)</option>
-                            <option value="INR">INR (₹)</option>
-                            <option value="USD">USD ($)</option>
-                        </select>
-                        <span class="form-hint">Currency for portfolio display</span>
-                    </div>
+            <div class="sa-grid sa-grid--3 simulation-config">
+                <div class="sa-field parameter-group">
+                    <label class="sa-field__label" for="simulation-start-date">Start from</label>
+                    <input type="date" id="simulation-start-date" class="sa-input date-input">
+                    <span class="sa-field__hint">If you leave it, one year ago.</span>
                 </div>
-
-                <div class="config-info">
-                    <h4>Initial Investment Amounts (Fixed per Trade)</h4>
-                    <div class="investment-display">
-                        <div class="investment-item">
-                            <span class="currency-label">India Market:</span>
-                            <span class="amount">₹50,000 per trade</span>
-                        </div>
-                        <div class="investment-item">
-                            <span class="currency-label">UK Market:</span>
-                            <span class="amount">£400 per trade</span>
-                        </div>
-                        <div class="investment-item">
-                            <span class="currency-label">US Market:</span>
-                            <span class="amount">$500 per trade</span>
-                        </div>
-                    </div>
-                    <p class="config-note"><strong>Position Limits:</strong> Maximum 30 concurrent positions (10 per market)</p>
-                    <p class="config-note"><strong>Signal Filter:</strong> High conviction only (>75% historical win rate)</p>
-                    <p class="config-note"><strong>Entry Logic:</strong> First come, first serve (chronological order)</p>
+                <div class="sa-field parameter-group">
+                    <label class="sa-field__label" for="display-currency">Show amounts in</label>
+                    <select id="display-currency" class="sa-select currency-select">
+                        <option value="GBP" selected>Pounds (£)</option>
+                        <option value="INR">Rupees (₹)</option>
+                        <option value="USD">Dollars ($)</option>
+                    </select>
+                    <span class="sa-field__hint">One currency for the whole report.</span>
                 </div>
-
-                <button id="run-simulation-btn" class="btn btn-primary">
-                    <span class="material-icons">play_arrow</span>
-                    Run Simulation
-                </button>
-
-                <div id="simulation-status" class="simulation-status"></div>
+                <div class="sa-field">
+                    <span class="sa-field__label">Money per trade</span>
+                    <p class="sc-rule-line">₹50,000 India · £400 UK · $500 US</p>
+                    <span class="sa-field__hint">Fixed stakes, at most 10 positions per market at a time.</span>
+                </div>
             </div>
+            <div class="sim-rulesline">Only setups with a strong five-year record get taken, oldest signal first — the same rule the scanner runs live.</div>
+            <div id="simulation-status" class="simulation-status"></div>
+        </section>
+
+        <div class="sa-callout sa-callout--info sim-callout">
+            <span class="material-symbols-rounded" aria-hidden="true">info</span>
+            <div><strong>This is a simulation</strong>Real trading has costs, delays and slippage that this doesn't model. Treat it as a sense-check on the rule, not a forecast.</div>
         </div>
 
         <!-- Portfolio Summary -->
-        <div class="card hidden" id="portfolio-summary">
-            <h3 class="card-title">
-                <span class="material-icons">bar_chart</span>
-                Portfolio Summary
-            </h3>
-
-            <div class="portfolio-metrics">
-                <div class="metric-card">
-                    <div class="metric-label">Initial Value</div>
-                    <div class="metric-value" id="initial-value">-</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Final Value</div>
-                    <div class="metric-value" id="final-value">-</div>
-                </div>
-                <div class="metric-card highlight">
-                    <div class="metric-label">Total Return</div>
-                    <div class="metric-value" id="total-return">-</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Win Rate</div>
-                    <div class="metric-value" id="win-rate">-</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Total Trades</div>
-                    <div class="metric-value" id="total-trades">-</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Max Drawdown</div>
-                    <div class="metric-value" id="max-drawdown">-</div>
+        <section class="sa-card hidden sim-section" id="portfolio-summary">
+            <div class="sa-card__head">
+                <div>
+                    <h3 class="sa-card__title">What the money did</h3>
+                    <p class="sa-card__hint">Following every signal from your start date to today.</p>
                 </div>
             </div>
-        </div>
-
-        <!-- Simulation Details -->
-        <div class="card hidden" id="simulation-details-card">
-            <h3 class="card-title">
-                <span class="material-icons">schedule</span>
-                Simulation Details
-            </h3>
-
-            <div class="simulation-info-grid">
-                <div class="info-section">
-                    <h4 class="info-section-title">Date Ranges</h4>
-                    <div class="info-item">
-                        <span class="info-label">Simulation Start:</span>
-                        <span class="info-value" id="detail-sim-start">-</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Data Range:</span>
-                        <span class="info-value" id="detail-data-range">-</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Buffer Period (DTI Warmup):</span>
-                        <span class="info-value" id="detail-buffer-period">-</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Historical Signals:</span>
-                        <span class="info-value" id="detail-historical-signals">-</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Simulation Period:</span>
-                        <span class="info-value" id="detail-simulation-period">-</span>
-                    </div>
-                </div>
-
-                <div class="info-section">
-                    <h4 class="info-section-title">Data Quality</h4>
-                    <div class="info-item">
-                        <span class="info-label">Total Stocks Processed:</span>
-                        <span class="info-value" id="detail-stocks-processed">-</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">High Conviction Stocks:</span>
-                        <span class="info-value" id="detail-high-conviction">-</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Stocks with Stale Data:</span>
-                        <span class="info-value" id="detail-stale-data">-</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Processing Batches:</span>
-                        <span class="info-value" id="detail-batches">-</span>
-                    </div>
-                </div>
-
-                <div class="info-section">
-                    <h4 class="info-section-title">Signal Processing</h4>
-                    <div class="info-item">
-                        <span class="info-label">Total Signals Generated:</span>
-                        <span class="info-value" id="detail-signals-generated">-</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Open Trades Included:</span>
-                        <span class="info-value" id="detail-open-trades">-</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Fuzzy Matches:</span>
-                        <span class="info-value" id="detail-fuzzy-matches">-</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Unmatched Positions:</span>
-                        <span class="info-value" id="detail-unmatched">-</span>
-                    </div>
-                </div>
-
-                <div class="info-section">
-                    <h4 class="info-section-title">Force-Close Events</h4>
-                    <div class="info-item">
-                        <span class="info-label">Total Force-Closed:</span>
-                        <span class="info-value" id="detail-force-closed-total">-</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">With Real Price:</span>
-                        <span class="info-value" id="detail-force-closed-real">-</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">With 0% Fallback:</span>
-                        <span class="info-value" id="detail-force-closed-fallback">-</span>
-                    </div>
-                </div>
+            <div class="portfolio-metrics sim-stats">
+                <div class="sa-card--sunk metric-card"><div class="sa-stat">
+                    <span class="sa-stat__label">Started with</span>
+                    <span class="sa-stat__value sa-stat__value--sm metric-value" id="initial-value">-</span>
+                    <span class="sa-stat__context">The pot on day one.</span>
+                </div></div>
+                <div class="sa-card--sunk metric-card"><div class="sa-stat">
+                    <span class="sa-stat__label">What it became</span>
+                    <span class="sa-stat__value metric-value" id="final-value">-</span>
+                    <span class="sa-stat__context">Every position priced on the last day.</span>
+                </div></div>
+                <div class="sa-card--sunk metric-card highlight"><div class="sa-stat">
+                    <span class="sa-stat__label">The change</span>
+                    <span class="sa-stat__value metric-value" id="total-return">-</span>
+                    <span class="sa-stat__context">Before costs, fees and taxes.</span>
+                </div></div>
+                <div class="sa-card--sunk metric-card"><div class="sa-stat">
+                    <span class="sa-stat__label">How many made money</span>
+                    <span class="sa-stat__value sa-stat__value--sm metric-value" id="win-rate">-</span>
+                    <span class="sa-stat__context">Of the trades that finished.</span>
+                </div></div>
+                <div class="sa-card--sunk metric-card"><div class="sa-stat">
+                    <span class="sa-stat__label">Trades it made</span>
+                    <span class="sa-stat__value sa-stat__value--sm metric-value" id="total-trades">-</span>
+                    <span class="sa-stat__context">Across the three markets.</span>
+                </div></div>
+                <div class="sa-card--sunk metric-card"><div class="sa-stat">
+                    <span class="sa-stat__label">Worst stretch</span>
+                    <span class="sa-stat__value sa-stat__value--sm sa-stat__value--loss metric-value" id="max-drawdown">-</span>
+                    <span class="sa-stat__context">The deepest fall from a high before recovering.</span>
+                </div></div>
             </div>
-        </div>
+        </section>
 
         <!-- Portfolio Value Chart -->
-        <div class="card hidden" id="portfolio-chart-card">
-            <h3 class="card-title">
-                <span class="material-icons">show_chart</span>
-                Portfolio Value Over Time
-            </h3>
-            <div class="chart-wrapper">
-                <canvas id="portfolio-value-chart"></canvas>
-            </div>
-        </div>
+        <section class="sa-card hidden sim-section" id="portfolio-chart-card">
+            <div class="sa-chart__head"><h3 class="sa-chart__title">How the money grew</h3></div>
+            <p class="sa-chart__read">Each point is one trading day. The line is what the whole pot was worth. Drag to zoom in.</p>
+            <div class="chart-wrapper app-chart"><canvas id="portfolio-value-chart"></canvas></div>
+        </section>
 
         <!-- Analytics Dashboard -->
-        <div class="card hidden" id="analytics-dashboard">
-            <h3 class="card-title">
-                <span class="material-icons">dashboard</span>
-                Analytics Dashboard
-            </h3>
-
-            <!-- Analytics Tabs -->
-            <div class="analytics-tabs">
-                <div class="analytics-tab active" data-tab="performance-tab">Performance</div>
-                <div class="analytics-tab" data-tab="market-tab">Market Analysis</div>
-                <div class="analytics-tab" data-tab="trade-pattern-tab">Trade Patterns</div>
-                <div class="analytics-tab" data-tab="drawdown-tab">Drawdown Analysis</div>
-            </div>
-
-            <!-- Performance Tab -->
-            <div class="analytics-tab-content active" id="performance-tab">
-                <div class="analytics-metrics">
-                    <div class="analytics-metric">
-                        <span class="metric-name">Annualized Return:</span>
-                        <span class="metric-result" id="annualized-return">-</span>
-                    </div>
-                    <div class="analytics-metric">
-                        <span class="metric-name">Sharpe Ratio:</span>
-                        <span class="metric-result" id="sharpe-ratio">-</span>
-                    </div>
-                    <div class="analytics-metric">
-                        <span class="metric-name">Sortino Ratio:</span>
-                        <span class="metric-result" id="sortino-ratio">-</span>
-                    </div>
-                    <div class="analytics-metric">
-                        <span class="metric-name">Profit Factor:</span>
-                        <span class="metric-result" id="profit-factor">-</span>
-                    </div>
-                    <div class="analytics-metric">
-                        <span class="metric-name">Expectancy:</span>
-                        <span class="metric-result" id="expectancy">-</span>
-                    </div>
-                    <div class="analytics-metric">
-                        <span class="metric-name">Calmar Ratio:</span>
-                        <span class="metric-result" id="calmar-ratio">-</span>
-                    </div>
-                </div>
-                <div class="chart-wrapper">
-                    <canvas id="monthly-returns-chart"></canvas>
+        <section class="sa-card sa-card--flush hidden sim-section" id="analytics-dashboard">
+            <div class="sa-card__head">
+                <div>
+                    <h3 class="sa-card__title">A closer look</h3>
+                    <p class="sa-card__hint">The same run, cut four ways.</p>
                 </div>
             </div>
+            <div class="app-cardbody">
+                <div class="analytics-tabs">
+                    <div class="analytics-tab active" data-tab="performance-tab" role="tab" tabindex="0">The measures</div>
+                    <div class="analytics-tab" data-tab="market-tab" role="tab" tabindex="0">By market</div>
+                    <div class="analytics-tab" data-tab="trade-pattern-tab" role="tab" tabindex="0">The trades</div>
+                    <div class="analytics-tab" data-tab="drawdown-tab" role="tab" tabindex="0">The falls</div>
+                </div>
 
-            <!-- Market Analysis Tab -->
-            <div class="analytics-tab-content" id="market-tab">
-                <div class="chart-row">
-                    <div class="chart-container">
-                        <h4>Trades by Market</h4>
-                        <canvas id="trades-by-market-chart"></canvas>
+                <div class="analytics-tab-content active" id="performance-tab">
+                    <div class="analytics-metrics sim-measures">
+                        <div class="analytics-metric"><span class="metric-name">Annualised return</span><span class="metric-result" id="annualized-return">-</span></div>
+                        <div class="analytics-metric"><span class="metric-name">Sharpe ratio</span><span class="metric-result" id="sharpe-ratio">-</span></div>
+                        <div class="analytics-metric"><span class="metric-name">Sortino ratio</span><span class="metric-result" id="sortino-ratio">-</span></div>
+                        <div class="analytics-metric"><span class="metric-name">Profit factor</span><span class="metric-result" id="profit-factor">-</span></div>
+                        <div class="analytics-metric"><span class="metric-name">Expectancy</span><span class="metric-result" id="expectancy">-</span></div>
+                        <div class="analytics-metric"><span class="metric-name">Calmar ratio</span><span class="metric-result" id="calmar-ratio">-</span></div>
                     </div>
-                    <div class="chart-container">
-                        <h4>P&L by Market</h4>
-                        <canvas id="pl-by-market-chart"></canvas>
+                    <div class="sa-chart__head"><h4 class="sa-chart__title">Month by month</h4></div>
+                    <p class="sa-chart__read">Each bar is one month's result. Bars above the line made money.</p>
+                    <div class="chart-wrapper app-chart app-chart--sm"><canvas id="monthly-returns-chart"></canvas></div>
+                </div>
+
+                <div class="analytics-tab-content" id="market-tab">
+                    <div class="chart-row">
+                        <div class="chart-container">
+                            <div class="sa-chart__head"><h4 class="sa-chart__title">Where the trades were</h4></div>
+                            <p class="sa-chart__read">How the trades split across the three markets the formula covers.</p>
+                            <div class="app-chart app-chart--sm"><canvas id="trades-by-market-chart"></canvas></div>
+                        </div>
+                        <div class="chart-container">
+                            <div class="sa-chart__head"><h4 class="sa-chart__title">What each market made</h4></div>
+                            <p class="sa-chart__read">Profit and loss by market, in your display currency.</p>
+                            <div class="app-chart app-chart--sm"><canvas id="pl-by-market-chart"></canvas></div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Trade Patterns Tab -->
-            <div class="analytics-tab-content" id="trade-pattern-tab">
-                <div class="chart-row">
-                    <div class="chart-container">
-                        <h4>Return Distribution</h4>
-                        <canvas id="return-distribution-chart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <h4>Exit Reason Breakdown</h4>
-                        <canvas id="exit-reason-chart"></canvas>
+                <div class="analytics-tab-content" id="trade-pattern-tab">
+                    <div class="chart-row">
+                        <div class="chart-container">
+                            <div class="sa-chart__head"><h4 class="sa-chart__title">How big the wins and losses were</h4></div>
+                            <p class="sa-chart__read">Each bar is a band of results. Losses cluster near −5% because the stop cuts them there.</p>
+                            <div class="app-chart app-chart--sm"><canvas id="return-distribution-chart"></canvas></div>
+                        </div>
+                        <div class="chart-container">
+                            <div class="sa-chart__head"><h4 class="sa-chart__title">Why each trade ended</h4></div>
+                            <p class="sa-chart__read">Every trade ends one of a few ways: the target, the stop, or the clock.</p>
+                            <div class="app-chart app-chart--sm"><canvas id="exit-reason-chart"></canvas></div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Drawdown Analysis Tab -->
-            <div class="analytics-tab-content" id="drawdown-tab">
-                <div class="chart-wrapper">
-                    <canvas id="drawdown-chart"></canvas>
+                <div class="analytics-tab-content" id="drawdown-tab">
+                    <div class="sa-chart__head"><h4 class="sa-chart__title">The falls</h4></div>
+                    <p class="sa-chart__read">How far the pot sat below its best point at each moment. Shallower and shorter is better.</p>
+                    <div class="chart-wrapper app-chart"><canvas id="drawdown-chart"></canvas></div>
                 </div>
             </div>
-        </div>
+        </section>
+
+        <!-- Simulation Details -->
+        <section class="sa-card sa-card--flush hidden sim-section" id="simulation-details-card">
+            <div class="sa-card__head">
+                <div>
+                    <h3 class="sa-card__title">What the run did</h3>
+                    <p class="sa-card__hint">The mechanics, for anyone checking the working.</p>
+                </div>
+            </div>
+            <div class="app-cardbody simulation-info-grid">
+                <div class="info-section">
+                    <h4 class="sim-infotitle">The dates</h4>
+                    <div class="info-item"><span class="info-label">Simulation starts</span><span class="info-value" id="detail-sim-start">-</span></div>
+                    <div class="info-item"><span class="info-label">Data used</span><span class="info-value" id="detail-data-range">-</span></div>
+                    <div class="info-item"><span class="info-label">Indicator warm-up</span><span class="info-value" id="detail-buffer-period">-</span></div>
+                    <div class="info-item"><span class="info-label">History scored</span><span class="info-value" id="detail-historical-signals">-</span></div>
+                    <div class="info-item"><span class="info-label">Simulated period</span><span class="info-value" id="detail-simulation-period">-</span></div>
+                </div>
+                <div class="info-section">
+                    <h4 class="sim-infotitle">The data</h4>
+                    <div class="info-item"><span class="info-label">Stocks processed</span><span class="info-value" id="detail-stocks-processed">-</span></div>
+                    <div class="info-item"><span class="info-label">Strong records found</span><span class="info-value" id="detail-high-conviction">-</span></div>
+                    <div class="info-item"><span class="info-label">Stale data</span><span class="info-value" id="detail-stale-data">-</span></div>
+                    <div class="info-item"><span class="info-label">Processing</span><span class="info-value" id="detail-batches">-</span></div>
+                </div>
+                <div class="info-section">
+                    <h4 class="sim-infotitle">The signals</h4>
+                    <div class="info-item"><span class="info-label">Signals generated</span><span class="info-value" id="detail-signals-generated">-</span></div>
+                    <div class="info-item"><span class="info-label">Open trades included</span><span class="info-value" id="detail-open-trades">-</span></div>
+                    <div class="info-item"><span class="info-label">Fuzzy matches</span><span class="info-value" id="detail-fuzzy-matches">-</span></div>
+                    <div class="info-item"><span class="info-label">Unmatched positions</span><span class="info-value" id="detail-unmatched">-</span></div>
+                </div>
+                <div class="info-section">
+                    <h4 class="sim-infotitle">Forced sells at the end</h4>
+                    <div class="info-item"><span class="info-label">Positions still open</span><span class="info-value" id="detail-force-closed-total">-</span></div>
+                    <div class="info-item"><span class="info-label">Priced from real data</span><span class="info-value" id="detail-force-closed-real">-</span></div>
+                    <div class="info-item"><span class="info-label">Priced at break even</span><span class="info-value" id="detail-force-closed-fallback">-</span></div>
+                </div>
+            </div>
+        </section>
 
         <!-- Active Trades Table -->
-        <div class="card hidden" id="active-trades-card">
-            <h3 class="card-title">
-                <span class="material-icons">track_changes</span>
-                Active Positions
-                <span class="position-count" id="active-count">0</span>
-            </h3>
-
-            <div class="table-container">
-                <table id="active-trades-table" class="trades-table">
+        <section class="sa-card sa-card--flush hidden sim-section" id="active-trades-card">
+            <div class="sa-card__head">
+                <div>
+                    <h3 class="sa-card__title">Still open when it ended <span class="position-count" id="active-count">0</span></h3>
+                    <p class="sa-card__hint">Priced live so you can see where they sit now.</p>
+                </div>
+            </div>
+            <div class="table-container sa-table-wrap">
+                <table id="active-trades-table" class="sa-table trades-table">
                     <thead>
                         <tr>
                             <th>Symbol</th>
                             <th>Name</th>
                             <th>Market</th>
-                            <th>Entry Date</th>
-                            <th>Entry Price</th>
-                            <th>Current Price</th>
-                            <th>Days Held</th>
-                            <th>P/L %</th>
-                            <th>P/L Value</th>
+                            <th>Bought on</th>
+                            <th class="num">Bought at</th>
+                            <th class="num">Now</th>
+                            <th class="num">Held</th>
+                            <th class="num">Change</th>
+                            <th class="num">Result</th>
                         </tr>
                     </thead>
                     <tbody id="active-trades-body">
-                        <tr><td colspan="9" class="no-data">No active positions</td></tr>
+                        <tr><td colspan="9" class="no-data sa-table__empty">No open positions</td></tr>
                     </tbody>
                 </table>
             </div>
-        </div>
+            <div class="sa-table__cards app-cardbody" id="active-cards-body"></div>
+        </section>
 
         <!-- Completed Trades Table -->
-        <div class="card hidden" id="completed-trades-card">
-            <div class="card-header">
-                <h3 class="card-title">
-                    <span class="material-icons">description</span>
-                    Completed Trades
-                    <span class="position-count" id="completed-count">0</span>
-                </h3>
+        <section class="sa-card sa-card--flush hidden sim-section" id="completed-trades-card">
+            <div class="sa-card__head">
+                <div>
+                    <h3 class="sa-card__title">Every simulated trade <span class="position-count" id="completed-count">0</span></h3>
+                    <p class="sa-card__hint">Scroll sideways for the full working.</p>
+                </div>
                 <div class="table-actions">
-                    <button id="export-csv-btn" class="btn btn-secondary">
-                        <span class="material-icons">download</span>
-                        Export CSV
+                    <button id="export-csv-btn" class="sa-btn sa-btn--quiet sa-btn--sm">
+                        <span class="material-symbols-rounded" aria-hidden="true">download</span>
+                        Download CSV
                     </button>
                 </div>
             </div>
-
-            <!-- Trade Filters -->
-            <div class="trade-filters">
-                <select id="market-filter" class="filter-select">
-                    <option value="all">All Markets</option>
-                    <option value="India">India</option>
-                    <option value="UK">UK</option>
-                    <option value="US">US</option>
-                </select>
-                <select id="outcome-filter" class="filter-select">
-                    <option value="all">All Trades</option>
-                    <option value="winners">Winners Only</option>
-                    <option value="losers">Losers Only</option>
-                </select>
+            <div class="app-cardbody">
+                <div class="trade-filters sa-row">
+                    <select id="market-filter" class="sa-select filter-select">
+                        <option value="all">All markets</option>
+                        <option value="India">India</option>
+                        <option value="UK">UK</option>
+                        <option value="US">US</option>
+                    </select>
+                    <select id="outcome-filter" class="sa-select filter-select">
+                        <option value="all">All trades</option>
+                        <option value="winners">Made money</option>
+                        <option value="losers">Lost money</option>
+                    </select>
+                </div>
+                <div class="table-container scrollable sa-table-wrap">
+                    <table id="completed-trades-table" class="sa-table trades-table">
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Name</th>
+                                <th>Market</th>
+                                <th>Bought on</th>
+                                <th class="num">Bought at</th>
+                                <th>Sold on</th>
+                                <th class="num">Sold at</th>
+                                <th class="num">Held</th>
+                                <th class="num">Prev daily DTI</th>
+                                <th class="num">Entry daily DTI</th>
+                                <th class="num">Prev weekly DTI</th>
+                                <th class="num">Entry weekly DTI</th>
+                                <th class="num">Signals in 5y</th>
+                                <th class="num">Change</th>
+                                <th class="num">P/L (₹)</th>
+                                <th class="num">P/L (£)</th>
+                                <th class="num">P/L ($)</th>
+                                <th>Why it sold</th>
+                            </tr>
+                        </thead>
+                        <tbody id="completed-trades-body">
+                            <tr><td colspan="18" class="no-data sa-table__empty">No completed trades</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="sa-table__cards" id="completed-cards-body"></div>
             </div>
+        </section>
 
-            <div class="table-container scrollable">
-                <table id="completed-trades-table" class="trades-table">
-                    <thead>
-                        <tr>
-                            <th>Symbol</th>
-                            <th>Name</th>
-                            <th>Market</th>
-                            <th>Entry Date</th>
-                            <th>Entry Price</th>
-                            <th>Exit Date</th>
-                            <th>Exit Price</th>
-                            <th>Days</th>
-                            <th>Prev Daily DTI</th>
-                            <th>Entry Daily DTI</th>
-                            <th>Prev Weekly DTI</th>
-                            <th>Entry Weekly DTI</th>
-                            <th>Historical Signals (5Y)</th>
-                            <th>P/L %</th>
-                            <th>P/L (INR)</th>
-                            <th>P/L (GBP)</th>
-                            <th>P/L (USD)</th>
-                            <th>Exit Reason</th>
-                        </tr>
-                    </thead>
-                    <tbody id="completed-trades-body">
-                        <tr><td colspan="18" class="no-data">No completed trades</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        </div>
-        <!-- End of .portfolio-backtest-container -->
-
-        <!-- Notification container -->
-        <div id="notification-container"></div></div>
-
-    <!-- Legal Footer -->
-    <footer class="legal-footer">
-        <div class="footer-content">
-            <div class="footer-links">
-                <a href="terms.html" class="footer-link">Terms of Service</a>
-                <a href="privacy.html" class="footer-link">Privacy Policy</a>
-                <a href="data-management.html" class="footer-link">Data Management</a>
-                <span class="footer-text">© 2025 SutrAlgo - Educational tools only, not investment advice</span>
-            </div>
-            <div class="footer-disclaimer">
-                <p>Simulated backtest results. Past performance is not a reliable indicator of future results. You accept full responsibility for all investment decisions.</p>
+        <div class="sa-legal app-legal">
+            <button class="sa-legal__btn" type="button" aria-expanded="false">
+                Educational tool, not investment advice. Your capital is at risk.
+                <span class="material-symbols-rounded" aria-hidden="true">expand_more</span>
+            </button>
+            <div class="sa-legal__body" hidden>
+                <p>This service provides informational and educational tools only. Nothing here is investment advice or a recommendation to buy or sell.</p>
+                <p>Past performance is not a reliable indicator of future results. All trading involves risk and you could lose money.</p>
+                <p>Technical indicators can produce false signals, and market conditions can change quickly. You accept full responsibility for all investment decisions.</p>
             </div>
         </div>
-    </footer>
 
-    <!-- Core Scripts -->
-    <script src="js/dti-core.js"></script>
-    <script src="../lib/shared/stock-data.js"></script>
-    <script src="js/dti-data.js"></script>
-    <script src="../lib/shared/dti-calculator.js"></script>
-    <script src="../lib/shared/backtest-calculator.js"></script>
+        <footer class="app-foot">
+            <a href="/terms.html">Terms of service</a>
+            <a href="/privacy.html">Privacy policy</a>
+            <a href="/data-management.html">Data management</a>
+            <span>© 2026 SutrAlgo</span>
+        </footer>
 
-    <!-- Portfolio Backtest Scripts -->
-    <script src="js/portfolio-simulator.js"></script>
-    <script src="js/portfolio-analytics.js"></script>
-    <script src="js/portfolio-charts.js"></script>
-    <script src="js/portfolio-ui.js"></script>
-    <script src="js/portfolio-export.js"></script>
+    </div>
+</main>
 
-    <!-- Unified Navigation Bar -->
-    <script src="js/unified-navbar.js"></script>
+<nav class="sa-bottomnav" aria-label="Primary">
+    <a class="sa-bottomnav__item" href="/index.html"><span class="material-symbols-rounded" aria-hidden="true">radar</span>Scanner</a>
+    <a class="sa-bottomnav__item" href="/trades.html"><span class="material-symbols-rounded" aria-hidden="true">account_balance_wallet</span>Positions</a>
+    <a class="sa-bottomnav__item" href="/portfolio-backtest.html" aria-current="page"><span class="material-symbols-rounded" aria-hidden="true">science</span>Simulator</a>
+    <a class="sa-bottomnav__item" href="/telegram-subscribe.html"><span class="material-symbols-rounded" aria-hidden="true">notifications</span>Alerts</a>
+    <a class="sa-bottomnav__item" href="/account.html"><span class="material-symbols-rounded" aria-hidden="true">person</span>Account</a>
+</nav>
+
+<!-- Notification container -->
+<div id="notification-container"></div>
+
+<!-- Shared modules (SINGLE SOURCE OF TRUTH) -->
+<script src="../lib/shared/stock-data.js"></script>
+<script src="../lib/shared/dti-calculator.js"></script>
+<script src="../lib/shared/backtest-calculator.js"></script>
+
+<!-- Portfolio simulator -->
+<script src="js/portfolio-simulator.js"></script>
+<script src="js/portfolio-analytics.js"></script>
+<script src="js/portfolio-charts.js"></script>
+<script src="js/portfolio-ui.js"></script>
+<script src="js/portfolio-export.js"></script>
 
 </body>
 </html>
