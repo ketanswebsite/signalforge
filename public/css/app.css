@@ -78,6 +78,162 @@
 #batch-status .sa-callout{border:0}
 #data-fetch-status:empty{display:none}
 
+/* ---------- positions ---------- */
+.pos-statscard{margin-bottom:var(--s-5)}
+.trade-statistics{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s-3)}
+@media (max-width:1040px){.trade-statistics{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:720px){.trade-statistics{grid-template-columns:1fr}}
+.statistic-card{background:var(--surface-2);border:1.5px solid var(--line-strong);padding:var(--s-4)}
+.currency-stat-card{display:grid;gap:var(--s-3);grid-column:1/-1}
+.currency-stat-card + .currency-stat-card{margin-top:var(--s-4)}
+.currency-title{font-size:var(--size-sm)}
+.currency-stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s-3)}
+@media (max-width:1040px){.currency-stats-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:720px){.currency-stats-grid{grid-template-columns:1fr}}
+.sa-stat__value.positive{color:var(--gain)}
+.sa-stat__value.negative{color:var(--loss)}
+.update-status{font-size:var(--size-xs);color:var(--text-3);margin-top:var(--s-3)}
+.pos-toptabs{margin-bottom:var(--s-5)}
+.sa-tab{min-height:var(--tap-min)}
+.pos-panel{margin-bottom:var(--s-5)}
+
+#active-trades-container{display:grid;gap:var(--s-4);grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:960px){#active-trades-container{grid-template-columns:1fr}}
+#active-trades-container>.sa-empty{grid-column:1/-1}
+.sa-pos__fill.is-gain{background:var(--gain)}
+.sa-pos__fill.is-loss{background:var(--loss)}
+.sa-pos__pin{left:38.46%}
+.pos-scale-mid{position:relative;left:-6%}
+.pos-detailgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s-2) var(--s-3)}
+.pos-daysbar{height:4px;background:var(--surface-3);border:1px solid var(--line-strong)}
+.pos-daysbar i{display:block;height:100%;background:var(--text-3)}
+.pos-v-gain{color:var(--gain)}
+.pos-v-loss{color:var(--loss)}
+.stock-symbol{font-size:var(--size-xs);color:var(--text-3);font-weight:600}
+.trade-status{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:var(--r-pill);font-size:11px;font-weight:var(--w-bold);background:var(--surface-2);border:1.5px solid var(--line-strong);color:var(--text-2)}
+.trade-status.status-profit{color:var(--gain);background:var(--gain-soft);border-color:currentColor}
+.trade-status.status-loss{color:var(--loss);background:var(--loss-soft);border-color:currentColor}
+.shares-warning{color:var(--warn)}
+.sparkline-container{margin-left:8px}
+.price-movement-badge{display:none}
+.pos-actions{display:flex;gap:var(--s-2);flex-wrap:wrap;border-top:1.5px solid var(--line);padding-top:var(--s-4);margin-top:var(--s-4)}
+
+.pl-summary-container{display:none;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:var(--s-3);margin-bottom:var(--s-4)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.trade-tabs{margin-bottom:var(--s-4)}
+.sa-seg__opt.active{background:var(--text);color:var(--bg)}
+.sa-seg__opt{min-height:36px}
+
+.trades-filter-container{margin-bottom:var(--s-4)}
+.trades-filter-row{display:flex;gap:var(--s-3);flex-wrap:wrap;align-items:center}
+.search-container{position:relative;flex:1;min-width:220px;display:flex;align-items:center}
+.trade-search{width:100%;min-height:var(--tap-min);padding:11px 40px 11px var(--s-3);font-family:var(--font-sans);font-size:var(--size-sm);color:var(--text);background:var(--surface);border:2px solid var(--frame);border-radius:0}
+.trade-search:focus{outline:none;border-color:var(--line-focus);box-shadow:var(--ring-focus)}
+.clear-search{position:absolute;right:6px;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:none;border:0;color:var(--text-3);cursor:pointer}
+.clear-search:hover{color:var(--text)}
+.trades-filter-row select{min-height:var(--tap-min);padding:11px var(--s-3);font-family:var(--font-sans);font-size:var(--size-sm);color:var(--text);background:var(--surface);border:2px solid var(--frame);border-radius:0}
+.filter-summary{font-size:var(--size-xs);color:var(--text-3);margin-top:var(--s-2)}
+.search-highlight{background:var(--accent-soft);color:inherit}
+
+.analytics-controls{display:flex;justify-content:space-between;align-items:flex-end;gap:var(--s-4);flex-wrap:wrap;margin-bottom:var(--s-4)}
+.analytics-tabs{display:flex;gap:var(--s-5);border-bottom:2.5px solid var(--frame);overflow-x:auto;scrollbar-width:none;margin-bottom:var(--s-5)}
+.analytics-tabs::-webkit-scrollbar{display:none}
+.analytics-tab{padding:12px 0;font-size:var(--size-sm);font-weight:var(--w-bold);color:var(--text-3);cursor:pointer;position:relative;white-space:nowrap;transition:color var(--dur-1) var(--ease-out);min-height:var(--tap-min)}
+.analytics-tab:hover{color:var(--text-2)}
+.analytics-tab.active{color:var(--text)}
+.analytics-tab.active::after{content:'';position:absolute;left:0;right:0;bottom:-2.5px;height:4px;background:var(--accent-field)}
+.analytics-tab-content{display:none}
+.analytics-tab-content.active{display:block}
+.analytics-metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:var(--s-3);margin-bottom:var(--s-5)}
+.analytics-charts-compact{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s-5)}
+@media (max-width:960px){.analytics-charts-compact{grid-template-columns:1fr}}
+.chart-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s-5);margin-bottom:var(--s-4)}
+@media (max-width:960px){.chart-row{grid-template-columns:1fr}}
+.chart-row .chart-full{grid-column:1/-1}
+.metrics-details{margin-top:var(--s-5);border-top:1.5px solid var(--line);padding-top:var(--s-4)}
+.metrics-explanation{display:grid;gap:var(--s-2);font-size:var(--size-sm);max-width:var(--reading-max)}
+
+/* ---------- legacy bridge: metric cards (TradeUI-MetricCards / Export-Metrics) ---------- */
+.metric-card{border:1.5px solid var(--line-strong);background:var(--surface-2);padding:var(--s-3);display:flex;flex-direction:column;gap:4px}
+.metric-card-header{display:flex;justify-content:space-between;align-items:baseline;gap:var(--s-2)}
+.metric-card-label,.metric-label{font-size:11px;font-weight:var(--w-bold);text-transform:uppercase;letter-spacing:var(--track-label);color:var(--text-2)}
+.metric-card-value,.metric-value{font-family:var(--font-display);font-weight:var(--w-display);font-size:var(--size-stat-sm);font-variant-numeric:tabular-nums;line-height:1.1;color:var(--text)}
+.metric-card .positive,.metric-card-value.positive{color:var(--gain)}
+.metric-card .negative,.metric-card-value.negative{color:var(--loss)}
+.metric-card-footer,.metric-card-detail{font-size:var(--size-xs);color:var(--text-3)}
+.metric-card-change{font-size:var(--size-xs);font-weight:600}
+.metric-card-sparkline{margin-top:4px}
+
+/* ---------- legacy bridge: compact calendar (TradeUI-MetricCards.js) ---------- */
+#compact-calendar-container{display:grid;gap:var(--s-3)}
+.calendar-year-selector{display:flex;align-items:center;gap:var(--s-3)}
+.year-nav-btn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border:1.5px solid var(--frame);background:transparent;color:var(--text-2);cursor:pointer}
+.year-nav-btn:hover{background:var(--accent-soft);color:var(--text)}
+.compact-calendar-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--s-3)}
+.month-mini-grid{border:1.5px solid var(--line-strong);padding:var(--s-2)}
+.month-mini-header{font-size:11px;font-weight:var(--w-bold);text-transform:uppercase;letter-spacing:var(--track-label);margin-bottom:6px}
+.month-mini-days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.mini-day-cell{aspect-ratio:1;background:var(--surface-2);border-radius:0;min-width:0}
+.mini-day-cell.empty{background:transparent}
+.mini-day-cell.profit-low,.legend-color.profit-low{background:var(--gain-soft)}
+.mini-day-cell.profit-medium,.legend-color.profit-medium{background:var(--gain);opacity:.6}
+.mini-day-cell.profit-high,.legend-color.profit-high{background:var(--gain)}
+.mini-day-cell.loss-low,.legend-color.loss-low{background:var(--loss-soft)}
+.mini-day-cell.loss-medium,.legend-color.loss-medium{background:var(--loss);opacity:.6}
+.mini-day-cell.loss-high,.legend-color.loss-high{background:var(--loss)}
+.legend-color.no-trades{background:var(--surface-3);border:1px solid var(--line-strong)}
+.calendar-legend{font-size:var(--size-xs);color:var(--text-2)}
+.legend-title{font-weight:var(--w-bold);text-transform:uppercase;letter-spacing:var(--track-label);font-size:11px;color:var(--text);margin-bottom:6px}
+.legend-items{display:flex;gap:var(--s-4);flex-wrap:wrap;align-items:center}
+.legend-group{display:inline-flex;gap:var(--s-3);align-items:center;flex-wrap:wrap}
+.legend-label{font-weight:600}
+.legend-item{display:inline-flex;align-items:center;gap:5px}
+.legend-color{width:11px;height:11px;display:inline-block;border:1px solid var(--line-strong)}
+.chart-empty-state,.chart-loading-state,.chart-error-state{padding:var(--s-6);text-align:center;color:var(--text-3);font-size:var(--size-sm)}
+
+/* ---------- legacy bridge: dialogs (.dialog-overlay, TradeUI-Dialogs.js) ---------- */
+.dialog-overlay{position:fixed;inset:0;background:var(--scrim);z-index:var(--z-scrim);display:none;align-items:center;justify-content:center;padding:var(--s-4)}
+.dialog-overlay.active{display:flex;animation:sa-fadein var(--dur-2) var(--ease-out)}
+.dialog-content{background:var(--surface);border:2.5px solid var(--frame);border-radius:var(--r-lg);box-shadow:var(--shadow-pop);width:100%;max-width:560px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;animation:sa-pop var(--dur-3) var(--ease-out)}
+.dialog-header{display:flex;align-items:center;justify-content:space-between;gap:var(--s-4);padding:var(--s-4) var(--s-5);background:var(--text);color:var(--bg);flex:0 0 auto}
+.dialog-title{display:flex;align-items:center;gap:8px;font-family:var(--font-display);font-weight:var(--w-display);font-size:var(--size-h4);text-transform:uppercase;letter-spacing:.02em;margin:0;color:var(--bg)}
+.dialog-close{background:none;border:0;color:var(--bg);cursor:pointer;min-width:var(--tap-min);min-height:var(--tap-min);font-size:24px;line-height:1;display:inline-flex;align-items:center;justify-content:center}
+.dialog-close:hover{color:var(--gold-on-band)}
+.dialog-body{padding:var(--s-5);overflow-y:auto;display:grid;gap:var(--s-4)}
+.dialog-actions{display:flex;gap:var(--s-3);justify-content:flex-end;padding:var(--s-4) var(--s-5);border-top:2px solid var(--frame);flex:0 0 auto;flex-wrap:wrap}
+@media (max-width:640px){
+  .dialog-overlay.active{align-items:flex-end;padding:0}
+  .dialog-content{border-left:0;border-right:0;border-bottom:0;max-height:92vh;box-shadow:none;animation:sa-up var(--dur-3) var(--ease-out)}
+  .dialog-actions .sa-btn,.dialog-actions .btn{flex:1}
+}
+.trade-info h4{margin-bottom:var(--s-2)}
+.file-upload-container{display:flex;align-items:center;gap:var(--s-3);flex-wrap:wrap}
+.file-upload-container input[type="file"]{position:absolute;width:1px;height:1px;opacity:0}
+#selected-filename{font-size:var(--size-sm);color:var(--text-3)}
+.import-preview{display:none;border:1.5px solid var(--line-strong);padding:var(--s-3) var(--s-4)}
+.preview-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px var(--s-4);margin-top:var(--s-2)}
+.preview-stat{display:flex;justify-content:space-between;gap:var(--s-3);font-size:var(--size-sm)}
+.preview-label{color:var(--text-3)}
+.preview-value{font-weight:var(--w-bold);font-variant-numeric:tabular-nums}
+.import-options{display:grid;gap:var(--s-2)}
+.radio-option,.checkbox-option{display:flex;align-items:center;gap:10px;font-size:var(--size-sm);color:var(--text-2);min-height:32px}
+.radio-option input,.checkbox-option input{accent-color:var(--accent)}
+.import-status{display:none}
+.status-message{font-size:var(--size-sm);margin-bottom:var(--s-2)}
+
+/* ---------- legacy bridge: cards injected by capital-display / signals-display ---------- */
+.card{background:var(--surface);border:2px solid var(--frame);border-radius:0;padding:var(--s-5);margin-bottom:var(--s-5)}
+.card.sa-card--flush,.card.sa-card{padding:0;margin-bottom:var(--s-5)}
+.card.sa-card{padding:var(--s-5)}
+.card>.card-title{display:flex;align-items:center;gap:8px;font-family:var(--font-display);font-weight:var(--w-display);font-size:15px;text-transform:uppercase;letter-spacing:.02em;color:var(--text);margin:0 0 var(--s-4)}
+.card>.card-title svg{width:18px;height:18px}
+.btn-icon{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;background:none;border:1.5px solid var(--frame);color:var(--text-2);cursor:pointer;margin-left:auto}
+.btn-icon:hover{background:var(--accent-soft);color:var(--text)}
+.capital-grid,.signals-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--s-3)}
+.capital-totals{display:flex;gap:var(--s-4);flex-wrap:wrap;margin-top:var(--s-3);font-size:var(--size-sm);color:var(--text-2)}
+.signal-count{font-size:var(--size-xs);color:var(--text-3);font-family:var(--font-sans);text-transform:none;letter-spacing:0;margin-left:6px}
+
 /* ---------- legacy bridge: market status pills (market-status-manager.js) ---------- */
 #market-status-container{display:flex;gap:var(--s-2);flex-wrap:wrap}
 .market-status-badge{display:inline-flex;align-items:center;gap:8px;font-size:var(--size-xs);font-weight:600;color:var(--text-2);padding:6px 12px;border:1.5px solid var(--frame);border-radius:var(--r-pill);background:var(--surface)}

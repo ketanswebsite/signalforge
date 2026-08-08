@@ -723,19 +723,14 @@ window.TradeUIModules.dialogs = (function() {
         // Set loading state
         if (confirmButton) {
             confirmButton.disabled = true;
-            confirmButton.innerHTML = `
-                <svg class="spinner" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="2" x2="12" y2="6"></line>
-                    <line x1="12" y1="18" x2="12" y2="22"></line>
-                    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
-                    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
-                    <line x1="2" y1="12" x2="6" y2="12"></line>
-                    <line x1="18" y1="12" x2="22" y2="12"></line>
-                    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
-                    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
-                </svg>
-                Closing Trade...
-            `;
+            confirmButton.replaceChildren();
+            (function(){
+                const spin = document.createElement('span');
+                spin.className = 'sa-btn__spin';
+                spin.setAttribute('aria-hidden', 'true');
+                confirmButton.appendChild(spin);
+                confirmButton.appendChild(document.createTextNode(' Selling\u2026'));
+            })();
         }
         
         // Add a small delay for better UX
@@ -762,14 +757,7 @@ window.TradeUIModules.dialogs = (function() {
                 // Reset button state
                 if (confirmButton) {
                     confirmButton.disabled = false;
-                    confirmButton.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34"></path>
-                            <path d="M3 15h10"></path>
-                            <polyline points="17 8 22 12 17 16"></polyline>
-                        </svg>
-                        Close Trade
-                    `;
+                    confirmButton.textContent = 'Sell now';
                 }
             }
         }, 500);
@@ -852,19 +840,14 @@ window.TradeUIModules.dialogs = (function() {
         // Set loading state
         if (confirmButton) {
             confirmButton.disabled = true;
-            confirmButton.innerHTML = `
-                <svg class="spinner" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="2" x2="12" y2="6"></line>
-                    <line x1="12" y1="18" x2="12" y2="22"></line>
-                    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
-                    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
-                    <line x1="2" y1="12" x2="6" y2="12"></line>
-                    <line x1="18" y1="12" x2="22" y2="12"></line>
-                    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
-                    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
-                </svg>
-                Saving Changes...
-            `;
+            confirmButton.replaceChildren();
+            (function(){
+                const spin = document.createElement('span');
+                spin.className = 'sa-btn__spin';
+                spin.setAttribute('aria-hidden', 'true');
+                confirmButton.appendChild(spin);
+                confirmButton.appendChild(document.createTextNode(' Saving\u2026'));
+            })();
         }
         
         // Get the current trade to preserve all fields
@@ -905,14 +888,7 @@ window.TradeUIModules.dialogs = (function() {
                 // Reset button state
                 if (confirmButton) {
                     confirmButton.disabled = false;
-                    confirmButton.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                            <polyline points="7 3 7 8 15 8"></polyline>
-                        </svg>
-                        Save Changes
-                    `;
+                    confirmButton.textContent = 'Save changes';
                 }
             }
         }, 500);
@@ -932,19 +908,14 @@ window.TradeUIModules.dialogs = (function() {
         // Set loading state
         if (confirmButton) {
             confirmButton.disabled = true;
-            confirmButton.innerHTML = `
-                <svg class="spinner" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="2" x2="12" y2="6"></line>
-                    <line x1="12" y1="18" x2="12" y2="22"></line>
-                    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
-                    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
-                    <line x1="2" y1="12" x2="6" y2="12"></line>
-                    <line x1="18" y1="12" x2="22" y2="12"></line>
-                    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
-                    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
-                </svg>
-                Deleting...
-            `;
+            confirmButton.replaceChildren();
+            (function(){
+                const spin = document.createElement('span');
+                spin.className = 'sa-btn__spin';
+                spin.setAttribute('aria-hidden', 'true');
+                confirmButton.appendChild(spin);
+                confirmButton.appendChild(document.createTextNode(' Deleting\u2026'));
+            })();
         }
         
         // Add a small delay for better UX
@@ -966,15 +937,7 @@ window.TradeUIModules.dialogs = (function() {
                 // Reset button state
                 if (confirmButton) {
                     confirmButton.disabled = false;
-                    confirmButton.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                            <line x1="10" y1="11" x2="10" y2="17"></line>
-                            <line x1="14" y1="11" x2="14" y2="17"></line>
-                        </svg>
-                        Delete Trade
-                    `;
+                    confirmButton.textContent = 'Delete it';
                 }
             }
         }, 500);
@@ -1165,14 +1128,7 @@ window.TradeUIModules.dialogs = (function() {
         const confirmButton = document.getElementById('close-dialog-confirm');
         if (confirmButton) {
             confirmButton.disabled = false;
-            confirmButton.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34"></path>
-                    <path d="M3 15h10"></path>
-                    <polyline points="17 8 22 12 17 16"></polyline>
-                </svg>
-                Close Trade
-            `;
+            confirmButton.textContent = 'Sell now';
         }
         
         // Pre-fill with current price
@@ -1196,14 +1152,7 @@ window.TradeUIModules.dialogs = (function() {
         // Update dialog title with stock name
         const dialogTitle = dialog.querySelector('.dialog-title');
         if (dialogTitle) {
-            dialogTitle.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34"></path>
-                    <path d="M3 15h10"></path>
-                    <polyline points="17 8 22 12 17 16"></polyline>
-                </svg>
-                Close Trade: ${trade.stockName}
-            `;
+            dialogTitle.textContent = 'Sell ' + trade.stockName + ' now?';
         }
         
         // Show P&L info in the dialog
@@ -1314,14 +1263,7 @@ window.TradeUIModules.dialogs = (function() {
         const confirmButton = document.getElementById('edit-dialog-confirm');
         if (confirmButton) {
             confirmButton.disabled = false;
-            confirmButton.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                    <polyline points="7 3 7 8 15 8"></polyline>
-                </svg>
-                Save Changes
-            `;
+            confirmButton.textContent = 'Save changes';
         }
         
         // Update stock info
@@ -1355,13 +1297,7 @@ window.TradeUIModules.dialogs = (function() {
         // Update dialog title with stock name
         const dialogTitle = dialog.querySelector('.dialog-title');
         if (dialogTitle) {
-            dialogTitle.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                </svg>
-                Edit Trade: ${trade.stockName}
-            `;
+            dialogTitle.textContent = 'Change ' + trade.stockName;
         }
         
         // Show dialog with animation
@@ -1402,15 +1338,7 @@ window.TradeUIModules.dialogs = (function() {
         const confirmButton = document.getElementById('delete-dialog-confirm');
         if (confirmButton) {
             confirmButton.disabled = false;
-            confirmButton.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    <line x1="10" y1="11" x2="10" y2="17"></line>
-                    <line x1="14" y1="11" x2="14" y2="17"></line>
-                </svg>
-                Delete Trade
-            `;
+            confirmButton.textContent = 'Delete it';
         }
         
         // Update trade info in the dialog

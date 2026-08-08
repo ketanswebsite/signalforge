@@ -51,30 +51,30 @@ const TradeModal = (function() {
         <div id="trade-entry-modal" class="modal-overlay">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3 class="modal-title">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                        </svg>
-                        Take a New Trade
-                    </h3>
+                    <h3 class="modal-title">Take this signal?</h3>
                     <button class="modal-close" id="trade-modal-close" aria-label="Close modal">&times;</button>
                 </div>
-                
+
                 <div class="modal-body">
+                    <div class="sa-callout sa-callout--info">
+                        <span class="material-symbols-rounded" aria-hidden="true">info</span>
+                        <span>This records the position so the app can track it. It does not place a real order with your broker.</span>
+                    </div>
+
                     <div class="stock-info">
-                        <h4 id="trade-stock-name">Stock Name</h4>
+                        <h4 id="trade-stock-name">Stock name</h4>
                         <div id="trade-stock-symbol" class="stock-symbol">SYMBOL</div>
                     </div>
-                    
+
                     <div class="price-info">
-                        <div class="price-label">Current Market Price</div>
+                        <div class="price-label">Buy around</div>
                         <div id="trade-current-price" class="price-value">0.00</div>
                     </div>
 
                     <div class="parameter-group">
-                        <label for="trade-investment-amount">Investment Amount</label>
-                        <input type="number" id="trade-investment-amount" min="1" step="1" placeholder="Enter investment amount">
-                        <span class="form-hint">Minimum investment varies by currency</span>
+                        <label for="trade-investment-amount">How much are you putting in</label>
+                        <input type="number" id="trade-investment-amount" min="1" step="1" placeholder="Amount">
+                        <span class="form-hint">The minimum varies by currency.</span>
                     </div>
 
                     <div class="trade-details">
@@ -106,7 +106,7 @@ const TradeModal = (function() {
                                     <line x1="12" y1="5" x2="12" y2="19"></line>
                                     <line x1="5" y1="12" x2="19" y2="12"></line>
                                 </svg>
-                                Stop Loss Price
+                                Stops at
                             </div>
                             <div id="trade-stop-loss" class="detail-value">0.00</div>
                             <div class="detail-info">(${stopLossPercent}% below entry)</div>
@@ -116,7 +116,7 @@ const TradeModal = (function() {
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <polyline points="20 6 9 17 4 12"></polyline>
                                 </svg>
-                                Target Price
+                                Sells at
                             </div>
                             <div id="trade-target" class="detail-value">0.00</div>
                             <div class="detail-info">(${takeProfitPercent}% above entry)</div>
@@ -127,33 +127,23 @@ const TradeModal = (function() {
                                     <circle cx="12" cy="12" r="10"></circle>
                                     <polyline points="12 6 12 12 16 14"></polyline>
                                 </svg>
-                                Square Off Date
+                                Sells anyway on
                             </div>
                             <div id="trade-square-off-date" class="detail-value">-</div>
-                            <div class="detail-info">(if target/stop not hit)</div>
+                            <div class="detail-info">(if neither price is reached)</div>
                         </div>
                     </div>
                     
                     <div class="parameter-group">
-                        <label for="trade-notes">Notes (Optional)</label>
-                        <textarea id="trade-notes" rows="3" placeholder="Add any notes or observations about this trade"></textarea>
+                        <label for="trade-notes">Notes (optional)</label>
+                        <textarea id="trade-notes" rows="3" placeholder="Anything worth remembering about this signal"></textarea>
                     </div>
+                    <p class="form-hint">If neither price is reached, it sells automatically on day 30.</p>
                 </div>
-                
+
                 <div class="modal-footer">
-                    <button id="trade-cancel" class="btn btn-secondary">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                        Cancel
-                    </button>
-                    <button id="trade-confirm" class="btn btn-success">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                        Confirm Trade
-                    </button>
+                    <button id="trade-cancel" class="btn btn-secondary">Not now</button>
+                    <button id="trade-confirm" class="btn btn-success">Add to positions</button>
                 </div>
             </div>
         </div>
@@ -382,7 +372,7 @@ if (formHint) {
         // Reset confirm button state
         if (confirmButton) {
             confirmButton.disabled = false;
-            confirmButton.textContent = 'Confirm Trade';
+            confirmButton.textContent = 'Add to positions';
         }
 
         // Show the modal with animation
@@ -474,12 +464,7 @@ function calculateTradeDetails() {
             // Reset button state
             if (confirmButton) {
                 confirmButton.disabled = false;
-                confirmButton.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    Confirm Trade
-                `;
+                confirmButton.textContent = 'Add to positions';
             }
             return;
         }
@@ -489,19 +474,14 @@ function calculateTradeDetails() {
         // Set button to loading state
         if (confirmButton) {
             confirmButton.disabled = true;
-            confirmButton.innerHTML = `
-                <svg class="spinner" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="2" x2="12" y2="6"></line>
-                    <line x1="12" y1="18" x2="12" y2="22"></line>
-                    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
-                    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
-                    <line x1="2" y1="12" x2="6" y2="12"></line>
-                    <line x1="18" y1="12" x2="22" y2="12"></line>
-                    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
-                    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
-                </svg>
-                Processing...
-            `;
+            confirmButton.replaceChildren();
+            (function(){
+                const spin = document.createElement('span');
+                spin.className = 'sa-btn__spin';
+                spin.setAttribute('aria-hidden', 'true');
+                confirmButton.appendChild(spin);
+                confirmButton.appendChild(document.createTextNode(' Adding\u2026'));
+            })();
         }
         
         // Get notes
@@ -556,12 +536,7 @@ function calculateTradeDetails() {
                 // Reset button state
                 if (confirmButton) {
                     confirmButton.disabled = false;
-                    confirmButton.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                        Confirm Trade
-                    `;
+                    confirmButton.textContent = 'Add to positions';
                 }
             }
         } else {
@@ -570,12 +545,7 @@ function calculateTradeDetails() {
             // Reset button state
             if (confirmButton) {
                 confirmButton.disabled = false;
-                confirmButton.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    Confirm Trade
-                `;
+                confirmButton.textContent = 'Add to positions';
             }
         }
     }

@@ -209,12 +209,8 @@ const CapitalDisplay = (function() {
      * Get market flag emoji
      */
     function getMarketFlag(market) {
-        const flags = {
-            'India': '🇮🇳',
-            'UK': '🇬🇧',
-            'US': '🇺🇸'
-        };
-        return flags[market] || '';
+        // v3 Poster: no emoji anywhere — the market name carries the meaning.
+        return '';
     }
 
     /**

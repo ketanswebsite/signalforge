@@ -2214,7 +2214,7 @@ app.post('/api/portfolio/initialize-capital', ensureAuthenticatedAPI, async (req
 // Get portfolio capital status
 app.get('/api/portfolio/capital', ensureAuthenticatedAPI, async (req, res) => {
   try {
-    const userId = req.user.email;
+    const userId = req.user?.email || 'default';
     const capital = await TradeDB.getPortfolioCapital(null, userId);
 
     // Calculate totals

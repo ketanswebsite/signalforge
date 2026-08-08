@@ -1,4 +1,63 @@
 /**
+ * v3 Poster bits on a cloned position card: the stop-to-target rail,
+ * the days bar, and the exit-rule badge. Shared by every template cloner.
+ */
+window.applyPosterPositionBits = function (card, plValue, holdingDays, daysRemaining) {
+    const railFill = card.querySelector('.sa-pos__fill');
+    if (railFill) {
+        const clamped = Math.max(-5, Math.min(8, plValue));
+        railFill.style.width = (((clamped + 5) / 13) * 100).toFixed(2) + '%';
+        railFill.classList.toggle('is-gain', plValue >= 0);
+        railFill.classList.toggle('is-loss', plValue < 0);
+    }
+    const daysBar = card.querySelector('.pos-daysbar i');
+    if (daysBar) {
+        daysBar.style.width = Math.max(0, Math.min(100, (holdingDays / 30) * 100)).toFixed(1) + '%';
+    }
+    const exitBadge = card.querySelector('.pos-exit-badge');
+    if (exitBadge) {
+        exitBadge.textContent = 'Day ' + holdingDays + ' of 30 \u2014 sells itself in '
+            + daysRemaining + (daysRemaining === 1 ? ' day' : ' days');
+        exitBadge.classList.toggle('sa-badge--warn', daysRemaining <= 5);
+        exitBadge.classList.toggle('sa-badge--neutral', daysRemaining > 5);
+    }
+};
+
+/**
+ * v3 Poster renderer helpers (safe DOM construction).
+ */
+function posEl(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined && text !== null) node.textContent = text;
+    return node;
+}
+
+function posExitLabel(reason) {
+    switch (reason) {
+        case 'Take Profit':
+        case 'Target Reached': return 'Hit the +8% target';
+        case 'Stop Loss':
+        case 'Stop Loss Hit': return 'Hit the \u22125% stop';
+        case 'Time Exit': return 'Ran out of time';
+        case 'Manual Exit': return 'Sold by hand';
+        case 'Strategy Change': return 'The rule changed';
+        case 'End of Data': return 'Backtest ended';
+        default: return reason || 'Unknown';
+    }
+}
+
+function posExitTone(reason) {
+    switch (reason) {
+        case 'Take Profit':
+        case 'Target Reached': return 'gain';
+        case 'Stop Loss':
+        case 'Stop Loss Hit': return 'loss';
+        default: return 'neutral';
+    }
+}
+
+/**
  * DTI Backtester - Trades UI Module
  * Handles rendering trades and statistics
  */
@@ -167,7 +226,7 @@ function renderActiveTrades() {
             // Special handling for shares
             const sharesElement = card.querySelector('.shares');
             if (trade.shares === 0 || !trade.shares) {
-                sharesElement.textContent = '⚠️ 0';
+                sharesElement.textContent = '0';
                 sharesElement.classList.add('shares-warning');
                 sharesElement.title = 'No shares recorded - please edit this trade';
             } else {
@@ -247,6 +306,8 @@ function renderActiveTrades() {
             if (daysRemainingElement) {
                 daysRemainingElement.textContent = daysRemaining;
             }
+
+            window.applyPosterPositionBits(card, plValue, holdingDays, daysRemaining);
             
             // Close button event
             const closeBtn = card.querySelector('.btn-close-trade');
@@ -336,20 +397,13 @@ function renderActiveTrades() {
         
         const allTableBody = document.getElementById('history-table-body');
         if (allTableBody) {
-            allTableBody.innerHTML = '';
-            
-            closedTrades.forEach((trade, index) => {
-                const row = createTradeHistoryRow(trade);
-                
-                // Add animation for each row
-                row.style.opacity = '0';
-                allTableBody.appendChild(row);
-                
-                // Trigger animation after a short delay (staggered)
-                setTimeout(() => {
-                    row.style.transition = 'opacity 0.3s ease';
-                    row.style.opacity = '1';
-                }, 30 * index); // Stagger the animations
+            allTableBody.replaceChildren();
+            const cardsBox = document.getElementById('history-cards-body');
+            if (cardsBox) cardsBox.replaceChildren();
+
+            closedTrades.forEach((trade) => {
+                allTableBody.appendChild(createTradeHistoryRow(trade));
+                if (cardsBox) cardsBox.appendChild(createTradeHistoryCard(trade));
             });
         }
         
@@ -369,20 +423,13 @@ function renderActiveTrades() {
                 
                 const winningTableBody = document.getElementById('winning-table-body');
                 if (winningTableBody) {
-                    winningTableBody.innerHTML = '';
-                    
-                    winningTrades.forEach((trade, index) => {
-                        const row = createTradeHistoryRow(trade);
-                        
-                        // Add animation for each row
-                        row.style.opacity = '0';
-                        winningTableBody.appendChild(row);
-                        
-                        // Trigger animation after a short delay (staggered)
-                        setTimeout(() => {
-                            row.style.transition = 'opacity 0.3s ease';
-                            row.style.opacity = '1';
-                        }, 30 * index); // Stagger the animations
+                    winningTableBody.replaceChildren();
+                    const cardsBox = document.getElementById('winning-cards-body');
+                    if (cardsBox) cardsBox.replaceChildren();
+
+                    winningTrades.forEach((trade) => {
+                        winningTableBody.appendChild(createTradeHistoryRow(trade));
+                        if (cardsBox) cardsBox.appendChild(createTradeHistoryCard(trade));
                     });
                 }
             }
@@ -404,20 +451,13 @@ function renderActiveTrades() {
                 
                 const losingTableBody = document.getElementById('losing-table-body');
                 if (losingTableBody) {
-                    losingTableBody.innerHTML = '';
-                    
-                    losingTrades.forEach((trade, index) => {
-                        const row = createTradeHistoryRow(trade);
-                        
-                        // Add animation for each row
-                        row.style.opacity = '0';
-                        losingTableBody.appendChild(row);
-                        
-                        // Trigger animation after a short delay (staggered)
-                        setTimeout(() => {
-                            row.style.transition = 'opacity 0.3s ease';
-                            row.style.opacity = '1';
-                        }, 30 * index); // Stagger the animations
+                    losingTableBody.replaceChildren();
+                    const cardsBox = document.getElementById('losing-cards-body');
+                    if (cardsBox) cardsBox.replaceChildren();
+
+                    losingTrades.forEach((trade) => {
+                        losingTableBody.appendChild(createTradeHistoryRow(trade));
+                        if (cardsBox) cardsBox.appendChild(createTradeHistoryCard(trade));
                     });
                 }
             }
@@ -435,37 +475,31 @@ function renderActiveTrades() {
             if (container) container.style.display = 'none';
             return;
         }
-        
+
         // Calculate P&L by currency
         const currencyStats = {};
-        
+
         trades.forEach(trade => {
             const symbol = trade.symbol || '';
             const isUKStock = symbol.endsWith('.L');
             const isIndianStock = symbol.endsWith('.NS');
-            const currencySymbol = trade.currencySymbol || 
-                (isUKStock ? '£' : 
-                 isIndianStock ? '₹' : '$');
-            
+            const currencySymbol = trade.currencySymbol ||
+                (isUKStock ? '\u00a3' :
+                 isIndianStock ? '\u20b9' : '$');
+
             if (!currencyStats[currencySymbol]) {
                 currencyStats[currencySymbol] = {
-                    totalPL: 0,
-                    totalProfit: 0,
-                    totalLoss: 0,
-                    tradeCount: 0,
-                    profitTrades: 0,
-                    lossTrades: 0
+                    totalPL: 0, totalProfit: 0, totalLoss: 0,
+                    tradeCount: 0, profitTrades: 0, lossTrades: 0
                 };
             }
-            
+
             const plValue = Number(trade.profitLoss || trade.plValue) || 0;
-            // For UK stocks, convert from pence to pounds for display
-            // Indian (₹) and US ($) stocks are already in their base currency units
             const displayPLValue = isUKStock ? plValue / 100 : plValue;
-            
+
             currencyStats[currencySymbol].totalPL += displayPLValue;
             currencyStats[currencySymbol].tradeCount++;
-            
+
             if (displayPLValue > 0) {
                 currencyStats[currencySymbol].totalProfit += displayPLValue;
                 currencyStats[currencySymbol].profitTrades++;
@@ -474,53 +508,31 @@ function renderActiveTrades() {
                 currencyStats[currencySymbol].lossTrades++;
             }
         });
-        
-        // Clear container and render cards
-        container.innerHTML = '';
-        
+
+        container.replaceChildren();
+
         Object.entries(currencyStats).forEach(([currency, stats]) => {
             const netPL = stats.totalPL;
-            const isProfit = netPL > 0;
+            const tone = netPL > 0 ? 'gain' : (netPL < 0 ? 'loss' : '');
             const avgPL = stats.tradeCount > 0 ? netPL / stats.tradeCount : 0;
-            
-            const card = document.createElement('div');
-            card.className = `pl-summary-card ${isProfit ? 'profit' : (netPL < 0 ? 'loss' : '')}`;
-            card.innerHTML = `
-                <div class="pl-summary-header">
-                    <h4 class="pl-summary-title">${currency} Market P&L</h4>
-                    <div class="pl-summary-icon">${isProfit ? '📈' : (netPL < 0 ? '📉' : '📊')}</div>
-                </div>
-                <div class="pl-summary-amount ${isProfit ? 'profit' : (netPL < 0 ? 'loss' : '')}">${currency}${Math.abs(netPL).toFixed(2)}</div>
-                <div class="pl-summary-details">
-                    <span class="pl-summary-trades">${stats.tradeCount} trades</span>
-                    <span class="pl-summary-avg">Avg: ${currency}${avgPL.toFixed(2)}</span>
-                </div>
-                ${stats.totalProfit > 0 && stats.totalLoss > 0 ? `
-                <div>
-                    <div>
-                        <span>Profits: ${currency}${stats.totalProfit.toFixed(2)} (${stats.profitTrades})</span>
-                        <span>Losses: ${currency}${stats.totalLoss.toFixed(2)} (${stats.lossTrades})</span>
-                    </div>
-                </div>
-                ` : ''}
-            `;
-            
+
+            const card = posEl('div', 'pl-summary-card statistic-card sa-card--sunk' + (tone ? ' ' + tone : ''));
+            const stat = posEl('div', 'sa-stat');
+            stat.appendChild(posEl('span', 'sa-stat__label', currency + ' markets'));
+            stat.appendChild(posEl('span', 'sa-stat__value sa-stat__value--sm' + (tone ? ' sa-stat__value--' + tone : ''),
+                (netPL < 0 ? '\u2212' : '') + currency + Math.abs(netPL).toFixed(2)));
+            let context = stats.tradeCount + (stats.tradeCount === 1 ? ' trade' : ' trades')
+                + ' \u00b7 average ' + (avgPL < 0 ? '\u2212' : '') + currency + Math.abs(avgPL).toFixed(2) + ' each';
+            if (stats.totalProfit > 0 && stats.totalLoss > 0) {
+                context += ' \u00b7 made ' + currency + stats.totalProfit.toFixed(2)
+                    + ', lost ' + currency + stats.totalLoss.toFixed(2);
+            }
+            stat.appendChild(posEl('span', 'sa-stat__context', context));
+            card.appendChild(stat);
             container.appendChild(card);
         });
 
         container.style.display = 'grid';
-        
-        // Add animations to cards
-        const cards = container.querySelectorAll('.pl-summary-card');
-        cards.forEach((card, index) => {
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(20px)';
-            setTimeout(() => {
-                card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-                card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
-            }, 100 + (index * 100));
-        });
     }
     
     /**
@@ -530,74 +542,81 @@ function renderActiveTrades() {
      */
     function createTradeHistoryRow(trade) {
         const row = document.createElement('tr');
-        
+
         // Calculate holding period
         const entryDate = new Date(trade.entryDate);
         const exitDate = new Date(trade.exitDate);
         const holdingDays = Math.floor((exitDate - entryDate) / (1000 * 60 * 60 * 24));
-        
-        // Create exit reason tag class
-        let exitTagClass = '';
-        switch(trade.exitReason) {
-            case 'Take Profit':
-            case 'Target Reached':
-                exitTagClass = 'tp-tag';
-                break;
-            case 'Stop Loss Hit':
-            case 'Stop Loss':
-                exitTagClass = 'sl-tag';
-                break;
-            case 'Time Exit':
-                exitTagClass = 'time-tag';
-                break;
-            default:
-                exitTagClass = 'end-tag';
-                break;
-        }
-        
-        // Create cells
+
         try {
-            // Debug logging for TW.L trade specifically
-            if (trade.symbol === 'TW.L' && trade.status === 'closed') {
-            }
-            
-            // Ensure all numeric values are valid - API now always provides investmentAmount
             const investmentAmount = Number(trade.investmentAmount) || 0;
-            // API now provides consistent profitLoss and profitLossPercentage fields for all trade statuses
-            // But trade-core.js also maps them to plPercent and plValue for backward compatibility
             const plPercent = Number(trade.profitLossPercentage || trade.plPercent) || 0;
             const plValue = Number(trade.profitLoss || trade.plValue) || 0;
-            
-            // Debug logging for TW.L calculations
-            if (trade.symbol === 'TW.L' && trade.status === 'closed') {
-            }
-            
-            // Investment amounts are stored in base currency (pounds for UK, rupees for India, dollars for US)
-            // No conversion needed for display
-            const isUKStock = trade.symbol && trade.symbol.endsWith('.L');
-            const displayInvestment = investmentAmount;
-            const displayPLValue = plValue;
-            
-            // Get company name from mapping
-            const displayName = window.CompanyNames ? 
-                window.CompanyNames.getCompanyName(trade.symbol) : 
+            const currency = trade.currencySymbol || TradeCore.getCurrencySymbol(trade.symbol);
+            const tone = plPercent > 0 ? 'gain' : 'loss';
+
+            const displayName = window.CompanyNames ?
+                window.CompanyNames.getCompanyName(trade.symbol) :
                 trade.stockName || trade.symbol || 'Unknown';
-            
-            row.innerHTML = `
-                <td>${displayName} <span class="stock-symbol">${trade.symbol || ''}</span></td>
-                <td>${TradeCore.formatDate(trade.entryDate)}</td>
-                <td>${TradeCore.formatDate(trade.exitDate)}</td>
-                <td>${holdingDays} days</td>
-                <td>${trade.currencySymbol || TradeCore.getCurrencySymbol(trade.symbol)}${displayInvestment.toFixed(2)}</td>
-                <td class="${plPercent > 0 ? 'positive' : 'negative'}">${plPercent.toFixed(2)}%</td>
-                <td class="${plValue > 0 ? 'positive' : 'negative'}">${trade.currencySymbol || TradeCore.getCurrencySymbol(trade.symbol)}${displayPLValue.toFixed(2)}</td>
-                <td><span class="exit-tag ${exitTagClass}">${trade.exitReason || 'Unknown'}</span></td>
-            `;
+
+            const stockTd = document.createElement('td');
+            stockTd.appendChild(posEl('strong', null, displayName));
+            stockTd.appendChild(document.createTextNode(' '));
+            stockTd.appendChild(posEl('span', 'stock-symbol', trade.symbol || ''));
+            row.appendChild(stockTd);
+            row.appendChild(posEl('td', null, TradeCore.formatDate(trade.entryDate)));
+            row.appendChild(posEl('td', null, TradeCore.formatDate(trade.exitDate)));
+            row.appendChild(posEl('td', 'num', holdingDays + ' days'));
+            row.appendChild(posEl('td', 'num', currency + investmentAmount.toFixed(2)));
+            row.appendChild(posEl('td', 'num ' + tone, plPercent.toFixed(2) + '%'));
+            row.appendChild(posEl('td', 'num ' + (plValue > 0 ? 'gain' : 'loss'),
+                (plValue < 0 ? '\u2212' : '') + currency + Math.abs(plValue).toFixed(2)));
+            const reasonTd = document.createElement('td');
+            reasonTd.appendChild(posEl('span', 'sa-badge sa-badge--' + posExitTone(trade.exitReason), posExitLabel(trade.exitReason)));
+            row.appendChild(reasonTd);
         } catch (error) {
-            row.innerHTML = '<td colspan="8">Error displaying trade</td>';
+            const errTd = posEl('td', null, 'Error displaying trade');
+            errTd.colSpan = 8;
+            row.appendChild(errTd);
         }
-        
+
         return row;
+    }
+
+    /**
+     * Stacked card version of a closed trade for narrow screens.
+     * @param {Object} trade - Trade object
+     * @returns {HTMLElement}
+     */
+    function createTradeHistoryCard(trade) {
+        const entryDate = new Date(trade.entryDate);
+        const exitDate = new Date(trade.exitDate);
+        const holdingDays = Math.floor((exitDate - entryDate) / (1000 * 60 * 60 * 24));
+        const investmentAmount = Number(trade.investmentAmount) || 0;
+        const plPercent = Number(trade.profitLossPercentage || trade.plPercent) || 0;
+        const plValue = Number(trade.profitLoss || trade.plValue) || 0;
+        const currency = trade.currencySymbol || TradeCore.getCurrencySymbol(trade.symbol);
+        const displayName = window.CompanyNames ?
+            window.CompanyNames.getCompanyName(trade.symbol) :
+            trade.stockName || trade.symbol || 'Unknown';
+
+        const rc = posEl('div', 'sa-rowcard');
+        const top = posEl('div', 'sa-rowcard__top');
+        const title = posEl('strong', null, trade.symbol || displayName);
+        top.appendChild(title);
+        top.appendChild(posEl('span', 'sa-rowcard__v ' + (plPercent > 0 ? 'gain' : 'loss'), plPercent.toFixed(2) + '%'));
+        rc.appendChild(top);
+        const grid = posEl('div', 'sa-rowcard__grid');
+        [['Sold on', TradeCore.formatDate(trade.exitDate)],
+         ['Held for', holdingDays + ' days'],
+         ['Put in', currency + investmentAmount.toFixed(2)],
+         ['Result', (plValue < 0 ? '\u2212' : '') + currency + Math.abs(plValue).toFixed(2)],
+         ['Why it sold', posExitLabel(trade.exitReason)]].forEach(pair => {
+            grid.appendChild(posEl('span', 'sa-rowcard__k', pair[0]));
+            grid.appendChild(posEl('span', 'sa-rowcard__v', pair[1]));
+        });
+        rc.appendChild(grid);
+        return rc;
     }
     
     /**
@@ -607,46 +626,44 @@ function renderActiveTrades() {
      * @returns {HTMLElement} - Statistics card element
      */
     function createCurrencyStatCard(stats, currencySymbol) {
-        const statCard = document.createElement('div');
-        statCard.className = 'currency-stat-card';
+        const statCard = posEl('div', 'currency-stat-card');
         statCard.setAttribute('data-currency', currencySymbol);
-        
-        // Debug UK stats
-        if (currencySymbol === '£') {
-        }
-        
-        statCard.innerHTML = `
-            <div class="currency-header">
-                <h4 class="currency-title">${currencySymbol} Markets</h4>
-            </div>
-            <div class="currency-stats-grid">
-                <div class="statistic-card">
-                    <div class="statistic-value" data-stat="active">${stats.totalActive}</div>
-                    <div class="statistic-label">Active Trades</div>
-                </div>
-                <div class="statistic-card">
-                    <div class="statistic-value" data-stat="invested">${currencySymbol}${stats.totalInvested.toFixed(2)}</div>
-                    <div class="statistic-label">Total Invested</div>
-                </div>
-                <div class="statistic-card ${stats.openPLPercent > 0 ? 'success' : (stats.openPLPercent < 0 ? 'danger' : '')}">
-                    <div class="statistic-value ${stats.openPLPercent >= 0 ? 'positive' : 'negative'}" data-stat="openPL">${stats.openPLPercent.toFixed(2)}%</div>
-                    <div class="statistic-label">Open P&L</div>
-                </div>
-                <div class="statistic-card">
-                    <div class="statistic-value" data-stat="closed">${stats.totalClosed}</div>
-                    <div class="statistic-label">Closed Trades</div>
-                </div>
-                <div class="statistic-card ${stats.winRate >= 50 ? 'success' : ''}">
-                    <div class="statistic-value ${stats.winRate >= 50 ? 'positive' : ''}" data-stat="winRate">${stats.winRate.toFixed(2)}%</div>
-                    <div class="statistic-label">Win Rate</div>
-                </div>
-                <div class="statistic-card ${stats.avgProfit > 0 ? 'success' : (stats.avgProfit < 0 ? 'danger' : '')}">
-                    <div class="statistic-value ${stats.avgProfit > 0 ? 'positive' : (stats.avgProfit < 0 ? 'negative' : '')}" data-stat="avgProfit">${stats.avgProfit.toFixed(2)}%</div>
-                    <div class="statistic-label">Avg Profit/Trade</div>
-                </div>
-            </div>
-        `;
-        
+
+        statCard.appendChild(posEl('h4', 'currency-title', currencySymbol + ' markets'));
+
+        const grid = posEl('div', 'currency-stats-grid');
+        const mk = (label, valueText, context, dataStat, valueTone, cardTone) => {
+            const cardEl = posEl('div', 'statistic-card sa-card--sunk' + (cardTone ? ' ' + cardTone : ''));
+            const stat = posEl('div', 'sa-stat');
+            stat.appendChild(posEl('span', 'sa-stat__label', label));
+            const value = posEl('span', 'sa-stat__value sa-stat__value--sm statistic-value' + (valueTone ? ' ' + valueTone : ''), valueText);
+            value.setAttribute('data-stat', dataStat);
+            stat.appendChild(value);
+            stat.appendChild(posEl('span', 'sa-stat__context', context));
+            cardEl.appendChild(stat);
+            return cardEl;
+        };
+
+        grid.appendChild(mk('Holding now', String(stats.totalActive),
+            'Positions open right now.', 'active'));
+        grid.appendChild(mk('In the market', currencySymbol + stats.totalInvested.toFixed(2),
+            'Money currently at work.', 'invested'));
+        grid.appendChild(mk('Open profit and loss', stats.openPLPercent.toFixed(2) + '%',
+            'Nothing is locked in until it sells.', 'openPL',
+            stats.openPLPercent >= 0 ? 'positive' : 'negative',
+            stats.openPLPercent > 0 ? 'success' : (stats.openPLPercent < 0 ? 'danger' : '')));
+        grid.appendChild(mk('Already sold', String(stats.totalClosed),
+            'Positions that have become trades.', 'closed'));
+        grid.appendChild(mk('Win rate', stats.winRate.toFixed(2) + '%',
+            'Closed trades that made money.', 'winRate',
+            stats.winRate >= 50 ? 'positive' : '',
+            stats.winRate >= 50 ? 'success' : ''));
+        grid.appendChild(mk('Average per trade', stats.avgProfit.toFixed(2) + '%',
+            'The mean result of one closed trade.', 'avgProfit',
+            stats.avgProfit > 0 ? 'positive' : (stats.avgProfit < 0 ? 'negative' : ''),
+            stats.avgProfit > 0 ? 'success' : (stats.avgProfit < 0 ? 'danger' : '')));
+
+        statCard.appendChild(grid);
         return statCard;
     }
     
@@ -744,12 +761,14 @@ function renderActiveTrades() {
         if (openPL) {
             const plValue = currencyStats.overall.openPLPercent;
             openPL.textContent = `${plValue.toFixed(2)}%`;
-            openPL.className = plValue >= 0 ? 'positive' : 'negative';
+            openPL.classList.toggle('positive', plValue >= 0);
+            openPL.classList.toggle('negative', plValue < 0);
             
             // Update card styling
             const plCard = openPL.closest('.statistic-card');
             if (plCard) {
-                plCard.className = `statistic-card ${plValue > 0 ? 'success' : (plValue < 0 ? 'danger' : '')}`;
+                plCard.classList.toggle('success', plValue > 0);
+                plCard.classList.toggle('danger', plValue < 0);
             }
         }
         
@@ -762,7 +781,7 @@ function renderActiveTrades() {
             const oldRate = parseFloat(winRate.textContent) || 0;
 
             winRate.textContent = `${newRate.toFixed(2)}%`;
-            winRate.className = `statistic-value ${newRate >= 50 ? 'positive' : ''}`;
+            winRate.classList.toggle('positive', newRate >= 50);
 
             // Add animation if value changed
             if (Math.abs(newRate - oldRate) > 0.01) {
@@ -778,7 +797,7 @@ function renderActiveTrades() {
             // Update card styling
             const rateCard = winRate.closest('.statistic-card');
             if (rateCard) {
-                rateCard.className = `statistic-card ${newRate >= 50 ? 'success' : ''}`;
+                rateCard.classList.toggle('success', newRate >= 50);
             }
         }
         
@@ -787,7 +806,8 @@ function renderActiveTrades() {
             const oldProfit = parseFloat(avgProfit.textContent) || 0;
 
             avgProfit.textContent = `${newProfit.toFixed(2)}%`;
-            avgProfit.className = `statistic-value ${newProfit > 0 ? 'positive' : (newProfit < 0 ? 'negative' : '')}`;
+            avgProfit.classList.toggle('positive', newProfit > 0);
+            avgProfit.classList.toggle('negative', newProfit < 0);
 
             // Add animation if value changed
             if (Math.abs(newProfit - oldProfit) > 0.01) {
@@ -803,7 +823,8 @@ function renderActiveTrades() {
             // Update card styling
             const profitCard = avgProfit.closest('.statistic-card');
             if (profitCard) {
-                profitCard.className = `statistic-card ${newProfit > 0 ? 'success' : (newProfit < 0 ? 'danger' : '')}`;
+                profitCard.classList.toggle('success', newProfit > 0);
+                profitCard.classList.toggle('danger', newProfit < 0);
             }
         }
         
@@ -830,16 +851,18 @@ function renderActiveTrades() {
                 }
                 if (elements.openPL) {
                     elements.openPL.textContent = `${stats.openPLPercent.toFixed(2)}%`;
-                    elements.openPL.className = stats.openPLPercent >= 0 ? 'positive' : 'negative';
+                    elements.openPL.classList.toggle('positive', stats.openPLPercent >= 0);
+                    elements.openPL.classList.toggle('negative', stats.openPLPercent < 0);
                 }
                 if (elements.closed) elements.closed.textContent = stats.totalClosed;
                 if (elements.winRate) {
                     elements.winRate.textContent = `${stats.winRate.toFixed(2)}%`;
-                    elements.winRate.className = stats.winRate >= 50 ? 'positive' : '';
+                    elements.winRate.classList.toggle('positive', stats.winRate >= 50);
                 }
                 if (elements.avgProfit) {
                     elements.avgProfit.textContent = `${stats.avgProfit.toFixed(2)}%`;
-                    elements.avgProfit.className = stats.avgProfit > 0 ? 'positive' : (stats.avgProfit < 0 ? 'negative' : '');
+                    elements.avgProfit.classList.toggle('positive', stats.avgProfit > 0);
+                    elements.avgProfit.classList.toggle('negative', stats.avgProfit < 0);
                 }
             }
         }
@@ -851,32 +874,37 @@ function renderActiveTrades() {
      * @param {Object} stats - Overall statistics
      */
     function renderOverallStatistics(container, stats) {
-        container.innerHTML = `
-            <div class="statistic-card">
-                <div class="statistic-value" id="active-trade-count">${stats.totalActive}</div>
-                <div class="statistic-label">Active Trades</div>
-            </div>
-            <div class="statistic-card">
-                <div class="statistic-value" id="total-invested">${TradeCore.CURRENCY_SYMBOL}${stats.totalInvested.toFixed(2)}</div>
-                <div class="statistic-label">Total Invested</div>
-            </div>
-            <div class="statistic-card ${stats.openPLPercent > 0 ? 'success' : (stats.openPLPercent < 0 ? 'danger' : '')}">
-                <div class="statistic-value ${stats.openPLPercent >= 0 ? 'positive' : 'negative'}" id="open-pl">${stats.openPLPercent.toFixed(2)}%</div>
-                <div class="statistic-label">Open P&L</div>
-            </div>
-            <div class="statistic-card">
-                <div class="statistic-value" id="closed-trades-count">${stats.totalClosed}</div>
-                <div class="statistic-label">Closed Trades</div>
-            </div>
-            <div class="statistic-card ${stats.winRate >= 50 ? 'success' : ''}">
-                <div class="statistic-value ${stats.winRate >= 50 ? 'positive' : ''}" id="win-rate">${stats.winRate.toFixed(2)}%</div>
-                <div class="statistic-label">Win Rate</div>
-            </div>
-            <div class="statistic-card ${stats.avgProfit > 0 ? 'success' : (stats.avgProfit < 0 ? 'danger' : '')}">
-                <div class="statistic-value ${stats.avgProfit > 0 ? 'positive' : (stats.avgProfit < 0 ? 'negative' : '')}" id="avg-profit">${stats.avgProfit.toFixed(2)}%</div>
-                <div class="statistic-label">Avg Profit/Trade</div>
-            </div>
-        `;
+        container.replaceChildren();
+        const mk = (label, valueText, context, id, valueTone, cardTone) => {
+            const cardEl = posEl('div', 'statistic-card sa-card--sunk' + (cardTone ? ' ' + cardTone : ''));
+            const stat = posEl('div', 'sa-stat');
+            stat.appendChild(posEl('span', 'sa-stat__label', label));
+            const value = posEl('span', 'sa-stat__value statistic-value' + (valueTone ? ' ' + valueTone : ''), valueText);
+            value.id = id;
+            stat.appendChild(value);
+            stat.appendChild(posEl('span', 'sa-stat__context', context));
+            cardEl.appendChild(stat);
+            return cardEl;
+        };
+
+        container.appendChild(mk('Holding right now', String(stats.totalActive),
+            'Positions the formula is tracking for you.', 'active-trade-count'));
+        container.appendChild(mk('In the market', TradeCore.CURRENCY_SYMBOL + stats.totalInvested.toFixed(2),
+            "Across everything you're holding.", 'total-invested'));
+        container.appendChild(mk('Open profit and loss', stats.openPLPercent.toFixed(2) + '%',
+            'Nothing is locked in until it sells.', 'open-pl',
+            stats.openPLPercent >= 0 ? 'positive' : 'negative',
+            stats.openPLPercent > 0 ? 'success' : (stats.openPLPercent < 0 ? 'danger' : '')));
+        container.appendChild(mk('Already sold', String(stats.totalClosed),
+            'Positions that have become trades.', 'closed-trades-count'));
+        container.appendChild(mk('Win rate', stats.winRate.toFixed(2) + '%',
+            'How many closed trades made money.', 'win-rate',
+            stats.winRate >= 50 ? 'positive' : '',
+            stats.winRate >= 50 ? 'success' : ''));
+        container.appendChild(mk('Average per trade', stats.avgProfit.toFixed(2) + '%',
+            'The mean result of one closed trade.', 'avg-profit',
+            stats.avgProfit > 0 ? 'positive' : (stats.avgProfit < 0 ? 'negative' : ''),
+            stats.avgProfit > 0 ? 'success' : (stats.avgProfit < 0 ? 'danger' : '')));
     }
 
     // Return public API

@@ -420,6 +420,10 @@ window.TradeUIModules.filters = (function() {
                 // Days remaining
                 const daysRemaining = Math.max(0, Math.floor((trade.squareOffDate - new Date()) / (1000 * 60 * 60 * 24)));
                 card.querySelector('.days-remaining').textContent = daysRemaining;
+
+                if (window.applyPosterPositionBits) {
+                    window.applyPosterPositionBits(card, plValue, holdingDays, daysRemaining);
+                }
                 
                 // Add highlighting for trades matching filter
                 if (currentFilter === 'target-near' && trade.currentPLPercent > 0) {
