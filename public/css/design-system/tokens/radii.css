@@ -1,0 +1,8 @@
+/* Poster geometry: square frames, pill chips. Nothing in between matters. */
+:root{
+  --r-xs:0px;
+  --r-sm:2px;
+  --r-md:2px;
+  --r-lg:4px;
+  --r-pill:999px;
+}

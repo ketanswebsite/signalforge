@@ -1,0 +1,21 @@
+/* Short and purposeful. Decorative hover motion was removed in v2 —
+   what's left is state feedback: things appearing, switching, confirming. */
+:root{
+  --ease-out:cubic-bezier(.2,.8,.3,1);        /* @kind other */
+  --ease-in-out:cubic-bezier(.5,0,.2,1);      /* @kind other */
+  --ease-spring:cubic-bezier(.34,1.4,.5,1);   /* @kind other */
+
+  --dur-1:120ms; /* @kind other */
+  --dur-2:180ms; /* @kind other */
+  --dur-3:260ms; /* @kind other */
+  --dur-4:400ms; /* @kind other */
+}
+@media (prefers-reduced-motion:reduce){
+  :root{
+    --dur-1:0ms; /* @kind other */
+    --dur-2:0ms; /* @kind other */
+    --dur-3:0ms; /* @kind other */
+    --dur-4:0ms; /* @kind other */
+  }
+  *,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}
+}

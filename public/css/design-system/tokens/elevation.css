@@ -1,0 +1,15 @@
+/* Hard offset shadows — printed, not blurred. Gold pops, ink grounds. */
+:root{
+  --shadow-1:2px 2px 0 rgba(20,18,16,.16);
+  --shadow-2:5px 5px 0 rgba(20,18,16,.2);
+  --shadow-3:9px 9px 0 rgba(20,18,16,.24);
+  --shadow-pop:6px 6px 0 var(--gold-brand);  /* @kind shadow */
+  --ring-focus:0 0 0 3px rgba(138,105,18,.35); /* @kind other */
+}
+[data-theme="dark"]{
+  --shadow-1:2px 2px 0 rgba(0,0,0,.55);
+  --shadow-2:5px 5px 0 rgba(0,0,0,.6);
+  --shadow-3:9px 9px 0 rgba(0,0,0,.65);
+  --shadow-pop:6px 6px 0 rgba(227,194,90,.4); /* @kind shadow */
+  --ring-focus:0 0 0 3px rgba(227,194,90,.4); /* @kind other */
+}

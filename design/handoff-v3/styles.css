@@ -1,0 +1,13 @@
+/* SutrAlgo Design System — global entry point.
+   Light-first with a dark theme. Imports only; no rules here. */
+@import url("tokens/fonts.css");
+@import url("tokens/palette.css");
+@import url("tokens/themes.css");
+@import url("tokens/typography.css");
+@import url("tokens/spacing.css");
+@import url("tokens/radii.css");
+@import url("tokens/elevation.css");
+@import url("tokens/motion.css");
+@import url("tokens/layers.css");
+@import url("tokens/base.css");
+@import url("css/components.css");

@@ -1,0 +1,75 @@
+/* Semantic aliases. Light (cream paper) is the default;
+   data-theme="dark" flips to the ink poster. */
+:root{
+  --bg:var(--cream-10);
+  --bg-sunk:var(--cream-20);
+  --surface:var(--cream-05);
+  --surface-2:var(--cream-10);
+  --surface-3:var(--cream-20);
+
+  --text:var(--ink-95);
+  --text-2:var(--stone-70);
+  --text-3:var(--stone-50);
+  --text-inverse:var(--cream-10);
+
+  --frame:var(--ink-95);        /* heavy poster border */
+  --line:var(--cream-30);       /* soft internal divider */
+  --line-strong:var(--cream-40);
+  --line-focus:var(--gold-deep);
+
+  --accent:var(--gold-deep);    /* gold you can read on cream */
+  --accent-hover:#6E5406;      /* @kind color */
+  --accent-on:#FFFFFF;         /* @kind color */
+  --accent-soft:var(--gold-tint);
+  --accent-edge:var(--gold-brand);
+  --accent-field:var(--gold-brand); /* the solid gold poster field */
+  --gold-on-band:var(--gold-bright); /* gold on the ink masthead band */
+
+  --gain:var(--gain-ink);
+  --gain-soft:var(--gain-tint);
+  --loss:var(--loss-ink);
+  --loss-soft:var(--loss-tint);
+  --warn:var(--warn-ink);
+  --warn-soft:var(--warn-tint);
+  --info:var(--info-ink);
+  --info-soft:var(--info-tint);
+
+  --scrim:rgba(20,18,16,.5);
+}
+
+[data-theme="dark"]{
+  --bg:var(--ink-95);
+  --bg-sunk:#0D0B09;           /* @kind color */
+  --surface:var(--ink-90);
+  --surface-2:var(--ink-80);
+  --surface-3:var(--ink-70);
+
+  --text:var(--cream-10);
+  --text-2:var(--cream-40);
+  --text-3:var(--stone-50);
+  --text-inverse:var(--ink-95);
+
+  --frame:var(--cream-10);
+  --line:rgba(243,239,230,.16); /* @kind color */
+  --line-strong:rgba(243,239,230,.32); /* @kind color */
+  --line-focus:var(--gold-bright);
+
+  --accent:var(--gold-bright);
+  --accent-hover:var(--gold-brand);
+  --accent-on:var(--ink-95);
+  --accent-soft:rgba(227,194,90,.16); /* @kind color */
+  --accent-edge:var(--gold-bright);
+  --accent-field:var(--gold-brand);
+  --gold-on-band:var(--gold-deep); /* dark theme: the band inverts to cream, so gold deepens */
+
+  --gain:var(--gain-lit);
+  --gain-soft:rgba(74,222,128,.15); /* @kind color */
+  --loss:var(--loss-lit);
+  --loss-soft:rgba(248,113,113,.15); /* @kind color */
+  --warn:var(--warn-lit);
+  --warn-soft:rgba(251,191,36,.15); /* @kind color */
+  --info:var(--info-lit);
+  --info-soft:rgba(143,190,245,.15); /* @kind color */
+
+  --scrim:rgba(0,0,0,.65);
+}

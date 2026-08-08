@@ -381,6 +381,26 @@ app.get('/api/signals/screened-today', async (req, res) => {
   }
 });
 
+// Token-guarded manual scan trigger (ops/testing) — same ANALYSIS_API_TOKEN
+// guard as screened-today. Fire-and-forget: responds immediately, the scan
+// runs in the background and reports through logs/Telegram as usual.
+app.post('/api/scanner/run', (req, res) => {
+  const token = req.query.token || req.get('x-analysis-token');
+  if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  if (!stockScanner) {
+    return res.status(503).json({ error: 'Scanner not loaded' });
+  }
+  if (stockScanner.isScanning) {
+    return res.status(409).json({ error: 'Scan already in progress' });
+  }
+  stockScanner.runHighConvictionScan()
+    .then(r => console.log('[MANUAL SCAN] finished:', r && r.success ? `success, alertsSent=${r.alertsSent}` : JSON.stringify(r)))
+    .catch(e => console.error('[MANUAL SCAN] failed:', e.message));
+  res.json({ success: true, started: true, note: 'Scan running in background — watch logs/Telegram. Typically 15-40 min.' });
+});
+
 // Protect all API routes except auth routes and telegram webhook
 app.use('/api', ensureAuthenticatedAPI);
 

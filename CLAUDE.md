@@ -1,6 +1,6 @@
 - use render mcp to deploy and monitor deploy logs after we are done writing the code and pushing to github
 - when doing changes to postgre sql on render changes, ensure migration is done correctly and view from render mcp if the right data is at right places
-- always ensure css is in main.css file only - no inline css in html, no inline css in js
+- css architecture (v3 "Poster" design system): tokens + components live in public/css/design-system/ (adopted from design/handoff-v3 — read its README.md for the migration map). Migrated pages (landing.html, pricing.html, login.html so far) load design-system/index.css + css/marketing.css and must use tokens/classes from the design system. NOT-yet-migrated app/admin pages still use public/css/main.css only — keep their css there until each is migrated. Never add inline css in html or js on any page.
 - always create .md plan file first - and categories them in 3 phases; 1. identification of the issue, 2. plan to resolve the issue, 3. testing the reloved issue. Important Note - Delete the created the .md file after 3 is complete. Important Note - Neve delete the CLAUDE.md file this has important memory
 - try and reuse the exisiting css from the main.css file rather adding new css code when new elements are created, this will ensure consistency accros pages and element - if you find something which is like a duplicate ensure you keep only one and edit the html and js to reuse the css.
 - always try and use google fonts and goole material icons or logos whereever required.

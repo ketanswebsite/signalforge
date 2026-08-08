@@ -1,0 +1,61 @@
+/* Marketing surface — page-level composition for landing / pricing / login.
+   Everything component-shaped lives in design-system/components.css; this file
+   only carries the poster hero band, rule chips, footer grid, and FAQ rows
+   that the marketing specs express as one-off layout. */
+
+.mk-hero{background:var(--text);border-bottom:3px solid var(--frame);padding-bottom:72px}
+.mk-hero__in{max-width:var(--page-max);margin:0 auto;padding:var(--s-8) var(--gutter) 0;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:var(--s-8);align-items:center}
+.mk-hero__badge{display:inline-block;background:var(--gold-on-band);color:var(--text);font-size:var(--size-xs);font-weight:700;letter-spacing:var(--track-label);text-transform:uppercase;padding:5px 11px;margin-bottom:var(--s-4)}
+.mk-hero h1{font-size:var(--size-hero);letter-spacing:-.02em;margin-bottom:var(--s-4);color:var(--bg)}
+.mk-hero h1 em{font-style:normal;color:var(--gold-on-band)}
+.mk-hero__lede{font-size:var(--size-body-lg);max-width:46ch;margin-bottom:var(--s-5);color:var(--bg);opacity:.85}
+.mk-hero__small{font-size:var(--size-sm);color:var(--bg);opacity:.6}
+/* On-band button variants: used anywhere the ink band is the ground
+   (hero section and the appbar), so they are not scoped to .mk-hero. */
+.sa-btn--onband{background:var(--bg);color:var(--text);border-color:var(--bg);box-shadow:4px 4px 0 var(--gold-on-band)}
+.sa-btn--onband:hover{background:var(--cream-20);box-shadow:4px 4px 0 var(--gold-on-band)}
+.sa-btn--ghostband{background:transparent;color:var(--bg);border-color:var(--bg)}
+.sa-btn--ghostband:hover{background:rgba(255,255,255,.08);color:var(--bg)}
+.mk-hero__card{margin-bottom:-72px}
+.mk-scanrow{border:1.5px solid var(--line-strong);padding:var(--s-3)}
+.mk-scanrow__grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.mk-after-hero{padding-top:calc(72px + var(--s-7)) !important}
+
+.mk-section{max-width:var(--page-max);margin:0 auto;padding:var(--s-8) var(--gutter)}
+.mk-rulechips{display:flex;gap:var(--s-4);flex-wrap:wrap}
+.mk-rulechip{flex:1;min-width:170px;border:2px solid var(--frame);padding:var(--s-4);background:var(--surface);box-shadow:var(--shadow-pop)}
+.mk-rulechip__n{font-family:var(--font-display);font-weight:var(--w-display);font-size:var(--size-stat);letter-spacing:-.01em;line-height:1}
+.mk-rulechip__label{font-size:var(--size-sm);color:var(--text-2);margin-top:4px}
+
+.mk-h1-as-h2{font-size:var(--size-h2) !important;letter-spacing:var(--track-head)}
+.mk-fineprint{font-size:var(--size-xs);color:var(--text-3);margin-top:var(--s-4)}
+
+.mk-faq{border-bottom:1px solid var(--line)}
+.mk-faq__q{width:100%;display:flex;justify-content:space-between;align-items:center;gap:12px;background:none;border:0;padding:var(--s-4) 0;cursor:pointer;text-align:left;font-family:var(--font-sans);font-size:var(--size-body);font-weight:var(--w-medium);color:var(--text);min-height:var(--tap-min)}
+.mk-faq__q .material-symbols-rounded{color:var(--text-3);transition:transform var(--dur-2) var(--ease-out)}
+.mk-faq__q[aria-expanded="true"] .material-symbols-rounded{transform:rotate(180deg)}
+.mk-faq__a{padding-bottom:var(--s-4);max-width:var(--reading-max);font-size:var(--size-sm);display:none}
+.mk-faq__q[aria-expanded="true"]+.mk-faq__a{display:block;animation:sa-fade var(--dur-2) var(--ease-out)}
+
+.mk-foot{border-top:2.5px solid var(--frame);background:var(--surface);margin-top:var(--s-9)}
+.mk-foot__in{max-width:var(--page-max);margin:0 auto;padding:var(--s-7) var(--gutter)}
+.mk-foot__grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:var(--s-6)}
+.mk-foot__col h4{font-size:var(--size-sm);margin-bottom:10px}
+.mk-foot__col a,.mk-foot__col span{display:block;font-size:var(--size-sm);color:var(--text-2);margin-bottom:8px}
+.mk-foot__copy{margin-top:var(--s-4);font-size:var(--size-xs);color:var(--text-3)}
+
+.mk-menu{display:none;position:absolute;top:var(--appbar-h);left:0;right:0;background:var(--text);border-bottom:2.5px solid var(--frame);padding:var(--s-3) var(--gutter) var(--s-4);z-index:var(--z-appbar)}
+.mk-menu.is-open{display:grid;gap:6px}
+.mk-menu a{color:var(--bg);font-size:var(--size-sm);font-weight:var(--w-bold);padding:10px 0;text-decoration:none;opacity:.85}
+.mk-menu a:hover{opacity:1;color:var(--gold-on-band);text-decoration:none}
+
+@media (max-width:960px){
+  .mk-hero__in{grid-template-columns:1fr;padding-top:var(--s-6)}
+  .mk-foot__grid{grid-template-columns:1fr 1fr}
+}
+@media (max-width:720px){
+  .mk-rulechips{flex-direction:column}
+  .mk-hero__card{margin-bottom:-48px}
+  .mk-hero{padding-bottom:48px}
+  .mk-after-hero{padding-top:calc(48px + var(--s-6)) !important}
+}

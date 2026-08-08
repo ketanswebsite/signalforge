@@ -1,0 +1,6 @@
+/* Two weights of one superfamily do everything.
+   Archivo Black  display — headlines, card titles, big numbers (single weight)
+   Archivo        body, UI, labels, and every figure (tabular where columns align) */
+@import url("https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&display=swap");
+/* Material Symbols Rounded — the only icon system. */
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0,0&display=block");

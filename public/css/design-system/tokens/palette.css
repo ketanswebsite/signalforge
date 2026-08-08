@@ -1,0 +1,43 @@
+/* Raw palette — the Poster identity: warm cream paper, near-black ink,
+   gold as a field and a highlight. Components read themes.css, never these. */
+:root{
+  /* Cream paper */
+  --cream-00:#FFFFFF;
+  --cream-05:#FDFBF5;
+  --cream-10:#F3EFE6;
+  --cream-20:#EBE5D8;
+  --cream-30:#DED8C8;
+  --cream-40:#C9C2B0;
+
+  /* Warm greys */
+  --stone-50:#8B8371;
+  --stone-60:#6E6857;
+  --stone-70:#5B564A;
+  --stone-80:#3B372E;
+
+  /* Ink */
+  --ink-70:#322D22;
+  --ink-80:#262219;
+  --ink-90:#1D1A16;
+  --ink-95:#141210;
+
+  /* Gold */
+  --gold-brand:#D4AF37;   /* @kind color */
+  --gold-bright:#E3C25A;  /* @kind color */
+  --gold-deep:#8A6912;    /* @kind color */
+  --gold-tint:#F7EBC4;    /* @kind color */
+
+  /* Outcomes */
+  --gain-ink:#177A4C;
+  --gain-lit:#4ADE80;
+  --gain-tint:#E2F2E7;
+  --loss-ink:#C22B1F;
+  --loss-lit:#F87171;
+  --loss-tint:#FAE8E4;
+  --warn-ink:#8A5A00;
+  --warn-lit:#FBBF24;
+  --warn-tint:#FBF1D9;
+  --info-ink:#1F5FA8;
+  --info-lit:#8FBEF5;
+  --info-tint:#E8F0FA;
+}

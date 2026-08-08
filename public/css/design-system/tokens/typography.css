@@ -1,0 +1,39 @@
+/* One family, two voices. Archivo Black shouts the headlines;
+   Archivo does everything else, including every number (tabular in columns). */
+:root{
+  --font-display:'Archivo Black','Archivo',sans-serif;
+  --font-sans:'Archivo',system-ui,sans-serif;
+  --font-mono:'Archivo',system-ui,sans-serif; /* mono retired — tabular figures instead */
+
+  --size-hero:clamp(2.625rem,6.5vw,4.75rem);
+  --size-h1:clamp(1.875rem,3.6vw,2.5rem);
+  --size-h2:clamp(1.375rem,2.4vw,1.75rem);
+  --size-h3:1.25rem;
+  --size-h4:1rem;
+  --size-body-lg:1.1875rem;
+  --size-body:1.0625rem;
+  --size-sm:0.9375rem;
+  --size-xs:0.8125rem;
+
+  --size-stat-xl:3rem;
+  --size-stat:2.125rem;
+  --size-stat-sm:1.5rem;
+
+  --w-regular:400;   /* @kind font */
+  --w-medium:500;    /* @kind font */
+  --w-semibold:600;  /* @kind font */
+  --w-bold:700;      /* @kind font */
+  --w-display:400; /* @kind font */ /* Archivo Black ships one weight; never synthesise bold on it */
+
+  --lh-tight:1.02;   /* @kind font */
+  --lh-snug:1.3;     /* @kind font */
+  --lh-body:1.58;    /* @kind font */
+  --lh-loose:1.75;   /* @kind font */
+
+  --track-hero:-0.02em; /* @kind font */
+  --track-head:-0.01em; /* @kind font */
+  --track-body:0;       /* @kind font */
+  --track-label:0.07em; /* @kind font */ /* poster labels run wide */
+
+  --case-display:uppercase; /* @kind font */
+}

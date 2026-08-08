@@ -1,0 +1,9 @@
+:root{
+  --z-base:1;        /* @kind other */
+  --z-sticky:100;    /* @kind other */
+  --z-appbar:200;    /* @kind other */
+  --z-dropdown:300;  /* @kind other */
+  --z-scrim:400;     /* @kind other */
+  --z-modal:500;     /* @kind other */
+  --z-toast:600;     /* @kind other */
+}

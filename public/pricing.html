@@ -3,214 +3,174 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0f172a">
-    <meta name="description" content="SutrAlgo Pricing - Choose the plan that's right for you. Start with a free 90-day trial.">
-    <title>Pricing - SutrAlgo</title>
-
-    <!-- Google Material Icons -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="icon" type="image/png" href="/images/favicon.PNG">
-
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800;900&family=Work+Sans:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Import Google Font (Inter) -->
-    
-    
-
-    <!-- Main Stylesheet -->
-
-    <!-- Accessibility Color Overrides (WCAG Compliant) -->
-
-    <!-- Unified Navigation Bar --><!-- Modern CSS -->
-    <link rel="stylesheet" href="/css/main.css">
-
-    <!-- Modern Effects (Custom Cursor, Scroll Progress, Animations) -->
-    <script src="/js/modern-effects.js" defer></script>
-
-    <!-- Animation Controller -->
-    <script src="/js/landing.js" defer></script>
-
+    <meta name="theme-color" content="#141210">
+    <meta name="description" content="Two plans. Everyone gets every signal and every market — the only difference is how long it lasts.">
+    <title>Pricing — SutrAlgo</title>
+    <link rel="icon" type="image/png" href="/images/brand/favicon.png">
+    <link rel="stylesheet" href="/css/design-system/index.css">
+    <link rel="stylesheet" href="/css/marketing.css">
+    <script>try{if(localStorage.getItem('sa-theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
+    <script src="/js/marketing.js" defer></script>
 </head>
 <body>
-    <!-- Animated Background with Particles -->
-    <div class="landing-background">
-        <div class="gradient-orb orb-1"></div>
-        <div class="gradient-orb orb-2"></div>
-        <div class="gradient-orb orb-3"></div>
-        <canvas id="particles-canvas"></canvas>
+
+<header class="sa-appbar">
+    <div class="sa-appbar__in" style="max-width:var(--page-max)">
+        <a class="sa-appbar__brand" href="/"><span class="sa-wordmark" style="font-size:19px"><b>Sutr</b><i>Algo</i></span></a>
+        <nav class="sa-appbar__nav" aria-label="Main">
+            <a class="sa-appbar__link" href="/">How it works</a>
+            <a class="sa-appbar__link" href="/pricing.html" aria-current="page">Pricing</a>
+        </nav>
+        <div class="sa-appbar__end">
+            <button class="sa-iconbtn" type="button" data-theme-toggle aria-label="Switch theme" aria-pressed="false"><span class="material-symbols-rounded" aria-hidden="true">dark_mode</span></button>
+            <a class="sa-btn sa-btn--secondary sa-btn--sm sa-btn--ghostband" href="/login.html">Sign in</a>
+            <a class="sa-btn sa-btn--primary sa-btn--sm sa-btn--onband" href="/login.html">Start free</a>
+            <button class="sa-iconbtn sa-appbar__burger" type="button" data-menu-toggle aria-label="Menu" aria-expanded="false"><span class="material-symbols-rounded" aria-hidden="true">menu</span></button>
+        </div>
+    </div>
+    <nav class="mk-menu" aria-label="Mobile">
+        <a href="/">How it works</a>
+        <a href="/pricing.html">Pricing</a>
+        <a href="/login.html">Sign in</a>
+    </nav>
+</header>
+
+<main class="mk-section" style="padding-top:var(--s-8)">
+    <div class="sa-sectionhead sa-sectionhead--center" style="margin-bottom:var(--s-5)">
+        <span class="sa-eyebrow">Pricing</span>
+        <h1 class="mk-h1-as-h2">Two plans. The second one is the same as the first, but it keeps going.</h1>
+        <p>Everyone gets every signal and every market. The only difference is how long it lasts.</p>
     </div>
 
+    <div style="display:flex;justify-content:center;margin-bottom:var(--s-6)">
+        <div class="sa-seg" role="group" aria-label="Region">
+            <button class="sa-seg__opt" type="button" data-region="UK" aria-pressed="true">UK</button>
+            <button class="sa-seg__opt" type="button" data-region="US" aria-pressed="false">US</button>
+            <button class="sa-seg__opt" type="button" data-region="India" aria-pressed="false">India</button>
+        </div>
+    </div>
 
-    <div class="app-container">
-        <!-- Subscription Status Banner -->
-        <div id="subscription-status-banner" style="display: none;"></div>
-
-        <!-- Hero Section -->
-        <div class="pricing-hero">
-            <h1>Simple, Transparent Pricing</h1>
-            <p>Start with <strong>Explorer</strong> for 90 days free, then upgrade to <strong>Trader</strong> for unlimited access. No credit card required to start.</p>
-            <div class="trial-highlight">
-                <span class="material-icons icon-sm" aria-hidden="true">verified</span>
-                <span>Unlimited Everything • No Hidden Limits • Cancel Anytime</span>
+    <div class="sa-grid sa-grid--2" style="max-width:780px;margin:0 auto var(--s-8);align-items:start">
+        <div class="sa-plan" data-plan="explorer">
+            <div>
+                <h3>Explorer</h3>
+                <p style="font-size:var(--size-sm);margin-top:6px">Try the whole thing before you pay anything.</p>
             </div>
+            <div class="sa-plan__price">
+                <span style="font-size:var(--size-h3)" data-plan-currency>£</span>
+                <span class="sa-plan__amount" data-plan-amount>0</span>
+                <span style="font-family:var(--font-sans);font-weight:400;font-size:var(--size-sm);color:var(--text-3)">for 90 days</span>
+            </div>
+            <ul class="sa-plan__list">
+                <li><span class="material-symbols-rounded" aria-hidden="true">check</span>Every signal, every market</li>
+                <li><span class="material-symbols-rounded" aria-hidden="true">check</span>Alerts on Telegram</li>
+                <li><span class="material-symbols-rounded" aria-hidden="true">check</span>Full history to test against</li>
+                <li><span class="material-symbols-rounded" aria-hidden="true">check</span>No card needed</li>
+            </ul>
+            <a class="sa-btn sa-btn--secondary sa-btn--block" href="/login.html">Start free</a>
+            <p style="font-size:var(--size-xs);color:var(--text-3);text-align:center;margin-top:-6px">No card needed.</p>
         </div>
 
-        <!-- Pricing Plans -->
-        <div class="pricing-plans" id="pricing-plans">
-            <!-- Plans will be loaded here by JavaScript -->
-            <div class="pricing-card">
-                <div class="plan-name">Loading...</div>
-                <div class="plan-description">Please wait while we load the pricing plans.</div>
+        <div class="sa-plan sa-plan--featured" data-plan="trader">
+            <span class="sa-plan__ribbon">Most people start here</span>
+            <div>
+                <h3>Trader</h3>
+                <p style="font-size:var(--size-sm);margin-top:6px">Keep the signals coming after your 90 days.</p>
+            </div>
+            <div class="sa-plan__price">
+                <span style="font-size:var(--size-h3)" data-plan-currency>£</span>
+                <span class="sa-plan__amount" data-plan-amount>24</span>
+                <span style="font-family:var(--font-sans);font-weight:400;font-size:var(--size-sm);color:var(--text-3)">a month</span>
+            </div>
+            <ul class="sa-plan__list">
+                <li><span class="material-symbols-rounded" aria-hidden="true">check</span>Everything in Explorer</li>
+                <li><span class="material-symbols-rounded" aria-hidden="true">check</span>Priority support</li>
+                <li><span class="material-symbols-rounded" aria-hidden="true">check</span>Cancel any time</li>
+                <li><span class="material-symbols-rounded" aria-hidden="true">check</span>Price fixed for 12 months</li>
+            </ul>
+            <a class="sa-btn sa-btn--primary sa-btn--block" href="/login.html">Choose Trader</a>
+            <p style="font-size:var(--size-xs);color:var(--text-3);text-align:center;margin-top:-6px">Cancel any time from your account.</p>
+        </div>
+    </div>
+
+    <div class="sa-card" style="max-width:780px;margin:0 auto var(--s-8)">
+        <div class="sa-card__head" style="margin-bottom:var(--s-3)">
+            <div>
+                <h3 class="sa-card__title">Why the price differs by country</h3>
+                <p class="sa-card__hint">Same product, priced against local purchasing power.</p>
             </div>
         </div>
+        <p style="font-size:var(--size-sm)">A single global price would put SutrAlgo out of reach in India and undercharge in the US. You are billed in your local currency at the rate shown when you sign up, and it is fixed for twelve months.</p>
+    </div>
 
-        <!-- Features Comparison -->
-        <div class="features-comparison">
-            <h2>What's Included</h2>
-            <div class="comparison-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Feature</th>
-                            <th>Explorer</th>
-                            <th>Trader</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><strong>Access Duration</strong></td>
-                            <td>90 Days</td>
-                            <td>Unlimited</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Trading Signals</strong></td>
-                            <td>✓ Unlimited</td>
-                            <td>✓ Unlimited</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Active Trades</strong></td>
-                            <td>✓ Unlimited</td>
-                            <td>✓ Unlimited</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Telegram Notifications</strong></td>
-                            <td>✓ Real-time</td>
-                            <td>✓ Real-time</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Technical Analysis</strong></td>
-                            <td>✓ All Indicators</td>
-                            <td>✓ All Indicators</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Historical Data</strong></td>
-                            <td>✓ Full History</td>
-                            <td>✓ Full History</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Portfolio Backtesting</strong></td>
-                            <td>✓ Unlimited Tests</td>
-                            <td>✓ Unlimited Tests</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Multi-Market Access</strong></td>
-                            <td>✓ India, UK, US</td>
-                            <td>✓ India, UK, US</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Custom Alerts</strong></td>
-                            <td>✓ Unlimited</td>
-                            <td>✓ Unlimited</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Email Support</strong></td>
-                            <td>✓ Included</td>
-                            <td>✓ Included</td>
-                        </tr>
-                    </tbody>
-                </table>
+    <div style="max-width:780px;margin:0 auto">
+        <h2 style="margin-bottom:var(--s-3)">Questions people actually ask</h2>
+        <div class="mk-faq">
+            <button class="mk-faq__q" type="button" aria-expanded="false">What actually arrives on my phone?<span class="material-symbols-rounded" aria-hidden="true">expand_more</span></button>
+            <p class="mk-faq__a">A short message with the stock, roughly what to pay, the price it should be sold at, and the price to sell it at if it goes the wrong way. Nothing to interpret.</p>
+        </div>
+        <div class="mk-faq">
+            <button class="mk-faq__q" type="button" aria-expanded="false">Do you place trades for me?<span class="material-symbols-rounded" aria-hidden="true">expand_more</span></button>
+            <p class="mk-faq__a">No. SutrAlgo never touches your broker or your money. It tells you what the formula found; what you do next is entirely yours.</p>
+        </div>
+        <div class="mk-faq">
+            <button class="mk-faq__q" type="button" aria-expanded="false">What happens after 90 days?<span class="material-symbols-rounded" aria-hidden="true">expand_more</span></button>
+            <p class="mk-faq__a">The signals stop and the app becomes read-only. Your history stays exactly as it is, and moving to Trader turns everything back on.</p>
+        </div>
+        <div class="mk-faq">
+            <button class="mk-faq__q" type="button" aria-expanded="false">Why only three exit rules?<span class="material-symbols-rounded" aria-hidden="true">expand_more</span></button>
+            <p class="mk-faq__a">Because the hard part of investing is deciding when to sell, and a rule you set in advance beats a decision made while watching the price move.</p>
+        </div>
+        <div class="mk-faq">
+            <button class="mk-faq__q" type="button" aria-expanded="false">Can I cancel?<span class="material-symbols-rounded" aria-hidden="true">expand_more</span></button>
+            <p class="mk-faq__a">Any time, from your account page. You keep access until the end of the month you have paid for.</p>
+        </div>
+        <div class="mk-faq">
+            <button class="mk-faq__q" type="button" aria-expanded="false">Is this financial advice?<span class="material-symbols-rounded" aria-hidden="true">expand_more</span></button>
+            <p class="mk-faq__a">No. SutrAlgo is an educational tool. It shows what a mechanical rule would have done and what it is doing now. It does not know your circumstances and cannot advise you.</p>
+        </div>
+    </div>
+</main>
+
+<footer class="mk-foot">
+    <div class="mk-foot__in">
+        <div class="mk-foot__grid">
+            <div>
+                <span class="sa-wordmark" style="font-size:20px"><b>Sutr</b><i>Algo</i></span>
+                <p style="margin-top:10px;font-size:var(--size-sm);max-width:34ch">One formula, three exit rules, and a message when something turns up.</p>
             </div>
-            <div class="comparison-note">
-                <span class="material-icons icon-sm">info</span>
-                <p>Both plans include unlimited access to all features. Explorer expires after 90 days and requires upgrading to Trader to continue using the service.</p>
+            <div class="mk-foot__col">
+                <h4>Product</h4>
+                <a href="/">How it works</a>
+                <a href="/pricing.html">Pricing</a>
+                <a href="/login.html">Sign in</a>
+            </div>
+            <div class="mk-foot__col">
+                <h4>Company</h4>
+                <a href="/terms.html">Terms</a>
+                <a href="/privacy.html">Privacy</a>
+                <a href="/data-management.html">Your data</a>
+            </div>
+            <div class="mk-foot__col">
+                <h4>Markets</h4>
+                <span>India</span>
+                <span>United Kingdom</span>
+                <span>United States</span>
             </div>
         </div>
-
-        <!-- FAQ Section -->
-        <div class="faq-section">
-            <h2>Frequently Asked Questions</h2>
-
-            <div class="faq-item">
-                <div class="faq-question">How does the Explorer plan work?</div>
-                <div class="faq-answer">
-                    Sign up for Explorer and get unlimited access to all features for 90 days. No credit card required.
-                    After 90 days, you'll need to upgrade to Trader to continue using the service.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">What happens after my 90-day Explorer trial ends?</div>
-                <div class="faq-answer">
-                    Your Explorer access will expire and you'll need to upgrade to the Trader plan to continue.
-                    All your data will be preserved, and you can upgrade anytime to resume access.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">What payment methods do you accept?</div>
-                <div class="faq-answer">
-                    We accept all major credit cards (Visa, Mastercard, American Express) via Stripe.
-                    We also support PayPal and Razorpay for certain regions.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">Can I cancel anytime?</div>
-                <div class="faq-answer">
-                    Absolutely. You can cancel your subscription at any time from your account settings.
-                    You'll continue to have access until the end of your billing period.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">Do you offer refunds?</div>
-                <div class="faq-answer">
-                    We offer a 14-day money-back guarantee on all paid plans.
-                    If you're not satisfied, contact us within 14 days for a full refund.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">Is this investment advice?</div>
-                <div class="faq-answer">
-                    No. SutrAlgo is an educational platform. All signals and analysis are for
-                    informational purposes only and should not be considered investment advice.
-                    Past performance is not indicative of future results.
+        <div style="margin-top:var(--s-6)">
+            <div class="sa-legal">
+                <button class="sa-legal__btn" type="button" aria-expanded="false">Educational tool, not investment advice. Your capital is at risk.<span class="material-symbols-rounded" aria-hidden="true">expand_more</span></button>
+                <div class="sa-legal__body" hidden>
+                    <p>This service provides informational and educational tools only. Nothing here is investment advice or a recommendation to buy or sell.</p>
+                    <p>Past performance is not a reliable indicator of future results. All trading involves risk and you could lose money.</p>
+                    <p>Technical indicators can produce false signals, and market conditions can change quickly. You accept full responsibility for all investment decisions.</p>
                 </div>
             </div>
         </div>
+        <p class="mk-foot__copy">© 2026 SutrAlgo</p>
+    </div>
+</footer>
 
-        <!-- Legal Footer -->
-        <footer class="legal-footer">
-            <div class="footer-content">
-                <div class="footer-links">
-                    <a href="terms.html" class="footer-link">Terms of Service</a>
-                    <a href="privacy.html" class="footer-link">Privacy Policy</a>
-                    <a href="data-management.html" class="footer-link">Data Management</a>
-                    <span class="footer-text">© 2025 SutrAlgo - Educational tools only, not investment advice</span>
-                </div>
-                <div class="footer-disclaimer">
-                    <p>Past performance is not a reliable indicator of future results. You accept full responsibility for all investment decisions.</p>
-                </div>
-            </div>
-        </footer>
-    </div><!-- Mobile Navigation -->
-    <script src="js/mobile-nav.js"></script>
-
-    <!-- Pricing Page JavaScript -->
-    <script src="js/pricing.js"></script>
-
-    <!-- Unified Navigation Bar -->
-    <script src="js/unified-navbar.js"></script>
-
+</body>
+</html>

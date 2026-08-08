@@ -1,0 +1,16 @@
+/* Base layer — poster bones without needing a reset per file. */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:var(--font-sans);font-size:var(--size-body);line-height:var(--lh-body);color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+h1,h2{font-family:var(--font-display);font-weight:var(--w-display);line-height:var(--lh-tight);letter-spacing:var(--track-head);text-transform:var(--case-display);color:var(--text);margin:0}
+h1{font-size:var(--size-h1);letter-spacing:var(--track-hero)}
+h2{font-size:var(--size-h2)}
+h3{font-family:var(--font-display);font-weight:var(--w-display);font-size:var(--size-h3);line-height:var(--lh-snug);text-transform:var(--case-display);letter-spacing:.01em;color:var(--text);margin:0}
+h4{font-family:var(--font-sans);font-weight:var(--w-bold);font-size:var(--size-h4);color:var(--text);margin:0}
+p{margin:0;color:var(--text-2)}
+a{color:var(--accent);text-decoration:none;transition:color var(--dur-1) var(--ease-out)}
+a:hover{color:var(--accent-hover);text-decoration:underline;text-underline-offset:3px}
+strong{font-weight:var(--w-bold);color:var(--text)}
+:focus-visible{outline:none;box-shadow:var(--ring-focus)}
+.tnum{font-variant-numeric:tabular-nums}
+.material-symbols-rounded{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;word-wrap:normal;direction:ltr;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
