@@ -458,6 +458,11 @@ app.get('/api/test', (req, res) => {
 
 // User endpoint for authentication check
 app.get('/api/user', ensureAuthenticatedAPI, (req, res) => {
+  // When auth is disabled (local dev) the middleware passes through with no
+  // user on the request — report signed-out instead of throwing a 500.
+  if (!req.user) {
+    return res.json({ authenticated: false, user: null });
+  }
   res.json({
     authenticated: true,
     user: {

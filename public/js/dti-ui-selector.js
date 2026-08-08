@@ -11,21 +11,23 @@ DTIUI.StockSelector = (function() {
      */
     function createScanTypeSelector() {
         const scanTypeSelectorDiv = document.createElement('div');
-        scanTypeSelectorDiv.className = 'parameter-group';
-        
+        scanTypeSelectorDiv.className = 'sa-field';
+
         const scanTypeLabel = document.createElement('label');
         scanTypeLabel.htmlFor = 'scan-type-selector';
-        scanTypeLabel.textContent = 'Scan Type';
-        
+        scanTypeLabel.className = 'sa-field__label';
+        scanTypeLabel.textContent = 'Watchlist';
+
         const scanTypeSelect = document.createElement('select');
         scanTypeSelect.id = 'scan-type-selector';
-        
+        scanTypeSelect.className = 'sa-select';
+
         // Add scan type options
         const scanTypes = [
-            { value: 'indian', text: 'All Indian Stocks (2,187 stocks)' },
-            { value: 'uk', text: 'All UK Stocks (842 stocks)' },
-            { value: 'us', text: 'All US Stocks (2,000 stocks)' },
-            { value: 'all', text: 'All Global Stocks (5,029 stocks)' }
+            { value: 'indian', text: 'Every Indian stock (2,187)' },
+            { value: 'uk', text: 'Every UK stock (842)' },
+            { value: 'us', text: 'Every US stock (2,000)' },
+            { value: 'all', text: 'All three markets (5,029)' }
         ];
         
         scanTypes.forEach(type => {
@@ -46,10 +48,10 @@ DTIUI.StockSelector = (function() {
         
         // Add help text
         const helpText = document.createElement('span');
-        helpText.className = 'form-hint';
-        helpText.textContent = 'Select which market to scan for trading opportunities';
+        helpText.className = 'sa-field__hint';
+        helpText.textContent = 'Which market the scan checks. Every stock in it gets tested.';
         scanTypeSelectorDiv.appendChild(helpText);
-        
+
         return scanTypeSelectorDiv;
     }
     
@@ -93,38 +95,14 @@ DTIUI.StockSelector = (function() {
         const batchButton = document.getElementById('batch-process-btn');
         if (!batchButton) return;
 
-        const scanTypeSelector = document.getElementById('scan-type-selector');
-        if (!scanTypeSelector) return;
-
-        const scanType = scanTypeSelector.value;
-        let buttonText = '';
-
-        switch(scanType) {
-            case 'indian':
-                buttonText = 'Scan All Indian Stocks';
-                break;
-            case 'uk':
-                buttonText = 'Scan All UK Stocks';
-                break;
-            case 'us':
-                buttonText = 'Scan All US Stocks';
-                break;
-            case 'all':
-                buttonText = 'Scan All Global Stocks';
-                break;
-            default:
-                buttonText = 'Scan Stocks';
-        }
-
-        batchButton.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="17 1 21 5 17 9"></polyline>
-                <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
-                <polyline points="7 23 3 19 7 15"></polyline>
-                <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
-            </svg>
-            ${buttonText}
-        `;
+        // One label, always. The watchlist select says what gets scanned.
+        batchButton.replaceChildren();
+        const icon = document.createElement('span');
+        icon.className = 'material-symbols-rounded';
+        icon.setAttribute('aria-hidden', 'true');
+        icon.textContent = 'play_arrow';
+        batchButton.appendChild(icon);
+        batchButton.appendChild(document.createTextNode(' Run the scan'));
     }
 
     /**
@@ -152,15 +130,10 @@ DTIUI.StockSelector = (function() {
         // Create button
         const batchButton = document.createElement('button');
         batchButton.id = 'batch-process-btn';
-        batchButton.className = 'btn btn-primary';
+        batchButton.className = 'sa-btn sa-btn--primary';
         batchButton.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="17 1 21 5 17 9"></polyline>
-                <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
-                <polyline points="7 23 3 19 7 15"></polyline>
-                <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
-            </svg>
-            Scan All Indian Stocks
+            <span class="material-symbols-rounded" aria-hidden="true">play_arrow</span>
+            Run the scan
         `;
 
         // Add event listener
@@ -184,17 +157,8 @@ batchButton.addEventListener('click', async function() {
 
     // Set button loading state
     this.innerHTML = `
-        <svg class="spinner" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="2" x2="12" y2="6"></line>
-            <line x1="12" y1="18" x2="12" y2="22"></line>
-            <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
-            <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
-            <line x1="2" y1="12" x2="6" y2="12"></line>
-            <line x1="18" y1="12" x2="22" y2="12"></line>
-            <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
-            <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
-        </svg>
-        Processing ${scanTypeName}...
+        <span class="sa-btn__spin" aria-hidden="true"></span>
+        Checking…
     `;
 
     try {
@@ -245,12 +209,16 @@ batchButton.addEventListener('click', async function() {
         batchStatus.className = 'batch-status';
         batchStatus.style.display = 'none';
 
-        // Append button to the new batch process container
+        // Button goes in the page head; the progress block gets its own row below
         const batchContainer = document.getElementById('batch-process-container');
         const statusContainer = document.getElementById('data-fetch-status');
 
         if (batchContainer) {
             batchContainer.appendChild(batchButton);
+        }
+        if (statusContainer) {
+            statusContainer.appendChild(batchStatus);
+        } else if (batchContainer) {
             batchContainer.appendChild(batchStatus);
         }
     }

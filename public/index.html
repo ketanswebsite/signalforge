@@ -3,28 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0f172a">
-    <meta name="description" content="Educational platform for learning technical analysis and backtesting methodologies. Explore historical market patterns and technical indicators for educational purposes only.">
-    <meta name="keywords" content="technical analysis education, backtesting learning, market patterns, educational trading tools, historical data analysis">
-    <title>SutrAlgo - Technical Analysis Education Platform</title>
-
-    <!-- Google Material Icons -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="icon" type="image/png" href="/images/favicon.PNG">
-
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800;900&family=Work+Sans:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#141210">
+    <meta name="description" content="The SutrAlgo scanner checks every stock on your watchlist for one specific setup, then tells you what to pay, what to sell at, and when to give up.">
+    <title>Scanner — SutrAlgo</title>
+    <link rel="icon" type="image/png" href="/images/brand/favicon.png">
+    <link rel="stylesheet" href="/css/design-system/index.css">
+    <link rel="stylesheet" href="/css/app.css">
+    <script>try{if(localStorage.getItem('sa-theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
 
     <!-- Chart.js and PapaParse -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
-    
-    <!-- Chart.js Financial plugin for candlestick charts -->
+
+    <!-- Chart.js plugins (candlesticks, zoom, annotations) -->
     <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@0.1.1/dist/chartjs-chart-financial.min.js"></script>
-    
-    <!-- Required plugins for interactive features -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/2.1.2/chartjs-plugin-annotation.min.js"></script>
@@ -37,283 +31,249 @@
     <script src="js/utils/notifications.js"></script>
     <script src="js/utils/export-manager.js"></script>
 
-    <!-- Global Error Handler -->
+    <!-- Infrastructure -->
     <script src="js/error-handler.js"></script>
-
-    <!-- Abort Controller Manager -->
     <script src="js/abort-controller-manager.js"></script>
-
-    <!-- Network Retry Logic -->
     <script src="js/network-retry.js"></script>
-
-    <!-- Loading States Manager -->
     <script src="js/loading-states.js"></script>
-
-    <!-- Form Validation -->
     <script src="js/form-validation.js"></script>
-
-    <!-- Accessibility Enhancer -->
     <script src="js/accessibility-enhancer.js"></script>
-
-    <!-- Chart Performance Optimizer -->
-    <script src="js/chart-performance.js"></script><!-- Cookie Consent (load early for GDPR compliance) -->
+    <script src="js/chart-performance.js"></script>
     <script src="js/cookie-consent.js"></script>
-    
-    <!-- Chart Theme Script -->
     <script src="js/chart-theme.js"></script>
 
     <!-- ML Insights UI -->
     <script src="js/ml-insights-ui.js" defer></script>
 
-    <!-- Modern CSS -->
-    <link rel="stylesheet" href="/css/main.css">
-
-    <!-- Modern Effects (Custom Cursor, Scroll Progress, Animations) -->
-    <script src="/js/modern-effects.js" defer></script>
-
-    <!-- Landing Page Animations -->
-    <script src="/js/landing.js" defer></script>
-
-    <!-- CORS proxy functionality -->
-    <script>
-        // Register for a CORS Anywhere API key or use a self-hosted proxy
-        // This is needed because Yahoo Finance API doesn't support CORS
-        const corsProxyInfo = document.createElement('div');
-        corsProxyInfo.id = 'cors-proxy-info';
-        corsProxyInfo.style.display = 'none';
-        document.head.appendChild(corsProxyInfo);
-    </script>
+    <!-- App shell (theme, nav, user menu, legal note) -->
+    <script src="/js/app-shell.js" defer></script>
 </head>
-<body>
-    <!-- Animated Background with Particles -->
-    <div class="landing-background">
-        <div class="gradient-orb orb-1"></div>
-        <div class="gradient-orb orb-2"></div>
-        <div class="gradient-orb orb-3"></div>
-        <canvas id="particles-canvas"></canvas>
-    </div>
+<body class="app-body">
 
-
-    <div class="app-container">
-        <!-- Navigation bar will be inserted here by unified-navbar.js -->
-
-        <div class="dashboard">
-            <!-- Hidden inputs for fixed parameters -->
-            <input type="hidden" id="r" value="14">
-            <input type="hidden" id="s" value="10">
-            <input type="hidden" id="u" value="5">
-            <input type="hidden" id="enable-weekly-dti" value="true">
-            <input type="hidden" id="entry-threshold" value="0">
-            <input type="hidden" id="take-profit" value="8">
-            <input type="hidden" id="stop-loss" value="5">
-            <input type="hidden" id="max-days" value="30">
-
-            <div class="main-content-wrapper">
-                <!-- Methodology Introduction -->
-                <div class="methodology-intro">
-                    <div class="intro-icon">
-                        <span class="material-icons">auto_graph</span>
-                    </div>
-                    <div class="intro-content">
-                        <p>SutrAlgo enhances William Blau's DTI (Directional Trend Indicator) framework, detailed in <em>"Momentum, Direction and Divergence"</em> (1995). Through meticulous calibration, we've amplified the indicator's natural strengths—delivering high-conviction signals that cut through market noise with remarkable clarity.</p>
-                    </div>
-                </div>
-
-                <!-- Scan Control Panel -->
-                <div class="scan-control-panel">
-                    <h2 class="scan-title">
-                        <span class="material-icons">radar</span>
-                        Market Scanner
-                    </h2>
-                    <div class="scan-controls">
-                        <div id="stock-index-selector-container" class="control-group"></div>
-                        <div id="batch-process-container" class="control-group"></div>
-                    </div>
-                    <div id="data-fetch-status" class="scan-status"></div>
-                </div>
-                <!-- Legal Compliance Disclaimers -->
-                <div class="page-header">
-                    <!-- UK Regulatory Compliance Disclaimers -->
-                    <div class="legal-disclaimer disclaimer">
-                        <div class="disclaimer-content">
-                            <p><strong>Important Disclaimer:</strong> This service provides informational and educational tools only, not investment advice. The information, data, analysis, and tools provided are for informational and educational purposes only. Nothing contained in our service constitutes investment advice or recommendations.</p>
-
-                            <p><strong>Past Performance Warning:</strong> Past performance is not a reliable indicator of future results. All trading involves risk and you could lose invested capital.</p>
-
-                            <p><strong>Risk Warning:</strong> Technical indicators may produce false signals. Market conditions can change rapidly making historical patterns unreliable. You accept full responsibility for all investment decisions.</p>
+<header class="sa-appbar">
+    <div class="sa-appbar__in">
+        <a class="sa-appbar__brand" href="/index.html"><span class="sa-wordmark"><b>Sutr</b><i>Algo</i></span></a>
+        <nav class="sa-appbar__nav" aria-label="Main">
+            <a class="sa-appbar__link" href="/index.html" aria-current="page"><span class="material-symbols-rounded" aria-hidden="true">radar</span>Scanner</a>
+            <a class="sa-appbar__link" href="/trades.html"><span class="material-symbols-rounded" aria-hidden="true">account_balance_wallet</span>Positions<span class="sa-appbar__count" data-positions-count hidden>0</span></a>
+            <a class="sa-appbar__link" href="/portfolio-backtest.html"><span class="material-symbols-rounded" aria-hidden="true">science</span>Simulator</a>
+            <a class="sa-appbar__link" href="/telegram-subscribe.html"><span class="material-symbols-rounded" aria-hidden="true">notifications</span>Alerts</a>
+            <a class="sa-appbar__link" href="/account.html"><span class="material-symbols-rounded" aria-hidden="true">person</span>Account</a>
+        </nav>
+        <div class="sa-appbar__end">
+            <button class="sa-iconbtn" type="button" data-theme-toggle aria-label="Switch theme" aria-pressed="false"><span class="material-symbols-rounded" aria-hidden="true">dark_mode</span></button>
+            <div class="app-usermenu">
+                <button class="app-usermenu__btn" type="button" data-usermenu-toggle aria-expanded="false" aria-label="Your account">
+                    <span class="sa-avatar" data-user-avatar>SA</span>
+                </button>
+                <div class="sa-menu" role="menu">
+                    <div class="sa-menu__id">
+                        <span class="sa-avatar sa-avatar--menu" data-user-avatar>SA</span>
+                        <div>
+                            <div class="app-usermenu__name" data-user-name>Signed in</div>
+                            <div class="app-usermenu__email" data-user-email></div>
                         </div>
                     </div>
-
-                    <div class="disclaimer disclaimer-warning">
-                        <div class="disclaimer-title">
-                            <span class="material-icons">warning</span>
-                            Educational Charts - Risk Warning
-                        </div>
-                        <div class="disclaimer-content">
-                            <p>Past performance is not a reliable indicator of future results. Technical indicators may produce false signals. All information is for educational purposes only, not investment advice.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Charts Section - All 3 charts stacked vertically on the right -->
-                <div class="chart-section">
-                <div class="charts-grid">
-                    <div class="chart-card scroll-reveal">
-                        <div class="chart-header">
-                            <div>
-                                <h3 class="chart-title">
-                                    <span class="material-icons">bar_chart</span>
-                                    Price Chart
-                                </h3>
-                                <p class="chart-subtitle">Historical price movement</p>
-                            </div>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="price-chart"></canvas>
-                        </div>
-                    </div>
-
-                    <div class="chart-card scroll-reveal">
-                        <div class="chart-header">
-                            <div>
-                                <h3 class="chart-title">
-                                    <span class="material-icons">show_chart</span>
-                                    Primary Indicator
-                                </h3>
-                                <p class="chart-subtitle">Daily technical signals</p>
-                            </div>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="dti-chart"></canvas>
-                        </div>
-                    </div>
-
-                    <div class="chart-card scroll-reveal">
-                        <div class="chart-header">
-                            <div>
-                                <h3 class="chart-title">
-                                    <span class="material-icons">monitor</span>
-                                    Secondary Indicator
-                                </h3>
-                                <p class="chart-subtitle">Weekly technical signals</p>
-                            </div>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="weekly-dti-chart"></canvas>
-                        </div>
-                    </div>
-                </div>
-                </div>
-
-                <!-- Statistics moved here, after charts -->
-                <div class="statistics scroll-reveal" id="statistics">
-                    <div class="metric-card">
-                        <div class="metric-content">
-                            <div class="metric-title">Total Trades</div>
-                            <div class="metric-value data-value">0</div>
-                        </div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-content">
-                            <div class="metric-title">Win Rate</div>
-                            <div class="metric-value data-value">0%</div>
-                        </div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-content">
-                            <div class="metric-title">Avg. Profit/Trade</div>
-                            <div class="metric-value data-value">0%</div>
-                        </div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-content">
-                            <div class="metric-title">Total Return</div>
-                            <div class="metric-value data-value">0%</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="trades-section scroll-reveal">
-                    <div class="trades-header">
-                        <h3 class="trades-title">
-                            <span class="material-icons icon-sm icon-mr-xs" aria-hidden="true">history</span>
-                            Trade History
-                        </h3>
-                    </div>
-                    <div class="table-container">
-                        <table id="trades-table">
-                            <thead>
-                                <tr>
-                                    <th>Entry Date</th>
-                                    <th>Entry Price</th>
-                                    <th>Primary Signal</th>
-                                    <th>Secondary Signal</th>
-                                    <th>Exit Date</th>
-                                    <th>Exit Price</th>
-                                    <th>Holding Days</th>
-                                    <th>P/L %</th>
-                                    <th>Exit Reason</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td colspan="9" class="no-data">Select a stock and fetch data to see trade results</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <!-- Technical Analysis Patterns Section (will be populated by JavaScript) -->
-                <div class="opportunities-section scroll-reveal" id="buying-opportunities">
-                    <div class="opportunities-header">
-                        <h3 class="opportunities-title">
-                            <span class="material-icons">edit</span>
-                            Current Technical Patterns
-                        </h3>
-                    </div>
-
-                    <div class="disclaimer">
-                        <div class="disclaimer-content">
-                            <p><strong>Educational Information:</strong> Technical patterns shown below are for educational analysis only. Traders often interpret these patterns differently. Past patterns do not guarantee future results.</p>
-                        </div>
-                    </div>
-
-                    <p class="opportunities-empty">No active technical patterns found. Try adjusting parameters or running a full scan.</p>
+                    <a class="sa-menu__item" href="/account.html" role="menuitem"><span class="material-symbols-rounded" aria-hidden="true">person</span>Account</a>
+                    <a class="sa-menu__item" href="/landing.html" role="menuitem"><span class="material-symbols-rounded" aria-hidden="true">help</span>How the formula works</a>
+                    <a class="sa-menu__item" href="/admin-portal.html" role="menuitem" data-admin-only hidden><span class="material-symbols-rounded" aria-hidden="true">shield_person</span>Admin portal</a>
+                    <a class="sa-menu__item" href="/logout" role="menuitem"><span class="material-symbols-rounded" aria-hidden="true">logout</span>Sign out</a>
                 </div>
             </div>
+            <button class="sa-iconbtn sa-appbar__burger" type="button" data-menu-toggle aria-label="Menu" aria-expanded="false"><span class="material-symbols-rounded" aria-hidden="true">menu</span></button>
         </div>
     </div>
-    <!-- End of .app-container -->
+    <nav class="app-menu" aria-label="Mobile">
+        <a href="/index.html" aria-current="page"><span class="material-symbols-rounded" aria-hidden="true">radar</span>Scanner</a>
+        <a href="/trades.html"><span class="material-symbols-rounded" aria-hidden="true">account_balance_wallet</span>Positions</a>
+        <a href="/portfolio-backtest.html"><span class="material-symbols-rounded" aria-hidden="true">science</span>Simulator</a>
+        <a href="/telegram-subscribe.html"><span class="material-symbols-rounded" aria-hidden="true">notifications</span>Alerts</a>
+        <a href="/account.html"><span class="material-symbols-rounded" aria-hidden="true">person</span>Account</a>
+    </nav>
+</header>
 
-    <!-- Trade management modal placeholder -->
-    <div id="trade-modal-placeholder"></div>
+<main class="app-main">
+    <div class="sa-page">
 
-    <!-- Notification container -->
-    <div id="notification-container"></div><script>
-function ensureModulesLoaded(moduleList, callback) {
-    const checkInterval = setInterval(() => {
-        const allLoaded = moduleList.every(module => 
-            window[module] !== undefined);
-        
-        if (allLoaded) {
-            clearInterval(checkInterval);
-            callback();
-        }
-    }, 50);
-}
+        <!-- Fixed formula parameters (read by the backtest engine) -->
+        <input type="hidden" id="r" value="14">
+        <input type="hidden" id="s" value="10">
+        <input type="hidden" id="u" value="5">
+        <input type="hidden" id="enable-weekly-dti" value="true">
+        <input type="hidden" id="entry-threshold" value="0">
+        <input type="hidden" id="take-profit" value="8">
+        <input type="hidden" id="stop-loss" value="5">
+        <input type="hidden" id="max-days" value="30">
 
-// Example usage
-document.addEventListener('DOMContentLoaded', function() {
-    ensureModulesLoaded(['DTIBacktester', 'DTIData', 'DTIIndicators', 
-        'DTIBacktest', 'DTIUI', 'TradeCore'], function() {
-        // Initialize your application here
-    });
-});
-</script>
+        <div class="sa-spread app-pagehead">
+            <div>
+                <h1>Scanner</h1>
+                <p>One button. It checks every stock on your watchlist for the setup the formula looks for.</p>
+            </div>
+            <div class="sa-row" id="batch-process-container"></div>
+        </div>
+
+        <div class="sc-markets" id="market-status-container"></div>
+
+        <div id="data-fetch-status"></div>
+
+        <section class="sa-card sc-settings">
+            <div class="sa-card__head">
+                <div>
+                    <h3 class="sa-card__title">What to look at</h3>
+                    <p class="sa-card__hint">Change the watchlist and run the scan again. The exit rule never changes.</p>
+                </div>
+            </div>
+            <div class="sa-grid sa-grid--3">
+                <div id="stock-index-selector-container"></div>
+                <div class="sa-field">
+                    <span class="sa-field__label">The exit rule</span>
+                    <p class="sc-rule-line"><strong>+8%</strong> target · <strong>−5%</strong> stop · <strong>30</strong> days</p>
+                    <span class="sa-field__hint">Every position sells at whichever comes first.</span>
+                </div>
+                <div class="sa-field">
+                    <span class="sa-field__label">Weekly check</span>
+                    <p class="sc-rule-line">On for every scan</p>
+                    <span class="sa-field__hint">A signal only counts when the weekly chart agrees with the daily one.</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="sa-card sa-card--flush sc-settings">
+            <div class="sa-card__head">
+                <div>
+                    <h3 class="sa-card__title">What the scan found</h3>
+                    <p class="sa-card__hint">Each one already has its sell price and stop worked out.</p>
+                </div>
+            </div>
+            <div class="app-cardbody" id="buying-opportunities">
+                <div class="sa-empty">
+                    <div class="sa-empty__icon"><span class="material-symbols-rounded" aria-hidden="true">radar</span></div>
+                    <div class="sa-empty__title">Nothing scanned yet</div>
+                    <p>Press "Run the scan" and every stock on your watchlist gets checked against the formula. A full market takes a few minutes.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="chart-section">
+            <div class="sa-card sa-card--flush">
+                <div class="sa-card__head">
+                    <div>
+                        <h3 class="sa-card__title">Look closer at one stock</h3>
+                        <p class="sa-card__hint">Choose "Look closer" on a signal and its five-year backtest loads here.</p>
+                    </div>
+                </div>
+                <div class="app-cardbody">
+                    <div class="charts-grid sc-charts">
+                        <div>
+                            <div class="sa-chart__head"><h4 class="sa-chart__title">Price</h4></div>
+                            <p class="sa-chart__read">Five years of closing prices. Green markers are buys, red markers are the sells that followed.</p>
+                            <div class="chart-container app-chart"><canvas id="price-chart"></canvas></div>
+                        </div>
+                        <div>
+                            <div class="sa-chart__head"><h4 class="sa-chart__title">The daily signal</h4></div>
+                            <p class="sa-chart__read">The indicator the formula watches each day. A setup starts when this line turns up from below its trigger.</p>
+                            <div class="chart-container app-chart app-chart--sm"><canvas id="dti-chart"></canvas></div>
+                        </div>
+                        <div>
+                            <div class="sa-chart__head"><h4 class="sa-chart__title">The weekly signal</h4></div>
+                            <p class="sa-chart__read">The same check on weekly bars. A signal only counts when this agrees with the daily line.</p>
+                            <div class="chart-container app-chart app-chart--sm"><canvas id="weekly-dti-chart"></canvas></div>
+                        </div>
+                    </div>
+
+                    <div class="sc-stats" id="statistics">
+                        <div class="sa-card sa-card--sunk"><div class="sa-stat">
+                            <span class="sa-stat__label">Total trades</span>
+                            <span class="sa-stat__value">0</span>
+                            <span class="sa-stat__context">Every trade this stock's five-year backtest would have made.</span>
+                        </div></div>
+                        <div class="sa-card sa-card--sunk"><div class="sa-stat">
+                            <span class="sa-stat__label">Win rate</span>
+                            <span class="sa-stat__value">0%</span>
+                            <span class="sa-stat__context">How many of them made money.</span>
+                        </div></div>
+                        <div class="sa-card sa-card--sunk"><div class="sa-stat">
+                            <span class="sa-stat__label">Average per trade</span>
+                            <span class="sa-stat__value">0%</span>
+                            <span class="sa-stat__context">The mean result of one trade, before costs.</span>
+                        </div></div>
+                        <div class="sa-card sa-card--sunk"><div class="sa-stat">
+                            <span class="sa-stat__label">All trades together</span>
+                            <span class="sa-stat__value">0%</span>
+                            <span class="sa-stat__context">Every result added up, before costs.</span>
+                        </div></div>
+                    </div>
+
+                    <div class="sa-card sa-card--flush">
+                        <div class="sa-card__head">
+                            <div>
+                                <h3 class="sa-card__title">Every simulated trade</h3>
+                                <p class="sa-card__hint">What the formula would have done with this stock.</p>
+                            </div>
+                        </div>
+                        <div class="sa-table-wrap">
+                            <table class="sa-table" id="trades-table">
+                                <thead>
+                                    <tr>
+                                        <th>Bought on</th>
+                                        <th class="num">Bought at</th>
+                                        <th class="num">Daily DTI</th>
+                                        <th class="num">Weekly DTI</th>
+                                        <th>Sold on</th>
+                                        <th class="num">Sold at</th>
+                                        <th class="num">Held for</th>
+                                        <th class="num">Change</th>
+                                        <th>Why it sold</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td colspan="9" class="sa-table__empty">Pick a signal above and choose "Look closer" to load its trades.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="sa-table__cards app-cardbody" id="trades-table-cards"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="sa-legal app-legal">
+            <button class="sa-legal__btn" type="button" aria-expanded="false">
+                Educational tool, not investment advice. Your capital is at risk.
+                <span class="material-symbols-rounded" aria-hidden="true">expand_more</span>
+            </button>
+            <div class="sa-legal__body" hidden>
+                <p>This service provides informational and educational tools only. Nothing here is investment advice or a recommendation to buy or sell.</p>
+                <p>Past performance is not a reliable indicator of future results. All trading involves risk and you could lose money.</p>
+                <p>Technical indicators can produce false signals, and market conditions can change quickly. You accept full responsibility for all investment decisions.</p>
+            </div>
+        </div>
+
+        <footer class="app-foot">
+            <a href="/terms.html">Terms of service</a>
+            <a href="/privacy.html">Privacy policy</a>
+            <a href="/data-management.html">Data management</a>
+            <span>© 2026 SutrAlgo</span>
+        </footer>
+    </div>
+</main>
+
+<nav class="sa-bottomnav" aria-label="Primary">
+    <a class="sa-bottomnav__item" href="/index.html" aria-current="page"><span class="material-symbols-rounded" aria-hidden="true">radar</span>Scanner</a>
+    <a class="sa-bottomnav__item" href="/trades.html"><span class="material-symbols-rounded" aria-hidden="true">account_balance_wallet</span>Positions</a>
+    <a class="sa-bottomnav__item" href="/portfolio-backtest.html"><span class="material-symbols-rounded" aria-hidden="true">science</span>Simulator</a>
+    <a class="sa-bottomnav__item" href="/telegram-subscribe.html"><span class="material-symbols-rounded" aria-hidden="true">notifications</span>Alerts</a>
+    <a class="sa-bottomnav__item" href="/account.html"><span class="material-symbols-rounded" aria-hidden="true">person</span>Account</a>
+</nav>
+
+<!-- Trade management modal placeholder -->
+<div id="trade-modal-placeholder"></div>
+
+<!-- Notification container -->
+<div id="notification-container"></div>
 
 <!-- Core functionality -->
-<!-- API Client -->
 <script src="js/api-client.js"></script>
 <script src="js/dti-core.js"></script>
 
@@ -337,83 +297,28 @@ document.addEventListener('DOMContentLoaded', function() {
 <!-- Performance Modal -->
 <script src="js/dti-performance-modal.js"></script>
 
-    <!-- Company Names Mapping -->
-    <script src="js/company-names.js"></script>
-    
-    <!-- Mobile Navigation -->
-    <script src="js/mobile-nav.js"></script>
-    
-    <!-- Trade management modules -->
-    <script src="js/trade-core.js"></script>
-<!-- Include these in your HTML file in this order -->
+<!-- Company Names Mapping -->
+<script src="js/company-names.js"></script>
+
+<!-- Market status pills -->
+<script src="js/market-holidays.js"></script>
+<script src="js/market-status-robust.js"></script>
+<script src="js/enhanced-market-status.js"></script>
+<script src="js/market-status-manager.js"></script>
+<script src="js/market-status-initializer.js"></script>
+
+<!-- Trade management modules -->
+<script src="js/trade-core.js"></script>
 <script src="js/TradeUI-Core.js"></script>
 <script src="js/TradeUI-Trades.js"></script>
 <script src="js/TradeUI-Dialogs.js"></script>
 <script src="js/TradeUI-Charts.js"></script>
 <script src="js/TradeUI-Export-Metrics.js"></script>
-    <!-- Keep existing specialized scripts -->
-    <script src="js/trade-modal.js"></script>
-    
-    <!-- Alerts UI -->
-    <script src="js/alerts-ui.js"></script>
-    
-    <!-- Backtest Alerts -->
-    <script src="js/backtest-alerts.js"></script>
+<script src="js/trade-modal.js"></script>
 
-    
-    <!-- Tab switching functionality for index info -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const indexTabs = document.querySelectorAll('.index-tab');
-            const indexContents = document.querySelectorAll('.index-content');
-            
-            indexTabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    // Remove active class from all tabs
-                    indexTabs.forEach(t => t.classList.remove('active'));
-                    
-                    // Add active class to clicked tab
-                    this.classList.add('active');
-                    
-                    // Hide all content sections
-                    indexContents.forEach(content => {
-                        content.style.display = 'none';
-                    });
-                    
-                    // Show selected content
-                    const index = this.getAttribute('data-index');
-                    document.getElementById(`${index}-content`).style.display = 'block';
-                    
-                    // If index selector exists, also update it
-                    const indexSelector = document.getElementById('index-selector');
-                    if (indexSelector && indexSelector.value !== index) {
-                        indexSelector.value = index;
-                        
-                        // Manually trigger the change event
-                        const event = new Event('change');
-                        indexSelector.dispatchEvent(event);
-                    }
-                });
-            });
-        });
-    </script>
-    
-    <!-- Legal Footer -->
-    <footer class="legal-footer">
-        <div class="footer-content">
-            <div class="footer-links">
-                <a href="terms.html" class="footer-link">Terms of Service</a>
-                <a href="privacy.html" class="footer-link">Privacy Policy</a>
-                <a href="data-management.html" class="footer-link">Data Management</a>
-                <span class="footer-text">© 2025 SutrAlgo - Educational tools only, not investment advice</span>
-            </div>
-            <div class="footer-disclaimer">
-                <p>Past performance is not a reliable indicator of future results. You accept full responsibility for all investment decisions.</p>
-            </div>
-        </div>
-    </footer>
+<!-- Alerts -->
+<script src="js/alerts-ui.js"></script>
+<script src="js/backtest-alerts.js"></script>
 
-<!-- Unified Navigation Bar -->
-<script src="js/unified-navbar.js"></script>
 </body>
 </html>

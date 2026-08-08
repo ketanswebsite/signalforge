@@ -539,6 +539,45 @@ async function fetchCurrentQuote(symbol) {
      * Fetch data for all stocks in the current index or selected scan type
      * @returns {Promise} Promise that resolves when all data is fetched
      */
+
+    /**
+     * Build the scan progress block (v3 sa-prog markup) with safe DOM methods.
+     * @param {string} label - What is being checked
+     * @param {number} percent - 0..100
+     * @param {string} detail - Plain-language count line
+     * @returns {HTMLElement}
+     */
+    function buildScanProgress(label, percent, detail) {
+        const clamped = Math.max(0, Math.min(100, percent));
+        const wrap = document.createElement('div');
+        wrap.className = 'sa-prog';
+
+        const meta = document.createElement('div');
+        meta.className = 'sa-prog__meta';
+        const labelEl = document.createElement('span');
+        labelEl.textContent = label;
+        const pctEl = document.createElement('span');
+        pctEl.textContent = Math.round(clamped) + '%';
+        meta.appendChild(labelEl);
+        meta.appendChild(pctEl);
+
+        const track = document.createElement('div');
+        track.className = 'sa-prog__track';
+        const fill = document.createElement('div');
+        fill.className = 'sa-prog__fill';
+        fill.style.width = clamped + '%';
+        track.appendChild(fill);
+
+        const detailEl = document.createElement('div');
+        detailEl.className = 'sa-prog__detail';
+        detailEl.textContent = detail;
+
+        wrap.appendChild(meta);
+        wrap.appendChild(track);
+        wrap.appendChild(detailEl);
+        return wrap;
+    }
+
     async function fetchAllStocksData() {
         // Prevent multiple runs
         if (DTIBacktester.isProcessing) {
@@ -584,10 +623,11 @@ async function fetchCurrentQuote(symbol) {
         // Show batch processing status
         const statusDiv = document.getElementById('batch-status');
         if (statusDiv) {
-            statusDiv.innerHTML = `
-                <div>Processing ${scanDisplayName} (${stockList.length} stocks): 0/${stockList.length}</div>
-                <div class="progress-bar"><div class="progress" style="width: 0%"></div></div>
-            `;
+            statusDiv.replaceChildren(buildScanProgress(
+                'Checking ' + scanDisplayName,
+                0,
+                '0 of ' + stockList.length + ' stocks checked'
+            ));
             statusDiv.classList.remove('hidden');
         }
         
@@ -604,18 +644,13 @@ async function fetchCurrentQuote(symbol) {
                         const percentComplete = Math.round((processed / total) * 100);
                         statusDiv.style.display = 'block';
                         statusDiv.className = 'batch-status active';
-                        statusDiv.innerHTML = `
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                                <span>Processing ${scanDisplayName} (${stockList.length} stocks)</span>
-                                <strong style="color: var(--accent-gold);">${percentComplete}%</strong>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: ${percentComplete}%;"></div>
-                            </div>
-                            <div style="margin-top: 0.5rem; font-size: 0.8125rem; color: var(--text-muted);">
-                                ${processed}/${total} stocks • ${successes} succeeded • ${errors} failed
-                            </div>
-                        `;
+                        let detail = processed + ' of ' + total + ' stocks checked';
+                        if (errors > 0) detail += ' · ' + errors + ' failed to load';
+                        statusDiv.replaceChildren(buildScanProgress(
+                            'Checking ' + scanDisplayName,
+                            percentComplete,
+                            detail
+                        ));
                     }
                 };
                 
@@ -641,27 +676,16 @@ async function fetchCurrentQuote(symbol) {
                     const failedReport = getFailedStocksReport();
                     const totalSkipped = failedReport.summary.blocklisted + failedReport.summary.failed_500 + failedReport.summary.failed_other;
 
-                    statusDiv.innerHTML = `
-                        <div class="batch-complete">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
-                            Completed processing ${processedData.length} of ${stockList.length} stocks
-                        </div>
-                        <div class="progress-bar"><div class="progress" style="width: 100%"></div></div>
-                        <div>
-                            <div>
-                                <span>${processedData.length} stocks processed successfully</span>
-                                <span>${DTIBacktester.activeTradeOpportunities.length} active trading opportunities found</span>
-                            </div>
-                            ${totalSkipped > 0 ? `
-                            <div>
-                                ${totalSkipped} stocks skipped: ${failedReport.summary.blocklisted} blocklisted, ${failedReport.summary.failed_500} likely delisted/renamed
-                                ${failedReport.summary.failed_other > 0 ? `, ${failedReport.summary.failed_other} other errors` : ''}
-                            </div>
-                            ` : ''}
-                        </div>
-                    `;
+                    let detail = processedData.length + ' of ' + stockList.length + ' stocks checked · '
+                        + DTIBacktester.activeTradeOpportunities.length + ' setups found';
+                    if (totalSkipped > 0) {
+                        detail += ' · ' + totalSkipped + ' skipped ('
+                            + failedReport.summary.blocklisted + ' blocklisted, '
+                            + failedReport.summary.failed_500 + ' likely delisted'
+                            + (failedReport.summary.failed_other > 0 ? ', ' + failedReport.summary.failed_other + ' other errors' : '')
+                            + ')';
+                    }
+                    statusDiv.replaceChildren(buildScanProgress('Scan finished', 100, detail));
                 }
                 
                 // Display active trade opportunities
@@ -681,16 +705,17 @@ async function fetchCurrentQuote(symbol) {
                 resolve(DTIBacktester.allStocksData);
             } catch (error) {
                 if (statusDiv) {
-                    statusDiv.innerHTML = `
-                        <div class="batch-error">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <line x1="15" y1="9" x2="9" y2="15"></line>
-                                <line x1="9" y1="9" x2="15" y2="15"></line>
-                            </svg>
-                            Error in batch processing: ${error.message}
-                        </div>
-                    `;
+                    const errBox = document.createElement('div');
+                    errBox.className = 'sa-callout sa-callout--loss';
+                    const errIcon = document.createElement('span');
+                    errIcon.className = 'material-symbols-rounded';
+                    errIcon.setAttribute('aria-hidden', 'true');
+                    errIcon.textContent = 'error';
+                    const errText = document.createElement('span');
+                    errText.textContent = 'The scan stopped: ' + error.message;
+                    errBox.appendChild(errIcon);
+                    errBox.appendChild(errText);
+                    statusDiv.replaceChildren(errBox);
                 }
                 
                 // Reset processing flag

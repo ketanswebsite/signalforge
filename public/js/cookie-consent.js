@@ -61,7 +61,7 @@ class CookieConsent {
         banner.innerHTML = `
             <div class="cookie-consent-content">
                 <div class="cookie-consent-text">
-                    <h3>🍪 Cookie Consent</h3>
+                    <h3>Cookie consent</h3>
                     <p>We use cookies to provide essential functionality and improve your learning experience. Under UK GDPR, we need your consent for certain cookies.</p>
                     
                     <details class="cookie-details">
