@@ -670,7 +670,7 @@ app.get('/api/admin/subscribers', ensureAuthenticatedAPI, async (req, res) => {
 // Generate linking token for current user
 app.post('/api/user/generate-telegram-link', ensureAuthenticatedAPI, async (req, res) => {
   try {
-    const email = req.user.email;
+    const email = req.user?.email || 'default';
     const token = await TradeDB.generateLinkingToken(email);
     const deepLink = `https://t.me/${process.env.TELEGRAM_BOT_USERNAME || 'MySignalForgeBot'}?start=link_${token}`;
 
@@ -688,7 +688,7 @@ app.post('/api/user/generate-telegram-link', ensureAuthenticatedAPI, async (req,
 // Check Telegram linking status for current user
 app.get('/api/user/telegram-status', ensureAuthenticatedAPI, async (req, res) => {
   try {
-    const email = req.user.email;
+    const email = req.user?.email || 'default';
     const status = await TradeDB.getUserTelegramStatus(email);
     res.json(status);
   } catch (error) {
@@ -700,7 +700,7 @@ app.get('/api/user/telegram-status', ensureAuthenticatedAPI, async (req, res) =>
 // Unlink Telegram from current user
 app.post('/api/user/unlink-telegram', ensureAuthenticatedAPI, async (req, res) => {
   try {
-    const email = req.user.email;
+    const email = req.user?.email || 'default';
     await TradeDB.unlinkTelegram(email);
     res.json({ success: true });
   } catch (error) {

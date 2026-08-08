@@ -6,6 +6,7 @@
    rewritten — delete a block once nothing injects its classes. */
 
 /* ---------- shell ---------- */
+[hidden]{display:none !important} /* class display rules must never beat the hidden attribute */
 .app-body{min-height:100vh;display:flex;flex-direction:column}
 .app-main{flex:1;width:100%}
 @media (max-width:720px){.app-main{padding-bottom:calc(var(--tabbar-h) + var(--s-6))}}
@@ -346,6 +347,32 @@
 .notification-warning .notification-icon{color:var(--warn)}
 .notification-info .notification-icon{color:var(--info)}
 .notification.fade-out,.notification.hide{opacity:0;transform:translateX(8px)}
+
+/* ---------- alerts ---------- */
+.al-grid{align-items:start}
+.al-steps{gap:var(--s-4)}
+.al-step{display:flex;align-items:flex-start;gap:var(--s-3)}
+.al-step__n{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;flex:0 0 auto;border-radius:50%;background:var(--accent-soft);color:var(--accent);border:2px solid var(--frame);font-weight:var(--w-bold);font-size:13px}
+.al-step__title{font-weight:var(--w-medium);color:var(--text)}
+.al-step__body{font-size:var(--size-sm);margin-top:2px}
+.al-finehint{font-size:var(--size-xs);color:var(--text-3)}
+.al-unlinkrow{margin-top:var(--s-3)}
+#deep-link-display{display:grid;gap:var(--s-2);justify-items:start}
+#deep-link-display[hidden]{display:none}
+.al-switches{gap:var(--s-4)}
+.al-preview{background:var(--surface);border:2px solid var(--frame);padding:var(--s-4);font-size:var(--size-sm);box-shadow:var(--shadow-1)}
+.al-preview__head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.al-preview__avatar{width:26px;height:26px;font-size:11px}
+.al-preview__time{color:var(--text-3);font-size:var(--size-xs);margin-left:auto}
+.al-preview__lead{color:var(--text);margin-bottom:8px}
+.al-preview__grid{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:var(--size-xs);color:var(--text-2);font-variant-numeric:tabular-nums}
+.al-preview__grid strong{text-align:right}
+.al-preview__gain{color:var(--gain)}
+.al-preview__loss{color:var(--loss)}
+.al-preview__foot{font-size:var(--size-xs);color:var(--text-3);margin-top:10px}
+.al-times{display:grid;gap:var(--s-3)}
+.al-time{display:grid;gap:2px;font-size:var(--size-sm);color:var(--text-2)}
+.al-time__k{font-size:var(--size-xs);font-weight:var(--w-bold);text-transform:uppercase;letter-spacing:var(--track-label);color:var(--text)}
 
 /* ---------- legacy bridge: old icon-font class names map to Material Symbols ---------- */
 .material-icons,.material-icons-outlined{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;word-wrap:normal;direction:ltr;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}

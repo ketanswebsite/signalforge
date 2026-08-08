@@ -3,323 +3,308 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Subscribe to Telegram Alerts - SutrAlgo</title>
+    <meta name="theme-color" content="#141210">
+    <meta name="description" content="Get told when something happens instead of checking the app. Signals, sells and summaries, straight to Telegram.">
+    <title>Alerts — SutrAlgo</title>
+    <link rel="icon" type="image/png" href="/images/brand/favicon.png">
+    <link rel="stylesheet" href="/css/design-system/index.css">
+    <link rel="stylesheet" href="/css/app.css">
+    <script>try{if(localStorage.getItem('sa-theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
 
-    <!-- Google Material Icons -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="icon" type="image/png" href="/images/favicon.PNG">
-
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800;900&family=Work+Sans:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    
-        
-    <!-- Modern CSS -->
-    <link rel="stylesheet" href="/css/main.css">
-
-    <!-- Modern Effects (Custom Cursor, Scroll Progress, Animations) -->
-    <script src="/js/modern-effects.js" defer></script>
-
-    <!-- Animation Controller -->
-    <script src="/js/landing.js" defer></script>
-
+    <!-- App shell (theme, nav, user menu, legal note) -->
+    <script src="/js/app-shell.js" defer></script>
+    <!-- Alert type switches (reads and saves /api/alerts/preferences) -->
+    <script src="/js/alerts-page.js" defer></script>
 </head>
-<body>
-    <!-- Animated Background with Particles -->
-    <div class="landing-background">
-        <div class="gradient-orb orb-1"></div>
-        <div class="gradient-orb orb-2"></div>
-        <div class="gradient-orb orb-3"></div>
-        <canvas id="particles-canvas"></canvas>
-    </div><div class="telegram-page-container">
-        <div class="telegram-header">
-            <div class="telegram-icon">
-                <span class="material-icons icon-xl icon-primary" aria-hidden="true">smartphone</span>
-            </div>
-            <h1>Get Trading Signals on Telegram</h1>
-            <p class="subtitle">Receive instant alerts for high-conviction trading opportunities</p>
-        </div>
+<body class="app-body">
 
-        <div class="card benefits-section">
-            <h2>Why Subscribe to Telegram?</h2>
-            <div class="benefits-grid">
-                <div class="benefit-card">
-                    <span class="benefit-icon">
-                        <span class="material-icons icon-lg icon-primary" aria-hidden="true">bolt</span>
-                    </span>
-                    <h3>Instant Notifications</h3>
-                    <p>Get alerts the moment opportunities are found</p>
-                </div>
-                <div class="benefit-card">
-                    <span class="benefit-icon">
-                        <span class="material-icons icon-lg icon-primary" aria-hidden="true">wb_twilight</span>
-                    </span>
-                    <h3>Daily 7 AM Scans</h3>
-                    <p>Automatic morning conviction trades every weekday (UK time)</p>
-                </div>
-                <div class="benefit-card">
-                    <span class="benefit-icon">
-                        <span class="material-icons icon-lg icon-primary" aria-hidden="true">bar_chart</span>
-                    </span>
-                    <h3>Backtested Signals</h3>
-                    <p>All trades include 5-year win rate statistics</p>
-                </div>
-                <div class="benefit-card">
-                    <span class="benefit-icon">
-                        <span class="material-icons icon-lg icon-primary" aria-hidden="true">track_changes</span>
-                    </span>
-                    <h3>High Conviction Only</h3>
-                    <p>Filter for >75% win rate opportunities</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="card steps-section">
-            <h2>How to Subscribe (3 Easy Steps)</h2>
-            <div class="steps-container">
-                <div class="step-card">
-                    <div class="step-number">1</div>
-                    <div class="step-content">
-                        <h3>Click the Button Below</h3>
-                        <p>Tap "Open in Telegram" to launch the Telegram app on your device</p>
-                    </div>
-                </div>
-                <div class="step-card">
-                    <div class="step-number">2</div>
-                    <div class="step-content">
-                        <h3>Send /start to the Bot</h3>
-                        <p>The bot will respond with a welcome message and confirm your subscription</p>
-                    </div>
-                </div>
-                <div class="step-card">
-                    <div class="step-number">3</div>
-                    <div class="step-content">
-                        <h3>You're All Set!</h3>
-                        <p>You'll start receiving trading signals automatically. No setup required!</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="cta-section">
-            <a href="https://t.me/MySignalForgeBot?start=all" class="cta-button">
-                <span class="material-icons icon-sm icon-mr-xs" aria-hidden="true">send</span>
-                Open in Telegram
-            </a>
-        </div>
-
-        <div class="card subscription-types">
-            <h2>Choose Your Subscription Type</h2>
-            <div class="subscription-cards">
-                <div class="subscription-card">
-                    <h3>
-                        <span class="material-icons icon-md icon-primary icon-mr-xs" aria-hidden="true">track_changes</span>
-                        All Signals (Recommended)
-                    </h3>
-                    <p>Get everything: daily 7 AM scans, conviction trades, and all market alerts</p>
-                    <a href="https://t.me/MySignalForgeBot?start=all" class="link">
-                        Subscribe to All
-                        <span class="material-icons icon-sm" aria-hidden="true">arrow_forward</span>
-                    </a>
-                </div>
-                <div class="subscription-card">
-                    <h3>
-                        <span class="material-icons icon-md icon-primary icon-mr-xs" aria-hidden="true">wb_twilight</span>
-                        Morning Conviction Only
-                    </h3>
-                    <p>Just the daily 7 AM conviction trades with >75% win rates</p>
-                    <a href="https://t.me/MySignalForgeBot?start=conviction" class="link">
-                        Subscribe to Morning Trades
-                        <span class="material-icons icon-sm" aria-hidden="true">arrow_forward</span>
-                    </a>
-                </div>
-                <div class="subscription-card">
-                    <h3>
-                        <span class="material-icons icon-md icon-primary icon-mr-xs" aria-hidden="true">search</span>
-                        Scan Results Only
-                    </h3>
-                    <p>Receive only the scan results when high conviction opportunities are found</p>
-                    <a href="https://t.me/MySignalForgeBot?start=scans" class="link">
-                        Subscribe to Scans
-                        <span class="material-icons icon-sm" aria-hidden="true">arrow_forward</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="alternative-section">
-            <h3>Or Search Manually in Telegram</h3>
-            <p>Open Telegram and search for:</p>
-            <div class="bot-username">@MySignalForgeBot</div>
-            <p>
-                Then send <strong>/start</strong> to begin receiving alerts
-            </p>
-        </div>
-
-        <div class="help-text">
-            <p>
-                Already subscribed? Send <strong>/status</strong> to check your subscription<br>
-                Want to change subscription type? Send <strong>/change</strong><br>
-                Need help? Send <strong>/help</strong> to the bot
-            </p>
-        </div>
-
-        <!-- OAuth User Linking Section (only visible if logged in) -->
-        <div id="oauth-linking-section" class="oauth-linking-section">
-            <div class="oauth-content">
-                <h2>
-                    <span class="material-icons icon-md icon-primary icon-mr-xs" aria-hidden="true">link</span>
-                    Link Your Account
-                </h2>
-                <p>Connect your Google account with Telegram to sync your subscription across both platforms</p>
-
-                <!-- Not Linked State -->
-                <div id="not-linked-state">
-                    <div class="oauth-card">
-                        <p>
-                            <span class="material-icons icon-sm icon-primary icon-mr-xs" aria-hidden="true">auto_awesome</span>
-                            <strong>Benefits of linking:</strong>
-                        </p>
-                        <ul class="benefits-list">
-                            <li>
-                                <span class="material-icons icon-xs icon-mr-xs" aria-hidden="true">email</span>
-                                Single subscription for both platforms
-                            </li>
-                            <li>
-                                <span class="material-icons icon-xs icon-mr-xs" aria-hidden="true">sync</span>
-                                Automatic sync of preferences
-                            </li>
-                            <li>
-                                <span class="material-icons icon-xs icon-mr-xs" aria-hidden="true">credit_card</span>
-                                Unified subscription management
-                            </li>
-                        </ul>
-                        <button id="generate-link-btn" class="oauth-button">
-                            Generate Telegram Link
-                        </button>
-                    </div>
-
-                    <!-- Deep Link Display (hidden initially) -->
-                    <div id="deep-link-display" class="oauth-card">
-                        <p><strong>Step 1:</strong> Click the button below</p>
-                        <a id="telegram-deep-link" href="#" class="cta-button">
-                            <span class="material-icons icon-sm icon-mr-xs" aria-hidden="true">smartphone</span>
-                            Open in Telegram & Link
-                        </a>
-                        <p><strong>Step 2:</strong> Send /start to the bot</p>
-                        <p>Your accounts will be linked automatically!</p>
-
-                        <button id="check-link-status-btn" class="secondary-button">
-                            Check Link Status
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Linked State -->
-                <div id="linked-state" class="linked-state">
-                    <div class="oauth-card">
-                        <div class="success-icon">
-                            <span class="material-icons icon-xl icon-success" role="img" aria-label="Success">check_circle</span>
+<header class="sa-appbar">
+    <div class="sa-appbar__in">
+        <a class="sa-appbar__brand" href="/index.html"><span class="sa-wordmark"><b>Sutr</b><i>Algo</i></span></a>
+        <nav class="sa-appbar__nav" aria-label="Main">
+            <a class="sa-appbar__link" href="/index.html"><span class="material-symbols-rounded" aria-hidden="true">radar</span>Scanner</a>
+            <a class="sa-appbar__link" href="/trades.html"><span class="material-symbols-rounded" aria-hidden="true">account_balance_wallet</span>Positions<span class="sa-appbar__count" data-positions-count hidden>0</span></a>
+            <a class="sa-appbar__link" href="/portfolio-backtest.html"><span class="material-symbols-rounded" aria-hidden="true">science</span>Simulator</a>
+            <a class="sa-appbar__link" href="/telegram-subscribe.html" aria-current="page"><span class="material-symbols-rounded" aria-hidden="true">notifications</span>Alerts</a>
+            <a class="sa-appbar__link" href="/account.html"><span class="material-symbols-rounded" aria-hidden="true">person</span>Account</a>
+        </nav>
+        <div class="sa-appbar__end">
+            <button class="sa-iconbtn" type="button" data-theme-toggle aria-label="Switch theme" aria-pressed="false"><span class="material-symbols-rounded" aria-hidden="true">dark_mode</span></button>
+            <div class="app-usermenu">
+                <button class="app-usermenu__btn" type="button" data-usermenu-toggle aria-expanded="false" aria-label="Your account">
+                    <span class="sa-avatar" data-user-avatar>SA</span>
+                </button>
+                <div class="sa-menu" role="menu">
+                    <div class="sa-menu__id">
+                        <span class="sa-avatar sa-avatar--menu" data-user-avatar>SA</span>
+                        <div>
+                            <div class="app-usermenu__name" data-user-name>Signed in</div>
+                            <div class="app-usermenu__email" data-user-email></div>
                         </div>
-                        <h3>Account Linked!</h3>
-                        <p>Your Telegram account <strong id="linked-username"></strong> is connected</p>
-                        <p>
-                            Linked on <span id="linked-date"></span>
-                        </p>
-                        <button id="unlink-btn" class="secondary-button">
-                            Unlink Account
-                        </button>
                     </div>
+                    <a class="sa-menu__item" href="/account.html" role="menuitem"><span class="material-symbols-rounded" aria-hidden="true">person</span>Account</a>
+                    <a class="sa-menu__item" href="/landing.html" role="menuitem"><span class="material-symbols-rounded" aria-hidden="true">help</span>How the formula works</a>
+                    <a class="sa-menu__item" href="/admin-portal.html" role="menuitem" data-admin-only hidden><span class="material-symbols-rounded" aria-hidden="true">shield_person</span>Admin portal</a>
+                    <a class="sa-menu__item" href="/logout" role="menuitem"><span class="material-symbols-rounded" aria-hidden="true">logout</span>Sign out</a>
                 </div>
             </div>
+            <button class="sa-iconbtn sa-appbar__burger" type="button" data-menu-toggle aria-label="Menu" aria-expanded="false"><span class="material-symbols-rounded" aria-hidden="true">menu</span></button>
         </div>
     </div>
+    <nav class="app-menu" aria-label="Mobile">
+        <a href="/index.html"><span class="material-symbols-rounded" aria-hidden="true">radar</span>Scanner</a>
+        <a href="/trades.html"><span class="material-symbols-rounded" aria-hidden="true">account_balance_wallet</span>Positions</a>
+        <a href="/portfolio-backtest.html"><span class="material-symbols-rounded" aria-hidden="true">science</span>Simulator</a>
+        <a href="/telegram-subscribe.html" aria-current="page"><span class="material-symbols-rounded" aria-hidden="true">notifications</span>Alerts</a>
+        <a href="/account.html"><span class="material-symbols-rounded" aria-hidden="true">person</span>Account</a>
+    </nav>
+</header>
 
-    <script>
-        // Check if user is logged in and load linking status
-        async function checkAuthAndLinkingStatus() {
+<main class="app-main">
+    <div class="sa-page sa-page--narrow">
+
+        <div class="sa-spread app-pagehead">
+            <div>
+                <h1>Alerts</h1>
+                <p>Get told when something happens instead of checking the app.</p>
+            </div>
+        </div>
+
+        <div class="sa-grid sa-grid--split al-grid">
+            <div class="sa-stack">
+
+                <section class="sa-card" id="oauth-linking-section" hidden>
+                    <div class="sa-card__head">
+                        <div>
+                            <h3 class="sa-card__title">Telegram</h3>
+                            <p class="sa-card__hint" id="telegram-card-hint">Three steps, about a minute.</p>
+                        </div>
+                        <span class="sa-badge sa-badge--gain" id="linked-badge" hidden>Connected</span>
+                    </div>
+
+                    <div id="not-linked-state">
+                        <div class="sa-stack al-steps">
+                            <div class="al-step">
+                                <span class="al-step__n">1</span>
+                                <div>
+                                    <div class="al-step__title">Open the bot</div>
+                                    <p class="al-step__body">Press the button below and Telegram opens with your personal link.</p>
+                                </div>
+                            </div>
+                            <div class="al-step">
+                                <span class="al-step__n">2</span>
+                                <div>
+                                    <div class="al-step__title">Send /start</div>
+                                    <p class="al-step__body">The bot replies straight away to confirm it's you.</p>
+                                </div>
+                            </div>
+                            <div class="al-step">
+                                <span class="al-step__n">3</span>
+                                <div>
+                                    <div class="al-step__title">That's it</div>
+                                    <p class="al-step__body">Alerts start with the next scan. Nothing else to set up.</p>
+                                </div>
+                            </div>
+
+                            <div class="sa-row">
+                                <button class="sa-btn sa-btn--primary" id="generate-link-btn" type="button">
+                                    <span class="material-symbols-rounded" aria-hidden="true">send</span>
+                                    Open Telegram
+                                </button>
+                                <button class="sa-btn sa-btn--quiet" id="check-link-status-btn" type="button">I've already done it</button>
+                            </div>
+
+                            <div id="deep-link-display" hidden>
+                                <a class="sa-btn sa-btn--secondary" id="telegram-deep-link" href="#" target="_blank" rel="noopener">
+                                    <span class="material-symbols-rounded" aria-hidden="true">open_in_new</span>
+                                    Tap here if Telegram didn't open
+                                </a>
+                                <p class="al-finehint">The link is personal to you and works once.</p>
+                            </div>
+
+                            <p class="al-finehint">Prefer to search inside Telegram? The bot is <strong>@MySignalForgeBot</strong>.</p>
+                        </div>
+                    </div>
+
+                    <div id="linked-state" hidden>
+                        <div class="sa-callout sa-callout--gain">
+                            <span class="material-symbols-rounded" aria-hidden="true">check</span>
+                            <div>
+                                <strong>You're all set</strong>
+                                <span>Messages go to <strong id="linked-username">—</strong>. Connected on <span id="linked-date">—</span>.</span>
+                            </div>
+                        </div>
+                        <div class="sa-row al-unlinkrow">
+                            <button class="sa-btn sa-btn--quiet sa-btn--sm" id="unlink-btn" type="button">Disconnect Telegram</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="sa-card" id="alert-prefs-card" hidden>
+                    <div class="sa-card__head">
+                        <div>
+                            <h3 class="sa-card__title">What you want to hear about</h3>
+                            <p class="sa-card__hint">Changes save as you make them.</p>
+                        </div>
+                    </div>
+                    <div class="sa-stack al-switches" id="alert-switches"></div>
+                    <p class="al-finehint" id="alert-prefs-status" role="status"></p>
+                </section>
+
+            </div>
+            <div class="sa-stack">
+
+                <section class="sa-card sa-card--sunk">
+                    <div class="sa-card__head">
+                        <div>
+                            <h3 class="sa-card__title">What a message looks like</h3>
+                            <p class="sa-card__hint">A sample, so you know the shape. Nothing to decode.</p>
+                        </div>
+                    </div>
+                    <div class="al-preview">
+                        <div class="al-preview__head">
+                            <span class="sa-avatar al-preview__avatar">SA</span>
+                            <strong>SutrAlgo</strong>
+                            <span class="al-preview__time">07:00</span>
+                        </div>
+                        <p class="al-preview__lead">New setup — <strong>BAJFINANCE.NS</strong> (Bajaj Finance)</p>
+                        <div class="al-preview__grid">
+                            <span>Buy around</span><strong>₹7,215.40</strong>
+                            <span>Sells at (+8%)</span><strong class="al-preview__gain">₹7,792.63</strong>
+                            <span>Stops at (−5%)</span><strong class="al-preview__loss">₹6,854.63</strong>
+                            <span>Sells anyway</span><strong>6 Sep</strong>
+                        </div>
+                        <p class="al-preview__foot">Similar setups worked 78% of the time over five years. Educational only — not advice.</p>
+                    </div>
+                </section>
+
+                <section class="sa-card">
+                    <div class="sa-card__head">
+                        <div>
+                            <h3 class="sa-card__title">When messages arrive</h3>
+                        </div>
+                    </div>
+                    <div class="al-times">
+                        <div class="al-time"><span class="al-time__k">07:00 UK</span><span>The morning scan's setups, one message.</span></div>
+                        <div class="al-time"><span class="al-time__k">Market hours</span><span>The moment a position hits its target, its stop, or day 30.</span></div>
+                        <div class="al-time"><span class="al-time__k">Market open</span><span>Optional nudges when each market opens or closes.</span></div>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+
+        <div class="sa-legal app-legal">
+            <button class="sa-legal__btn" type="button" aria-expanded="false">
+                Educational tool, not investment advice. Your capital is at risk.
+                <span class="material-symbols-rounded" aria-hidden="true">expand_more</span>
+            </button>
+            <div class="sa-legal__body" hidden>
+                <p>This service provides informational and educational tools only. Nothing here is investment advice or a recommendation to buy or sell.</p>
+                <p>Past performance is not a reliable indicator of future results. All trading involves risk and you could lose money.</p>
+                <p>Technical indicators can produce false signals, and market conditions can change quickly. You accept full responsibility for all investment decisions.</p>
+            </div>
+        </div>
+
+        <footer class="app-foot">
+            <a href="/terms.html">Terms of service</a>
+            <a href="/privacy.html">Privacy policy</a>
+            <a href="/data-management.html">Data management</a>
+            <span>© 2026 SutrAlgo</span>
+        </footer>
+
+    </div>
+</main>
+
+<nav class="sa-bottomnav" aria-label="Primary">
+    <a class="sa-bottomnav__item" href="/index.html"><span class="material-symbols-rounded" aria-hidden="true">radar</span>Scanner</a>
+    <a class="sa-bottomnav__item" href="/trades.html"><span class="material-symbols-rounded" aria-hidden="true">account_balance_wallet</span>Positions</a>
+    <a class="sa-bottomnav__item" href="/portfolio-backtest.html"><span class="material-symbols-rounded" aria-hidden="true">science</span>Simulator</a>
+    <a class="sa-bottomnav__item" href="/telegram-subscribe.html" aria-current="page"><span class="material-symbols-rounded" aria-hidden="true">notifications</span>Alerts</a>
+    <a class="sa-bottomnav__item" href="/account.html"><span class="material-symbols-rounded" aria-hidden="true">person</span>Account</a>
+</nav>
+
+<script>
+    // Telegram linking flow — same four endpoints as before; only the
+    // presentation changed. State is shown/hidden via the hidden property.
+    async function checkAuthAndLinkingStatus() {
+        try {
+            const authResponse = await fetch('/api/auth/status');
+            const authData = await authResponse.json();
+
+            if (authData.authenticated) {
+                document.getElementById('oauth-linking-section').hidden = false;
+
+                const statusResponse = await fetch('/api/user/telegram-status');
+                const data = await statusResponse.json();
+
+                if (data.linked) {
+                    showLinkedState(data);
+                } else {
+                    showNotLinkedState();
+                }
+            } else {
+                // Signed out: show the steps card anyway so the page explains itself.
+                document.getElementById('oauth-linking-section').hidden = false;
+                showNotLinkedState();
+            }
+        } catch (error) {
+            console.error('Error checking linking status:', error);
+            document.getElementById('oauth-linking-section').hidden = false;
+            showNotLinkedState();
+        }
+    }
+
+    function showLinkedState(data) {
+        document.getElementById('not-linked-state').hidden = true;
+        document.getElementById('linked-state').hidden = false;
+        document.getElementById('linked-badge').hidden = false;
+        document.getElementById('telegram-card-hint').textContent = 'Connected — messages are on their way.';
+        document.getElementById('linked-username').textContent = data.username ? '@' + data.username : 'your Telegram';
+        document.getElementById('linked-date').textContent = data.linkedAt ? new Date(data.linkedAt).toLocaleDateString() : '—';
+    }
+
+    function showNotLinkedState() {
+        document.getElementById('not-linked-state').hidden = false;
+        document.getElementById('linked-state').hidden = true;
+        document.getElementById('linked-badge').hidden = true;
+        document.getElementById('telegram-card-hint').textContent = 'Three steps, about a minute.';
+        document.getElementById('deep-link-display').hidden = true;
+        document.getElementById('generate-link-btn').hidden = false;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        checkAuthAndLinkingStatus();
+
+        document.getElementById('generate-link-btn').addEventListener('click', async function () {
             try {
-                // Check auth status
-                const authResponse = await fetch('/api/auth/status');
-                if (authResponse.ok) {
-                    const authData = await authResponse.json();
-                    if (authData.authenticated) {
-                        // Show OAuth linking section
-                        document.getElementById('oauth-linking-section').style.display = 'block';
+                const response = await fetch('/api/user/generate-telegram-link', { method: 'POST' });
+                const data = await response.json();
 
-                        // Check linking status
-                        const linkResponse = await fetch('/api/user/telegram-status');
-                        if (linkResponse.ok) {
-                            const linkData = await linkResponse.json();
-                            if (linkData.linked) {
-                                showLinkedState(linkData);
-                            } else {
-                                showNotLinkedState();
-                            }
-                        }
-                    }
+                if (data.success && data.deepLink) {
+                    const link = document.getElementById('telegram-deep-link');
+                    link.href = data.deepLink;
+                    document.getElementById('deep-link-display').hidden = false;
+                    window.open(data.deepLink, '_blank', 'noopener');
                 }
             } catch (error) {
-                console.log('Not authenticated or error checking status');
+                console.error('Error generating link:', error);
             }
-        }
-
-        function showLinkedState(data) {
-            document.getElementById('not-linked-state').style.display = 'none';
-            document.getElementById('linked-state').style.display = 'block';
-            document.getElementById('linked-username').textContent = data.username ? `@${data.username}` : 'your account';
-            document.getElementById('linked-date').textContent = new Date(data.linkedAt).toLocaleDateString();
-        }
-
-        function showNotLinkedState() {
-            document.getElementById('not-linked-state').style.display = 'block';
-            document.getElementById('linked-state').style.display = 'none';
-            document.getElementById('deep-link-display').style.display = 'none';
-        }
-
-        // Generate linking token
-        document.addEventListener('DOMContentLoaded', () => {
-            checkAuthAndLinkingStatus();
-
-            document.getElementById('generate-link-btn')?.addEventListener('click', async () => {
-                try {
-                    const response = await fetch('/api/user/generate-telegram-link', { method: 'POST' });
-                    if (response.ok) {
-                        const data = await response.json();
-                        document.getElementById('telegram-deep-link').href = data.deepLink;
-                        document.getElementById('deep-link-display').style.display = 'block';
-                        document.getElementById('generate-link-btn').style.display = 'none';
-                    } else {
-                        alert('Failed to generate link. Please try again.');
-                    }
-                } catch (error) {
-                    alert('Error generating link: ' + error.message);
-                }
-            });
-
-            document.getElementById('check-link-status-btn')?.addEventListener('click', async () => {
-                await checkAuthAndLinkingStatus();
-            });
-
-            document.getElementById('unlink-btn')?.addEventListener('click', async () => {
-                if (confirm('Are you sure you want to unlink your Telegram account?')) {
-                    try {
-                        const response = await fetch('/api/user/unlink-telegram', { method: 'POST' });
-                        if (response.ok) {
-                            alert('Account unlinked successfully!');
-                            showNotLinkedState();
-                        } else {
-                            alert('Failed to unlink account. Please try again.');
-                        }
-                    } catch (error) {
-                        alert('Error unlinking account: ' + error.message);
-                    }
-                }
-            });
         });
-    </script>
-<!-- Unified Navigation Bar -->
-<script src="js/unified-navbar.js"></script>
 
+        document.getElementById('check-link-status-btn').addEventListener('click', function () {
+            checkAuthAndLinkingStatus();
+        });
+
+        document.getElementById('unlink-btn').addEventListener('click', async function () {
+            try {
+                await fetch('/api/user/unlink-telegram', { method: 'POST' });
+                showNotLinkedState();
+            } catch (error) {
+                console.error('Error unlinking:', error);
+            }
+        });
+    });
+</script>
 </body>
 </html>
