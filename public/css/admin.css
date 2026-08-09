@@ -109,7 +109,10 @@
 .admin-portal .badge-success,.admin-portal .status-success{border-color:var(--gain);color:var(--gain);background:var(--gain-soft)}
 .admin-portal .badge-danger,.admin-portal .status-danger{border-color:var(--loss);color:var(--loss);background:var(--loss-soft)}
 .admin-portal .badge-primary{border-color:var(--frame);color:var(--text);background:var(--accent-soft)}
-.admin-portal .badge-secondary{color:var(--text-3)}
+.admin-portal .badge-secondary,.admin-portal .badge-gray{color:var(--text-3)}
+.admin-portal .badge-warning{border-color:var(--warn);color:var(--text);background:var(--warn-soft)}
+.admin-portal .badge-info{border-color:var(--line-strong);color:var(--text-2);background:var(--accent-soft)}
+.admin-portal .access-detail{font-size:11px;color:var(--text-3);margin-top:4px;white-space:nowrap}
 
 /* ---------- alerts & status messages ---------- */
 .admin-portal .alert{display:flex;align-items:flex-start;gap:var(--s-3);border:2px solid var(--frame);background:var(--surface-2);padding:var(--s-3) var(--s-4);margin:var(--s-3) 0;font-size:var(--size-sm)}

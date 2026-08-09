@@ -132,17 +132,69 @@ router.get('/users', asyncHandler(async (req, res) => {
 
   const usersResult = await TradeDB.pool.query(`
     SELECT
-      email,
-      name,
-      first_login,
-      last_login,
-      telegram_chat_id
-    FROM users
-    ORDER BY first_login DESC
+      u.email,
+      u.name,
+      u.first_login,
+      u.last_login,
+      u.telegram_chat_id,
+      u.is_complimentary,
+      u.complimentary_until,
+      s.plan_name AS sub_plan,
+      s.status AS sub_status,
+      s.billing_cycle AS sub_billing_cycle,
+      s.trial_end_date AS sub_trial_end,
+      s.end_date AS sub_end,
+      s.next_billing_date AS sub_next_billing
+    FROM users u
+    LEFT JOIN LATERAL (
+      SELECT plan_name, status, billing_cycle, trial_end_date, end_date, next_billing_date
+      FROM user_subscriptions us
+      WHERE us.user_email = u.email
+      ORDER BY us.id DESC
+      LIMIT 1
+    ) s ON true
+    ORDER BY u.first_login DESC
     LIMIT $1 OFFSET $2
   `, [limit, offset]);
 
-  res.json(paginationResponse(usersResult.rows, page, limit, total));
+  // Summarise what each user can actually use — shown in User Management
+  const ADMIN_EMAIL_ACCESS = process.env.ADMIN_EMAIL || 'ketanjoshisahs@gmail.com';
+  const shortDate = d => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : null;
+  const withAccess = usersResult.rows.map(row => {
+    let access;
+    if (row.email === ADMIN_EMAIL_ACCESS) {
+      access = { level: 'admin', label: 'Admin', detail: 'Every feature, every market' };
+    } else if (row.is_complimentary && (!row.complimentary_until || new Date(row.complimentary_until) > new Date())) {
+      access = {
+        level: 'complimentary',
+        label: 'Complimentary',
+        detail: row.complimentary_until ? `Until ${shortDate(row.complimentary_until)}` : 'Lifetime'
+      };
+    } else if (row.sub_status === 'active') {
+      access = {
+        level: 'subscribed',
+        label: row.sub_plan || 'Subscribed',
+        detail: row.sub_next_billing ? `Renews ${shortDate(row.sub_next_billing)}` : (row.sub_billing_cycle || 'Active')
+      };
+    } else if (row.sub_status === 'trial') {
+      const trialEnd = row.sub_trial_end ? new Date(row.sub_trial_end) : null;
+      const live = !trialEnd || trialEnd > new Date();
+      access = live
+        ? { level: 'trial', label: `${row.sub_plan || 'Trial'} trial`, detail: trialEnd ? `Ends ${shortDate(trialEnd)}` : 'Running' }
+        : { level: 'none', label: 'Trial ended', detail: shortDate(trialEnd) };
+    } else if (row.sub_status === 'cancelled' && row.sub_end && new Date(row.sub_end) > new Date()) {
+      access = { level: 'cancelled', label: `${row.sub_plan || 'Plan'} (cancelled)`, detail: `Keeps access until ${shortDate(row.sub_end)}` };
+    } else if (row.is_complimentary && row.complimentary_until) {
+      access = { level: 'none', label: 'Comp expired', detail: shortDate(row.complimentary_until) };
+    } else if (row.sub_status) {
+      access = { level: 'none', label: 'Expired', detail: row.sub_plan || null };
+    } else {
+      access = { level: 'none', label: 'No access', detail: 'Never subscribed' };
+    }
+    return { ...row, access };
+  });
+
+  res.json(paginationResponse(withAccess, page, limit, total));
 }));
 
 // Get all users with complimentary access (must be before /users/:email to avoid route conflict)

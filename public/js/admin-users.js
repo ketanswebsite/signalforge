@@ -154,6 +154,25 @@ const AdminUsers = {
           render: (name) => name || '-'
         },
         {
+          label: 'Access',
+          key: 'access',
+          render: (access) => {
+            if (!access) return AdminComponents.badge({ text: 'Unknown', type: 'gray' });
+            const badgeType = {
+              admin: 'primary',
+              complimentary: 'info',
+              subscribed: 'success',
+              trial: 'warning',
+              cancelled: 'warning',
+              none: 'gray'
+            }[access.level] || 'gray';
+            const badge = AdminComponents.badge({ text: access.label, type: badgeType });
+            return access.detail
+              ? `${badge}<div class="access-detail">${access.detail}</div>`
+              : badge;
+          }
+        },
+        {
           label: 'First Login',
           key: 'first_login',
           render: (date) =>DateFormatter.format(date)
