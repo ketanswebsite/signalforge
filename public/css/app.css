@@ -502,8 +502,9 @@
 .ai-news__date{color:var(--text-3);font-variant-numeric:tabular-nums;white-space:nowrap}
 .ai-news__title--pos{color:var(--gain)}
 .ai-news__title--neg{color:var(--loss)}
+.ai-summary{margin:0;font-size:var(--size-sm);line-height:1.6;color:var(--text-2);border-left:3px solid var(--accent);padding-left:var(--s-3)}
 .ai-context{border:1.5px solid var(--line-strong);background:var(--surface-2);padding:var(--s-3) var(--s-4);font-size:var(--size-xs);color:var(--text-2);display:grid;gap:6px}
-.ai-context__legal{color:var(--text-3)}
+.ai-context__engine,.ai-context__legal{color:var(--text-3)}
 .ai-loading,.ai-error{display:grid;justify-items:center;gap:var(--s-3);padding:var(--s-8) var(--s-4);text-align:center;color:var(--text-2)}
 .ai-loading .spinner{font-size:32px;animation:sa-spin .8s linear infinite}
 .ai-loading-hint{font-size:var(--size-xs);color:var(--text-3)}

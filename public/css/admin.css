@@ -1,0 +1,158 @@
+/* SutrAlgo admin portal — v3 "Poster" bridge.
+   Shell layout for admin-v2.html plus Poster-tokened styling for the class
+   vocabulary the admin JS modules emit (admin-card, metric-card, data-table,
+   form-*, alert, pagination…). Everything scoped under body.admin-portal so
+   nothing leaks into the app pages. Modals reuse app.css (.modal-*). */
+
+/* ---------- shell ---------- */
+.admin-portal{background:var(--bg)}
+.admin-appbar__in{max-width:none}
+.admin-body{display:flex;align-items:stretch;min-height:calc(100vh - 64px)}
+.admin-sidenav{position:sticky;top:0;align-self:flex-start;max-height:100vh;overflow-y:auto}
+.admin-main{flex:1;min-width:0;padding:var(--s-6) var(--s-6) var(--s-9)}
+@media (max-width:960px){
+  .admin-body{display:block}
+  .admin-sidenav{position:static;max-height:none;flex-direction:row;overflow-x:auto;border-right:0;border-bottom:2.5px solid var(--frame);min-width:0;padding:var(--s-2) var(--s-3)}
+  .admin-sidenav .sa-sidenav__group{display:none}
+  .admin-sidenav .sa-sidenav__item{width:auto;white-space:nowrap}
+  .admin-main{padding:var(--s-4) var(--s-4) var(--s-8)}
+}
+
+/* ---------- tabs ---------- */
+.admin-portal .admin-tab{display:none}
+.admin-portal .admin-tab.active{display:block;animation:sa-fadein var(--dur-2) var(--ease-out)}
+.admin-portal .tab-header{margin-bottom:var(--s-5)}
+.admin-portal .tab-header h2{font-family:var(--font-display);font-weight:var(--w-display);font-size:var(--size-h2);text-transform:uppercase;letter-spacing:.02em;margin:0}
+.admin-portal .tab-header h3{font-family:var(--font-display);font-weight:var(--w-display);font-size:var(--size-h4);text-transform:uppercase;margin:0}
+.admin-portal .text-secondary{color:var(--text-2);margin:6px 0 0;font-size:var(--size-sm)}
+
+/* ---------- metric tiles ---------- */
+.admin-portal .metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--s-4);margin-bottom:var(--s-5)}
+.admin-portal .metric-card{display:flex;gap:var(--s-3);align-items:flex-start;border:1.5px solid var(--line-strong);background:var(--surface-2);padding:var(--s-4)}
+.admin-portal .metric-icon{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border:1.5px solid var(--line-strong);background:var(--surface);color:var(--text-2);flex:0 0 auto}
+.admin-portal .metric-content{min-width:0}
+.admin-portal .metric-title{font-size:11px;font-weight:var(--w-bold);text-transform:uppercase;letter-spacing:var(--track-label);color:var(--text-2)}
+.admin-portal .metric-value{font-family:var(--font-display);font-weight:var(--w-display);font-size:var(--size-stat-sm);font-variant-numeric:tabular-nums;line-height:1.1;margin-top:4px}
+.admin-portal .metric-change{font-size:var(--size-xs);color:var(--text-3);margin-top:4px;font-variant-numeric:tabular-nums}
+.admin-portal .metric-change-positive{color:var(--gain)}
+.admin-portal .metric-change-negative{color:var(--loss)}
+.admin-portal .metric-change-neutral{color:var(--text-3)}
+.admin-portal .metric-comparison{font-size:var(--size-xs);color:var(--text-3)}
+
+/* ---------- card boxes (every *-card / container the modules render) ---------- */
+.admin-portal .chart-container,.admin-portal .activity-container,.admin-portal .analytics-card,
+.admin-portal .test-card,.admin-portal .settings-card,.admin-portal .form-card,
+.admin-portal .table-card,.admin-portal .tool-section,.admin-portal .admin-card,
+.admin-portal .channel-card,.admin-portal .diagnostic-card,.admin-portal .log-card,
+.admin-portal .execution-logs{border:2px solid var(--frame);background:var(--surface);padding:var(--s-5);margin-bottom:var(--s-4);box-shadow:var(--shadow-1)}
+.admin-portal .chart-container h3,.admin-portal .activity-container h3,.admin-portal .analytics-card h3,
+.admin-portal .test-card h3,.admin-portal .settings-card h3,.admin-portal .tool-section h3,
+.admin-portal .execution-logs h3,.admin-portal .admin-card-title,.admin-portal .form-card h4,
+.admin-portal .table-header h4{display:flex;align-items:center;gap:8px;font-family:var(--font-sans);font-weight:var(--w-bold);font-size:var(--size-sm);text-transform:uppercase;letter-spacing:.04em;margin:0 0 var(--s-4)}
+.admin-portal .test-card p{color:var(--text-2);font-size:var(--size-sm);margin:0 0 var(--s-3)}
+.admin-portal .admin-card-header,.admin-portal .table-header,.admin-portal .log-card-header{display:flex;align-items:center;justify-content:space-between;gap:var(--s-3);margin-bottom:var(--s-3);flex-wrap:wrap}
+.admin-portal .admin-card-header .admin-card-title,.admin-portal .table-header h4{margin-bottom:0}
+.admin-portal .admin-card-body,.admin-portal .log-card-body{min-width:0}
+.admin-portal .analytics-grid,.admin-portal .testing-grid,.admin-portal .settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:var(--s-4)}
+.admin-portal .database-tools{display:grid;gap:var(--s-4)}
+.admin-portal .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--s-4);margin-bottom:var(--s-5)}
+.admin-portal .stat-card{border:1.5px solid var(--line-strong);background:var(--surface-2);padding:var(--s-4)}
+.admin-portal .stat-label{font-size:11px;font-weight:var(--w-bold);text-transform:uppercase;letter-spacing:var(--track-label);color:var(--text-2)}
+.admin-portal .stat-value{font-family:var(--font-display);font-weight:var(--w-display);font-size:var(--size-stat-sm);font-variant-numeric:tabular-nums;margin-top:4px}
+.admin-portal .chart-container canvas,.admin-portal .analytics-card canvas{max-width:100%;max-height:320px}
+
+/* ---------- forms ---------- */
+.admin-portal .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--s-4)}
+.admin-portal .form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:var(--s-3)}
+.admin-portal .form-group label{font-size:var(--size-xs);font-weight:var(--w-bold);text-transform:uppercase;letter-spacing:.05em;color:var(--text)}
+.admin-portal .form-group-full{grid-column:1/-1}
+.admin-portal .form-input,.admin-portal .form-control,.admin-portal .form-select,.admin-portal .search-input,
+.admin-portal input[type="text"],.admin-portal input[type="search"],.admin-portal input[type="email"],
+.admin-portal input[type="number"],.admin-portal input[type="date"],.admin-portal select,.admin-portal textarea{width:100%;min-height:var(--tap-min);padding:10px var(--s-3);font-family:var(--font-sans);font-size:var(--size-sm);color:var(--text);background:var(--surface);border:2px solid var(--frame);border-radius:0}
+.admin-portal .form-input:focus,.admin-portal .form-control:focus,.admin-portal .form-select:focus,
+.admin-portal .search-input:focus,.admin-portal input:focus,.admin-portal select:focus,.admin-portal textarea:focus{outline:none;border-color:var(--line-focus);box-shadow:var(--ring-focus)}
+.admin-portal .form-actions{display:flex;gap:var(--s-3);margin-top:var(--s-4);flex-wrap:wrap}
+.admin-portal .table-controls{display:flex;gap:var(--s-3);align-items:center;margin-bottom:var(--s-4);flex-wrap:wrap}
+.admin-portal .table-controls .search-input{max-width:340px}
+
+/* ---------- buttons: admin JS uses btn-primary etc. WITHOUT the .btn base ---------- */
+.admin-portal .btn-primary,.admin-portal .btn-secondary,.admin-portal .btn-danger{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:var(--font-sans);font-weight:var(--w-bold);letter-spacing:.01em;border:2px solid var(--frame);border-radius:0;cursor:pointer;text-decoration:none;white-space:nowrap;min-height:var(--tap-min);padding:0 var(--s-4);font-size:var(--size-sm);background:transparent;color:var(--text);transition:background var(--dur-1) var(--ease-out)}
+.admin-portal .btn-primary{background:var(--text);color:var(--bg);box-shadow:4px 4px 0 rgba(20,18,16,.25)}
+.admin-portal .btn-primary:hover{background:var(--ink-80)}
+.admin-portal .btn-secondary:hover{background:var(--accent-soft)}
+.admin-portal .btn-danger{color:var(--loss);border-color:var(--loss)}
+.admin-portal .btn-danger:hover{background:var(--loss-soft)}
+.admin-portal .btn-sm{min-height:36px;padding:0 12px;font-size:var(--size-xs)}
+.admin-portal .btn-icon{display:inline-flex;align-items:center;justify-content:center;min-width:36px;min-height:36px;border:1.5px solid var(--frame);background:transparent;color:var(--text-2);cursor:pointer}
+.admin-portal .btn-icon:hover{background:var(--accent-soft);color:var(--text)}
+
+/* ---------- filter tabs ---------- */
+.admin-portal .filter-tabs{display:flex;gap:var(--s-2);margin-bottom:var(--s-4);flex-wrap:wrap}
+.admin-portal .filter-tab{appearance:none;border:1.5px solid var(--frame);background:transparent;color:var(--text-2);font-family:var(--font-sans);font-size:var(--size-xs);font-weight:var(--w-bold);text-transform:uppercase;letter-spacing:.04em;padding:8px 16px;cursor:pointer;min-height:36px}
+.admin-portal .filter-tab:hover{background:var(--accent-soft);color:var(--text)}
+.admin-portal .filter-tab.active{background:var(--text);color:var(--bg)}
+.admin-portal .tab-btn{appearance:none;border:1.5px solid var(--frame);background:transparent;color:var(--text-2);font-size:var(--size-xs);font-weight:var(--w-bold);padding:7px 12px;cursor:pointer;min-height:36px}
+.admin-portal .tab-btn.active{background:var(--text);color:var(--bg)}
+
+/* ---------- tables ---------- */
+.admin-portal .data-table-wrapper,.admin-portal .cohort-table-container,.admin-portal .table-responsive{width:100%;overflow-x:auto}
+.admin-portal table{width:100%;border-collapse:collapse;font-size:var(--size-sm)}
+.admin-portal table th{text-align:left;font-weight:var(--w-bold);color:var(--text);padding:12px var(--s-3);border-bottom:2px solid var(--frame);white-space:nowrap;font-size:11px;text-transform:uppercase;letter-spacing:var(--track-label)}
+.admin-portal table td{padding:12px var(--s-3);border-bottom:1.5px solid var(--line);color:var(--text);vertical-align:middle}
+.admin-portal table tbody tr:hover{background:var(--accent-soft)}
+.admin-portal table tbody tr:last-child td{border-bottom:0}
+.admin-portal th.sortable,.admin-portal .col.sortable{cursor:pointer}
+.admin-portal .actions-column{white-space:nowrap}
+
+/* ---------- badges & status ---------- */
+.admin-portal .badge,.admin-portal .status-badge{display:inline-block;padding:3px 10px;border:1.5px solid var(--line-strong);background:var(--surface-2);font-size:11px;font-weight:var(--w-bold);text-transform:uppercase;letter-spacing:.04em;color:var(--text-2)}
+.admin-portal .badge-success,.admin-portal .status-success{border-color:var(--gain);color:var(--gain);background:var(--gain-soft)}
+.admin-portal .badge-danger,.admin-portal .status-danger{border-color:var(--loss);color:var(--loss);background:var(--loss-soft)}
+.admin-portal .badge-primary{border-color:var(--frame);color:var(--text);background:var(--accent-soft)}
+.admin-portal .badge-secondary{color:var(--text-3)}
+
+/* ---------- alerts & status messages ---------- */
+.admin-portal .alert{display:flex;align-items:flex-start;gap:var(--s-3);border:2px solid var(--frame);background:var(--surface-2);padding:var(--s-3) var(--s-4);margin:var(--s-3) 0;font-size:var(--size-sm)}
+.admin-portal .alert-success{border-color:var(--gain);background:var(--gain-soft)}
+.admin-portal .alert-error,.admin-portal .alert-danger{border-color:var(--loss);background:var(--loss-soft)}
+.admin-portal .alert-warning{border-color:var(--warn);background:var(--warn-soft)}
+.admin-portal .alert-info{background:var(--accent-soft)}
+.admin-portal .alert-content,.admin-portal .alert-message{flex:1;min-width:0}
+.admin-portal .alert-dismiss{background:none;border:0;cursor:pointer;color:var(--text-2);font-size:18px;line-height:1}
+.admin-portal .status-message{font-size:var(--size-sm);margin-top:var(--s-3)}
+.admin-portal .status-message:empty{display:none}
+
+/* ---------- pagination ---------- */
+.admin-portal .pagination{display:flex;gap:6px;align-items:center;justify-content:center;margin-top:var(--s-4);flex-wrap:wrap}
+.admin-portal .pagination-btn{appearance:none;min-width:36px;min-height:36px;border:1.5px solid var(--frame);background:transparent;color:var(--text-2);font-size:var(--size-xs);font-weight:var(--w-bold);cursor:pointer;padding:0 10px}
+.admin-portal .pagination-btn:hover:not([disabled]){background:var(--accent-soft);color:var(--text)}
+.admin-portal .pagination-btn.active{background:var(--text);color:var(--bg)}
+.admin-portal .pagination-btn[disabled]{opacity:.35;cursor:default}
+.admin-portal .pagination-ellipsis{color:var(--text-3)}
+
+/* ---------- empty / loading ---------- */
+.admin-portal .empty-state{display:grid;justify-items:center;gap:var(--s-2);padding:var(--s-8) var(--s-4);text-align:center;color:var(--text-3)}
+.admin-portal .empty-state-icon,.admin-portal .empty-icon{font-size:34px;color:var(--text-3)}
+.admin-portal .spinner-container{display:grid;justify-items:center;padding:var(--s-6)}
+.admin-portal .spinner,.admin-portal .spinner-medium{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--text);border-radius:50%;animation:sa-spin .8s linear infinite}
+.admin-portal .skeleton{background:var(--surface-3);animation:sa-fadein 1s ease-in-out infinite alternate;min-height:14px}
+.admin-portal .loading{opacity:.6;pointer-events:none}
+
+/* ---------- utilities the modules sprinkle around ---------- */
+.admin-portal .hidden{display:none !important}
+.admin-portal .flex{display:flex;align-items:center}
+.admin-portal .flex-between{display:flex;align-items:center;justify-content:space-between;gap:var(--s-3)}
+.admin-portal .gap-2{gap:var(--s-2)}
+.admin-portal .mb-2{margin-bottom:var(--s-2)}
+.admin-portal .mt-1{margin-top:var(--s-1)}
+.admin-portal .mt-2{margin-top:var(--s-2)}
+.admin-portal .text-muted{color:var(--text-3)}
+.admin-portal .text-center{text-align:center}
+.admin-portal .text-sm{font-size:var(--size-xs)}
+.admin-portal .data-value{font-variant-numeric:tabular-nums}
+.admin-portal .scroll-reveal{opacity:1;transform:none}
+.admin-portal .admin-section-spaced{margin-top:var(--s-6)}
+.admin-portal .table-card-spaced{margin-top:var(--s-4)}
+.admin-portal .editable-cell{cursor:text;border-bottom:1px dashed var(--line-strong)}
+.admin-portal .funnel-metrics{display:grid;gap:var(--s-3)}
+.admin-portal .cohort-cell-empty{color:var(--text-3)}

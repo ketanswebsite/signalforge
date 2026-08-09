@@ -117,45 +117,7 @@
 
         <div id="data-fetch-status"></div>
 
-        <section class="sa-card sc-settings">
-            <div class="sa-card__head">
-                <div>
-                    <h3 class="sa-card__title">What to look at</h3>
-                    <p class="sa-card__hint">Change the watchlist and run the scan again. The exit rule never changes.</p>
-                </div>
-            </div>
-            <div class="sa-grid sa-grid--3">
-                <div id="stock-index-selector-container"></div>
-                <div class="sa-field">
-                    <span class="sa-field__label">The exit rule</span>
-                    <p class="sc-rule-line"><strong>+8%</strong> target · <strong>−5%</strong> stop · <strong>30</strong> days</p>
-                    <span class="sa-field__hint">Every position sells at whichever comes first.</span>
-                </div>
-                <div class="sa-field">
-                    <span class="sa-field__label">Weekly check</span>
-                    <p class="sc-rule-line">On for every scan</p>
-                    <span class="sa-field__hint">A signal only counts when the weekly chart agrees with the daily one.</span>
-                </div>
-            </div>
-        </section>
-
-        <section class="sa-card sa-card--flush sc-settings">
-            <div class="sa-card__head">
-                <div>
-                    <h3 class="sa-card__title">What the scan found</h3>
-                    <p class="sa-card__hint">Each one already has its sell price and stop worked out.</p>
-                </div>
-            </div>
-            <div class="app-cardbody" id="buying-opportunities">
-                <div class="sa-empty">
-                    <div class="sa-empty__icon"><span class="material-symbols-rounded" aria-hidden="true">radar</span></div>
-                    <div class="sa-empty__title">Nothing scanned yet</div>
-                    <p>Press "Run the scan" and every stock on your watchlist gets checked against the formula. A full market takes a few minutes.</p>
-                </div>
-            </div>
-        </section>
-
-        <section class="chart-section">
+        <section class="chart-section" hidden>
             <div class="sa-card sa-card--flush">
                 <div class="sa-card__head">
                     <div>
@@ -238,6 +200,45 @@
             </div>
         </section>
 
+        <section class="sa-card sc-settings">
+            <div class="sa-card__head">
+                <div>
+                    <h3 class="sa-card__title">What to look at</h3>
+                    <p class="sa-card__hint">Change the watchlist and run the scan again. The exit rule never changes.</p>
+                </div>
+            </div>
+            <div class="sa-grid sa-grid--3">
+                <div id="stock-index-selector-container"></div>
+                <div class="sa-field">
+                    <span class="sa-field__label">The exit rule</span>
+                    <p class="sc-rule-line"><strong>+8%</strong> target · <strong>−5%</strong> stop · <strong>30</strong> days</p>
+                    <span class="sa-field__hint">Every position sells at whichever comes first.</span>
+                </div>
+                <div class="sa-field">
+                    <span class="sa-field__label">Weekly check</span>
+                    <p class="sc-rule-line">On for every scan</p>
+                    <span class="sa-field__hint">A signal only counts when the weekly chart agrees with the daily one.</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="sa-card sa-card--flush sc-settings">
+            <div class="sa-card__head">
+                <div>
+                    <h3 class="sa-card__title">What the scan found</h3>
+                    <p class="sa-card__hint">Each one already has its sell price and stop worked out.</p>
+                </div>
+            </div>
+            <div class="app-cardbody" id="buying-opportunities">
+                <div class="sa-empty">
+                    <div class="sa-empty__icon"><span class="material-symbols-rounded" aria-hidden="true">radar</span></div>
+                    <div class="sa-empty__title">Nothing scanned yet</div>
+                    <p>Press "Run the scan" and every stock on your watchlist gets checked against the formula. A full market takes a few minutes.</p>
+                </div>
+            </div>
+        </section>
+
+
         <div class="sa-legal app-legal">
             <button class="sa-legal__btn" type="button" aria-expanded="false">
                 Educational tool, not investment advice. Your capital is at risk.
@@ -296,6 +297,9 @@
 
 <!-- Performance Modal -->
 <script src="js/dti-performance-modal.js"></script>
+
+<!-- Scan persistence (restores the last scan after navigating away) -->
+<script src="js/scan-store.js"></script>
 
 <!-- Company Names Mapping -->
 <script src="js/company-names.js"></script>

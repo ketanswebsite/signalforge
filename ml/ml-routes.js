@@ -268,6 +268,111 @@ async function scoreInformation(symbol, name) {
 }
 
 /**
+ * Optional Gemini layer. When GEMINI_API_KEY is set, the deterministic
+ * collectors' facts are handed to Gemini, which re-scores each pillar under
+ * the same framework and writes a short summary. Scores are clamped and the
+ * confidence blend is always recomputed server-side — the model never does
+ * the maths. Any failure falls back to the rule-based scores.
+ */
+const GEMINI_MODEL = 'gemini-2.5-flash';
+
+async function geminiConviction({ symbol, name, technical, fundamental, information, winRate }) {
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) return null;
+
+    const facts = {
+        stock: { symbol, name: name || symbol },
+        technicalFacts: technical.evidence,
+        fundamentalFacts: fundamental.evidence,
+        newsFacts: information.evidence,
+        headlines: (information.headlines || []).map(h => `${h.date}: ${h.title}`),
+        earningsInsideNewsWindow: !!information.earningsCap,
+        backtestWinRatePercent: winRate
+    };
+
+    const prompt =
+        'You are the conviction checker for a swing-trade scanner (entry now, +8% target, −5% stop, 30-day limit).\n' +
+        'Score three pillars from 1 to 10 using ONLY the facts given:\n' +
+        '- technical (weight 45%): price behaviour. Momentum counts POSITIVE. The stop-vs-daily-range fit is a moderator, never a veto.\n' +
+        '- fundamental (weight 30%): business quality. If facts say data is unavailable, score exactly 5.\n' +
+        '- information (weight 25%): the news tone. If earningsInsideNewsWindow is true, this pillar is capped at 5.\n' +
+        'backtestWinRatePercent is CONTEXT ONLY — it must not move any score.\n' +
+        'For each pillar give 2-4 evidence lines; every line must contain a number or cite a headline. ' +
+        'Neither cheerlead nor auto-sceptic — follow the facts. ' +
+        'Also write a 2-3 sentence plain-English summary of the overall picture.\n\n' +
+        'Facts:\n' + JSON.stringify(facts, null, 2);
+
+    const body = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+            temperature: 0.2,
+            responseMimeType: 'application/json',
+            responseSchema: {
+                type: 'object',
+                properties: {
+                    technical: {
+                        type: 'object',
+                        properties: {
+                            score: { type: 'number' },
+                            evidence: { type: 'array', items: { type: 'string' } }
+                        },
+                        required: ['score', 'evidence']
+                    },
+                    fundamental: {
+                        type: 'object',
+                        properties: {
+                            score: { type: 'number' },
+                            evidence: { type: 'array', items: { type: 'string' } }
+                        },
+                        required: ['score', 'evidence']
+                    },
+                    information: {
+                        type: 'object',
+                        properties: {
+                            score: { type: 'number' },
+                            evidence: { type: 'array', items: { type: 'string' } }
+                        },
+                        required: ['score', 'evidence']
+                    },
+                    summary: { type: 'string' }
+                },
+                required: ['technical', 'fundamental', 'information', 'summary']
+            }
+        }
+    };
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+    const { data } = await axios.post(url, body, {
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+        timeout: 30000
+    });
+
+    const text = data && data.candidates && data.candidates[0] &&
+        data.candidates[0].content && data.candidates[0].content.parts &&
+        data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
+    if (!text) throw new Error('Empty Gemini response');
+
+    const parsed = JSON.parse(text);
+    const pillar = (p, fallback) => ({
+        score: clampScore(typeof p.score === 'number' ? p.score : fallback.score),
+        evidence: Array.isArray(p.evidence) && p.evidence.length ? p.evidence.slice(0, 4) : fallback.evidence
+    });
+
+    const gTech = pillar(parsed.technical, technical);
+    const gFund = pillar(parsed.fundamental, fundamental);
+    // The earnings cap is a hard framework rule — re-apply it whatever the model said
+    const gInfo = pillar(parsed.information, information);
+    if (information.earningsCap && gInfo.score > 5) gInfo.score = 5;
+
+    return {
+        technical: gTech,
+        fundamental: gFund,
+        information: { ...gInfo, headlines: information.headlines, earningsCap: information.earningsCap },
+        summary: typeof parsed.summary === 'string' ? parsed.summary.slice(0, 600) : null
+    };
+}
+
+/**
  * GET /api/ml/conviction/:symbol?name=&winRate=
  * Three-pillar conviction check for one screened stock.
  */
@@ -282,14 +387,34 @@ router.get('/conviction/:symbol', ensureSubscriptionActive, async (req, res) => 
             return res.json({ ...cached.payload, context: { ...cached.payload.context, winRate } });
         }
 
+        // Each pillar degrades to neutral on its own — one source being down
+        // must never take the whole check with it.
         const [technical, fundamental, information] = await Promise.all([
-            scoreTechnical(symbol),
+            scoreTechnical(symbol).catch(e => ({
+                score: 5,
+                evidence: ['Price history unavailable — scored neutral (5)']
+            })),
             scoreFundamental(symbol),
             scoreInformation(symbol, name)
         ]);
 
+        // Gemini re-scores the same facts when a key is configured
+        let pillars = { technical, fundamental, information };
+        let summary = null;
+        let engine = 'rule-based';
+        try {
+            const gemini = await geminiConviction({ symbol, name, technical, fundamental, information, winRate });
+            if (gemini) {
+                pillars = { technical: gemini.technical, fundamental: gemini.fundamental, information: gemini.information };
+                summary = gemini.summary;
+                engine = GEMINI_MODEL;
+            }
+        } catch (e) {
+            console.error(`Gemini conviction failed for ${symbol} (falling back to rule-based):`, e.message);
+        }
+
         const confidence = Math.round(
-            (technical.score * 0.45 + fundamental.score * 0.30 + information.score * 0.25) * 10
+            (pillars.technical.score * 0.45 + pillars.fundamental.score * 0.30 + pillars.information.score * 0.25) * 10
         ) / 10;
         const verdict = confidence > 6 ? 'GO' : confidence >= 5 ? 'WATCH' : 'PASS';
 
@@ -299,10 +424,12 @@ router.get('/conviction/:symbol', ensureSubscriptionActive, async (req, res) => 
             name: name || symbol,
             confidence,
             verdict,
+            engine,
+            summary,
             pillars: {
-                technical: { ...technical, weight: 45 },
-                fundamental: { ...fundamental, weight: 30 },
-                information: { ...information, weight: 25 }
+                technical: { ...pillars.technical, weight: 45 },
+                fundamental: { ...pillars.fundamental, weight: 30 },
+                information: { ...pillars.information, weight: 25 }
             },
             context: {
                 winRate,

@@ -409,6 +409,7 @@ try {
   const mlRoutes = require('./ml/ml-routes');
   app.use('/api/ml', mlRoutes);
 } catch (error) {
+  console.error('\u2717 Failed to load ML routes:', error.message);
 }
 
 // Admin routes (with its own authentication middleware)

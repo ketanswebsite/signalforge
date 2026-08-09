@@ -83,33 +83,15 @@ const PortfolioSimulator = (function() {
             // 1. Calculate date ranges
             const dates = calculateDateRanges(startDate);
 
-            // 2. Fetch all stocks data (5 years before simulation + simulation period to today)
-            if (progressCallback) progressCallback({ stage: 'fetch', message: 'Fetching stock data...', current: 0, total: 0 });
-            const allStocks = await fetchAllStocksData(dates.dataStart, progressCallback);
-
-            // Layer 5: Count stale data stocks
-            stats.staleDataStocks = allStocks.filter(s => s.data && s.data.isStale).length;
-
-            // 3. Calculate historical win rates (4.5 years of signals AFTER 6-month buffer)
-            if (progressCallback) progressCallback({
-                stage: 'backtest',
-                message: 'Running historical backtests...',
-                current: 0,
-                total: allStocks.length
-            });
-            const stockWinRates = await calculateHistoricalWinRates(allStocks, dates, progressCallback);
-
-            // 4. Filter high conviction stocks (>75% win rate in historical period)
-            const highConvictionStocks = stockWinRates.filter(s => s.winRate > CONFIG.HIGH_CONVICTION_THRESHOLD);
-
-            // 5. Generate signals during simulation period for high conviction stocks only
-            if (progressCallback) progressCallback({
-                stage: 'signals',
-                message: 'Generating trading signals...',
-                current: 0,
-                total: highConvictionStocks.length
-            });
-            const simulationSignals = await generateSimulationSignals(allStocks, highConvictionStocks, dates, progressCallback);
+            // 2-5. One streaming pass: each stock is fetched, backtested for
+            // its win rate and (if strong) mined for simulation signals, then
+            // its price arrays are released. The old three-stage pipeline held
+            // every stock's full 6-year OHLCV in memory at once (~1GB), which
+            // iOS Safari kills the tab for.
+            if (progressCallback) progressCallback({ stage: 'fetch', message: 'Checking stocks...', current: 0, total: 0 });
+            const stream = await streamStocksAndSignals(dates, progressCallback);
+            const simulationSignals = stream.signals;
+            stats.staleDataStocks = stream.totals.stale;
 
             // 6. Run day-by-day portfolio simulation
             if (progressCallback) progressCallback({ stage: 'simulate', message: 'Simulating portfolio performance...' });
@@ -139,14 +121,14 @@ const PortfolioSimulator = (function() {
                     },
                     // Processing stats
                     processing: {
-                        totalStocksProcessed: allStocks.length,
-                        stocksWithWinRates: stockWinRates.length,
-                        highConvictionStocks: highConvictionStocks.length,
-                        processingMode: 'concurrent',
+                        totalStocksProcessed: stream.totals.processed,
+                        stocksWithWinRates: stream.totals.withWinRates,
+                        highConvictionStocks: stream.totals.highConviction,
+                        processingMode: 'streaming',
                         concurrencyLevels: {
-                            fetch: 100,
-                            backtest: 100,
-                            signals: 100
+                            fetch: stream.totals.concurrency,
+                            backtest: stream.totals.concurrency,
+                            signals: stream.totals.concurrency
                         }
                     },
                     // Signal stats
@@ -160,7 +142,7 @@ const PortfolioSimulator = (function() {
                     // Data quality
                     dataQuality: {
                         staleDataStocks: stats.staleDataStocks,
-                        staleDataPercent: ((stats.staleDataStocks / allStocks.length) * 100).toFixed(1)
+                        staleDataPercent: ((stats.staleDataStocks / (stream.totals.processed || 1)) * 100).toFixed(1)
                     },
                     // Force-close stats
                     forceClose: {
@@ -242,7 +224,25 @@ const PortfolioSimulator = (function() {
      * Uses comprehensive stock list from StockData module (3,605 unique stocks)
      * Uses concurrent processing (worker pool) - starts new stocks as soon as any finish
      */
-    async function fetchAllStocksData(startDate, progressCallback) {
+    /**
+     * Devices where holding lots of price data or fetching wide kills the
+     * tab — iPhones and iPads (Safari's per-tab memory budget) and anything
+     * reporting small RAM.
+     */
+    function isConstrainedDevice() {
+        const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // iPadOS masquerades as a Mac
+        const smallMemory = typeof navigator.deviceMemory === 'number' && navigator.deviceMemory <= 4;
+        return iOS || smallMemory;
+    }
+
+    /**
+     * The whole scan as one streaming pass. Per stock: fetch → historical
+     * backtest for the win rate → (only if strong) full-range backtest for
+     * simulation-period signals → the stock's arrays go out of scope.
+     * Peak memory is one stock's data per worker, not the whole market.
+     */
+    async function streamStocksAndSignals(dates, progressCallback) {
         // Use StockData module (SINGLE SOURCE OF TRUTH)
         const stockLists = window.StockData.getStockLists();
 
@@ -256,28 +256,83 @@ const PortfolioSimulator = (function() {
         ];
 
         const total = allStockDefinitions.length;
-        const allStocks = [];
         const endDate = new Date().toISOString().split('T')[0];
+        const CONCURRENCY = isConstrainedDevice() ? 12 : 40;
 
-        // Concurrent processing with worker pool (not batches)
-        const CONCURRENCY = 100;  // Process 100 stocks simultaneously
+        const signals = [];
+        const totals = { processed: 0, stale: 0, withWinRates: 0, highConviction: 0, concurrency: CONCURRENCY };
+        const simStart = new Date(dates.simulationStart);
+        const bufferEnd = new Date(dates.bufferEnd);
         let completed = 0;
 
-        // Process stocks with concurrency limit
         await processConcurrently(allStockDefinitions, CONCURRENCY, async (stockObj) => {
             const market = getMarketForSymbol(stockObj.symbol);
 
             try {
-                const stockData = await fetchStockData(stockObj.symbol, startDate, endDate);
+                const stockData = await fetchStockData(stockObj.symbol, dates.dataStart, endDate);
                 if (stockData && stockData.dates && stockData.dates.length > 200) {
-                    allStocks.push({
-                        symbol: stockObj.symbol,
-                        market: market,
-                        data: stockData
-                    });
+                    totals.processed++;
+                    if (stockData.isStale) totals.stale++;
+
+                    // Win rate over the historical window only
+                    const historicalData = filterDataByDateRange(stockData, dates.dataStart, dates.simulationStart);
+                    if (historicalData && historicalData.dates.length >= 200) {
+                        const backtest = window.BacktestCalculator.runBacktest(historicalData, CONFIG.DTI_PARAMS);
+
+                        if (backtest && backtest.trades) {
+                            // Count only signals AFTER buffer period (6 months)
+                            const historicalSignals = backtest.trades.filter(trade => {
+                                const entryDate = new Date(trade.entryDate);
+                                return entryDate >= bufferEnd && !trade.isOpen;
+                            });
+
+                            // Only strong records with at least 5 historical signals go on
+                            if (historicalSignals.length >= 5) {
+                                const wins = historicalSignals.filter(t => t.isWin).length;
+                                const winRate = (wins / historicalSignals.length) * 100;
+                                totals.withWinRates++;
+
+                                if (winRate > CONFIG.HIGH_CONVICTION_THRESHOLD) {
+                                    totals.highConviction++;
+
+                                    // Full-range backtest to get simulation-period signals
+                                    const fullBacktest = window.BacktestCalculator.runBacktest(stockData, CONFIG.DTI_PARAMS);
+                                    if (fullBacktest && fullBacktest.trades) {
+                                        for (const trade of fullBacktest.trades) {
+                                            const entryDate = new Date(trade.entryDate);
+
+                                            // Layer 2: Include completed trades OR open trades that entered during simulation
+                                            if (entryDate >= simStart && (!trade.isOpen || shouldIncludeOpenTrade(trade, dates))) {
+                                                signals.push({
+                                                    symbol: stockObj.symbol,
+                                                    market: market,
+                                                    entryDate: trade.entryDate,
+                                                    entryPrice: trade.entryPrice,
+                                                    exitDate: trade.exitDate,
+                                                    exitPrice: trade.exitPrice,
+                                                    plPercent: trade.plPercent,
+                                                    holdingDays: trade.holdingDays,
+                                                    exitReason: trade.exitReason,
+                                                    winRate: winRate,
+                                                    historicalSignalCount: historicalSignals.length,
+                                                    isWin: trade.isWin,
+                                                    isOpen: trade.isOpen || false,
+                                                    // DTI values at entry
+                                                    prevDTI: trade.prevDTI,
+                                                    entryDTI: trade.entryDTI,
+                                                    prev7DayDTI: trade.prev7DayDTI,
+                                                    entry7DayDTI: trade.entry7DayDTI
+                                                });
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             } catch (error) {
-                // Silently skip failed fetches
+                // Silently skip failed stocks
             }
 
             // Report progress after each completion
@@ -285,7 +340,7 @@ const PortfolioSimulator = (function() {
             if (progressCallback) {
                 progressCallback({
                     stage: 'fetch',
-                    message: `Fetching stocks (${CONCURRENCY} concurrent)...`,
+                    message: `Checking stocks (${CONCURRENCY} at a time)...`,
                     current: completed,
                     total: total,
                     percent: Math.round((completed / total) * 100)
@@ -293,7 +348,9 @@ const PortfolioSimulator = (function() {
             }
         });
 
-        return allStocks;
+        // Sort by entry date (FIFO)
+        signals.sort((a, b) => new Date(a.entryDate) - new Date(b.entryDate));
+        return { signals, totals };
     }
 
     /**
@@ -374,78 +431,6 @@ const PortfolioSimulator = (function() {
     }
 
     /**
-     * Calculate historical win rates for all stocks
-     * Uses 5-year backtest period BEFORE simulation start
-     * Uses concurrent processing (worker pool) - starts new stocks as soon as any finish
-     */
-    async function calculateHistoricalWinRates(allStocks, dates, progressCallback) {
-        const stockWinRates = [];
-        const total = allStocks.length;
-
-        // Concurrent processing with worker pool (not batches)
-        const CONCURRENCY = 100;  // Process 100 stocks simultaneously
-        let completed = 0;
-
-        // Process stocks with concurrency limit
-        await processConcurrently(allStocks, CONCURRENCY, async (stock) => {
-            try {
-                // Filter data for historical backtest period only
-                const historicalData = filterDataByDateRange(
-                    stock.data,
-                    dates.dataStart,
-                    dates.simulationStart
-                );
-
-                if (!historicalData || historicalData.dates.length < 200) {
-                    return; // Not enough data
-                }
-
-                // Run backtest on historical period
-                const backtest = window.BacktestCalculator.runBacktest(historicalData, CONFIG.DTI_PARAMS);
-
-                if (backtest && backtest.trades) {
-                    // Count only signals AFTER buffer period (6 months)
-                    const bufferEnd = new Date(dates.bufferEnd);
-                    const historicalSignals = backtest.trades.filter(trade => {
-                        const entryDate = new Date(trade.entryDate);
-                        return entryDate >= bufferEnd && !trade.isOpen;
-                    });
-
-                    // Only proceed if we have at least 5 historical signals after buffer
-                    if (historicalSignals.length >= 5) {
-                        const wins = historicalSignals.filter(t => t.isWin).length;
-                        const winRate = (wins / historicalSignals.length) * 100;
-
-                        stockWinRates.push({
-                            symbol: stock.symbol,
-                            market: stock.market,
-                            winRate: winRate,
-                            historicalSignalCount: historicalSignals.length,
-                            avgReturn: backtest.metrics.avgReturn
-                        });
-                    }
-                }
-            } catch (error) {
-                // Silently skip failed backtests
-            }
-
-            // Report progress after each completion
-            completed++;
-            if (progressCallback) {
-                progressCallback({
-                    stage: 'backtest',
-                    message: `Backtesting stocks (${CONCURRENCY} concurrent)...`,
-                    current: completed,
-                    total: total,
-                    percent: Math.round((completed / total) * 100)
-                });
-            }
-        });
-
-        return stockWinRates;
-    }
-
-    /**
      * Layer 2: Check if an open trade should be included as a signal
      * Include open trades that entered during simulation period - they need proper exit handling
      */
@@ -458,85 +443,6 @@ const PortfolioSimulator = (function() {
         // Include open trades that entered during simulation period
         // These likely have incomplete data but represent real entry opportunities
         return entryDate >= simStart;
-    }
-
-    /**
-     * Generate signals during simulation period for high conviction stocks
-     * Layer 2: Includes open trades with proper handling
-     * Uses concurrent processing (worker pool) - starts new stocks as soon as any finish
-     */
-    async function generateSimulationSignals(allStocks, highConvictionStocks, dates, progressCallback) {
-        const signals = [];
-        const highConvictionSymbols = new Set(highConvictionStocks.map(s => s.symbol));
-
-        // Filter to only high conviction stocks first (more efficient)
-        const stocksToProcess = allStocks.filter(s => highConvictionSymbols.has(s.symbol));
-        const total = stocksToProcess.length;
-
-        // Concurrent processing with worker pool (not batches)
-        const CONCURRENCY = 100;  // Process 100 stocks simultaneously
-        let completed = 0;
-
-        // Process stocks with concurrency limit
-        await processConcurrently(stocksToProcess, CONCURRENCY, async (stock) => {
-            try {
-                // Run backtest on entire data range to get all signals
-                const backtest = window.BacktestCalculator.runBacktest(stock.data, CONFIG.DTI_PARAMS);
-
-                if (backtest && backtest.trades) {
-                    // Get win rate and historical signal count from high conviction data
-                    const stockInfo = highConvictionStocks.find(s => s.symbol === stock.symbol);
-
-                    // Convert trades to signals, filter for simulation period
-                    for (const trade of backtest.trades) {
-                        const entryDate = new Date(trade.entryDate);
-                        const simStart = new Date(dates.simulationStart);
-
-                        // Layer 2: Include completed trades OR open trades that entered during simulation
-                        // Open trades likely have incomplete data but represent real opportunities
-                        if (entryDate >= simStart && (!trade.isOpen || shouldIncludeOpenTrade(trade, dates))) {
-                            signals.push({
-                                symbol: stock.symbol,
-                                market: stock.market,
-                                entryDate: trade.entryDate,
-                                entryPrice: trade.entryPrice,
-                                exitDate: trade.exitDate,
-                                exitPrice: trade.exitPrice,
-                                plPercent: trade.plPercent,
-                                holdingDays: trade.holdingDays,
-                                exitReason: trade.exitReason,
-                                winRate: stockInfo.winRate,
-                                historicalSignalCount: stockInfo.historicalSignalCount,
-                                isWin: trade.isWin,
-                                isOpen: trade.isOpen || false,  // Track if signal is from open trade
-                                // DTI values at entry
-                                prevDTI: trade.prevDTI,
-                                entryDTI: trade.entryDTI,
-                                prev7DayDTI: trade.prev7DayDTI,
-                                entry7DayDTI: trade.entry7DayDTI
-                            });
-                        }
-                    }
-                }
-            } catch (error) {
-                // Silently skip failed signal generation
-            }
-
-            // Report progress after each completion
-            completed++;
-            if (progressCallback) {
-                progressCallback({
-                    stage: 'signals',
-                    message: `Generating signals (${CONCURRENCY} concurrent)...`,
-                    current: completed,
-                    total: total,
-                    percent: Math.round((completed / total) * 100)
-                });
-            }
-        });
-
-        // Sort by entry date (FIFO)
-        return signals.sort((a, b) => new Date(a.entryDate) - new Date(b.entryDate));
     }
 
     /**

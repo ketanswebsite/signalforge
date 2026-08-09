@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Portal - SutrAlgo</title>
+    <meta name="theme-color" content="#141210">
+    <title>Admin — SutrAlgo</title>
+    <link rel="icon" type="image/png" href="/images/brand/favicon.png">
+    <link rel="stylesheet" href="/css/design-system/index.css">
+    <link rel="stylesheet" href="/css/app.css">
+    <link rel="stylesheet" href="/css/admin.css">
+    <script>try{if(localStorage.getItem('sa-theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
 
-    <!-- Google Material Icons -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="icon" type="image/png" href="/images/favicon.PNG">
-
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800;900&family=Work+Sans:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <!-- Shared Utilities -->
     <script src="/js/utils/date-formatter.js"></script>
@@ -44,85 +44,56 @@
     <script src="/js/admin-database.js"></script>
     <script src="/js/admin-settings.js"></script>
     <script src="/js/admin-signal-testing.js"></script>
-    <!-- Modern CSS -->
-    <link rel="stylesheet" href="/css/main.css">
 
-    <!-- Modern Effects (Custom Cursor, Scroll Progress, Animations) -->
-    <script src="/js/modern-effects.js" defer></script>
-
-    <!-- Animation Controller -->
-    <script src="/js/landing.js" defer></script>
-
+    <!-- App shell (theme toggle + user menu) -->
+    <script src="/js/app-shell.js" defer></script>
 </head>
-<body class="admin-portal">
-    <!-- Animated Background with Particles -->
-    <div class="landing-background">
-        <div class="gradient-orb orb-1"></div>
-        <div class="gradient-orb orb-2"></div>
-        <canvas id="particles-canvas"></canvas>
+<body class="admin-portal app-body">
+
+<header class="sa-appbar">
+    <div class="sa-appbar__in admin-appbar__in">
+        <a class="sa-appbar__brand" href="/index.html"><span class="sa-wordmark"><b>Sutr</b><i>Algo</i></span></a>
+        <span class="sa-badge sa-badge--accent">Admin</span>
+        <div class="sa-appbar__end">
+            <button class="sa-iconbtn" type="button" data-theme-toggle aria-label="Switch theme" aria-pressed="false"><span class="material-symbols-rounded" aria-hidden="true">dark_mode</span></button>
+            <div class="app-usermenu">
+                <button class="app-usermenu__btn" type="button" data-usermenu-toggle aria-expanded="false" aria-label="Your account">
+                    <span class="sa-avatar" data-user-avatar>SA</span>
+                </button>
+                <div class="sa-menu" role="menu">
+                    <div class="sa-menu__id">
+                        <span class="sa-avatar sa-avatar--menu" data-user-avatar>SA</span>
+                        <div>
+                            <div class="app-usermenu__name" data-user-name>Signed in</div>
+                            <div class="app-usermenu__email" data-user-email></div>
+                        </div>
+                    </div>
+                    <a class="sa-menu__item" href="/index.html" role="menuitem"><span class="material-symbols-rounded" aria-hidden="true">open_in_new</span>Back to the app</a>
+                    <a class="sa-menu__item" href="/account.html" role="menuitem"><span class="material-symbols-rounded" aria-hidden="true">person</span>Account</a>
+                    <a class="sa-menu__item" href="/logout" role="menuitem"><span class="material-symbols-rounded" aria-hidden="true">logout</span>Sign out</a>
+                </div>
+            </div>
+        </div>
     </div>
+</header>
 
-    <!-- Admin Portal Container -->
-    <div class="admin-container">
+<div class="admin-body">
 
-        <!-- Sidebar Navigation -->
-        <aside class="admin-sidebar">
-            <div class="sidebar-header">
-                <h1 class="sidebar-logo">
-                    <span class="material-icons">admin_panel_settings</span>
-                    Admin Portal
-                </h1>
-            </div>
+    <aside class="sa-sidenav admin-sidenav" aria-label="Admin sections">
+        <span class="sa-sidenav__group">Oversee</span>
+        <button class="sa-sidenav__item nav-item" data-tab="dashboard" aria-current="page"><span class="material-symbols-rounded" aria-hidden="true">dashboard</span>Dashboard</button>
+        <button class="sa-sidenav__item nav-item" data-tab="analytics"><span class="material-symbols-rounded" aria-hidden="true">monitoring</span>Analytics</button>
+        <span class="sa-sidenav__group">People &amp; money</span>
+        <button class="sa-sidenav__item nav-item" data-tab="users"><span class="material-symbols-rounded" aria-hidden="true">group</span>Users</button>
+        <button class="sa-sidenav__item nav-item" data-tab="subscriptions"><span class="material-symbols-rounded" aria-hidden="true">card_membership</span>Subscriptions</button>
+        <button class="sa-sidenav__item nav-item" data-tab="payments"><span class="material-symbols-rounded" aria-hidden="true">payments</span>Payments</button>
+        <span class="sa-sidenav__group">Engine room</span>
+        <button class="sa-sidenav__item nav-item" data-tab="signal-testing"><span class="material-symbols-rounded" aria-hidden="true">science</span>Signal testing</button>
+        <button class="sa-sidenav__item nav-item" data-tab="database"><span class="material-symbols-rounded" aria-hidden="true">database</span>Database</button>
+        <button class="sa-sidenav__item nav-item" data-tab="settings"><span class="material-symbols-rounded" aria-hidden="true">tune</span>Settings</button>
+    </aside>
 
-            <nav class="sidebar-nav">
-                <button class="nav-item active" data-tab="dashboard">
-                    <span class="material-icons">dashboard</span>
-                    <span class="nav-text">Dashboard</span>
-                </button>
-                <button class="nav-item" data-tab="users">
-                    <span class="material-icons">people</span>
-                    <span class="nav-text">Users</span>
-                </button>
-                <button class="nav-item" data-tab="subscriptions">
-                    <span class="material-icons">card_membership</span>
-                    <span class="nav-text">Subscriptions</span>
-                </button>
-                <button class="nav-item" data-tab="payments">
-                    <span class="material-icons">payment</span>
-                    <span class="nav-text">Payments</span>
-                </button>
-                <button class="nav-item" data-tab="database">
-                    <span class="material-icons">storage</span>
-                    <span class="nav-text">Database</span>
-                </button>
-                <button class="nav-item" data-tab="analytics">
-                    <span class="material-icons">analytics</span>
-                    <span class="nav-text">Analytics</span>
-                </button>
-                <button class="nav-item" data-tab="signal-testing">
-                    <span class="material-icons">science</span>
-                    <span class="nav-text">Signal Testing</span>
-                </button>
-                <button class="nav-item" data-tab="settings">
-                    <span class="material-icons">settings</span>
-                    <span class="nav-text">Settings</span>
-                </button>
-            </nav>
-
-            <div class="sidebar-footer">
-                <a href="/account" class="nav-item">
-                    <span class="material-icons">account_circle</span>
-                    <span class="nav-text">My Account</span>
-                </a>
-                <a href="/logout" class="nav-item">
-                    <span class="material-icons">logout</span>
-                    <span class="nav-text">Logout</span>
-                </a>
-            </div>
-        </aside>
-
-        <!-- Main Content Area -->
-        <main class="admin-main">
+    <main class="admin-main">
 
             <!-- Dashboard Tab -->
             <div id="dashboard-page" class="admin-tab active">
@@ -491,96 +462,105 @@
 
         </main>
 
-    </div>
+</div>
 
-    <!-- Initialization Script -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Admin Portal V2 initializing...');
+<!-- Notification container -->
+<div id="notification-container"></div>
 
-            // Setup tab switching
-            const navItems = document.querySelectorAll('.nav-item[data-tab]');
-            const adminTabs = document.querySelectorAll('.admin-tab');
+<!-- Initialization Script -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Admin Portal V2 initializing...');
 
-            function switchTab(tabId) {
-                // Remove active class from all nav items and tabs
-                navItems.forEach(item => item.classList.remove('active'));
-                adminTabs.forEach(tab => tab.classList.remove('active'));
+        // Setup tab switching
+        const navItems = document.querySelectorAll('.nav-item[data-tab]');
+        const adminTabs = document.querySelectorAll('.admin-tab');
 
-                // Add active class to selected items
-                const selectedNav = document.querySelector(`.nav-item[data-tab="${tabId}"]`);
-                const selectedTab = document.getElementById(`${tabId}-page`);
-
-                if (selectedNav) selectedNav.classList.add('active');
-                if (selectedTab) selectedTab.classList.add('active');
-
-                // Initialize tab-specific functionality
-                initializeTab(tabId);
-            }
-
-            function initializeTab(tabId) {
-                switch(tabId) {
-                    case 'dashboard':
-                        if (typeof AdminDashboard !== 'undefined' && AdminDashboard.init) {
-                            AdminDashboard.init();
-                        }
-                        break;
-                    case 'users':
-                        if (typeof AdminUsers !== 'undefined' && AdminUsers.init) {
-                            AdminUsers.init();
-                        }
-                        if (typeof AdminComplimentary !== 'undefined' && AdminComplimentary.init) {
-                            AdminComplimentary.init();
-                        }
-                        break;
-                    case 'subscriptions':
-                        if (typeof AdminSubscriptions !== 'undefined' && AdminSubscriptions.init) {
-                            AdminSubscriptions.init();
-                        }
-                        break;
-                    case 'payments':
-                        if (typeof AdminPayments !== 'undefined' && AdminPayments.init) {
-                            AdminPayments.init();
-                        }
-                        break;
-                    case 'database':
-                        if (typeof AdminDatabase !== 'undefined' && AdminDatabase.init) {
-                            AdminDatabase.init();
-                        }
-                        break;
-                    case 'analytics':
-                        if (typeof AdminAnalytics !== 'undefined' && AdminAnalytics.init) {
-                            AdminAnalytics.init();
-                        }
-                        break;
-                    case 'signal-testing':
-                        if (typeof AdminSignalTesting !== 'undefined' && AdminSignalTesting.init) {
-                            AdminSignalTesting.init();
-                        }
-                        break;
-                    case 'settings':
-                        if (typeof AdminSettings !== 'undefined' && AdminSettings.init) {
-                            AdminSettings.init();
-                        }
-                        break;
-                }
-            }
-
-            // Add click handlers to nav items
+        function switchTab(tabId) {
+            // Remove active state from all nav items and tabs
             navItems.forEach(item => {
-                item.addEventListener('click', function() {
-                    const tabId = this.dataset.tab;
-                    switchTab(tabId);
-                });
+                item.classList.remove('active');
+                item.removeAttribute('aria-current');
             });
+            adminTabs.forEach(tab => tab.classList.remove('active'));
 
-            // Initialize dashboard by default
-            console.log('Initializing Dashboard...');
-            initializeTab('dashboard');
+            // Add active state to selected items
+            const selectedNav = document.querySelector(`.nav-item[data-tab="${tabId}"]`);
+            const selectedTab = document.getElementById(`${tabId}-page`);
 
-            console.log('Admin Portal V2 initialized successfully');
+            if (selectedNav) {
+                selectedNav.classList.add('active');
+                selectedNav.setAttribute('aria-current', 'page');
+            }
+            if (selectedTab) selectedTab.classList.add('active');
+
+            // Initialize tab-specific functionality
+            initializeTab(tabId);
+        }
+
+        function initializeTab(tabId) {
+            switch(tabId) {
+                case 'dashboard':
+                    if (typeof AdminDashboard !== 'undefined' && AdminDashboard.init) {
+                        AdminDashboard.init();
+                    }
+                    break;
+                case 'users':
+                    if (typeof AdminUsers !== 'undefined' && AdminUsers.init) {
+                        AdminUsers.init();
+                    }
+                    if (typeof AdminComplimentary !== 'undefined' && AdminComplimentary.init) {
+                        AdminComplimentary.init();
+                    }
+                    break;
+                case 'subscriptions':
+                    if (typeof AdminSubscriptions !== 'undefined' && AdminSubscriptions.init) {
+                        AdminSubscriptions.init();
+                    }
+                    break;
+                case 'payments':
+                    if (typeof AdminPayments !== 'undefined' && AdminPayments.init) {
+                        AdminPayments.init();
+                    }
+                    break;
+                case 'database':
+                    if (typeof AdminDatabase !== 'undefined' && AdminDatabase.init) {
+                        AdminDatabase.init();
+                    }
+                    break;
+                case 'analytics':
+                    if (typeof AdminAnalytics !== 'undefined' && AdminAnalytics.init) {
+                        AdminAnalytics.init();
+                    }
+                    break;
+                case 'signal-testing':
+                    if (typeof AdminSignalTesting !== 'undefined' && AdminSignalTesting.init) {
+                        AdminSignalTesting.init();
+                    }
+                    break;
+                case 'settings':
+                    if (typeof AdminSettings !== 'undefined' && AdminSettings.init) {
+                        AdminSettings.init();
+                    }
+                    break;
+            }
+        }
+
+        // Add click handlers to nav items
+        navItems.forEach(item => {
+            item.addEventListener('click', function() {
+                const tabId = this.dataset.tab;
+                switchTab(tabId);
+            });
         });
-    </script>
+
+        // Initialize dashboard by default
+        console.log('Initializing Dashboard...');
+        initializeTab('dashboard');
+
+        console.log('Admin Portal V2 initialized successfully');
+    });
+</script>
 
 </body>
 </html>

@@ -187,6 +187,11 @@ const MLInsightsUI = (function() {
         banner.appendChild(bScore);
         frag.appendChild(banner);
 
+        // Gemini's plain-English read of the whole picture
+        if (data.summary) {
+            frag.appendChild(el('p', 'ai-summary', data.summary));
+        }
+
         // The three pillars
         ['technical', 'fundamental', 'information'].forEach(function(key) {
             const p = data.pillars[key];
@@ -236,6 +241,12 @@ const MLInsightsUI = (function() {
                 'This stock’s backtested win rate: ' + data.context.winRate + '% — shown for context, never scored.'));
         } else {
             context.appendChild(el('div', null, 'Backtest win rate is context only — it is never part of the score.'));
+        }
+        if (data.engine) {
+            context.appendChild(el('div', 'ai-context__engine',
+                data.engine === 'rule-based'
+                    ? 'Rule-based check. Add a Gemini API key on the server for AI-written analysis.'
+                    : 'Analysed by ' + data.engine + ' from the same price, fundamentals and news facts.'));
         }
         context.appendChild(el('div', 'ai-context__legal', 'Educational tool, not investment advice. Your capital is at risk.'));
         frag.appendChild(context);

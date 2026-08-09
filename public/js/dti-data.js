@@ -688,11 +688,19 @@ async function fetchCurrentQuote(symbol) {
                     statusDiv.replaceChildren(buildScanProgress('Scan finished', 100, detail));
                 }
                 
+                // A fresh scan replaces any restored one — alerts may send again
+                DTIBacktester.restoredFromStore = false;
+
                 // Display active trade opportunities
                 if (typeof DTIUI !== 'undefined' && DTIUI.displayBuyingOpportunities) {
                     DTIUI.displayBuyingOpportunities();
                 }
-                
+
+                // Persist the finished scan so navigating away doesn't lose it
+                if (typeof ScanStore !== 'undefined') {
+                    ScanStore.save();
+                }
+
                 // Reset processing flag
                 DTIBacktester.isProcessing = false;
                 

@@ -124,9 +124,12 @@ function buildSignalCard(opportunity, winRate) {
 }
 
 function displayBuyingOpportunities() {
-    
-    // Send direct alerts for current opportunities
-    if (DTIBacktester.activeTradeOpportunities && DTIBacktester.activeTradeOpportunities.length > 0) {
+
+    // Send direct alerts for current opportunities — but never when the page
+    // is re-rendering a scan restored from storage (that would re-send the
+    // same Telegram alerts on every visit).
+    if (DTIBacktester.activeTradeOpportunities && DTIBacktester.activeTradeOpportunities.length > 0 &&
+        !DTIBacktester.restoredFromStore) {
         setTimeout(() => {
             sendDirectOpportunityAlerts(DTIBacktester.activeTradeOpportunities);
         }, 1000);
@@ -380,6 +383,12 @@ function displayBuyingOpportunities() {
                     console.log('[VIEW DETAILS DEBUG] OHLC data stored, dates count:', processedData.dates?.length);
                     console.log('[VIEW DETAILS DEBUG] Using real OHLC data:', processedData.open ? 'YES' : 'NO (fallback to close)');
 
+                    // Reveal the chart section BEFORE creating charts — Chart.js
+                    // sizes canvases at creation, and a hidden parent gives them
+                    // zero dimensions.
+                    const chartSectionEl = document.querySelector('.chart-section');
+                    if (chartSectionEl) chartSectionEl.hidden = false;
+
                     // Display results
                     console.log('[VIEW DETAILS DEBUG] Creating charts');
                     console.log('[VIEW DETAILS DEBUG] DTIUI available:', typeof DTIUI !== 'undefined');
@@ -420,11 +429,10 @@ function displayBuyingOpportunities() {
                     console.log('[VIEW DETAILS DEBUG] Showing success notification');
                     DTIBacktester.utils.showNotification(`Loaded ${symbol} successfully`, 'success');
 
-                    // The charts live below the fold — bring them into view so
-                    // the loaded backtest is actually seen (all viewports).
-                    const chartSection = document.querySelector('.chart-section');
-                    if (chartSection) {
-                        chartSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    // The chart section sits at the top of the page — bring it
+                    // into view now the backtest is loaded (all viewports).
+                    if (chartSectionEl) {
+                        chartSectionEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
 
                     console.log('[VIEW DETAILS DEBUG] View Details workflow completed successfully');
