@@ -78,23 +78,23 @@ const AdminDashboard = {
 
       // Map activity types to icons
       const activityIcons = {
-        login: '🔐',
-        logout: '🚪',
-        user_created: '👤',
-        user_updated: '✏️',
-        user_deleted: '🗑️',
-        subscription_created: '💳',
-        subscription_updated: '📝',
-        subscription_cancelled: '❌',
-        payment_verified: '✅',
-        payment_rejected: '❌',
-        refund_issued: '💸',
-        settings_updated: '⚙️',
-        database_query_executed: '🗄️'
+        login: '',
+        logout: '',
+        user_created: '',
+        user_updated: '',
+        user_deleted: '',
+        subscription_created: '',
+        subscription_updated: '',
+        subscription_cancelled: '',
+        payment_verified: '',
+        payment_rejected: '',
+        refund_issued: '',
+        settings_updated: '',
+        database_query_executed: ''
       };
 
       const activityHTML = logs.map(log => {
-        const icon = activityIcons[log.activity_type] || '📋';
+        const icon = activityIcons[log.activity_type] || '';
         return AdminComponents.activityItem({
           icon,
           title: log.description,

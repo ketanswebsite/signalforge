@@ -39,31 +39,31 @@ const AdminDatabase = {
                             class="tab-btn ${this.currentTab === 'health' ? 'active' : ''}"
                             onclick="AdminDatabase.switchTab('health')"
                         >
-                            🏥 Health Monitor
+                             Health Monitor
                         </button>
                         <button
                             class="tab-btn ${this.currentTab === 'migrations' ? 'active' : ''}"
                             onclick="AdminDatabase.switchTab('migrations')"
                         >
-                            📦 Migrations
+                             Migrations
                         </button>
                         <button
                             class="tab-btn ${this.currentTab === 'query' ? 'active' : ''}"
                             onclick="AdminDatabase.switchTab('query')"
                         >
-                            ⚡ Query Runner
+                             Query Runner
                         </button>
                         <button
                             class="tab-btn ${this.currentTab === 'backup' ? 'active' : ''}"
                             onclick="AdminDatabase.switchTab('backup')"
                         >
-                            💾 Backups
+                             Backups
                         </button>
                         <button
                             class="tab-btn ${this.currentTab === 'maintenance' ? 'active' : ''}"
                             onclick="AdminDatabase.switchTab('maintenance')"
                         >
-                            🔧 Maintenance
+                             Maintenance
                         </button>
                     </div>
 
@@ -157,28 +157,28 @@ const AdminDatabase = {
                 <div class="admin-card-body">
                     <div class="metrics-grid mb-2">
                         <div class="metric-card">
-                            <div class="metric-icon">✅</div>
+                            <div class="metric-icon"></div>
                             <div class="metric-content">
                                 <div class="metric-title">Checks Passed</div>
                                 <div class="metric-value">${passCount}</div>
                             </div>
                         </div>
                         <div class="metric-card">
-                            <div class="metric-icon">❌</div>
+                            <div class="metric-icon"></div>
                             <div class="metric-content">
                                 <div class="metric-title">Checks Failed</div>
                                 <div class="metric-value">${failCount}</div>
                             </div>
                         </div>
                         <div class="metric-card">
-                            <div class="metric-icon">⚠️</div>
+                            <div class="metric-icon"></div>
                             <div class="metric-content">
                                 <div class="metric-title">Warnings</div>
                                 <div class="metric-value">${health.warnings.length}</div>
                             </div>
                         </div>
                         <div class="metric-card">
-                            <div class="metric-icon">🕐</div>
+                            <div class="metric-icon"></div>
                             <div class="metric-content">
                                 <div class="metric-title">Last Check</div>
                                 <div class="metric-value">${new Date(health.timestamp).toLocaleTimeString()}</div>
@@ -188,10 +188,10 @@ const AdminDatabase = {
 
                     <div class="flex gap-2">
                         <button class="btn btn-primary" onclick="AdminDatabase.refreshHealthCheck()">
-                            🔄 Refresh Health Check
+                             Refresh Health Check
                         </button>
                         <button class="btn btn-secondary" onclick="AdminDatabase.showTestRunner()">
-                            🧪 Run Tests
+                             Run Tests
                         </button>
                     </div>
                 </div>
@@ -203,7 +203,7 @@ const AdminDatabase = {
                     <h3>Health Check Results</h3>
                 </div>
                 <div class="admin-card-body">
-                    ${health.checks.length > 0 ? `
+                    ${health.checks.length >0 ? `
                         <table class="table">
                             <thead>
                                 <tr>
@@ -219,8 +219,8 @@ const AdminDatabase = {
                                         <td><strong>${check.name}</strong></td>
                                         <td>
                                             ${check.status === 'pass'
-                                                ? '<span class="badge badge-success">✓ Pass</span>'
-                                                : '<span class="badge badge-danger">✗ Fail</span>'}
+                                                ? '<span class="badge badge-success">Pass</span>'
+                                                : '<span class="badge badge-danger">Fail</span>'}
                                         </td>
                                         <td>${check.message}</td>
                                         <td>${check.duration || '-'}</td>
@@ -233,10 +233,10 @@ const AdminDatabase = {
             </div>
 
             <!-- Warnings -->
-            ${health.warnings.length > 0 ? `
+            ${health.warnings.length >0 ? `
                 <div class="admin-card">
                     <div class="admin-card-header">
-                        <h3>⚠️ Warnings</h3>
+                        <h3>Warnings</h3>
                     </div>
                     <div class="admin-card-body">
                         <div class="alert alert-warning">
@@ -278,7 +278,7 @@ const AdminDatabase = {
                 <div class="admin-card-header">
                     <h3>Migration Status</h3>
                     <div>
-                        ${pending.length > 0 ? `
+                        ${pending.length >0 ? `
                             <button class="btn btn-primary btn-sm" onclick="AdminDatabase.runPendingMigrations()">
                                 Run Pending Migrations (${pending.length})
                             </button>
@@ -288,7 +288,7 @@ const AdminDatabase = {
                 <div class="admin-card-body">
                     <div class="metrics-grid mb-2">
                         <div class="metric-card">
-                            <div class="metric-icon">✅</div>
+                            <div class="metric-icon"></div>
                             <div class="metric-content">
                                 <div class="metric-title">Applied</div>
                                 <div class="metric-value">${applied.length}</div>
@@ -302,7 +302,7 @@ const AdminDatabase = {
                             </div>
                         </div>
                         <div class="metric-card">
-                            <div class="metric-icon">📅</div>
+                            <div class="metric-icon"></div>
                             <div class="metric-content">
                                 <div class="metric-title">Last Migration</div>
                                 <div class="metric-value">${migrations.lastMigration || 'None'}</div>
@@ -310,19 +310,19 @@ const AdminDatabase = {
                         </div>
                     </div>
 
-                    ${pending.length > 0 ? `
+                    ${pending.length >0 ? `
                         <div class="alert alert-info mb-2">
-                            <strong>⚠️ Pending Migrations:</strong> ${pending.length} migration(s) need to be applied
+                            <strong>Pending Migrations:</strong> ${pending.length} migration(s) need to be applied
                         </div>
                     ` : `
                         <div class="alert alert-success mb-2">
-                            <strong>✓ All migrations applied</strong>
+                            <strong>All migrations applied</strong>
                         </div>
                     `}
                 </div>
             </div>
 
-            ${pending.length > 0 ? `
+            ${pending.length >0 ? `
                 <div class="admin-card mb-2">
                     <div class="admin-card-header">
                         <h3>Pending Migrations</h3>
@@ -357,7 +357,7 @@ const AdminDatabase = {
                     <h3>Applied Migrations</h3>
                 </div>
                 <div class="admin-card-body">
-                    ${applied.length > 0 ? `
+                    ${applied.length >0 ? `
                         <table class="table">
                             <thead>
                                 <tr>
@@ -399,7 +399,7 @@ const AdminDatabase = {
                 </div>
                 <div class="admin-card-body">
                     <div class="alert alert-warning mb-2">
-                        <strong>⚠️ Warning:</strong> Be careful when executing queries. Write operations can modify your database.
+                        <strong>Warning:</strong>Be careful when executing queries. Write operations can modify your database.
                     </div>
 
                     <div class="form-group">
@@ -414,16 +414,16 @@ const AdminDatabase = {
 
                     <div class="flex gap-2 mb-2">
                         <button class="btn btn-primary" onclick="AdminDatabase.executeQuery()">
-                            ▶️ Run Query
+                            ▶ Run Query
                         </button>
                         <button class="btn btn-secondary" onclick="AdminDatabase.explainQuery()">
-                            📊 Explain
+                             Explain
                         </button>
                         <button class="btn btn-secondary" onclick="AdminDatabase.formatQuery()">
-                            ✨ Format
+                             Format
                         </button>
                         <button class="btn btn-secondary" onclick="AdminDatabase.clearQuery()">
-                            🗑️ Clear
+                             Clear
                         </button>
                     </div>
 
@@ -447,7 +447,7 @@ const AdminDatabase = {
                 <div class="admin-card-header">
                     <h3>Query Results</h3>
                     <button class="btn btn-secondary btn-sm" onclick="AdminDatabase.exportResults()">
-                        📥 Export Results
+                         Export Results
                     </button>
                 </div>
                 <div class="admin-card-body">
@@ -506,7 +506,7 @@ const AdminDatabase = {
                 </div>
                 <div class="admin-card-body">
                     <div class="alert alert-info mb-2">
-                        <strong>ℹ️ Backup Information:</strong>
+                        <strong>ℹ Backup Information:</strong>
                         <ul>
                             <li>Backups include all tables and data</li>
                             <li>Automatic backups run daily at 2 AM UTC</li>
@@ -515,7 +515,7 @@ const AdminDatabase = {
                     </div>
 
                     <button class="btn btn-primary" onclick="AdminDatabase.createBackup()">
-                        💾 Create Manual Backup Now
+                         Create Manual Backup Now
                     </button>
                 </div>
             </div>
@@ -525,7 +525,7 @@ const AdminDatabase = {
                     <h3>Available Backups</h3>
                 </div>
                 <div class="admin-card-body">
-                    ${(backups.backups && backups.backups.length > 0) ? `
+                    ${(backups.backups && backups.backups.length >0) ? `
                         <table class="table">
                             <thead>
                                 <tr>
@@ -543,10 +543,10 @@ const AdminDatabase = {
                                         <td>${new Date(backup.created_at).toLocaleString()}</td>
                                         <td>
                                             <button class="btn btn-sm btn-secondary" onclick="AdminDatabase.downloadBackup('${backup.filename}')">
-                                                📥 Download
+                                                 Download
                                             </button>
                                             <button class="btn btn-sm btn-warning" onclick="AdminDatabase.confirmRestore('${backup.filename}')">
-                                                ↩️ Restore
+                                                ↩ Restore
                                             </button>
                                         </td>
                                     </tr>
@@ -587,21 +587,21 @@ const AdminDatabase = {
                 <div class="admin-card-body">
                     <div class="metrics-grid mb-2">
                         <div class="metric-card">
-                            <div class="metric-icon">🧹</div>
+                            <div class="metric-icon"></div>
                             <div class="metric-content">
                                 <div class="metric-title">Last VACUUM</div>
                                 <div class="metric-value">${maintenance.lastVacuum || 'Never'}</div>
                             </div>
                         </div>
                         <div class="metric-card">
-                            <div class="metric-icon">📊</div>
+                            <div class="metric-icon"></div>
                             <div class="metric-content">
                                 <div class="metric-title">Last ANALYZE</div>
                                 <div class="metric-value">${maintenance.lastAnalyze || 'Never'}</div>
                             </div>
                         </div>
                         <div class="metric-card">
-                            <div class="metric-icon">🔧</div>
+                            <div class="metric-icon"></div>
                             <div class="metric-content">
                                 <div class="metric-title">Last REINDEX</div>
                                 <div class="metric-value">${maintenance.lastReindex || 'Never'}</div>
@@ -612,7 +612,7 @@ const AdminDatabase = {
                     <div class="grid-3col">
                         <div>
                             <button class="btn btn-primary btn-full" onclick="AdminDatabase.runVacuum()">
-                                🧹 Run VACUUM
+                                 Run VACUUM
                             </button>
                             <p class="text-muted text-sm mt-1">
                                 Reclaim storage occupied by dead tuples
@@ -620,7 +620,7 @@ const AdminDatabase = {
                         </div>
                         <div>
                             <button class="btn btn-primary btn-full" onclick="AdminDatabase.runAnalyze()">
-                                📊 Run ANALYZE
+                                 Run ANALYZE
                             </button>
                             <p class="text-muted text-sm mt-1">
                                 Update table statistics for query planner
@@ -628,7 +628,7 @@ const AdminDatabase = {
                         </div>
                         <div>
                             <button class="btn btn-primary btn-full" onclick="AdminDatabase.runReindex()">
-                                🔧 Run REINDEX
+                                 Run REINDEX
                             </button>
                             <p class="text-muted text-sm mt-1">
                                 Rebuild all indexes for optimal performance
@@ -644,7 +644,7 @@ const AdminDatabase = {
                     <h3>Index Usage Statistics</h3>
                 </div>
                 <div class="admin-card-body">
-                    ${(maintenance.indexes && maintenance.indexes.length > 0) ? `
+                    ${(maintenance.indexes && maintenance.indexes.length >0) ? `
                         <table class="table">
                             <thead>
                                 <tr>
@@ -661,7 +661,7 @@ const AdminDatabase = {
                                         <td>${index.tablename}</td>
                                         <td>${(index.idx_scan || 0).toLocaleString()}</td>
                                         <td>
-                                            ${index.idx_scan > 100 ?
+                                            ${index.idx_scan >100 ?
                                                 AdminComponents.badge('Healthy', 'success') :
                                                 AdminComponents.badge('Low Usage', 'warning')
                                             }
@@ -764,7 +764,7 @@ const AdminDatabase = {
                     </tbody>
                 </table>
             </div>
-            ${results.rowCount > 100 ? '<p class="text-muted">Showing first 100 rows</p>' : ''}
+            ${results.rowCount >100 ? '<p class="text-muted">Showing first 100 rows</p>' : ''}
         `;
 
         container.innerHTML = html;
@@ -782,7 +782,7 @@ const AdminDatabase = {
             executionTime: results.executionTime
         });
 
-        if (this.queryHistory.length > 10) {
+        if (this.queryHistory.length >10) {
             this.queryHistory = this.queryHistory.slice(0, 10);
         }
 
@@ -808,7 +808,7 @@ const AdminDatabase = {
                 </div>
                 <code class="code-block">${item.query}</code>
                 <button class="btn btn-sm btn-secondary mt-1" onclick="AdminDatabase.rerunQuery(${index})">
-                    ▶️ Re-run
+                    ▶ Re-run
                 </button>
             </div>
         `).join('');
@@ -823,7 +823,7 @@ const AdminDatabase = {
         if (mode === 'write') {
             AdminComponents.alert({
                 type: 'warning',
-                message: '⚠️ Write mode enabled - use caution!',
+                message: ' Write mode enabled - use caution!',
                 autoDismiss: 5000
             });
         }
@@ -876,7 +876,7 @@ ORDER BY u.first_login DESC;`,
     user_email,
     COUNT(*) as total_trades,
     ROUND(AVG(profit_loss_percentage), 2) as avg_pl_pct,
-    SUM(CASE WHEN profit_loss_percentage > 0 THEN 1 ELSE 0 END) as winning_trades
+    SUM(CASE WHEN profit_loss_percentage >0 THEN 1 ELSE 0 END) as winning_trades
 FROM trades
 WHERE status = 'closed'
 GROUP BY user_email
@@ -1063,7 +1063,7 @@ LIMIT 10;`
     },
 
     confirmRestore(filename) {
-        const confirmed = prompt(`⚠️ WARNING: Restoring will overwrite the current database!\\n\\nType "RESTORE" to confirm restoration of ${filename}:`);
+        const confirmed = prompt(` WARNING: Restoring will overwrite the current database!\\n\\nType "RESTORE" to confirm restoration of ${filename}:`);
 
         if (confirmed === 'RESTORE') {
             this.restoreBackup(filename);
@@ -1273,7 +1273,7 @@ LIMIT 10;`
                 </div>
                 <div class="admin-card-body">
                     <div class="alert alert-info mb-2">
-                        <strong>ℹ️ Test Suite Information:</strong>
+                        <strong>ℹ Test Suite Information:</strong>
                         <ul class="mb-0">
                             <li>Database Tests: Verify database integrity and operations</li>
                             <li>Performance Tests: Measure system performance and benchmarks</li>
@@ -1285,7 +1285,7 @@ LIMIT 10;`
                     <div class="grid-3col mb-2">
                         <div>
                             <button class="btn btn-primary btn-full" onclick="AdminDatabase.runDatabaseTests()">
-                                🗄️ Run Database Tests
+                                 Run Database Tests
                             </button>
                             <p class="text-muted text-sm mt-1">
                                 Tests database connections, queries, and data integrity
@@ -1293,7 +1293,7 @@ LIMIT 10;`
                         </div>
                         <div>
                             <button class="btn btn-primary btn-full" onclick="AdminDatabase.runPerformanceTests()">
-                                ⚡ Run Performance Tests
+                                 Run Performance Tests
                             </button>
                             <p class="text-muted text-sm mt-1">
                                 Tests system performance and response times
@@ -1301,7 +1301,7 @@ LIMIT 10;`
                         </div>
                         <div>
                             <button class="btn btn-success btn-full" onclick="AdminDatabase.runSystemVerification()">
-                                ✓ Full System Verification
+                                 Full System Verification
                             </button>
                             <p class="text-muted text-sm mt-1">
                                 Comprehensive verification of all components
@@ -1342,9 +1342,9 @@ LIMIT 10;`
             const data = await response.json();
 
             if (data.success) {
-                this.setTestStatus('✅ Database tests passed!', 'success');
+                this.setTestStatus(' Database tests passed!', 'success');
             } else {
-                this.setTestStatus(`❌ Database tests failed (exit code: ${data.exitCode})`, 'error');
+                this.setTestStatus(` Database tests failed (exit code: ${data.exitCode})`, 'error');
             }
 
             this.appendTestOutput(data.output);
@@ -1358,7 +1358,7 @@ LIMIT 10;`
                 autoDismiss: 5000
             });
         } catch (error) {
-            this.setTestStatus('❌ Error running tests', 'error');
+            this.setTestStatus(' Error running tests', 'error');
             this.appendTestOutput('Error: ' + error.message);
 
             AdminComponents.alert({
@@ -1384,9 +1384,9 @@ LIMIT 10;`
             const data = await response.json();
 
             if (data.success) {
-                this.setTestStatus('✅ Performance tests passed!', 'success');
+                this.setTestStatus(' Performance tests passed!', 'success');
             } else {
-                this.setTestStatus(`❌ Performance tests failed (exit code: ${data.exitCode})`, 'error');
+                this.setTestStatus(` Performance tests failed (exit code: ${data.exitCode})`, 'error');
             }
 
             this.appendTestOutput(data.output);
@@ -1400,7 +1400,7 @@ LIMIT 10;`
                 autoDismiss: 5000
             });
         } catch (error) {
-            this.setTestStatus('❌ Error running tests', 'error');
+            this.setTestStatus(' Error running tests', 'error');
             this.appendTestOutput('Error: ' + error.message);
 
             AdminComponents.alert({
@@ -1428,9 +1428,9 @@ LIMIT 10;`
             const data = await response.json();
 
             if (data.success) {
-                this.setTestStatus('✅ System verification passed!', 'success');
+                this.setTestStatus(' System verification passed!', 'success');
             } else {
-                this.setTestStatus(`⚠️ System verification completed with warnings (exit code: ${data.exitCode})`, 'warning');
+                this.setTestStatus(` System verification completed with warnings (exit code: ${data.exitCode})`, 'warning');
             }
 
             this.appendTestOutput(data.output);
@@ -1444,7 +1444,7 @@ LIMIT 10;`
                 autoDismiss: 5000
             });
         } catch (error) {
-            this.setTestStatus('❌ Error running verification', 'error');
+            this.setTestStatus(' Error running verification', 'error');
             this.appendTestOutput('Error: ' + error.message);
 
             AdminComponents.alert({

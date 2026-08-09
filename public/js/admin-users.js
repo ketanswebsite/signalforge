@@ -57,10 +57,10 @@ const AdminUsers = {
           <h2 class="admin-card-title">User Management</h2>
           <div class="flex gap-2">
             <button class="btn btn-secondary btn-sm" onclick="AdminUsers.exportUsers()">
-              📥 Export
+               Export
             </button>
             <button class="btn btn-primary btn-sm" onclick="AdminUsers.showAddUserModal()">
-              ➕ Add User
+               Add User
             </button>
           </div>
         </div>
@@ -154,17 +154,17 @@ const AdminUsers = {
         {
           label: 'First Login',
           key: 'first_login',
-          render: (date) => DateFormatter.format(date)
+          render: (date) =>DateFormatter.format(date)
         },
         {
           label: 'Last Login',
           key: 'last_login',
-          render: (date) => DateFormatter.format(date)
+          render: (date) =>DateFormatter.format(date)
         },
         {
           label: 'Telegram',
           key: 'telegram_chat_id',
-          render: (chatId) => chatId ? AdminComponents.badge({ text: '✓ Connected', type: 'success' }) : AdminComponents.badge({ text: 'Not Connected', type: 'gray' })
+          render: (chatId) => chatId ? AdminComponents.badge({ text: ' Connected', type: 'success' }) : AdminComponents.badge({ text: 'Not Connected', type: 'gray' })
         }
       ],
       data: users,
@@ -249,7 +249,7 @@ const AdminUsers = {
     const bar = document.getElementById('bulk-actions-bar');
     const count = document.getElementById('selected-count');
 
-    if (this.selectedUsers.size > 0) {
+    if (this.selectedUsers.size >0) {
       bar
       count.textContent = this.selectedUsers.size;
     } else {

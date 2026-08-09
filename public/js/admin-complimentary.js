@@ -68,7 +68,7 @@ const AdminComplimentary = {
 
         try {
             statusEl.className = 'status-message loading';
-            statusEl.innerHTML = '<span class="material-icons rotating">refresh</span> Granting access...';
+            statusEl.innerHTML = '<span class="material-icons rotating">refresh</span>Granting access...';
 
             const response = await fetch(`/api/admin/users/${encodeURIComponent(email)}/grant-access`, {
                 method: 'POST',
@@ -156,7 +156,7 @@ const AdminComplimentary = {
         const container = document.getElementById('complimentary-users-container');
 
         if (!users || users.length === 0) {
-            container.innerHTML = '<div class="empty-state"><span class="material-icons">person_off</span> No users with complimentary access</div>';
+            container.innerHTML = '<div class="empty-state"><span class="material-icons">person_off</span>No users with complimentary access</div>';
             return;
         }
 

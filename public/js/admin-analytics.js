@@ -28,7 +28,7 @@ const AdminAnalytics = {
                 <div class="admin-card-header">
                     <h2 class="admin-card-title">Analytics & Reports</h2>
                     <button class="btn btn-primary btn-sm" onclick="AdminAnalytics.openReportGenerator()">
-                        📄 Generate Report
+                         Generate Report
                     </button>
                 </div>
 
@@ -39,25 +39,25 @@ const AdminAnalytics = {
                             class="tab-btn ${this.currentTab === 'revenue' ? 'active' : ''}"
                             onclick="AdminAnalytics.switchTab('revenue')"
                         >
-                            💰 Revenue
+                             Revenue
                         </button>
                         <button
                             class="tab-btn ${this.currentTab === 'engagement' ? 'active' : ''}"
                             onclick="AdminAnalytics.switchTab('engagement')"
                         >
-                            📈 User Engagement
+                             User Engagement
                         </button>
                         <button
                             class="tab-btn ${this.currentTab === 'subscription' ? 'active' : ''}"
                             onclick="AdminAnalytics.switchTab('subscription')"
                         >
-                            💳 Subscription Health
+                             Subscription Health
                         </button>
                         <button
                             class="tab-btn ${this.currentTab === 'trading' ? 'active' : ''}"
                             onclick="AdminAnalytics.switchTab('trading')"
                         >
-                            📊 Trading Activity
+                             Trading Activity
                         </button>
                     </div>
 
@@ -141,18 +141,18 @@ const AdminAnalytics = {
             <!-- Key Metrics -->
             <div class="metrics-grid mb-2">
                 <div class="metric-card">
-                    <div class="metric-icon">💰</div>
+                    <div class="metric-icon"></div>
                     <div class="metric-content">
                         <div class="metric-title">Monthly Recurring Revenue</div>
                         <div class="metric-value">${formatCurrency(analytics.mrr)}</div>
                         <div class="metric-change metric-change-positive">
-                            ${analytics.mrrGrowth > 0 ? '↑' : '↓'} ${Math.abs(analytics.mrrGrowth).toFixed(1)}% MoM
+                            ${analytics.mrrGrowth >0 ? '↑' : '↓'} ${Math.abs(analytics.mrrGrowth).toFixed(1)}% MoM
                         </div>
                     </div>
                 </div>
 
                 <div class="metric-card">
-                    <div class="metric-icon">📈</div>
+                    <div class="metric-icon"></div>
                     <div class="metric-content">
                         <div class="metric-title">Annual Recurring Revenue</div>
                         <div class="metric-value">${formatCurrency(analytics.arr)}</div>
@@ -163,7 +163,7 @@ const AdminAnalytics = {
                 </div>
 
                 <div class="metric-card">
-                    <div class="metric-icon">📊</div>
+                    <div class="metric-icon"></div>
                     <div class="metric-content">
                         <div class="metric-title">ARPU (Avg Revenue Per User)</div>
                         <div class="metric-value">${formatCurrency(analytics.arpu)}</div>
@@ -174,7 +174,7 @@ const AdminAnalytics = {
                 </div>
 
                 <div class="metric-card">
-                    <div class="metric-icon">💳</div>
+                    <div class="metric-icon"></div>
                     <div class="metric-content">
                         <div class="metric-title">Lifetime Value (LTV)</div>
                         <div class="metric-value">${formatCurrency(analytics.ltv)}</div>
@@ -205,7 +205,7 @@ const AdminAnalytics = {
                     <div class="admin-card-body">
                         ${Object.entries(analytics.byRegion || {}).map(([region, amount]) => `
                             <div>
-                                <span>${region === 'UK' ? '🇬🇧 UK' : region === 'US' ? '🇺🇸 US' : region === 'India' ? '🇮🇳 India' : '🌍 ' + region}</span>
+                                <span>${region === 'UK' ? ' UK' : region === 'US' ? ' US' : region === 'India' ? ' India' : ' ' + region}</span>
                                 <strong>${formatCurrency(amount)}</strong>
                             </div>
                         `).join('')}
@@ -312,7 +312,7 @@ const AdminAnalytics = {
             <!-- Key Metrics -->
             <div class="metrics-grid mb-2">
                 <div class="metric-card">
-                    <div class="metric-icon">📅</div>
+                    <div class="metric-icon"></div>
                     <div class="metric-content">
                         <div class="metric-title">Daily Active Users</div>
                         <div class="metric-value">${analytics.dau || 0}</div>
@@ -323,29 +323,29 @@ const AdminAnalytics = {
                 </div>
 
                 <div class="metric-card">
-                    <div class="metric-icon">📆</div>
+                    <div class="metric-icon"></div>
                     <div class="metric-content">
                         <div class="metric-title">Weekly Active Users</div>
                         <div class="metric-value">${analytics.wau || 0}</div>
                         <div class="metric-change metric-change-positive">
-                            ${analytics.wauGrowth > 0 ? '↑' : '↓'} ${Math.abs(analytics.wauGrowth || 0).toFixed(1)}% vs last week
+                            ${analytics.wauGrowth >0 ? '↑' : '↓'} ${Math.abs(analytics.wauGrowth || 0).toFixed(1)}% vs last week
                         </div>
                     </div>
                 </div>
 
                 <div class="metric-card">
-                    <div class="metric-icon">📊</div>
+                    <div class="metric-icon"></div>
                     <div class="metric-content">
                         <div class="metric-title">Monthly Active Users</div>
                         <div class="metric-value">${analytics.mau || 0}</div>
                         <div class="metric-change metric-change-positive">
-                            ${analytics.mauGrowth > 0 ? '↑' : '↓'} ${Math.abs(analytics.mauGrowth || 0).toFixed(1)}% vs last month
+                            ${analytics.mauGrowth >0 ? '↑' : '↓'} ${Math.abs(analytics.mauGrowth || 0).toFixed(1)}% vs last month
                         </div>
                     </div>
                 </div>
 
                 <div class="metric-card">
-                    <div class="metric-icon">💤</div>
+                    <div class="metric-icon"></div>
                     <div class="metric-content">
                         <div class="metric-title">Inactive Users</div>
                         <div class="metric-value">${analytics.inactive || 0}</div>
@@ -464,7 +464,7 @@ const AdminAnalytics = {
             <!-- Key Metrics -->
             <div class="metrics-grid mb-2">
                 <div class="metric-card">
-                    <div class="metric-icon">📈</div>
+                    <div class="metric-icon"></div>
                     <div class="metric-content">
                         <div class="metric-title">Trial Conversion Rate</div>
                         <div class="metric-value">${analytics.trialConversion || 0}%</div>
@@ -475,7 +475,7 @@ const AdminAnalytics = {
                 </div>
 
                 <div class="metric-card">
-                    <div class="metric-icon">🔄</div>
+                    <div class="metric-icon"></div>
                     <div class="metric-content">
                         <div class="metric-title">Churn Rate</div>
                         <div class="metric-value">${analytics.churnRate || 0}%</div>
@@ -486,7 +486,7 @@ const AdminAnalytics = {
                 </div>
 
                 <div class="metric-card">
-                    <div class="metric-icon">⬆️</div>
+                    <div class="metric-icon"></div>
                     <div class="metric-content">
                         <div class="metric-title">Upgrades This Month</div>
                         <div class="metric-value">${analytics.upgrades || 0}</div>
@@ -497,7 +497,7 @@ const AdminAnalytics = {
                 </div>
 
                 <div class="metric-card">
-                    <div class="metric-icon">⬇️</div>
+                    <div class="metric-icon"></div>
                     <div class="metric-content">
                         <div class="metric-title">Downgrades This Month</div>
                         <div class="metric-value">${analytics.downgrades || 0}</div>
@@ -538,10 +538,10 @@ const AdminAnalytics = {
      */
     renderFunnel(funnel) {
         const stages = [
-            { key: 'signups', label: 'Sign Ups', icon: '👥' },
-            { key: 'trialStarted', label: 'Trial Started', icon: '🎯' },
-            { key: 'profileCompleted', label: 'Profile Completed', icon: '✅' },
-            { key: 'converted', label: 'Converted to Paid', icon: '💳' }
+            { key: 'signups', label: 'Sign Ups', icon: '' },
+            { key: 'trialStarted', label: 'Trial Started', icon: '' },
+            { key: 'profileCompleted', label: 'Profile Completed', icon: '' },
+            { key: 'converted', label: 'Converted to Paid', icon: '' }
         ];
 
         const total = funnel.signups || 1;
@@ -635,7 +635,7 @@ const AdminAnalytics = {
             <!-- Key Metrics -->
             <div class="metrics-grid mb-2">
                 <div class="metric-card">
-                    <div class="metric-icon">📊</div>
+                    <div class="metric-icon"></div>
                     <div class="metric-content">
                         <div class="metric-title">Total Trades</div>
                         <div class="metric-value">${analytics.totalTrades || 0}</div>
@@ -646,7 +646,7 @@ const AdminAnalytics = {
                 </div>
 
                 <div class="metric-card">
-                    <div class="metric-icon">✅</div>
+                    <div class="metric-icon"></div>
                     <div class="metric-content">
                         <div class="metric-title">Win Rate</div>
                         <div class="metric-value">${analytics.winRate || 0}%</div>
@@ -657,7 +657,7 @@ const AdminAnalytics = {
                 </div>
 
                 <div class="metric-card">
-                    <div class="metric-icon">💰</div>
+                    <div class="metric-icon"></div>
                     <div class="metric-content">
                         <div class="metric-title">Avg P/L per Trade</div>
                         <div class="metric-value">${analytics.avgPL || 0}%</div>
@@ -668,7 +668,7 @@ const AdminAnalytics = {
                 </div>
 
                 <div class="metric-card">
-                    <div class="metric-icon">👥</div>
+                    <div class="metric-icon"></div>
                     <div class="metric-content">
                         <div class="metric-title">Avg Trades per User</div>
                         <div class="metric-value">${analytics.avgTradesPerUser || 0}</div>
@@ -754,13 +754,13 @@ const AdminAnalytics = {
                             <div class="form-group">
                                 <label>Include Sections:</label>
                                 <div>
-                                    <label><input type="checkbox" id="include-summary" checked> Executive Summary</label><br>
-                                    <label><input type="checkbox" id="include-revenue" checked> Revenue Metrics</label><br>
-                                    <label><input type="checkbox" id="include-users" checked> User Growth & Engagement</label><br>
-                                    <label><input type="checkbox" id="include-subscriptions" checked> Subscription Health</label><br>
-                                    <label><input type="checkbox" id="include-payments"> Payment Analytics</label><br>
-                                    <label><input type="checkbox" id="include-trades"> Trading Activity</label><br>
-                                    <label><input type="checkbox" id="include-audit"> Audit Trail Summary</label>
+                                    <label><input type="checkbox" id="include-summary" checked>Executive Summary</label><br>
+                                    <label><input type="checkbox" id="include-revenue" checked>Revenue Metrics</label><br>
+                                    <label><input type="checkbox" id="include-users" checked>User Growth & Engagement</label><br>
+                                    <label><input type="checkbox" id="include-subscriptions" checked>Subscription Health</label><br>
+                                    <label><input type="checkbox" id="include-payments">Payment Analytics</label><br>
+                                    <label><input type="checkbox" id="include-trades">Trading Activity</label><br>
+                                    <label><input type="checkbox" id="include-audit">Audit Trail Summary</label>
                                 </div>
                             </div>
 

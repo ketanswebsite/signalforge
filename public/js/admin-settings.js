@@ -27,7 +27,7 @@ const AdminSettings = {
                 <div class="admin-card-header">
                     <h2 class="admin-card-title">System Settings</h2>
                     <button class="btn btn-primary btn-sm" onclick="AdminSettings.saveAllSettings()">
-                        💾 Save All Changes
+                         Save All Changes
                     </button>
                 </div>
 
@@ -38,43 +38,43 @@ const AdminSettings = {
                             class="tab-btn ${this.currentTab === 'general' ? 'active' : ''}"
                             onclick="AdminSettings.switchTab('general')"
                         >
-                            ⚙️ General
+                             General
                         </button>
                         <button
                             class="tab-btn ${this.currentTab === 'telegram' ? 'active' : ''}"
                             onclick="AdminSettings.switchTab('telegram')"
                         >
-                            💬 Telegram
+                             Telegram
                         </button>
                         <button
                             class="tab-btn ${this.currentTab === 'payment' ? 'active' : ''}"
                             onclick="AdminSettings.switchTab('payment')"
                         >
-                            💳 Payment Providers
+                             Payment Providers
                         </button>
                         <button
                             class="tab-btn ${this.currentTab === 'email' ? 'active' : ''}"
                             onclick="AdminSettings.switchTab('email')"
                         >
-                            ✉️ Email Templates
+                             Email Templates
                         </button>
                         <button
                             class="tab-btn ${this.currentTab === 'features' ? 'active' : ''}"
                             onclick="AdminSettings.switchTab('features')"
                         >
-                            🚩 Feature Flags
+                             Feature Flags
                         </button>
                         <button
                             class="tab-btn ${this.currentTab === 'broadcast' ? 'active' : ''}"
                             onclick="AdminSettings.switchTab('broadcast')"
                         >
-                            📢 Broadcast
+                             Broadcast
                         </button>
                         <button
                             class="tab-btn ${this.currentTab === 'maintenance' ? 'active' : ''}"
                             onclick="AdminSettings.switchTab('maintenance')"
                         >
-                            🔧 Maintenance
+                             Maintenance
                         </button>
                     </div>
 
@@ -277,7 +277,7 @@ const AdminSettings = {
                     </div>
 
                     <button class="btn btn-secondary" onclick="AdminSettings.testCronJob()">
-                        🔍 Test Scanner Now
+                         Test Scanner Now
                     </button>
                 </div>
             </div>
@@ -312,7 +312,7 @@ const AdminSettings = {
                 </div>
                 <div class="admin-card-body">
                     <div class="alert ${settings.enabled ? 'alert-success' : 'alert-warning'} mb-2">
-                        <strong>Status:</strong> ${settings.enabled ? '✓ Enabled' : '✗ Disabled'}
+                        <strong>Status:</strong> ${settings.enabled ? ' Enabled' : ' Disabled'}
                     </div>
 
                     <div class="form-group">
@@ -376,10 +376,10 @@ const AdminSettings = {
 
                     <div class="flex gap-2">
                         <button class="btn btn-primary" onclick="AdminSettings.testTelegramBot()">
-                            📤 Send Test Message
+                             Send Test Message
                         </button>
                         <button class="btn btn-secondary" onclick="AdminSettings.getUpdates()">
-                            📥 Get Bot Updates
+                             Get Bot Updates
                         </button>
                     </div>
                 </div>
@@ -410,10 +410,10 @@ const AdminSettings = {
                     </div>
 
                     <button class="btn btn-secondary" onclick="AdminSettings.setWebhook()">
-                        🔗 Set Webhook
+                         Set Webhook
                     </button>
                     <button class="btn btn-secondary" onclick="AdminSettings.deleteWebhook()">
-                        ❌ Delete Webhook
+                         Delete Webhook
                     </button>
                 </div>
             </div>
@@ -446,7 +446,7 @@ const AdminSettings = {
             <div class="admin-card mb-2">
                 <div class="admin-card-header">
                     <h3>Stripe Configuration</h3>
-                    <div>${settings.stripe?.enabled ? '✓ Enabled' : '✗ Disabled'}</div>
+                    <div>${settings.stripe?.enabled ? ' Enabled' : ' Disabled'}</div>
                 </div>
                 <div class="admin-card-body">
                     <div class="form-group">
@@ -490,7 +490,7 @@ const AdminSettings = {
                     </div>
 
                     <button class="btn btn-secondary" onclick="AdminSettings.testStripe()">
-                        🧪 Test Stripe Connection
+                         Test Stripe Connection
                     </button>
                 </div>
             </div>
@@ -499,7 +499,7 @@ const AdminSettings = {
             <div class="admin-card mb-2">
                 <div class="admin-card-header">
                     <h3>PayPal Configuration</h3>
-                    <div>${settings.paypal?.enabled ? '✓ Enabled' : '✗ Disabled'}</div>
+                    <div>${settings.paypal?.enabled ? ' Enabled' : ' Disabled'}</div>
                 </div>
                 <div class="admin-card-body">
                     <div class="form-group">
@@ -540,7 +540,7 @@ const AdminSettings = {
                     </div>
 
                     <button class="btn btn-secondary" onclick="AdminSettings.testPayPal()">
-                        🧪 Test PayPal Connection
+                         Test PayPal Connection
                     </button>
                 </div>
             </div>
@@ -549,7 +549,7 @@ const AdminSettings = {
             <div class="admin-card">
                 <div class="admin-card-header">
                     <h3>Razorpay Configuration</h3>
-                    <div>${settings.razorpay?.enabled ? '✓ Enabled' : '✗ Disabled'}</div>
+                    <div>${settings.razorpay?.enabled ? ' Enabled' : ' Disabled'}</div>
                 </div>
                 <div class="admin-card-body">
                     <div class="form-group">
@@ -593,7 +593,7 @@ const AdminSettings = {
                     </div>
 
                     <button class="btn btn-secondary" onclick="AdminSettings.testRazorpay()">
-                        🧪 Test Razorpay Connection
+                         Test Razorpay Connection
                     </button>
                 </div>
             </div>
@@ -669,13 +669,13 @@ const AdminSettings = {
 
                         <div class="flex gap-2">
                             <button class="btn btn-primary" onclick="AdminSettings.saveTemplate()">
-                                💾 Save Template
+                                 Save Template
                             </button>
                             <button class="btn btn-secondary" onclick="AdminSettings.sendTestEmail()">
-                                📧 Send Test Email
+                                 Send Test Email
                             </button>
                             <button class="btn btn-secondary" onclick="AdminSettings.previewTemplate()">
-                                👁️ Preview
+                                 Preview
                             </button>
                         </div>
                     </div>
@@ -754,7 +754,7 @@ const AdminSettings = {
                     </div>
 
                     <button class="btn btn-secondary" onclick="AdminSettings.testSMTP()">
-                        🧪 Test SMTP Connection
+                         Test SMTP Connection
                     </button>
                 </div>
             </div>
@@ -798,7 +798,7 @@ const AdminSettings = {
                 <div class="admin-card-header">
                     <h3>Feature Flags</h3>
                     <button class="btn btn-primary btn-sm" onclick="AdminSettings.saveFeatureFlags()">
-                        💾 Save Changes
+                         Save Changes
                     </button>
                 </div>
                 <div class="admin-card-body">
@@ -844,7 +844,7 @@ const AdminSettings = {
 
                     <div class="mt-2">
                         <button class="btn btn-secondary" onclick="AdminSettings.addFeatureFlag()">
-                            ➕ Add New Feature Flag
+                             Add New Feature Flag
                         </button>
                     </div>
                 </div>
@@ -922,15 +922,15 @@ const AdminSettings = {
                     </div>
 
                     <div class="alert alert-warning">
-                        <strong>⚠️ Warning:</strong> This will send to all matching users. Please review carefully.
+                        <strong>Warning:</strong>This will send to all matching users. Please review carefully.
                     </div>
 
                     <div class="flex gap-2">
                         <button class="btn btn-primary" onclick="AdminSettings.sendBroadcast()">
-                            📢 Send Broadcast
+                             Send Broadcast
                         </button>
                         <button class="btn btn-secondary" onclick="AdminSettings.previewBroadcast()">
-                            👁️ Preview
+                             Preview
                         </button>
                     </div>
                 </div>
@@ -965,7 +965,7 @@ const AdminSettings = {
                 </div>
                 <div class="admin-card-body">
                     <div class="alert ${settings.maintenanceMode ? 'alert-warning' : 'alert-success'} mb-2">
-                        <strong>Status:</strong> ${settings.maintenanceMode ? '🔧 Maintenance Mode ACTIVE' : '✓ System Online'}
+                        <strong>Status:</strong> ${settings.maintenanceMode ? ' Maintenance Mode ACTIVE' : ' System Online'}
                     </div>
 
                     <div class="form-group">
@@ -998,7 +998,7 @@ const AdminSettings = {
                     </div>
 
                     <button class="btn btn-${settings.maintenanceMode ? 'success' : 'warning'}" onclick="AdminSettings.toggleMaintenanceMode()">
-                        ${settings.maintenanceMode ? '✓ Disable Maintenance Mode' : '🔧 Enable Maintenance Mode'}
+                        ${settings.maintenanceMode ? ' Disable Maintenance Mode' : ' Enable Maintenance Mode'}
                     </button>
                 </div>
             </div>
@@ -1014,16 +1014,16 @@ const AdminSettings = {
 
                     <div class="grid-2col">
                         <button class="btn btn-secondary" onclick="AdminSettings.clearCache('all')">
-                            🗑️ Clear All Cache
+                             Clear All Cache
                         </button>
                         <button class="btn btn-secondary" onclick="AdminSettings.clearCache('redis')">
-                            🗑️ Clear Redis Cache
+                             Clear Redis Cache
                         </button>
                         <button class="btn btn-secondary" onclick="AdminSettings.clearCache('sessions')">
-                            🗑️ Clear Sessions
+                             Clear Sessions
                         </button>
                         <button class="btn btn-secondary" onclick="AdminSettings.clearCache('query')">
-                            🗑️ Clear Query Cache
+                             Clear Query Cache
                         </button>
                     </div>
                 </div>
@@ -1036,16 +1036,16 @@ const AdminSettings = {
                 <div class="admin-card-body">
                     <div class="grid-2col">
                         <button class="btn btn-secondary" onclick="AdminSettings.restartServer()">
-                            🔄 Restart Server
+                             Restart Server
                         </button>
                         <button class="btn btn-secondary" onclick="AdminSettings.reloadConfig()">
-                            📋 Reload Configuration
+                             Reload Configuration
                         </button>
                         <button class="btn btn-danger" onclick="AdminSettings.clearLogs()">
-                            🗑️ Clear System Logs
+                             Clear System Logs
                         </button>
                         <button class="btn btn-secondary" onclick="AdminSettings.runHealthCheck()">
-                            🏥 Run Health Check
+                             Run Health Check
                         </button>
                     </div>
                 </div>

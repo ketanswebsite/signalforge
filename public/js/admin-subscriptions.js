@@ -36,13 +36,13 @@ const AdminSubscriptions = {
         <div class="admin-card-body">
           <div class="flex gap-2">
             <button class="btn ${this.currentTab === 'plans' ? 'btn-primary' : 'btn-secondary'}" onclick="AdminSubscriptions.switchTab('plans')">
-              📋 Plans
+               Plans
             </button>
             <button class="btn ${this.currentTab === 'subscriptions' ? 'btn-primary' : 'btn-secondary'}" onclick="AdminSubscriptions.switchTab('subscriptions')">
-              💳 Active Subscriptions
+               Active Subscriptions
             </button>
             <button class="btn ${this.currentTab === 'analytics' ? 'btn-primary' : 'btn-secondary'}" onclick="AdminSubscriptions.switchTab('analytics')">
-              📊 Analytics
+               Analytics
             </button>
           </div>
         </div>
@@ -54,7 +54,7 @@ const AdminSubscriptions = {
           <div class="admin-card-header flex-between">
             <h2 class="admin-card-title">Subscription Plans</h2>
             <button class="btn btn-primary btn-sm" onclick="AdminSubscriptions.showCreatePlanModal()">
-              ➕ Create Plan
+               Create Plan
             </button>
           </div>
           <div class="admin-card-body">
@@ -286,17 +286,17 @@ const AdminSubscriptions = {
         {
           label: 'Start Date',
           key: 'subscription_start_date',
-          render: (date) => DateFormatter.format(date)
+          render: (date) =>DateFormatter.format(date)
         },
         {
           label: 'End Date',
           key: 'subscription_end_date',
-          render: (date) => DateFormatter.format(date)
+          render: (date) =>DateFormatter.format(date)
         },
         {
           label: 'Trial End',
           key: 'trial_end_date',
-          render: (date) => DateFormatter.format(date)
+          render: (date) =>DateFormatter.format(date)
         }
       ],
       data: subscriptions,
@@ -318,7 +318,7 @@ const AdminSubscriptions = {
     document.getElementById('subscriptions-container').innerHTML = tableHTML;
 
     // Render pagination
-    if (pagination && pagination.pages > 1) {
+    if (pagination && pagination.pages >1) {
       const paginationHTML = AdminComponents.pagination({
         currentPage: pagination.page,
         totalPages: pagination.pages,
@@ -356,28 +356,28 @@ const AdminSubscriptions = {
         value: AdminComponents.formatCurrency(analytics.mrr || 0, 'GBP'),
         change: analytics.mrr_change || '+0%',
         changeType: 'positive',
-        icon: '💰'
+        icon: ''
       })}
       ${AdminComponents.metricCard({
         title: 'Annual Recurring Revenue',
         value: AdminComponents.formatCurrency((analytics.mrr || 0) * 12, 'GBP'),
         change: analytics.arr_change || '+0%',
         changeType: 'positive',
-        icon: '📈'
+        icon: ''
       })}
       ${AdminComponents.metricCard({
         title: 'Churn Rate',
         value: (analytics.churn_rate || 0) + '%',
         change: analytics.churn_change || '-0%',
         changeType: 'negative',
-        icon: '📉'
+        icon: ''
       })}
       ${AdminComponents.metricCard({
         title: 'Avg. LTV',
         value: AdminComponents.formatCurrency(analytics.avg_ltv || 0, 'GBP'),
         change: analytics.ltv_change || '+0%',
         changeType: 'positive',
-        icon: '💎'
+        icon: ''
       })}
     `;
 
@@ -392,16 +392,16 @@ const AdminSubscriptions = {
     if (!ctx) return;
 
     // Sample data if no real data
-    const labels = growthData.length > 0 ? growthData.map(d => d.month) : [];
-    const data = growthData.length > 0 ? growthData.map(d => d.count) : [];
+    const labels = growthData.length >0 ? growthData.map(d => d.month) : [];
+    const data = growthData.length >0 ? growthData.map(d => d.count) : [];
 
     new Chart(ctx, {
       type: 'line',
       data: {
-        labels: labels.length > 0 ? labels : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        labels: labels.length >0 ? labels : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
         datasets: [{
           label: 'Active Subscriptions',
-          data: data.length > 0 ? data : [5, 8, 12, 15, 20, 25],
+          data: data.length >0 ? data : [5, 8, 12, 15, 20, 25],
           borderColor: '#10b981',
           backgroundColor: 'rgba(16, 185, 129, 0.1)',
           tension: 0.4,

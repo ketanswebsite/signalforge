@@ -28,7 +28,7 @@ const AdminSignalTesting = {
      * Initialize the signal testing page
      */
     async init() {
-        console.log('🧪 Initializing Signal Testing page...');
+        console.log(' Initializing Signal Testing page...');
 
         // Create page HTML
         const pageHTML = this.renderPage();
@@ -40,7 +40,7 @@ const AdminSignalTesting = {
         // Load initial data
         await this.refreshAll();
 
-        console.log('✅ Signal Testing page initialized');
+        console.log(' Signal Testing page initialized');
     },
 
     /**
@@ -52,35 +52,35 @@ const AdminSignalTesting = {
                 <!-- Testing Controls -->
                 <div class="admin-card">
                     <div class="admin-card-header">
-                        <h2 class="admin-card-title">🧪 Manual Testing Controls</h2>
+                        <h2 class="admin-card-title">Manual Testing Controls</h2>
                         <button class="btn btn-secondary btn-sm" onclick="AdminSignalTesting.refreshAll()">
-                            🔄 Refresh All
+                             Refresh All
                         </button>
                     </div>
                     <div class="admin-card-body">
                         <div class="testing-controls-grid">
                             <!-- 7 AM Scan Test -->
                             <div class="test-control-card">
-                                <h3>📊 7 AM Signal Scan</h3>
+                                <h3>7 AM Signal Scan</h3>
                                 <p>Triggers the high conviction scanner that runs at 7 AM UK time</p>
                                 <button class="btn btn-primary" onclick="AdminSignalTesting.testScan()" id="test-scan-btn">
-                                    🔬 Run 7 AM Scan
+                                     Run 7 AM Scan
                                 </button>
                             </div>
 
                             <!-- 1 PM Execution Tests -->
                             <div class="test-control-card">
-                                <h3>⚡ 1 PM Trade Execution</h3>
+                                <h3>1 PM Trade Execution</h3>
                                 <p>Triggers trade execution for a specific market</p>
                                 <div class="execution-buttons">
                                     <button class="btn btn-success btn-sm" onclick="AdminSignalTesting.testExecution('India')" id="test-exec-india">
-                                        🇮🇳 Execute India (1 PM IST)
+                                         Execute India (1 PM IST)
                                     </button>
                                     <button class="btn btn-success btn-sm" onclick="AdminSignalTesting.testExecution('UK')" id="test-exec-uk">
-                                        🇬🇧 Execute UK (1 PM GMT)
+                                         Execute UK (1 PM GMT)
                                     </button>
                                     <button class="btn btn-success btn-sm" onclick="AdminSignalTesting.testExecution('US')" id="test-exec-us">
-                                        🇺🇸 Execute US (1 PM EST)
+                                         Execute US (1 PM EST)
                                     </button>
                                 </div>
                             </div>
@@ -89,7 +89,7 @@ const AdminSignalTesting = {
                         <!-- Real-time Logs -->
                         <div class="log-display" id="test-log-display">
                             <div class="log-header">
-                                <h4>📋 Real-time Logs</h4>
+                                <h4>Real-time Logs</h4>
                                 <button class="btn btn-secondary btn-sm" onclick="AdminSignalTesting.clearLogs()">Clear</button>
                             </div>
                             <div class="log-content" id="log-content">
@@ -102,9 +102,9 @@ const AdminSignalTesting = {
                 <!-- Diagnostics Panel -->
                 <div class="admin-card">
                     <div class="admin-card-header">
-                        <h2 class="admin-card-title">🔍 System Diagnostics</h2>
+                        <h2 class="admin-card-title">System Diagnostics</h2>
                         <button class="btn btn-secondary btn-sm" onclick="AdminSignalTesting.loadDiagnostics()">
-                            🔄 Refresh
+                             Refresh
                         </button>
                     </div>
                     <div class="admin-card-body">
@@ -119,7 +119,7 @@ const AdminSignalTesting = {
                 <!-- Pending Signals Table -->
                 <div class="admin-card">
                     <div class="admin-card-header">
-                        <h2 class="admin-card-title">📊 Pending Signals</h2>
+                        <h2 class="admin-card-title">Pending Signals</h2>
                         <div class="filter-controls">
                             <select id="signal-status-filter" class="form-select" onchange="AdminSignalTesting.loadPendingSignals()">
                                 <option value="pending">Pending</option>
@@ -134,7 +134,7 @@ const AdminSignalTesting = {
                                 <option value="US">US</option>
                             </select>
                             <button class="btn btn-secondary btn-sm" onclick="AdminSignalTesting.loadPendingSignals()">
-                                🔄 Refresh
+                                 Refresh
                             </button>
                         </div>
                     </div>
@@ -150,9 +150,9 @@ const AdminSignalTesting = {
                 <!-- Execution History -->
                 <div class="admin-card">
                     <div class="admin-card-header">
-                        <h2 class="admin-card-title">📈 Execution History</h2>
+                        <h2 class="admin-card-title">Execution History</h2>
                         <button class="btn btn-secondary btn-sm" onclick="AdminSignalTesting.loadExecutionLogs()">
-                            🔄 Refresh
+                             Refresh
                         </button>
                     </div>
                     <div class="admin-card-body">
@@ -201,9 +201,9 @@ const AdminSignalTesting = {
 
         this.state.isScanning = true;
         btn.disabled = true;
-        btn.textContent = '🔬 Scanning...';
+        btn.textContent = ' Scanning...';
 
-        this.addLog('info', '🔬 Starting 7 AM signal scan...');
+        this.addLog('info', ' Starting 7 AM signal scan...');
 
         try {
             const response = await fetch('/api/admin/test-scan', {
@@ -216,11 +216,11 @@ const AdminSignalTesting = {
             const data = await response.json();
 
             if (data.success) {
-                this.addLog('success', `✅ Scan completed successfully`);
-                this.addLog('info', `📊 Total scanned: ${data.totalScanned || 0} stocks`);
-                this.addLog('info', `🎯 High conviction found: ${data.highConvictionFound || 0}`);
-                this.addLog('info', `📈 Recent signals: ${data.recentOpportunities || 0}`);
-                this.addLog('info', `📤 Alerts sent: ${data.alertsSent || 0}`);
+                this.addLog('success', ` Scan completed successfully`);
+                this.addLog('info', ` Total scanned: ${data.totalScanned || 0} stocks`);
+                this.addLog('info', ` High conviction found: ${data.highConvictionFound || 0}`);
+                this.addLog('info', ` Recent signals: ${data.recentOpportunities || 0}`);
+                this.addLog('info', ` Alerts sent: ${data.alertsSent || 0}`);
 
                 // Refresh signals table
                 await this.loadPendingSignals();
@@ -234,7 +234,7 @@ const AdminSignalTesting = {
                 throw new Error(data.error || 'Scan failed');
             }
         } catch (error) {
-            this.addLog('error', `❌ Scan failed: ${error.message}`);
+            this.addLog('error', ` Scan failed: ${error.message}`);
             AdminComponentsV2.toast({
                 type: 'error',
                 message: `Scan failed: ${error.message}`,
@@ -243,7 +243,7 @@ const AdminSignalTesting = {
         } finally {
             this.state.isScanning = false;
             btn.disabled = false;
-            btn.textContent = '🔬 Run 7 AM Scan';
+            btn.textContent = ' Run 7 AM Scan';
         }
     },
 
@@ -256,9 +256,9 @@ const AdminSignalTesting = {
 
         this.state.isExecuting[market] = true;
         btn.disabled = true;
-        btn.textContent = '⚡ Executing...';
+        btn.textContent = ' Executing...';
 
-        this.addLog('info', `⚡ Starting 1 PM execution for ${market} market...`);
+        this.addLog('info', ` Starting 1 PM execution for ${market} market...`);
 
         try {
             const response = await fetch('/api/admin/test-execution', {
@@ -272,11 +272,11 @@ const AdminSignalTesting = {
             const data = await response.json();
 
             if (data.success) {
-                this.addLog('success', `✅ Execution completed for ${market}`);
-                this.addLog('info', `📊 Total signals: ${data.total || 0}`);
-                this.addLog('info', `✓ Executed: ${data.executed || 0} trades`);
+                this.addLog('success', ` Execution completed for ${market}`);
+                this.addLog('info', ` Total signals: ${data.total || 0}`);
+                this.addLog('info', ` Executed: ${data.executed || 0} trades`);
                 this.addLog('info', `⊗ Skipped: ${data.skipped || 0}`);
-                this.addLog('info', `✗ Failed: ${data.failed || 0}`);
+                this.addLog('info', ` Failed: ${data.failed || 0}`);
 
                 // Refresh data
                 await Promise.all([
@@ -294,7 +294,7 @@ const AdminSignalTesting = {
                 throw new Error(data.error || 'Execution failed');
             }
         } catch (error) {
-            this.addLog('error', `❌ Execution failed: ${error.message}`);
+            this.addLog('error', ` Execution failed: ${error.message}`);
             AdminComponentsV2.toast({
                 type: 'error',
                 message: `Execution failed: ${error.message}`,
@@ -302,7 +302,7 @@ const AdminSignalTesting = {
             });
         } finally {
             this.state.isExecuting[market] = false;
-            const flag = market === 'India' ? '🇮🇳' : market === 'UK' ? '🇬🇧' : '🇺🇸';
+            const flag = market === 'India' ? '' : market === 'UK' ? '' : '';
             btn.disabled = false;
             btn.textContent = `${flag} Execute ${market} (1 PM)`;
         }
@@ -372,7 +372,7 @@ const AdminSignalTesting = {
 
         data.signals.forEach(signal => {
             const statusClass = `badge-${signal.status}`;
-            const dateClass = signal.is_today ? 'badge-today' : (signal.days_old > 5 ? 'badge-old' : '');
+            const dateClass = signal.is_today ? 'badge-today' : (signal.days_old >5 ? 'badge-old' : '');
 
             html += `
                 <tr>
@@ -380,12 +380,12 @@ const AdminSignalTesting = {
                     <td>${signal.market}</td>
                     <td>
                         ${signal.signal_date_formatted}
-                        ${signal.days_old > 0 ? `<span class="badge ${dateClass}">${signal.days_old} days old</span>` : '<span class="badge badge-today">Today</span>'}
+                        ${signal.days_old >0 ? `<span class="badge ${dateClass}">${signal.days_old} days old</span>` : '<span class="badge badge-today">Today</span>'}
                     </td>
                     <td><span class="badge ${statusClass}">${signal.status}</span></td>
                     <td>${formatNumber(signal.win_rate, 1)}%</td>
                     <td>${formatNumber(signal.entry_price, 2)}</td>
-                    <td>${signal.will_execute ? '✅ Yes' : '❌ No'}</td>
+                    <td>${signal.will_execute ? ' Yes' : ' No'}</td>
                 </tr>
             `;
         });
@@ -464,7 +464,7 @@ const AdminSignalTesting = {
             `;
         }
 
-        if (data.executionLogs && data.executionLogs.length > 0) {
+        if (data.executionLogs && data.executionLogs.length >0) {
             html += '<h4 class="admin-section-spaced">Recent Execution History</h4>';
             html += '<div class="execution-logs-list">';
 
@@ -478,9 +478,9 @@ const AdminSignalTesting = {
                         </div>
                         <div class="log-card-body">
                             <div>Total: ${log.summary?.total || 0}</div>
-                            <div>✓ Executed: ${log.summary?.executed || 0}</div>
+                            <div>Executed: ${log.summary?.executed || 0}</div>
                             <div>⊗ Skipped: ${log.summary?.skipped || 0}</div>
-                            <div>✗ Failed: ${log.summary?.failed || 0}</div>
+                            <div>Failed: ${log.summary?.failed || 0}</div>
                         </div>
                     </div>
                 `;
@@ -526,10 +526,10 @@ const AdminSignalTesting = {
         html += `
             <div class="diagnostic-card">
                 <h4>System Status</h4>
-                <div class="diagnostic-value">${d.cronStatus.scannerInitialized && d.cronStatus.executorInitialized ? '✅ Online' : '⚠️ Partial'}</div>
+                <div class="diagnostic-value">${d.cronStatus.scannerInitialized && d.cronStatus.executorInitialized ? ' Online' : ' Partial'}</div>
                 <div class="diagnostic-detail">
-                    Scanner: ${d.cronStatus.scannerInitialized ? '✓' : '✗'}<br>
-                    Executor: ${d.cronStatus.executorInitialized ? '✓' : '✗'}
+                    Scanner: ${d.cronStatus.scannerInitialized ? '' : ''}<br>
+                    Executor: ${d.cronStatus.executorInitialized ? '' : ''}
                 </div>
             </div>
         `;
@@ -591,10 +591,10 @@ const AdminSignalTesting = {
         `;
 
         // Validation Results
-        if (d.validationResults && d.validationResults.length > 0) {
+        if (d.validationResults && d.validationResults.length >0) {
             html += `
                 <div class="admin-section-spaced">
-                    <h4>🔍 Validation Results for Today's Signals</h4>
+                    <h4>Validation Results for Today's Signals</h4>
                     <table class="signals-table">
                         <thead>
                             <tr>
@@ -610,7 +610,7 @@ const AdminSignalTesting = {
 
             d.validationResults.forEach(result => {
                 const statusClass = result.valid ? 'valid' : 'invalid';
-                const icon = result.valid ? '✅' : '❌';
+                const icon = result.valid ? '' : '';
                 html += `
                     <tr>
                         <td><strong>${result.symbol}</strong></td>
@@ -650,7 +650,7 @@ const AdminSignalTesting = {
         logContent.scrollTop = logContent.scrollHeight;
 
         // Keep only last 100 log entries
-        while (logContent.children.length > 100) {
+        while (logContent.children.length >100) {
             logContent.removeChild(logContent.firstChild);
         }
     },

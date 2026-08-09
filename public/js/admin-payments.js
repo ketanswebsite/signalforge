@@ -37,16 +37,16 @@ const AdminPayments = {
         <div class="admin-card-body">
           <div class="flex gap-2">
             <button class="btn ${this.currentTab === 'transactions' ? 'btn-primary' : 'btn-secondary'}" onclick="AdminPayments.switchTab('transactions')">
-              💰 Transactions
+               Transactions
             </button>
             <button class="btn ${this.currentTab === 'verification' ? 'btn-primary' : 'btn-secondary'}" onclick="AdminPayments.switchTab('verification')">
-              ✅ Verification Queue
+               Verification Queue
             </button>
             <button class="btn ${this.currentTab === 'refunds' ? 'btn-primary' : 'btn-secondary'}" onclick="AdminPayments.switchTab('refunds')">
-              💸 Refunds
+               Refunds
             </button>
             <button class="btn ${this.currentTab === 'analytics' ? 'btn-primary' : 'btn-secondary'}" onclick="AdminPayments.switchTab('analytics')">
-              📊 Analytics
+               Analytics
             </button>
           </div>
         </div>
@@ -72,7 +72,7 @@ const AdminPayments = {
                 <option value="razorpay" ${this.filterProvider === 'razorpay' ? 'selected' : ''}>Razorpay</option>
               </select>
               <button class="btn btn-secondary btn-sm" onclick="AdminPayments.exportTransactions()">
-                📥 Export
+                 Export
               </button>
             </div>
           </div>
@@ -230,7 +230,7 @@ const AdminPayments = {
         {
           label: 'Amount',
           key: 'amount',
-          render: (amount, payment) => AdminComponents.formatCurrency(amount, payment.currency)
+          render: (amount, payment) =>AdminComponents.formatCurrency(amount, payment.currency)
         },
         {
           label: 'Provider',
@@ -266,7 +266,7 @@ const AdminPayments = {
         {
           label: 'Date',
           key: 'created_at',
-          render: (date) => DateFormatter.format(date)
+          render: (date) =>DateFormatter.format(date)
         }
       ],
       data: transactions,
@@ -288,7 +288,7 @@ const AdminPayments = {
     document.getElementById('transactions-container').innerHTML = tableHTML;
 
     // Render pagination
-    if (pagination && pagination.pages > 1) {
+    if (pagination && pagination.pages >1) {
       const paginationHTML = AdminComponents.pagination({
         currentPage: pagination.page,
         totalPages: pagination.pages,
@@ -336,10 +336,10 @@ const AdminPayments = {
             </div>
             <div class="flex gap-1">
               <button class="btn btn-success btn-sm" onclick="AdminPayments.verifyPayment('${payment.transaction_id}', true)">
-                ✅ Approve
+                 Approve
               </button>
               <button class="btn btn-danger btn-sm" onclick="AdminPayments.verifyPayment('${payment.transaction_id}', false)">
-                ❌ Reject
+                 Reject
               </button>
             </div>
           </div>
@@ -391,7 +391,7 @@ const AdminPayments = {
         {
           label: 'Amount',
           key: 'refund_amount',
-          render: (amount, refund) => AdminComponents.formatCurrency(amount, refund.currency)
+          render: (amount, refund) =>AdminComponents.formatCurrency(amount, refund.currency)
         },
         {
           label: 'Reason',
@@ -401,7 +401,7 @@ const AdminPayments = {
         {
           label: 'Status',
           key: 'status',
-          render: (status) => AdminComponents.badge({
+          render: (status) =>AdminComponents.badge({
             text: status.charAt(0).toUpperCase() + status.slice(1),
             type: status === 'completed' ? 'success' : 'warning'
           })
@@ -409,7 +409,7 @@ const AdminPayments = {
         {
           label: 'Date',
           key: 'created_at',
-          render: (date) => DateFormatter.format(date)
+          render: (date) =>DateFormatter.format(date)
         }
       ],
       data: refunds,
@@ -453,28 +453,28 @@ const AdminPayments = {
         value: AdminComponents.formatCurrency(analytics.totalRevenue || 0, 'GBP'),
         change: analytics.revenueChange || '+0%',
         changeType: 'positive',
-        icon: '💰'
+        icon: ''
       })}
       ${AdminComponents.metricCard({
         title: 'Transactions',
         value: AdminComponents.formatNumber(analytics.totalTransactions || 0),
         change: analytics.transactionChange || '+0',
         changeType: 'positive',
-        icon: '📊'
+        icon: ''
       })}
       ${AdminComponents.metricCard({
         title: 'Success Rate',
         value: (analytics.successRate || 0) + '%',
         change: analytics.successRateChange || '+0%',
         changeType: 'positive',
-        icon: '✅'
+        icon: ''
       })}
       ${AdminComponents.metricCard({
         title: 'Refund Rate',
         value: (analytics.refundRate || 0) + '%',
         change: analytics.refundRateChange || '-0%',
         changeType: 'negative',
-        icon: '💸'
+        icon: ''
       })}
     `;
 
@@ -488,8 +488,8 @@ const AdminPayments = {
     const ctx = document.getElementById('provider-revenue-chart');
     if (!ctx) return;
 
-    const labels = providerData.length > 0 ? providerData.map(d => d.provider) : ['Stripe', 'PayPal', 'Razorpay'];
-    const data = providerData.length > 0 ? providerData.map(d => d.revenue) : [5000, 3000, 2000];
+    const labels = providerData.length >0 ? providerData.map(d => d.provider) : ['Stripe', 'PayPal', 'Razorpay'];
+    const data = providerData.length >0 ? providerData.map(d => d.revenue) : [5000, 3000, 2000];
 
     new Chart(ctx, {
       type: 'bar',
@@ -528,8 +528,8 @@ const AdminPayments = {
     const ctx = document.getElementById('success-rate-chart');
     if (!ctx) return;
 
-    const labels = successData.length > 0 ? successData.map(d => d.date) : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const data = successData.length > 0 ? successData.map(d => d.rate) : [95, 97, 94, 96, 98, 95, 97];
+    const labels = successData.length >0 ? successData.map(d => d.date) : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const data = successData.length >0 ? successData.map(d => d.rate) : [95, 97, 94, 96, 98, 95, 97];
 
     new Chart(ctx, {
       type: 'line',

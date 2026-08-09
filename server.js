@@ -618,30 +618,17 @@ app.get('/api/test-admin', ensureAuthenticatedAPI, async (req, res) => {
 
 // Admin routes - restricted to specific admin email
 
+// The admin portal (public/admin-v2.html) — /admin is the only admin URL;
+// the legacy /admin-portal and /admin-v2 paths redirect here.
 app.get('/admin', ensureAuthenticated, (req, res) => {
-  // Check if user is admin
-  if (req.user?.email !== ADMIN_EMAIL) {
-    return res.status(403).send('Access denied. Admin privileges required.');
-  }
-  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
-});
-
-// New admin portal
-app.get('/admin-portal', ensureAuthenticated, (req, res) => {
-  // Check if user is admin
-  if (req.user?.email !== ADMIN_EMAIL) {
-    return res.status(403).send('Access denied. Admin privileges required.');
-  }
-  res.sendFile(path.join(__dirname, 'public', 'admin-portal.html'));
-});
-
-// New admin portal v2 (revamped)
-app.get('/admin-v2', ensureAuthenticated, (req, res) => {
-  // Check if user is admin
   if (req.user?.email !== ADMIN_EMAIL) {
     return res.status(403).send('Access denied. Admin privileges required.');
   }
   res.sendFile(path.join(__dirname, 'public', 'admin-v2.html'));
+});
+
+app.get(['/admin-portal', '/admin-v2'], (req, res) => {
+  res.redirect(301, '/admin');
 });
 
 // API endpoint to get all Telegram subscribers (admin only)
@@ -3488,6 +3475,11 @@ app.use((req, res, next) => {
       req.path.startsWith('/images/') ||
       req.path.startsWith('/lib/')) {
     return next();
+  }
+  // The admin portal's HTML is admin-only even as a static file
+  if (req.path === '/admin-v2.html' || req.path === '/admin.html') {
+    if (req.user?.email === (process.env.ADMIN_EMAIL || 'ketanjoshisahs@gmail.com')) return next();
+    return res.redirect('/');
   }
   // All other static files require authentication
   ensureAuthenticated(req, res, next);

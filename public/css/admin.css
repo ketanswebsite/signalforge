@@ -134,7 +134,10 @@
 .admin-portal .empty-state{display:grid;justify-items:center;gap:var(--s-2);padding:var(--s-8) var(--s-4);text-align:center;color:var(--text-3)}
 .admin-portal .empty-state-icon,.admin-portal .empty-icon{font-size:34px;color:var(--text-3)}
 .admin-portal .spinner-container{display:grid;justify-items:center;padding:var(--s-6)}
-.admin-portal .spinner,.admin-portal .spinner-medium{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--text);border-radius:50%;animation:sa-spin .8s linear infinite}
+/* Spinner elements sometimes carry loading text — spin a pseudo circle, never the text */
+.admin-portal .spinner,.admin-portal .spinner-medium{display:grid;justify-items:center;gap:10px;color:var(--text-3);font-size:var(--size-xs);animation:none}
+.admin-portal .spinner::before,.admin-portal .spinner-medium::before{content:"";width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--text);border-radius:50%;animation:sa-spin .8s linear infinite}
+.admin-portal .spinner .spinner-medium::before,.admin-portal .spinner-medium .spinner::before,.admin-portal .spinner .spinner::before{display:none}
 .admin-portal .skeleton{background:var(--surface-3);animation:sa-fadein 1s ease-in-out infinite alternate;min-height:14px}
 .admin-portal .loading{opacity:.6;pointer-events:none}
 
@@ -156,3 +159,65 @@
 .admin-portal .editable-cell{cursor:text;border-bottom:1px dashed var(--line-strong)}
 .admin-portal .funnel-metrics{display:grid;gap:var(--s-3)}
 .admin-portal .cohort-cell-empty{color:var(--text-3)}
+
+/* ---------- structures the self-rendering tab modules emit ---------- */
+.admin-portal .tab-navigation{display:flex;gap:var(--s-2);flex-wrap:wrap;border-bottom:2px solid var(--frame);padding-bottom:var(--s-3);margin-bottom:var(--s-4)}
+.admin-portal .status-indicator{display:inline-flex;align-items:center;gap:8px;font-size:var(--size-xs);font-weight:var(--w-bold);color:var(--text-2)}
+.admin-portal .status-dot{width:9px;height:9px;border-radius:50%;background:var(--text-3)}
+.admin-portal .status-dot.status-success{background:var(--gain)}
+.admin-portal .status-dot.status-danger{background:var(--loss)}
+.admin-portal .grid-2col{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:var(--s-4)}
+.admin-portal .grid-3col{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--s-4)}
+.admin-portal .gap-1{gap:var(--s-1)}
+.admin-portal .mb-0{margin-bottom:0}
+.admin-portal .mb-1{margin-bottom:var(--s-1)}
+.admin-portal .signal-testing-container{display:grid;gap:var(--s-4)}
+.admin-portal .testing-controls-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:var(--s-4)}
+.admin-portal .test-control-card{border:1.5px solid var(--line-strong);background:var(--surface-2);padding:var(--s-4);display:grid;gap:var(--s-2);align-content:start}
+.admin-portal .test-control-card h3{margin:0;font-size:var(--size-sm);font-weight:var(--w-bold)}
+.admin-portal .test-control-card p{margin:0;font-size:var(--size-xs);color:var(--text-2)}
+.admin-portal .execution-buttons{display:flex;gap:var(--s-2);flex-wrap:wrap}
+.admin-portal .diagnostics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--s-3)}
+.admin-portal .signals-summary{display:flex;gap:var(--s-4);flex-wrap:wrap;margin-bottom:var(--s-3)}
+.admin-portal .summary-item{border:1.5px solid var(--line-strong);background:var(--surface-2);padding:var(--s-2) var(--s-3);font-size:var(--size-xs);font-variant-numeric:tabular-nums}
+.admin-portal .filter-controls{display:flex;gap:var(--s-2);flex-wrap:wrap;margin-bottom:var(--s-3)}
+.admin-portal .log-display,.admin-portal .execution-logs-list,.admin-portal .code-block{background:var(--ink-90,#1b1916);color:#e8e2d5;font-family:var(--font-mono,'Roboto Mono',monospace);font-size:12px;line-height:1.6;padding:var(--s-3) var(--s-4);overflow:auto;max-height:420px;border:2px solid var(--frame)}
+[data-theme="dark"] .admin-portal .log-display,[data-theme="dark"] .admin-portal .execution-logs-list,[data-theme="dark"] .admin-portal .code-block{background:var(--surface-2);color:var(--text)}
+.admin-portal .log-entry{padding:2px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.admin-portal .log-header{display:flex;align-items:center;justify-content:space-between;gap:var(--s-3);font-size:var(--size-xs);margin-bottom:6px}
+/* headers and buttons sitting on the dark console must read light */
+.admin-portal .log-display .log-header h3,.admin-portal .log-display .log-header h4{margin:0;color:#f3ecdd;font-size:var(--size-sm);text-transform:uppercase;letter-spacing:.04em}
+.admin-portal .log-display .btn-secondary,.admin-portal .log-display .btn{border-color:rgba(243,236,221,.5);color:#f3ecdd}
+.admin-portal .log-display .btn-secondary:hover,.admin-portal .log-display .btn:hover{background:rgba(243,236,221,.12)}
+.admin-portal .font-mono{font-family:var(--font-mono,'Roboto Mono',monospace)}
+.admin-portal textarea#sql-query{font-family:var(--font-mono,'Roboto Mono',monospace);min-height:130px;resize:vertical}
+.admin-portal .query-history-item{border:1.5px solid var(--line);padding:var(--s-2) var(--s-3);font-size:var(--size-xs);font-family:var(--font-mono,'Roboto Mono',monospace);cursor:pointer}
+.admin-portal .query-history-item:hover{background:var(--accent-soft)}
+.admin-portal .progress-bar-container{height:8px;background:var(--surface-3);border:1px solid var(--line-strong);overflow:hidden}
+.admin-portal .progress-bar-fill{height:100%;background:var(--accent-field);transition:width var(--dur-3) var(--ease-out)}
+.admin-portal .plan-card{border:1.5px solid var(--line-strong);background:var(--surface-2);padding:var(--s-4);display:grid;gap:var(--s-2)}
+.admin-portal .revenue-breakdown-grid,.admin-portal .feature-usage-grid,.admin-portal .timezone-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--s-3)}
+.admin-portal .feature-usage-item{border:1.5px solid var(--line);padding:var(--s-2) var(--s-3);font-size:var(--size-sm)}
+.admin-portal .validation-result{font-size:var(--size-xs);margin-top:var(--s-2)}
+.admin-portal .table-responsive{width:100%;overflow-x:auto}
+.admin-portal .table-sm th,.admin-portal .table-sm td{padding:8px var(--s-2);font-size:var(--size-xs)}
+.admin-portal .btn-full{width:100%}
+.admin-portal .btn-warning{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:var(--font-sans);font-weight:var(--w-bold);border:2px solid var(--warn);border-radius:0;cursor:pointer;white-space:nowrap;min-height:var(--tap-min);padding:0 var(--s-4);font-size:var(--size-sm);background:transparent;color:var(--warn)}
+.admin-portal .btn-warning:hover{background:var(--warn-soft)}
+.admin-portal .badge-today{border-color:var(--accent);color:var(--text);background:var(--accent-soft)}
+
+/* Toggle switches (settings) */
+.admin-portal .toggle-switch{position:relative;display:inline-block;width:46px;height:26px;flex:0 0 auto}
+.admin-portal .toggle-switch input{opacity:0;width:0;height:0}
+.admin-portal .toggle-slider{position:absolute;inset:0;background:var(--surface-3);border:2px solid var(--frame);cursor:pointer;transition:background var(--dur-1) var(--ease-out)}
+.admin-portal .toggle-slider:before{content:"";position:absolute;left:2px;top:2px;width:16px;height:16px;background:var(--text);transition:transform var(--dur-1) var(--ease-out)}
+.admin-portal .toggle-switch input:checked + .toggle-slider{background:var(--gain-soft);border-color:var(--gain)}
+.admin-portal .toggle-switch input:checked + .toggle-slider:before{transform:translateX(20px);background:var(--gain)}
+
+/* Bootstrap-style modal markup used by the report/audit dialogs */
+.admin-portal .modal-backdrop{position:fixed;inset:0;background:var(--scrim);z-index:var(--z-scrim)}
+.admin-portal .modal-dialog{position:fixed;inset:0;margin:auto;height:fit-content;max-height:88vh;width:100%;max-width:560px;background:var(--surface);border:2.5px solid var(--frame);box-shadow:var(--shadow-pop);display:flex;flex-direction:column;overflow:hidden;z-index:calc(var(--z-scrim) + 1)}
+.admin-portal .modal-dialog.modal-lg{max-width:760px}
+.admin-portal .modal-dialog .modal-content{border:0;box-shadow:none;max-width:none;max-height:none}
+.admin-portal .btn-close{background:none;border:0;color:var(--bg);cursor:pointer;min-width:var(--tap-min);min-height:var(--tap-min);font-size:22px;line-height:1}
+.admin-portal .btn-close:hover{color:var(--gold-on-band)}

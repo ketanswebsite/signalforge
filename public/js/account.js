@@ -961,7 +961,7 @@ class AccountPage {
     renderAdminStatus() {
         const frag = acEl('div', 'ac-adminwrap');
         const adminLink = acEl('a', 'sa-btn sa-btn--primary sa-btn--sm', 'Open the admin portal');
-        adminLink.href = '/admin-v2';
+        adminLink.href = '/admin';
         frag.appendChild(acCallout('gain', 'shield_person', 'Admin access',
             'Full access to everything, with nothing to renew.', adminLink));
         const grid = acEl('div', 'ac-statgrid');
