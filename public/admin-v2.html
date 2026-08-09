@@ -167,15 +167,10 @@
                     <p class="text-secondary">Manage user accounts and permissions</p>
                 </div>
 
-                <div class="table-controls">
-                    <input type="search" id="user-search" placeholder="Search users..." class="search-input">
-                    <button class="btn-primary" onclick="AdminUsers.refresh()">
-                        <span class="material-icons">refresh</span>
-                        Refresh
-                    </button>
+                <!-- AdminUsers renders its full UI (search, filters, bulk actions, export) here -->
+                <div id="users-management-root">
+                    <div class="spinner-container"><div class="spinner-medium spinner"></div></div>
                 </div>
-
-                <div id="users-table-container"></div>
 
                 <!-- Complimentary Access Section -->
                 <div class="admin-section admin-section-spaced">

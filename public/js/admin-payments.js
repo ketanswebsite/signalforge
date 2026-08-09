@@ -53,7 +53,7 @@ const AdminPayments = {
       </div>
 
       <!-- Transactions Tab -->
-      <div id="transactions-tab" >
+      <div id="transactions-tab">
         <div class="admin-card">
           <div class="admin-card-header flex-between">
             <h2 class="admin-card-title">Payment Transactions</h2>
@@ -86,7 +86,7 @@ const AdminPayments = {
       </div>
 
       <!-- Verification Queue Tab -->
-      <div id="verification-tab" >
+      <div id="verification-tab" style="display: none">
         <div class="admin-card">
           <div class="admin-card-header">
             <h2 class="admin-card-title">Payment Verification Queue</h2>
@@ -100,7 +100,7 @@ const AdminPayments = {
       </div>
 
       <!-- Refunds Tab -->
-      <div id="refunds-tab" >
+      <div id="refunds-tab" style="display: none">
         <div class="admin-card">
           <div class="admin-card-header">
             <h2 class="admin-card-title">Refund Management</h2>
@@ -114,7 +114,7 @@ const AdminPayments = {
       </div>
 
       <!-- Analytics Tab -->
-      <div id="analytics-tab" >
+      <div id="analytics-tab" style="display: none">
         <div class="metrics-grid" id="payment-metrics">
           ${AdminComponents.spinner({ text: 'Loading analytics...' })}
         </div>
@@ -148,11 +148,13 @@ const AdminPayments = {
 
     // Hide all tabs
     ['transactions', 'verification', 'refunds', 'analytics'].forEach(t => {
-      document.getElementById(`${t}-tab`)
+      const el = document.getElementById(`${t}-tab`);
+      if (el) el.style.display = 'none';
     });
 
     // Show selected tab
-    document.getElementById(`${tab}-tab`)
+    const activeTab = document.getElementById(`${tab}-tab`);
+    if (activeTab) activeTab.style.display = 'block';
 
     // Update buttons
     document.querySelectorAll('#payments-page .btn').forEach(btn => {
@@ -436,7 +438,7 @@ const AdminPayments = {
       if (data.success) {
         this.renderAnalyticsMetrics(data.data);
         this.renderProviderChart(data.data.byProvider || []);
-        this.renderSuccessRateChart(data.data.successRate || []);
+        this.renderSuccessRateChart(data.data.successRateDaily || []);
       }
 
     } catch (error) {

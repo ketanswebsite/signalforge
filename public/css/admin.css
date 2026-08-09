@@ -215,6 +215,9 @@
 .admin-portal .toggle-switch input:checked + .toggle-slider:before{transform:translateX(20px);background:var(--gain)}
 
 /* Bootstrap-style modal markup used by the report/audit dialogs */
+/* AdminComponents.modal inserts .modal-overlay without the app shell's
+   .active class — inside the portal an inserted overlay is always shown */
+.admin-portal .modal-overlay{display:flex;animation:sa-fadein var(--dur-2) var(--ease-out)}
 .admin-portal .modal-backdrop{position:fixed;inset:0;background:var(--scrim);z-index:var(--z-scrim)}
 .admin-portal .modal-dialog{position:fixed;inset:0;margin:auto;height:fit-content;max-height:88vh;width:100%;max-width:560px;background:var(--surface);border:2.5px solid var(--frame);box-shadow:var(--shadow-pop);display:flex;flex-direction:column;overflow:hidden;z-index:calc(var(--z-scrim) + 1)}
 .admin-portal .modal-dialog.modal-lg{max-width:760px}

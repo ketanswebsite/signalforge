@@ -38,7 +38,7 @@ const AdminComponents = {
     if (data.length === 0) {
       return `
         <div class="data-table-empty">
-          <div class="empty-icon">📋</div>
+          <div class="empty-icon"></div>
           <p>${emptyMessage}</p>
         </div>
       `;
@@ -50,7 +50,10 @@ const AdminComponents = {
     const rows = data.map(row => {
       const cells = columns.map(col => {
         const value = col.render ? col.render(row[col.key], row) : row[col.key];
-        return `<td data-label="${col.label}">${value || '-'}</td>`;
+        // Labels can be HTML (e.g. the select-all checkbox) — a data-label
+        // attribute must carry plain text only or the markup breaks
+        const plainLabel = String(col.label || '').replace(/<[^>]*>/g, '').replace(/"/g, '&quot;');
+        return `<td data-label="${plainLabel}">${value || '-'}</td>`;
       }).join('');
 
       const actionButtons = actions.map(action => {
@@ -140,9 +143,9 @@ const AdminComponents = {
    */
   alert({ type = 'info', message, dismissible = true, icon, autoDismiss = 0 }) {
     const icons = {
-      success: '✓',
-      error: '✗',
-      warning: '⚠',
+      success: '',
+      error: '',
+      warning: '',
       info: 'ℹ'
     };
 
@@ -410,14 +413,16 @@ const AdminComponents = {
     };
 
     const symbol = symbols[currency] || currency;
-    return `${symbol}${parseFloat(amount).toFixed(2)}`;
+    const value = Number(amount);
+    return `${symbol}${(Number.isFinite(value) ? value : 0).toFixed(2)}`;
   },
 
   /**
    * Format number
    */
   formatNumber(num) {
-    return new Intl.NumberFormat().format(num);
+    const value = Number(num);
+    return new Intl.NumberFormat().format(Number.isFinite(value) ? value : 0);
   }
 };
 

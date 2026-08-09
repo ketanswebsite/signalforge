@@ -74,6 +74,11 @@ function isAdmin(email) {
  * Middleware: Ensure user is authenticated admin (for HTML pages)
  */
 function ensureAdmin(req, res, next) {
+  // Local development bypass — inert unless explicitly enabled and never in production
+  if (process.env.ADMIN_DEV_BYPASS === 'true' && process.env.NODE_ENV !== 'production') {
+    req.adminUser = { email: process.env.ADMIN_EMAIL || 'ketanjoshisahs@gmail.com', name: 'Dev admin', role: 'super_admin' };
+    return next();
+  }
   // Check session-based auth first
   if (req.user && isAdmin(req.user.email)) {
     req.adminUser = {
@@ -137,6 +142,11 @@ function ensureAdmin(req, res, next) {
  * Middleware: Ensure user is authenticated admin (for API endpoints)
  */
 function ensureAdminAPI(req, res, next) {
+  // Local development bypass — inert unless explicitly enabled and never in production
+  if (process.env.ADMIN_DEV_BYPASS === 'true' && process.env.NODE_ENV !== 'production') {
+    req.adminUser = { email: process.env.ADMIN_EMAIL || 'ketanjoshisahs@gmail.com', name: 'Dev admin', role: 'super_admin' };
+    return next();
+  }
   // Check session-based auth first
   if (req.user && isAdmin(req.user.email)) {
     req.adminUser = {

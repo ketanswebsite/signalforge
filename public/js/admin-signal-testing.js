@@ -342,7 +342,13 @@ const AdminSignalTesting = {
      */
     renderPendingSignals(data) {
         if (!data.signals || data.signals.length === 0) {
-            return '<div class="alert alert-info">No signals found matching the selected filters.</div>';
+            const others = data.grouped && data.grouped.byStatus
+                ? Object.entries(data.grouped.byStatus).map(([s, n]) => `${n} ${s}`).join(', ')
+                : '';
+            if (others) {
+                return `<div class="alert alert-info">Nothing matches these filters — the queue holds ${others}. Switch the status filter to see them.</div>`;
+            }
+            return '<div class="alert alert-info">The signal queue is empty right now. The scanner stores new signals after its 7 AM UK run; they execute at 1 PM market time and leave the queue.</div>';
         }
 
         let html = `
@@ -421,47 +427,60 @@ const AdminSignalTesting = {
     },
 
     /**
+     * Render a table of auto-executed trades (today's or recent)
+     */
+    renderTradesTable(trades) {
+        let html = `
+            <table class="signals-table">
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Market</th>
+                        <th>Entered</th>
+                        <th>Entry Price</th>
+                        <th>Trade Size</th>
+                        <th>Win Rate</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        trades.forEach(trade => {
+            const entered = new Date(trade.entry_date).toLocaleString();
+            html += `
+                <tr>
+                    <td><strong>${trade.symbol}</strong></td>
+                    <td>${trade.market}</td>
+                    <td>${entered}</td>
+                    <td>${formatNumber(trade.entry_price, 2)}</td>
+                    <td>${formatNumber(trade.trade_size, 0)}</td>
+                    <td>${formatNumber(trade.win_rate, 1)}%</td>
+                </tr>
+            `;
+        });
+
+        html += `
+                </tbody>
+            </table>
+        `;
+        return html;
+    },
+
+    /**
      * Render execution logs
      */
     renderExecutionLogs(data) {
         let html = `<h4>Today's Auto-Added Trades (${data.today})</h4>`;
 
         if (!data.todayTrades || data.todayTrades.length === 0) {
-            html += '<div class="alert alert-info">No trades executed today yet.</div>';
+            if (data.recentTrades && data.recentTrades.length > 0) {
+                html += '<div class="alert alert-info">Nothing executed today — executions happen at 1 PM market time on trading days. The most recent auto-executions:</div>';
+                html += this.renderTradesTable(data.recentTrades);
+            } else {
+                html += '<div class="alert alert-info">No auto-executed trades in the last 7 days. Trades appear here after the 1 PM execution run books a pending signal.</div>';
+            }
         } else {
-            html += `
-                <table class="signals-table">
-                    <thead>
-                        <tr>
-                            <th>Symbol</th>
-                            <th>Market</th>
-                            <th>Entry Time</th>
-                            <th>Entry Price</th>
-                            <th>Trade Size</th>
-                            <th>Win Rate</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-
-            data.todayTrades.forEach(trade => {
-                const entryTime = new Date(trade.entry_date).toLocaleTimeString();
-                html += `
-                    <tr>
-                        <td><strong>${trade.symbol}</strong></td>
-                        <td>${trade.market}</td>
-                        <td>${entryTime}</td>
-                        <td>${formatNumber(trade.entry_price, 2)}</td>
-                        <td>${formatNumber(trade.trade_size, 0)}</td>
-                        <td>${formatNumber(trade.win_rate, 1)}%</td>
-                    </tr>
-                `;
-            });
-
-            html += `
-                    </tbody>
-                </table>
-            `;
+            html += this.renderTradesTable(data.todayTrades);
         }
 
         if (data.executionLogs && data.executionLogs.length >0) {
@@ -479,7 +498,7 @@ const AdminSignalTesting = {
                         <div class="log-card-body">
                             <div>Total: ${log.summary?.total || 0}</div>
                             <div>Executed: ${log.summary?.executed || 0}</div>
-                            <div>⊗ Skipped: ${log.summary?.skipped || 0}</div>
+                            <div>Skipped: ${log.summary?.skipped || 0}</div>
                             <div>Failed: ${log.summary?.failed || 0}</div>
                         </div>
                     </div>

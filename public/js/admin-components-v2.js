@@ -174,9 +174,9 @@ const AdminComponentsV2 = {
     action = null
   }) {
     const icons = {
-      success: '✓',
-      error: '✗',
-      warning: '⚠',
+      success: '',
+      error: '',
+      warning: '',
       info: 'ℹ'
     };
 

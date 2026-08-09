@@ -177,16 +177,16 @@ const AdminChartsV2 = {
       controlsContainer.innerHTML = `
         <div class="chart-controls-group">
           <button class="btn btn-sm btn-secondary chart-btn" data-action="reset" title="Reset Zoom">
-            🔄 Reset
+             Reset
           </button>
           <button class="btn btn-sm btn-secondary chart-btn" data-action="export-png" title="Export as PNG">
-            📷 PNG
+             PNG
           </button>
           <button class="btn btn-sm btn-secondary chart-btn" data-action="export-csv" title="Export Data as CSV">
-            📊 CSV
+             CSV
           </button>
           <button class="btn btn-sm btn-secondary chart-btn" data-action="toggle-animation" title="Toggle Animations">
-            ⚡ Animate
+             Animate
           </button>
         </div>
       `;

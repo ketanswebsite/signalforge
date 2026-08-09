@@ -621,6 +621,9 @@ app.get('/api/test-admin', ensureAuthenticatedAPI, async (req, res) => {
 // The admin portal (public/admin-v2.html) — /admin is the only admin URL;
 // the legacy /admin-portal and /admin-v2 paths redirect here.
 app.get('/admin', ensureAuthenticated, (req, res) => {
+  if (process.env.ADMIN_DEV_BYPASS === 'true' && process.env.NODE_ENV !== 'production') {
+    return res.sendFile(path.join(__dirname, 'public', 'admin-v2.html'));
+  }
   if (req.user?.email !== ADMIN_EMAIL) {
     return res.status(403).send('Access denied. Admin privileges required.');
   }
@@ -2686,11 +2689,29 @@ app.get('/api/admin/execution-logs', ensureAuthenticatedAPI, async (req, res) =>
       ORDER BY entry_date DESC
     `, [today]);
 
+    // Recent auto-executions (last 7 days) — shown when today is quiet
+    const recentTrades = await TradeDB.pool.query(`
+      SELECT
+        symbol,
+        market,
+        entry_date,
+        entry_price,
+        trade_size,
+        win_rate,
+        signal_date
+      FROM trades
+      WHERE entry_date >= NOW() - INTERVAL '7 days'
+        AND auto_added = true
+      ORDER BY entry_date DESC
+      LIMIT 25
+    `);
+
     res.json({
       success: true,
       today,
       executionLogs: logs,
-      todayTrades: todayTrades.rows
+      todayTrades: todayTrades.rows,
+      recentTrades: recentTrades.rows
     });
   } catch (error) {
     console.error('Error fetching execution logs:', error);

@@ -816,7 +816,7 @@ router.get('/payment-analytics', asyncHandler(async (req, res) => {
     successRateChange: '+2%',
     refundRateChange: '-1%',
     byProvider: providerResult.rows,
-    successRate: successRateResult.rows
+    successRateDaily: successRateResult.rows
   }));
 }));
 
@@ -1942,13 +1942,50 @@ router.post('/system/trigger-scan', asyncHandler(async (req, res) => {
 }));
 
 router.get('/system/health', asyncHandler(async (req, res) => {
+  const mem = process.memoryUsage();
+  const dbConnected = TradeDB.isConnected();
+  const heapPercent = mem.heapTotal > 0 ? (mem.heapUsed / mem.heapTotal) * 100 : 0;
+  const uptimeSec = process.uptime();
+  const fmtUptime = `${Math.floor(uptimeSec / 3600)}h ${Math.floor((uptimeSec % 3600) / 60)}m`;
+
+  // Named checks — the admin Health Monitor renders these directly
+  const checks = [
+    {
+      name: 'Database connection',
+      status: dbConnected ? 'pass' : 'fail',
+      message: dbConnected ? 'PostgreSQL pool responding' : 'Pool not connected'
+    },
+    {
+      name: 'Memory pressure',
+      status: heapPercent < 90 ? 'pass' : 'fail',
+      message: `Heap ${Math.round(mem.heapUsed / 1048576)}MB of ${Math.round(mem.heapTotal / 1048576)}MB (${heapPercent.toFixed(0)}%)`
+    },
+    {
+      name: 'Server uptime',
+      status: 'pass',
+      message: `Up ${fmtUptime}`
+    },
+    {
+      name: 'Admin event stream',
+      status: 'pass',
+      message: `${sseHandler.getConnectionCount()} live connection(s)`
+    }
+  ];
+
+  const warnings = [];
+  if (heapPercent >= 75 && heapPercent < 90) warnings.push(`Heap usage at ${heapPercent.toFixed(0)}% — keep an eye on memory`);
+  if (!dbConnected) warnings.push('Database pool is not connected — most admin data will fail to load');
+
   const health = {
-    status: 'healthy',
+    status: dbConnected ? 'healthy' : 'degraded',
+    overall: checks.some(c => c.status === 'fail') ? 'degraded' : 'healthy',
+    checks,
+    warnings,
     timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    memory: process.memoryUsage(),
+    uptime: uptimeSec,
+    memory: mem,
     database: {
-      connected: TradeDB.isConnected()
+      connected: dbConnected
     },
     sse: {
       activeConnections: sseHandler.getConnectionCount()

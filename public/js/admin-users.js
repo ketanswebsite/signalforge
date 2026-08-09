@@ -48,7 +48,9 @@ const AdminUsers = {
    * Render user management UI
    */
   render() {
-    const container = document.getElementById('users-page');
+    // Render into the dedicated root so the Complimentary Access section
+    // (a sibling inside users-page) survives; fall back for older markup.
+    const container = document.getElementById('users-management-root') || document.getElementById('users-page');
     const state = this.pagination ? this.pagination.getState() : { searchQuery: '', filterStatus: 'all' };
     container.innerHTML = `
       <!-- Header with Actions -->

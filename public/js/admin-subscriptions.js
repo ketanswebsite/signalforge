@@ -49,7 +49,7 @@ const AdminSubscriptions = {
       </div>
 
       <!-- Plans Tab -->
-      <div id="plans-tab" >
+      <div id="plans-tab">
         <div class="admin-card">
           <div class="admin-card-header flex-between">
             <h2 class="admin-card-title">Subscription Plans</h2>
@@ -66,7 +66,7 @@ const AdminSubscriptions = {
       </div>
 
       <!-- Subscriptions Tab -->
-      <div id="subscriptions-tab" >
+      <div id="subscriptions-tab" style="display: none">
         <div class="admin-card">
           <div class="admin-card-header flex-between">
             <h2 class="admin-card-title">Active Subscriptions</h2>
@@ -90,7 +90,7 @@ const AdminSubscriptions = {
       </div>
 
       <!-- Analytics Tab -->
-      <div id="analytics-tab" >
+      <div id="analytics-tab" style="display: none">
         <div class="metrics-grid" id="sub-metrics">
           ${AdminComponents.spinner({ text: 'Loading analytics...' })}
         </div>
@@ -125,12 +125,14 @@ const AdminSubscriptions = {
     this.currentTab = tab;
 
     // Hide all tabs
-    document.getElementById('plans-tab')
-    document.getElementById('subscriptions-tab')
-    document.getElementById('analytics-tab')
+    ['plans', 'subscriptions', 'analytics'].forEach(t => {
+      const el = document.getElementById(`${t}-tab`);
+      if (el) el.style.display = 'none';
+    });
 
     // Show selected tab
-    document.getElementById(`${tab}-tab`)
+    const activeTab = document.getElementById(`${tab}-tab`);
+    if (activeTab) activeTab.style.display = 'block';
 
     // Update buttons
     document.querySelectorAll('#subscriptions-page .btn').forEach(btn => {

@@ -105,15 +105,15 @@ const AdminTablesV2 = {
         <div class="table-actions-right">
           ${table.config.exportable ? `
             <button class="btn btn-sm btn-secondary" data-action="export-csv">
-              📊 Export CSV
+               Export CSV
             </button>
             <button class="btn btn-sm btn-secondary" data-action="export-excel">
-              📗 Export Excel
+               Export Excel
             </button>
           ` : ''}
           <div class="column-manager">
             <button class="btn btn-sm btn-secondary" data-action="toggle-columns">
-              ⚙️ Columns
+               Columns
             </button>
             <div class="column-manager-dropdown" id="${table.id}-column-manager">
               ${table.config.columns.map(col => `
