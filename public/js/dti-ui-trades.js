@@ -168,15 +168,36 @@ function displayBuyingOpportunities() {
         return;
     }
 
-    // Rank every setup by how often similar ones worked
+    // Only strong records (win rate > 75%) get shown — same bar as the
+    // performance modal and the Telegram "high conviction" alerts.
     const stockWinRates = DTIUI.calculateStockWinRates();
-    const ranked = DTIBacktester.activeTradeOpportunities.slice().sort((a, b) =>
-        (stockWinRates[b.stock.symbol] || 0) - (stockWinRates[a.stock.symbol] || 0));
+    const allFound = DTIBacktester.activeTradeOpportunities.length;
+    const ranked = DTIBacktester.activeTradeOpportunities
+        .filter(opp => (stockWinRates[opp.stock.symbol] || 0) > 75)
+        .sort((a, b) => (stockWinRates[b.stock.symbol] || 0) - (stockWinRates[a.stock.symbol] || 0));
+
+    if (ranked.length === 0) {
+        const empty = saEl('div', 'sa-empty');
+        const iconBox = saEl('div', 'sa-empty__icon');
+        const iconGlyph = saEl('span', 'material-symbols-rounded', 'radar');
+        iconGlyph.setAttribute('aria-hidden', 'true');
+        iconBox.appendChild(iconGlyph);
+        empty.appendChild(iconBox);
+        empty.appendChild(saEl('div', 'sa-empty__title', 'No strong records today'));
+        empty.appendChild(saEl('p', null,
+            'The scan found ' + allFound + (allFound === 1 ? ' setup' : ' setups') + ' in ' + scanTypeName +
+            ', but none with the strong five-year record the formula insists on. The formula waits.'));
+        opportunitiesContainer.replaceChildren(empty);
+        requestAnimationFrame(() => {
+            opportunitiesContainer.classList.add('revealed');
+        });
+        return;
+    }
 
     const frag = document.createDocumentFragment();
     frag.appendChild(saEl('div', 'sc-results-meta',
-        ranked.length + (ranked.length === 1 ? ' setup' : ' setups') + ' found in ' + scanTypeName +
-        '. The strongest record comes first.'));
+        ranked.length + (ranked.length === 1 ? ' setup' : ' setups') + ' with a strong record found in ' + scanTypeName +
+        '. Every card here won more than 75% of its backtested trades.'));
 
     if (scanType !== 'current') {
         const counts = {};
@@ -399,10 +420,11 @@ function displayBuyingOpportunities() {
                     console.log('[VIEW DETAILS DEBUG] Showing success notification');
                     DTIBacktester.utils.showNotification(`Loaded ${symbol} successfully`, 'success');
 
-                    // Scroll to top on mobile to see the results
-                    if (window.innerWidth <= 768) {
-                        console.log('[VIEW DETAILS DEBUG] Scrolling to top (mobile)');
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    // The charts live below the fold — bring them into view so
+                    // the loaded backtest is actually seen (all viewports).
+                    const chartSection = document.querySelector('.chart-section');
+                    if (chartSection) {
+                        chartSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
 
                     console.log('[VIEW DETAILS DEBUG] View Details workflow completed successfully');

@@ -65,9 +65,105 @@
       return;
     }
 
+    var formulaBtn = e.target.closest('[data-formula-info]');
+    if (formulaBtn) {
+      closeUserMenu();
+      openFormulaModal();
+      return;
+    }
+
     // Any other click closes an open user menu
     if (!e.target.closest('.app-usermenu')) closeUserMenu();
   });
+
+  // ---------- "How the formula works" — in-app explainer, no page leave ----------
+  function fmEl(tag, className, text) {
+    var node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined && text !== null) node.textContent = text;
+    return node;
+  }
+
+  function fmSection(title, lines) {
+    var box = fmEl('div', 'fm-section');
+    box.appendChild(fmEl('h4', 'fm-section__title', title));
+    lines.forEach(function (line) {
+      box.appendChild(fmEl('p', 'fm-section__body', line));
+    });
+    return box;
+  }
+
+  function openFormulaModal() {
+    var existing = document.getElementById('formula-modal');
+    if (existing) {
+      existing.classList.add('active');
+      return;
+    }
+
+    var overlay = fmEl('div', 'modal-overlay');
+    overlay.id = 'formula-modal';
+
+    var content = fmEl('div', 'modal-content fm-modal');
+
+    var header = fmEl('div', 'modal-header');
+    header.appendChild(fmEl('h2', 'modal-title', 'How the formula works'));
+    var close = fmEl('button', 'modal-close', '×');
+    close.type = 'button';
+    close.setAttribute('aria-label', 'Close');
+    header.appendChild(close);
+    content.appendChild(header);
+
+    var body = fmEl('div', 'modal-body');
+    body.appendChild(fmSection('The setup it hunts', [
+      'The scanner watches one momentum reading (the DTI) on every stock on your watchlist. ' +
+      'A setup starts when the daily reading turns up from below its trigger — and it only counts ' +
+      'when the same check on the weekly chart agrees.'
+    ]));
+    body.appendChild(fmSection('The record it insists on', [
+      'Before a signal reaches you, the formula replays five years of that stock’s history. ' +
+      'Only stocks where the identical setup made money more than 75% of the time — a strong ' +
+      'record — get shown.'
+    ]));
+    body.appendChild(fmSection('The exit rule (it never changes)', [
+      'Every position sells at whichever comes first: the +8% target, the −5% stop, or the 30-day clock. ' +
+      'No judgement calls, no holding and hoping.'
+    ]));
+    body.appendChild(fmSection('The AI check on top', [
+      'Each signal can be put through three further checks — how the price has been behaving (45%), ' +
+      'what the business earns and owes (30%), and what the news said in the last 30 days (25%). ' +
+      'They blend into one confidence score: above 6 is a GO, 5–6 a WATCH, below 5 a PASS.'
+    ]));
+    var legal = fmEl('p', 'fm-legal',
+      'Educational tool, not investment advice. Past performance is not a reliable indicator of future results. ' +
+      'Your capital is at risk.');
+    body.appendChild(legal);
+    content.appendChild(body);
+
+    var footer = fmEl('div', 'modal-footer');
+    var ok = fmEl('button', 'btn btn-primary', 'Got it');
+    ok.type = 'button';
+    footer.appendChild(ok);
+    content.appendChild(footer);
+
+    overlay.appendChild(content);
+    document.body.appendChild(overlay);
+
+    function closeModal() {
+      overlay.classList.remove('active');
+    }
+    close.addEventListener('click', closeModal);
+    ok.addEventListener('click', closeModal);
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) closeModal();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    setTimeout(function () {
+      overlay.classList.add('active');
+    }, 10);
+  }
 
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') closeUserMenu();

@@ -960,8 +960,10 @@ class AccountPage {
 
     renderAdminStatus() {
         const frag = acEl('div', 'ac-adminwrap');
+        const adminLink = acEl('a', 'sa-btn sa-btn--primary sa-btn--sm', 'Open the admin portal');
+        adminLink.href = '/admin-v2';
         frag.appendChild(acCallout('gain', 'shield_person', 'Admin access',
-            'Full access to everything, with nothing to renew.'));
+            'Full access to everything, with nothing to renew.', adminLink));
         const grid = acEl('div', 'ac-statgrid');
         grid.appendChild(acStat('Current plan', 'Administrator', 'Every feature, every market.', { small: true }));
         grid.appendChild(acStat('Days left', '\u221e', 'Admin access does not expire.', { small: true }));

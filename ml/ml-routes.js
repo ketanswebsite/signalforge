@@ -65,6 +65,260 @@ router.get('/analysis/:symbol', ensureSubscriptionActive, async (req, res) => {
     }
 });
 
+// ---------------------------------------------------------------------------
+// Conviction check — same framework as the external Claude analysis routine:
+// three pillars scored 1-10, blended Technical 45% / Fundamental 30% /
+// Information 25% into CONFIDENCE (>6 GO, 5-6 WATCH, <5 PASS).
+// Momentum counts positive; stop-vs-ADR fit is a moderator, not a veto.
+// Missing fundamentals = neutral 5. Earnings inside the 30-day news window
+// caps the information pillar. Backtest win rate is context only, never scored.
+// ---------------------------------------------------------------------------
+
+const cheerio = require('cheerio');
+const Sentiment = require('sentiment');
+const headlineSentiment = new Sentiment();
+
+const convictionCache = new Map();          // symbol → {expires, payload}
+const CONVICTION_TTL_MS = 15 * 60 * 1000;
+
+let yahooSession = null;                    // {cookie, crumb, expires}
+
+const YAHOO_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
+
+async function getYahooSession() {
+    if (yahooSession && yahooSession.expires > Date.now()) return yahooSession;
+    const probe = await axios.get('https://fc.yahoo.com', {
+        headers: { 'User-Agent': YAHOO_UA },
+        validateStatus: () => true,
+        timeout: 15000
+    });
+    const setCookie = probe.headers['set-cookie'] || [];
+    const cookie = setCookie.map(c => c.split(';')[0]).join('; ');
+    if (!cookie) throw new Error('No Yahoo cookie');
+    const crumbRes = await axios.get('https://query1.finance.yahoo.com/v1/test/getcrumb', {
+        headers: { 'User-Agent': YAHOO_UA, 'Cookie': cookie },
+        timeout: 15000
+    });
+    const crumb = typeof crumbRes.data === 'string' ? crumbRes.data.trim() : '';
+    if (!crumb || crumb.includes('<')) throw new Error('No Yahoo crumb');
+    yahooSession = { cookie, crumb, expires: Date.now() + 30 * 60 * 1000 };
+    return yahooSession;
+}
+
+const clampScore = v => Math.round(Math.max(1, Math.min(10, v)) * 10) / 10;
+const pct = v => (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
+
+async function scoreTechnical(symbol) {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}`;
+    const { data } = await axios.get(url, {
+        params: { range: '6mo', interval: '1d' },
+        headers: { 'User-Agent': YAHOO_UA, 'Accept': 'application/json' },
+        timeout: 20000
+    });
+    const result = data && data.chart && data.chart.result && data.chart.result[0];
+    if (!result || !result.indicators.quote[0]) throw new Error('No price history');
+    const q = result.indicators.quote[0];
+    const bars = [];
+    for (let i = 0; i < (result.timestamp || []).length; i++) {
+        if (q.close[i] != null && q.high[i] != null && q.low[i] != null) {
+            bars.push({ close: q.close[i], high: q.high[i], low: q.low[i] });
+        }
+    }
+    if (bars.length < 55) throw new Error('Not enough price history');
+
+    const last = bars[bars.length - 1].close;
+    const at = n => bars[bars.length - 1 - n].close;
+    const mom21 = (last / at(21) - 1) * 100;
+    const mom5 = (last / at(5) - 1) * 100;
+    const ma50 = bars.slice(-50).reduce((s, b) => s + b.close, 0) / 50;
+    const vsMa50 = (last / ma50 - 1) * 100;
+    const adr20 = bars.slice(-20).reduce((s, b) => s + (b.high - b.low) / b.close, 0) / 20 * 100;
+    const stopFitDays = adr20 > 0 ? 5 / adr20 : 99;
+
+    let score = 5;
+    const evidence = [];
+    if (mom21 > 6) score += 2; else if (mom21 > 2) score += 1;
+    else if (mom21 < -6) score -= 2; else if (mom21 < -2) score -= 1;
+    evidence.push(`21-day move ${pct(mom21)}`);
+    if (mom5 > 2) score += 1; else if (mom5 < -2) score -= 1;
+    evidence.push(`5-day move ${pct(mom5)}`);
+    if (vsMa50 > 2) score += 1; else if (vsMa50 < -2) score -= 1;
+    evidence.push(`Price ${pct(vsMa50)} vs its 50-day average`);
+    // Moderator, not a veto: how many typical days' range sits before the −5% stop
+    if (stopFitDays < 1.25) score -= 1; else if (stopFitDays > 2.5) score += 0.5;
+    evidence.push(`Typical daily range ${adr20.toFixed(1)}% — the −5% stop is ~${stopFitDays.toFixed(1)} days of range`);
+
+    return { score: clampScore(score), evidence };
+}
+
+async function scoreFundamental(symbol) {
+    const neutral = { score: 5, evidence: ['Fundamental data unavailable — scored neutral (5)'] };
+    let summary;
+    try {
+        const session = await getYahooSession();
+        const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(symbol)}`;
+        const { data } = await axios.get(url, {
+            params: { modules: 'summaryDetail,financialData,defaultKeyStatistics', crumb: session.crumb },
+            headers: { 'User-Agent': YAHOO_UA, 'Cookie': session.cookie, 'Accept': 'application/json' },
+            timeout: 20000
+        });
+        summary = data && data.quoteSummary && data.quoteSummary.result && data.quoteSummary.result[0];
+    } catch (e) {
+        return neutral;
+    }
+    if (!summary) return neutral;
+
+    const raw = v => (v && typeof v.raw === 'number') ? v.raw : null;
+    const fin = summary.financialData || {};
+    const det = summary.summaryDetail || {};
+    const margins = raw(fin.profitMargins);
+    const revGrowth = raw(fin.revenueGrowth);
+    const roe = raw(fin.returnOnEquity);
+    const de = raw(fin.debtToEquity);            // already in percent (e.g. 82.4)
+    const trailingPE = raw(det.trailingPE);
+    const forwardPE = raw(det.forwardPE) || raw(fin.forwardPE);
+
+    if ([margins, revGrowth, roe, de, trailingPE, forwardPE].every(v => v === null)) return neutral;
+
+    let score = 5;
+    const evidence = [];
+    if (margins !== null) {
+        if (margins > 0.10) score += 1; else if (margins < 0) score -= 1.5;
+        evidence.push(`Profit margin ${(margins * 100).toFixed(1)}%`);
+    }
+    if (revGrowth !== null) {
+        if (revGrowth > 0.08) score += 1; else if (revGrowth < 0) score -= 1;
+        evidence.push(`Revenue growth ${pct(revGrowth * 100)}`);
+    }
+    if (roe !== null) {
+        if (roe > 0.15) score += 1;
+        evidence.push(`Return on equity ${(roe * 100).toFixed(1)}%`);
+    }
+    if (de !== null) {
+        if (de < 80) score += 0.5; else if (de > 200) score -= 1;
+        evidence.push(`Debt/equity ${de.toFixed(0)}%`);
+    }
+    if (trailingPE !== null && forwardPE !== null && forwardPE < trailingPE) {
+        score += 0.5;
+        evidence.push(`Forward P/E ${forwardPE.toFixed(1)} under trailing ${trailingPE.toFixed(1)} — earnings expected to grow`);
+    } else if (trailingPE !== null) {
+        evidence.push(`Trailing P/E ${trailingPE.toFixed(1)}`);
+    }
+    if (trailingPE !== null && trailingPE > 60) score -= 0.5;
+
+    return { score: clampScore(score), evidence };
+}
+
+async function scoreInformation(symbol, name) {
+    const market = symbol.endsWith('.NS') ? { hl: 'en-IN', gl: 'IN', ceid: 'IN:en' }
+        : symbol.endsWith('.L') ? { hl: 'en-GB', gl: 'GB', ceid: 'GB:en' }
+        : { hl: 'en-US', gl: 'US', ceid: 'US:en' };
+    const cleanName = (name || symbol.replace(/\.(NS|L)$/, ''))
+        .replace(/\b(plc|ltd|limited|inc|corp|corporation|group)\b\.?/gi, '').trim();
+    const query = `"${cleanName}" stock when:30d`;
+
+    let items = [];
+    try {
+        const { data } = await axios.get('https://news.google.com/rss/search', {
+            params: { q: query, hl: market.hl, gl: market.gl, ceid: market.ceid },
+            headers: { 'User-Agent': YAHOO_UA },
+            timeout: 20000
+        });
+        const $ = cheerio.load(data, { xmlMode: true });
+        const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+        $('item').each((_, el) => {
+            const title = $(el).find('title').first().text().trim();
+            const pub = new Date($(el).find('pubDate').first().text());
+            if (title && !isNaN(pub) && pub.getTime() >= cutoff) {
+                items.push({ title, date: pub });
+            }
+        });
+        items = items.slice(0, 12);
+    } catch (e) {
+        return { score: 5, evidence: ['News feed unavailable — scored neutral (5)'], headlines: [], earningsCap: false };
+    }
+
+    if (items.length === 0) {
+        return { score: 5, evidence: ['No notable headlines in the last 30 days — neutral'], headlines: [], earningsCap: false };
+    }
+
+    let pos = 0, neg = 0;
+    const earningsRe = /\b(earnings|results|q[1-4]|quarterly|half-year|interim|trading update|guidance)\b/i;
+    let earningsSoon = false;
+    const headlines = items.map(it => {
+        const comparative = headlineSentiment.analyze(it.title).comparative;
+        const tone = comparative > 0.1 ? 'pos' : comparative < -0.1 ? 'neg' : 'neutral';
+        if (tone === 'pos') pos++; else if (tone === 'neg') neg++;
+        if (earningsRe.test(it.title)) earningsSoon = true;
+        return { title: it.title, date: it.date.toISOString().split('T')[0], tone };
+    });
+
+    let score = 5 + Math.max(-3, Math.min(3, pos - neg));
+    const evidence = [`${items.length} headlines in 30 days — ${pos} read positive, ${neg} negative`];
+    let earningsCap = false;
+    if (earningsSoon && score > 5) {
+        score = 5;
+        earningsCap = true;
+        evidence.push('Earnings/results inside the 30-day window — pillar capped at 5');
+    } else if (earningsSoon) {
+        evidence.push('Earnings/results inside the 30-day window');
+    }
+
+    return { score: clampScore(score), evidence, headlines: headlines.slice(0, 4), earningsCap };
+}
+
+/**
+ * GET /api/ml/conviction/:symbol?name=&winRate=
+ * Three-pillar conviction check for one screened stock.
+ */
+router.get('/conviction/:symbol', ensureSubscriptionActive, async (req, res) => {
+    try {
+        const symbol = req.params.symbol.toUpperCase();
+        const { name } = req.query;
+        const winRate = req.query.winRate !== undefined ? parseFloat(req.query.winRate) : null;
+
+        const cached = convictionCache.get(symbol);
+        if (cached && cached.expires > Date.now()) {
+            return res.json({ ...cached.payload, context: { ...cached.payload.context, winRate } });
+        }
+
+        const [technical, fundamental, information] = await Promise.all([
+            scoreTechnical(symbol),
+            scoreFundamental(symbol),
+            scoreInformation(symbol, name)
+        ]);
+
+        const confidence = Math.round(
+            (technical.score * 0.45 + fundamental.score * 0.30 + information.score * 0.25) * 10
+        ) / 10;
+        const verdict = confidence > 6 ? 'GO' : confidence >= 5 ? 'WATCH' : 'PASS';
+
+        const payload = {
+            success: true,
+            symbol,
+            name: name || symbol,
+            confidence,
+            verdict,
+            pillars: {
+                technical: { ...technical, weight: 45 },
+                fundamental: { ...fundamental, weight: 30 },
+                information: { ...information, weight: 25 }
+            },
+            context: {
+                winRate,
+                note: 'Backtest win rate is context only — it is never part of the score.'
+            },
+            generatedAt: new Date().toISOString()
+        };
+
+        convictionCache.set(symbol, { expires: Date.now() + CONVICTION_TTL_MS, payload });
+        res.json(payload);
+    } catch (error) {
+        console.error('Conviction check error:', error.message);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 /**
  * POST /api/ml/risk-params
  * Get optimal risk parameters for current market conditions

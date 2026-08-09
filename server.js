@@ -619,7 +619,7 @@ app.get('/api/test-admin', ensureAuthenticatedAPI, async (req, res) => {
 
 app.get('/admin', ensureAuthenticated, (req, res) => {
   // Check if user is admin
-  if (req.user.email !== ADMIN_EMAIL) {
+  if (req.user?.email !== ADMIN_EMAIL) {
     return res.status(403).send('Access denied. Admin privileges required.');
   }
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
@@ -628,7 +628,7 @@ app.get('/admin', ensureAuthenticated, (req, res) => {
 // New admin portal
 app.get('/admin-portal', ensureAuthenticated, (req, res) => {
   // Check if user is admin
-  if (req.user.email !== ADMIN_EMAIL) {
+  if (req.user?.email !== ADMIN_EMAIL) {
     return res.status(403).send('Access denied. Admin privileges required.');
   }
   res.sendFile(path.join(__dirname, 'public', 'admin-portal.html'));
@@ -637,7 +637,7 @@ app.get('/admin-portal', ensureAuthenticated, (req, res) => {
 // New admin portal v2 (revamped)
 app.get('/admin-v2', ensureAuthenticated, (req, res) => {
   // Check if user is admin
-  if (req.user.email !== ADMIN_EMAIL) {
+  if (req.user?.email !== ADMIN_EMAIL) {
     return res.status(403).send('Access denied. Admin privileges required.');
   }
   res.sendFile(path.join(__dirname, 'public', 'admin-v2.html'));

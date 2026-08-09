@@ -387,7 +387,17 @@ DTIUI.PerformanceModal = (function() {
         const isAllGlobalIndices = indexName === 'All Global Stocks';
         
         const metrics = calculatePerformanceMetrics(entryMonthTrades, allStocksData);
-        const { entryMonthName, currentMonthName, prevMonthName, nextMonthName, monthsAgo } = getEntryMonthRange();
+        const { entryMonthName, monthsAgo } = getEntryMonthRange();
+
+        // Build the three navigable months (oldest first: 4, 3, 2 months ago)
+        const now = new Date();
+        const monthTabs = [4, 3, 2].map(offset => {
+            const d = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+            const label = d.getFullYear() === now.getFullYear()
+                ? d.toLocaleDateString('en-US', { month: 'long' })
+                : d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+            return { offset, label };
+        });
         
         // Check if modal already exists
         let modalOverlay = document.getElementById('performance-modal-overlay');
@@ -462,38 +472,40 @@ DTIUI.PerformanceModal = (function() {
             tradesListHTML = `
                 <div class="performance-trades-sections">
                     <div class="performance-section high-conviction">
-                        <h4 class="performance-section-title">High Conviction Trades (${tradesWithWinRates.length})</h4>
-                        <table class="performance-trades-table">
+                        <h4 class="performance-section-title">The trades behind the numbers <span class="pm-count">${tradesWithWinRates.length}</span></h4>
+                        <div class="sa-table-wrap pm-tablewrap">
+                        <table class="sa-table performance-trades-table">
                             <thead>
                                 <tr>
                                     <th>Stock</th>
-                                    <th>Entry Date</th>
-                                    <th>Exit Date</th>
-                                    <th>Days Held</th>
-                                    <th>Exit Month</th>
-                                    <th>P/L %</th>
-                                    <th>Exit Reason</th>
+                                    <th>Bought on</th>
+                                    <th>Sold on</th>
+                                    <th class="num">Held</th>
+                                    <th>Exit month</th>
+                                    <th class="num">P/L</th>
+                                    <th>Why it sold</th>
                                     <th>Status</th>
-                                    <th>Win Rate</th>
+                                    <th class="num">Win rate</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 ${tradesWithWinRates.map(({ stock, trade, winRate }) => {
                                     return `
-                                    <tr class="${trade.plPercent >= 0 ? 'profit' : (trade.plPercent < 0 ? 'loss' : 'neutral')} ${trade.exitMonthClass}">
+                                    <tr>
                                         <td>${stock.name}</td>
                                         <td>${DTIBacktester.utils.formatDate(trade.entryDate)}</td>
                                         <td>${trade.exitDate ? DTIBacktester.utils.formatDate(trade.exitDate) : '-'}</td>
-                                        <td>${trade.holdingDays} days</td>
-                                        <td class="exit-month ${trade.exitMonthClass}">${trade.exitMonth}</td>
-                                        <td class="${trade.plPercent >= 0 ? 'profit' : (trade.plPercent < 0 ? 'loss' : 'neutral')}">${trade.plPercent ? trade.plPercent.toFixed(2) + '%' : '-'}</td>
-                                        <td>${trade.exitReason || 'Still Active'}</td>
-                                        <td class="status-${trade.status.toLowerCase().replace(' ', '-')}">${trade.status}</td>
-                                        <td>${winRate.toFixed(1)}%</td>
+                                        <td class="num">${trade.holdingDays}d</td>
+                                        <td>${trade.exitMonth}</td>
+                                        <td class="num ${trade.plPercent >= 0 ? 'gain' : (trade.plPercent < 0 ? 'loss' : '')}">${trade.plPercent ? trade.plPercent.toFixed(2) + '%' : '-'}</td>
+                                        <td>${trade.exitReason || 'Still active'}</td>
+                                        <td>${trade.status === 'Closed' ? 'Closed' : 'Still open'}</td>
+                                        <td class="num">${winRate.toFixed(1)}%</td>
                                     </tr>`;
                                 }).join('')}
                             </tbody>
                         </table>
+                        </div>
                     </div>
                 </div>
             `;
@@ -507,33 +519,23 @@ DTIUI.PerformanceModal = (function() {
         
         modalContent.innerHTML = `
             <div class="modal-header">
-                <h2>${isAllGlobalIndices ? 'High Conviction Trades' : 'Performance Report'}: ${entryMonthName} Entry Signals</h2>
-                <div class="month-navigation">
-                    ${prevMonthName ? `
-                        <button type="button" class="month-nav-btn" onclick="DTIUI.PerformanceModal.navigateMonth(${monthsAgo + 1})" title="View ${prevMonthName} signals">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="15 18 9 12 15 6"></polyline>
-                            </svg>
-                            ${prevMonthName}
-                        </button>
-                    ` : '<div class="month-nav-spacer"></div>'}
-
-                    <span class="current-month-label">${entryMonthName}</span>
-
-                    ${nextMonthName ? `
-                        <button type="button" class="month-nav-btn" onclick="DTIUI.PerformanceModal.navigateMonth(${monthsAgo - 1})" title="View ${nextMonthName} signals">
-                            ${nextMonthName}
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="9 18 15 12 9 6"></polyline>
-                            </svg>
-                        </button>
-                    ` : '<div class="month-nav-spacer"></div>'}
-                </div>
-                <button type="button" class="modal-close" onclick="DTIUI.PerformanceModal.closeModal()">
+                <h2 class="modal-title">${isAllGlobalIndices ? 'High conviction trades' : 'How past signals did'}</h2>
+                <button type="button" class="modal-close" onclick="DTIUI.PerformanceModal.closeModal()" aria-label="Close">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>
+                </button>
+            </div>
+            <div class="pm-months">
+                <button type="button" class="pm-months__arrow" onclick="DTIUI.PerformanceModal.navigateMonth(${monthsAgo + 1})" ${monthsAgo >= 4 ? 'disabled' : ''} aria-label="Earlier month">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <div class="pm-months__tabs" role="tablist" aria-label="Signal month">
+                    ${monthTabs.map(t => `<button type="button" role="tab" aria-selected="${t.offset === monthsAgo}" class="pm-months__tab${t.offset === monthsAgo ? ' is-active' : ''}" onclick="DTIUI.PerformanceModal.navigateMonth(${t.offset})">${t.label}</button>`).join('')}
+                </div>
+                <button type="button" class="pm-months__arrow" onclick="DTIUI.PerformanceModal.navigateMonth(${monthsAgo - 1})" ${monthsAgo <= 2 ? 'disabled' : ''} aria-label="Later month">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                 </button>
             </div>
             
