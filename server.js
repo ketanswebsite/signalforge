@@ -411,6 +411,88 @@ app.post('/api/scanner/run', (req, res) => {
   res.json({ success: true, started: true, note: 'Scan running in background — watch logs/Telegram. Typically 15-40 min.' });
 });
 
+// Token-guarded one-day trade reset (ops) — undoes a day's AUTO-ADDED bookings:
+// releases each trade's capital (P/L 0), deletes the trade, dismisses that
+// day's 'added' pending_signals, and removes that day's active HC-portfolio
+// rows. Manual trades are never touched. Built to unwind 2026-08-10 (the last
+// indicator-only day before the AI conviction gate); kept for future ops.
+app.post('/api/ops/reset-day-trades', async (req, res) => {
+  const token = req.query.token || req.get('x-analysis-token');
+  if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  try {
+    const date = req.query.date || new Date().toISOString().split('T')[0];
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({ error: 'date must be YYYY-MM-DD' });
+    }
+
+    const { rows: trades } = await TradeDB.pool.query(`
+      SELECT id, symbol, market, user_id, entry_price,
+             COALESCE(trade_size, investment_amount) AS size
+      FROM trades
+      WHERE status = 'active' AND auto_added = true AND signal_date = $1
+    `, [date]);
+
+    const deletedTrades = [];
+    for (const t of trades) {
+      if (t.size != null && parseFloat(t.size) > 0) {
+        await TradeDB.releaseCapital(t.market, parseFloat(t.size), 0, t.user_id);
+      }
+      await TradeDB.pool.query('DELETE FROM trades WHERE id = $1', [t.id]);
+      deletedTrades.push({ id: t.id, symbol: t.symbol, market: t.market, size: t.size != null ? parseFloat(t.size) : null });
+      console.log(`[RESET ${date}] Deleted trade ${t.id} ${t.symbol} (${t.market}), released ${t.size}`);
+    }
+
+    const { rows: dismissedSignals } = await TradeDB.pool.query(`
+      UPDATE pending_signals
+      SET status = 'dismissed', dismissed_at = CURRENT_TIMESTAMP
+      WHERE signal_date = $1 AND status = 'added'
+      RETURNING symbol
+    `, [date]);
+
+    const { rows: deletedHC } = await TradeDB.pool.query(`
+      DELETE FROM high_conviction_portfolio
+      WHERE signal_date = $1 AND status = 'active'
+      RETURNING symbol
+    `, [date]);
+
+    const userIds = [...new Set(trades.map(t => t.user_id))];
+    const capitalAfter = userIds.length > 0
+      ? (await TradeDB.pool.query(
+          `SELECT user_id, market, allocated_capital, available_capital, active_positions
+           FROM portfolio_capital WHERE user_id = ANY($1) ORDER BY market`, [userIds])).rows
+      : [];
+
+    console.log(`[RESET ${date}] Done: ${deletedTrades.length} trades, ${dismissedSignals.length} signals dismissed, ${deletedHC.length} HC rows`);
+    res.json({
+      success: true,
+      date,
+      deletedTrades,
+      signalsDismissed: dismissedSignals.map(r => r.symbol),
+      hcPositionsDeleted: deletedHC.map(r => r.symbol),
+      capitalAfter
+    });
+  } catch (error) {
+    console.error('[RESET] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Token-guarded manual EOD-summary trigger (ops/testing) — same job the
+// 7 PM UK cron runs. Fire-and-forget.
+app.post('/api/ops/eod-summary', (req, res) => {
+  const token = req.query.token || req.get('x-analysis-token');
+  if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  const eodSummary = require('./lib/portfolio/eod-summary');
+  eodSummary.sendEODSummary()
+    .then(r => console.log('[MANUAL EOD] finished:', JSON.stringify(r)))
+    .catch(e => console.error('[MANUAL EOD] failed:', e.message));
+  res.json({ success: true, started: true, note: 'EOD summary running in background — watch logs/Telegram.' });
+});
+
 // Protect all API routes except auth routes and telegram webhook
 app.use('/api', ensureAuthenticatedAPI);
 

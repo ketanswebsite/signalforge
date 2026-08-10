@@ -155,38 +155,37 @@ async function scoreFundamental(symbol) {
     return { score: clampScore(score), evidence };
 }
 
-async function scoreInformation(symbol, name) {
+/**
+ * Fetch recent Google News headlines for a stock with sentiment tones.
+ * Shared by the information pillar (30-day window) and the EOD portfolio
+ * summary (1-day window). Throws on feed failure — callers decide the
+ * degraded behavior.
+ * Returns { headlines: [{title, date, tone}], pos, neg, earningsSoon }.
+ */
+async function fetchRecentHeadlines(symbol, name, windowDays = 30) {
     const market = symbol.endsWith('.NS') ? { hl: 'en-IN', gl: 'IN', ceid: 'IN:en' }
         : symbol.endsWith('.L') ? { hl: 'en-GB', gl: 'GB', ceid: 'GB:en' }
         : { hl: 'en-US', gl: 'US', ceid: 'US:en' };
     const cleanName = (name || symbol.replace(/\.(NS|L)$/, ''))
         .replace(/\b(plc|ltd|limited|inc|corp|corporation|group)\b\.?/gi, '').trim();
-    const query = `"${cleanName}" stock when:30d`;
+    const query = `"${cleanName}" stock when:${windowDays}d`;
 
+    const { data } = await axios.get('https://news.google.com/rss/search', {
+        params: { q: query, hl: market.hl, gl: market.gl, ceid: market.ceid },
+        headers: { 'User-Agent': YAHOO_UA },
+        timeout: 20000
+    });
+    const $ = cheerio.load(data, { xmlMode: true });
+    const cutoff = Date.now() - windowDays * 24 * 60 * 60 * 1000;
     let items = [];
-    try {
-        const { data } = await axios.get('https://news.google.com/rss/search', {
-            params: { q: query, hl: market.hl, gl: market.gl, ceid: market.ceid },
-            headers: { 'User-Agent': YAHOO_UA },
-            timeout: 20000
-        });
-        const $ = cheerio.load(data, { xmlMode: true });
-        const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-        $('item').each((_, el) => {
-            const title = $(el).find('title').first().text().trim();
-            const pub = new Date($(el).find('pubDate').first().text());
-            if (title && !isNaN(pub) && pub.getTime() >= cutoff) {
-                items.push({ title, date: pub });
-            }
-        });
-        items = items.slice(0, 12);
-    } catch (e) {
-        return { score: 5, evidence: ['News feed unavailable — scored neutral (5)'], headlines: [], earningsCap: false };
-    }
-
-    if (items.length === 0) {
-        return { score: 5, evidence: ['No notable headlines in the last 30 days — neutral'], headlines: [], earningsCap: false };
-    }
+    $('item').each((_, el) => {
+        const title = $(el).find('title').first().text().trim();
+        const pub = new Date($(el).find('pubDate').first().text());
+        if (title && !isNaN(pub) && pub.getTime() >= cutoff) {
+            items.push({ title, date: pub });
+        }
+    });
+    items = items.slice(0, 12);
 
     let pos = 0, neg = 0;
     const earningsRe = /\b(earnings|results|q[1-4]|quarterly|half-year|interim|trading update|guidance)\b/i;
@@ -198,6 +197,24 @@ async function scoreInformation(symbol, name) {
         if (earningsRe.test(it.title)) earningsSoon = true;
         return { title: it.title, date: it.date.toISOString().split('T')[0], tone };
     });
+
+    return { headlines, pos, neg, earningsSoon };
+}
+
+async function scoreInformation(symbol, name) {
+    let feed;
+    try {
+        feed = await fetchRecentHeadlines(symbol, name, 30);
+    } catch (e) {
+        return { score: 5, evidence: ['News feed unavailable — scored neutral (5)'], headlines: [], earningsCap: false };
+    }
+
+    if (feed.headlines.length === 0) {
+        return { score: 5, evidence: ['No notable headlines in the last 30 days — neutral'], headlines: [], earningsCap: false };
+    }
+
+    const { headlines, pos, neg, earningsSoon } = feed;
+    const items = headlines;
 
     let score = 5 + Math.max(-3, Math.min(3, pos - neg));
     const evidence = [`${items.length} headlines in 30 days — ${pos} read positive, ${neg} negative`];
@@ -400,4 +417,4 @@ function summarizeConviction(payload) {
         .slice(0, 500);
 }
 
-module.exports = { getConviction, summarizeConviction };
+module.exports = { getConviction, summarizeConviction, fetchRecentHeadlines };
