@@ -303,6 +303,18 @@ async function initializeDatabase() {
       // Columns might already exist
     }
 
+    // Add AI conviction columns to pending_signals — the 7 AM scan scores each
+    // signal (3-pillar check) and only GO signals stay 'pending' for execution
+    try {
+      await pool.query(`ALTER TABLE pending_signals ADD COLUMN IF NOT EXISTS conviction_score DECIMAL(4, 1)`);
+      await pool.query(`ALTER TABLE pending_signals ADD COLUMN IF NOT EXISTS conviction_verdict VARCHAR(10)`);
+      await pool.query(`ALTER TABLE pending_signals ADD COLUMN IF NOT EXISTS conviction_summary TEXT`);
+      await pool.query(`ALTER TABLE pending_signals ADD COLUMN IF NOT EXISTS conviction_engine VARCHAR(40)`);
+      await pool.query(`ALTER TABLE pending_signals ADD COLUMN IF NOT EXISTS conviction_checked_at TIMESTAMP`);
+    } catch (err) {
+      // Columns might already exist
+    }
+
     // Create index on user_id for better performance
     await pool.query('CREATE INDEX IF NOT EXISTS idx_trades_user_id ON trades(user_id)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_trades_status ON trades(status)');
@@ -2741,14 +2753,20 @@ const TradeDB = {
         return existingSignal.rows[0];
       }
 
-      // Insert new signal if no duplicate found
+      // Insert new signal if no duplicate found.
+      // status: AI-filtered signals arrive as 'dismissed' (with conviction data
+      // explaining why) so the 1 PM executor never sees them; default 'pending'.
+      const status = signal.status === 'dismissed' ? 'dismissed' : 'pending';
       const result = await pool.query(`
         INSERT INTO pending_signals
         (symbol, signal_date, entry_price, target_price, stop_loss,
          square_off_date, market, win_rate, historical_signal_count,
          entry_dti, entry_7day_dti, prev_dti, prev_7day_dti,
-         market_cap_usd, market_cap_rank)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+         market_cap_usd, market_cap_rank,
+         conviction_score, conviction_verdict, conviction_summary,
+         conviction_engine, conviction_checked_at, status, dismissed_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
+                $16, $17, $18, $19, $20, $21, $22)
         RETURNING *
       `, [
         signal.symbol,
@@ -2765,9 +2783,17 @@ const TradeDB = {
         signal.prevDTI || null,
         signal.prev7DayDTI || null,
         signal.marketCapUSD || null,
-        signal.marketCapRank || null
+        signal.marketCapRank || null,
+        signal.convictionScore != null ? signal.convictionScore : null,
+        signal.convictionVerdict || null,
+        signal.convictionSummary || null,
+        signal.convictionEngine || null,
+        signal.convictionVerdict ? new Date() : null,
+        status,
+        status === 'dismissed' ? new Date() : null
       ]);
-      console.log(`[DB] New pending signal stored: ${signal.symbol} for ${signal.signalDate}`);
+      console.log(`[DB] New ${status} signal stored: ${signal.symbol} for ${signal.signalDate}` +
+        (signal.convictionVerdict ? ` (AI: ${signal.convictionVerdict} ${signal.convictionScore ?? '?'}/10)` : ''));
       return result.rows[0];
     } catch (error) {
       throw error;
@@ -2813,6 +2839,23 @@ const TradeDB = {
     }
   },
 
+  // All signals for one calendar day, ANY status — the screened-today feed.
+  // The AI-analysis routine needs the full screened set including signals the
+  // conviction gate stored as 'dismissed', not just what remains 'pending'.
+  async getSignalsForDate(signalDate) {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        SELECT * FROM pending_signals
+        WHERE signal_date = $1
+        ORDER BY COALESCE(market_cap_rank, 999999) ASC, win_rate DESC
+      `, [signalDate]);
+      return result.rows;
+    } catch (error) {
+      return [];
+    }
+  },
+
   // Update signal status
   async updateSignalStatus(signalId, status, tradeId = null) {
     checkConnection();
@@ -2825,6 +2868,33 @@ const TradeDB = {
         WHERE id = $4
         RETURNING *
       `, [status, status, tradeId, signalId]);
+      return result.rows.length > 0 ? result.rows[0] : null;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Persist an AI conviction result onto a signal (executor's live-check path
+  // for signals stored before the scan-time gate existed)
+  async updateSignalConviction(signalId, conviction) {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        UPDATE pending_signals
+        SET conviction_score = $1,
+            conviction_verdict = $2,
+            conviction_summary = $3,
+            conviction_engine = $4,
+            conviction_checked_at = CURRENT_TIMESTAMP
+        WHERE id = $5
+        RETURNING *
+      `, [
+        conviction.confidence != null ? conviction.confidence : null,
+        conviction.verdict || null,
+        conviction.summary || null,
+        conviction.engine || null,
+        signalId
+      ]);
       return result.rows.length > 0 ? result.rows[0] : null;
     } catch (error) {
       throw error;

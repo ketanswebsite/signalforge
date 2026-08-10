@@ -355,8 +355,10 @@ app.get('/api/signals/screened-today', async (req, res) => {
     }
 
     const today = new Date().toISOString().split('T')[0];
-    const all = await TradeDB.getPendingSignals('pending', null);
-    const todays = all.filter(s => new Date(s.signal_date).toISOString().split('T')[0] === today);
+    // All of today's screened signals regardless of status — the AI gate stores
+    // non-GO signals as 'dismissed', and the analysis routine should see those
+    // too (status + conviction fields tell it what was traded vs filtered).
+    const todays = await TradeDB.getSignalsForDate(today);
 
     const signals = todays.map(s => ({
       symbol: s.symbol,
@@ -371,7 +373,15 @@ app.get('/api/signals/screened-today', async (req, res) => {
       entryDTI: s.entry_dti != null ? parseFloat(s.entry_dti) : null,
       entry7DayDTI: s.entry_7day_dti != null ? parseFloat(s.entry_7day_dti) : null,
       marketCapUSD: s.market_cap_usd != null ? parseFloat(s.market_cap_usd) : null,
-      marketCapRank: s.market_cap_rank != null ? parseInt(s.market_cap_rank) : null
+      marketCapRank: s.market_cap_rank != null ? parseInt(s.market_cap_rank) : null,
+      status: s.status,
+      conviction: s.conviction_verdict ? {
+        score: s.conviction_score != null ? parseFloat(s.conviction_score) : null,
+        verdict: s.conviction_verdict,
+        engine: s.conviction_engine,
+        summary: s.conviction_summary,
+        checkedAt: s.conviction_checked_at
+      } : null
     }));
 
     res.json({ success: true, date: today, count: signals.length, signals });
