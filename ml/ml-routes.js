@@ -97,6 +97,67 @@ router.get('/conviction/:symbol', ensureSubscriptionActive, async (req, res) => 
 });
 
 /**
+ * POST /api/ml/conviction/batch  { signals: [{symbol, name, winRate}, ...] }
+ * Score up to 100 symbols with bounded concurrency. Same engine and daily
+ * cache as the single endpoint — cached symbols return instantly, uncached
+ * ones are scored 5 at a time. Used by the portfolio simulator so a run
+ * doesn't crawl through symbols one at a time.
+ */
+router.post('/conviction/batch', ensureSubscriptionActive, async (req, res) => {
+    try {
+        const signals = Array.isArray(req.body && req.body.signals) ? req.body.signals : null;
+        if (!signals || signals.length === 0) {
+            return res.status(400).json({ success: false, error: 'signals array is required' });
+        }
+        if (signals.length > 100) {
+            return res.status(400).json({ success: false, error: 'At most 100 signals per batch' });
+        }
+
+        // Dedup by symbol, keep the first name/winRate seen
+        const bySymbol = new Map();
+        for (const s of signals) {
+            if (!s || typeof s.symbol !== 'string' || !s.symbol.trim()) continue;
+            const symbol = s.symbol.trim().toUpperCase();
+            if (!bySymbol.has(symbol)) {
+                bySymbol.set(symbol, {
+                    symbol,
+                    name: typeof s.name === 'string' ? s.name : undefined,
+                    winRate: s.winRate != null && !isNaN(parseFloat(s.winRate)) ? parseFloat(s.winRate) : null
+                });
+            }
+        }
+
+        const queue = [...bySymbol.values()];
+        const results = {};
+        const CONCURRENCY = 5;
+
+        async function worker() {
+            while (queue.length > 0) {
+                const item = queue.shift();
+                try {
+                    const payload = await getConviction(item);
+                    results[item.symbol] = {
+                        symbol: item.symbol,
+                        verdict: payload.verdict,
+                        confidence: payload.confidence,
+                        engine: payload.engine
+                    };
+                } catch (error) {
+                    // Fail-closed marker — the caller must treat this as no-trade
+                    results[item.symbol] = { symbol: item.symbol, error: true };
+                }
+            }
+        }
+
+        await Promise.all(Array.from({ length: Math.min(CONCURRENCY, bySymbol.size) }, worker));
+        res.json({ success: true, results });
+    } catch (error) {
+        console.error('Batch conviction error:', error.message);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
  * POST /api/ml/risk-params
  * Get optimal risk parameters for current market conditions
  */

@@ -325,6 +325,22 @@ async function initializeDatabase() {
       console.error('Could not update chk_hcp_status constraint:', err.message);
     }
 
+    // Daily AI conviction verdicts — one score per symbol per UTC day, shared
+    // by the 7 AM scanner, 1 PM executor, insights panel and simulator so the
+    // engine (and Gemini) runs at most once per symbol per day system-wide
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS conviction_daily (
+        symbol VARCHAR(50) NOT NULL,
+        score_date DATE NOT NULL,
+        confidence DECIMAL(4, 1),
+        verdict VARCHAR(10),
+        engine VARCHAR(40),
+        payload JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (symbol, score_date)
+      )
+    `);
+
     // Create index on user_id for better performance
     await pool.query('CREATE INDEX IF NOT EXISTS idx_trades_user_id ON trades(user_id)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_trades_status ON trades(status)');

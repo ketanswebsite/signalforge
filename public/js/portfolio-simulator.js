@@ -64,6 +64,57 @@ const PortfolioSimulator = (function() {
     const convictionCache = new Map();
 
     /**
+     * Score a day's not-yet-cached symbols in ONE batched request (the server
+     * scores up to 5 concurrently and shares a per-day verdict cache with the
+     * live pipeline). Falls back silently — any symbol left unscored is
+     * picked up by the per-symbol path below.
+     */
+    async function prefetchConvictions(signals, stats, progressCallback) {
+        const fresh = [];
+        const seen = new Set();
+        for (const signal of signals) {
+            if (!convictionCache.has(signal.symbol) && !seen.has(signal.symbol)) {
+                seen.add(signal.symbol);
+                fresh.push({ symbol: signal.symbol, name: signal.name, winRate: signal.winRate });
+            }
+        }
+        if (fresh.length === 0) return;
+
+        if (progressCallback) {
+            progressCallback({ stage: 'simulate', message: `AI check: scoring ${fresh.length} ${fresh.length === 1 ? 'stock' : 'stocks'}...` });
+        }
+
+        for (let i = 0; i < fresh.length; i += 100) {
+            const chunk = fresh.slice(i, i + 100);
+            try {
+                const response = await fetch('/api/ml/conviction/batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ signals: chunk })
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                const results = (data && data.results) || {};
+                for (const item of chunk) {
+                    const r = results[item.symbol];
+                    if (r && !r.error && r.verdict) {
+                        convictionCache.set(item.symbol, { verdict: r.verdict, confidence: r.confidence, engine: r.engine });
+                    } else if (r && r.error) {
+                        // Fail-closed, same as production: unscorable = no trade
+                        convictionCache.set(item.symbol, { verdict: 'WATCH', confidence: null, engine: 'error-fallback' });
+                        if (stats) stats.aiErrors++;
+                    }
+                    // No entry at all → leave uncached; the per-symbol
+                    // fallback will retry it
+                }
+            } catch (error) {
+                // Whole batch failed (network) — leave symbols uncached so the
+                // per-symbol fallback handles them one by one
+            }
+        }
+    }
+
+    /**
      * AI conviction gate — the same engine, thresholds and fail-closed rule
      * as the production 7 AM scanner gate and 1 PM executor (only GO trades;
      * an unscorable signal never trades).
@@ -882,6 +933,13 @@ const PortfolioSimulator = (function() {
      * candidate symbol per run.
      */
     async function processEntrySignals(portfolio, signals, date, stats = null, progressCallback = null) {
+        // Score this day's new symbols in one parallel batch up front —
+        // entering the FIFO loop with a warm cache instead of one slow
+        // sequential engine call per symbol
+        if (signals.length > 0) {
+            await prefetchConvictions(signals, stats, progressCallback);
+        }
+
         // Count current positions per market
         const positionCounts = countPositionsByMarket(portfolio.positions);
 
@@ -908,11 +966,9 @@ const PortfolioSimulator = (function() {
 
             // AI conviction gate — only GO signals invest, same as production.
             // (Verdicts are the engine's view of the stock as of today; the
-            // engine cannot re-score historical news/fundamentals.)
+            // engine cannot re-score historical news/fundamentals.) Normally
+            // a cache hit — prefetchConvictions scored the day's batch above.
             const firstCheck = !convictionCache.has(signal.symbol);
-            if (firstCheck && progressCallback) {
-                progressCallback({ stage: 'simulate', message: `AI conviction check: ${signal.symbol}...` });
-            }
             const conviction = await getConvictionVerdict(signal, stats);
 
             if (conviction.verdict !== 'GO') {

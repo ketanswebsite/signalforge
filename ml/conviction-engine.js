@@ -24,8 +24,66 @@ const cheerio = require('cheerio');
 const Sentiment = require('sentiment');
 const headlineSentiment = new Sentiment();
 
+// Verdicts are cached per symbol per UTC DAY — the same semantic production
+// already uses (a signal is scored once at 7 AM and its verdict reused at
+// 1 PM). Cached in memory for speed and in Postgres so restarts, the
+// scanner, the simulator and the insights panel all share one score — and
+// Gemini runs at most once per symbol per day across the whole system.
+// Override with CONVICTION_CACHE_TTL_MIN (minutes) to shorten it.
 const convictionCache = new Map();          // symbol → {expires, payload}
-const CONVICTION_TTL_MS = 15 * 60 * 1000;
+const inFlight = new Map();                 // symbol → Promise (dedup concurrent scoring)
+
+function cacheExpiryMs() {
+    const ttlMin = parseInt(process.env.CONVICTION_CACHE_TTL_MIN, 10);
+    if (ttlMin > 0) return Date.now() + ttlMin * 60 * 1000;
+    // Default: rest of the current UTC day
+    const now = new Date();
+    const midnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
+    return midnight;
+}
+
+function todayUTC() {
+    return new Date().toISOString().split('T')[0];
+}
+
+// Lazy DB handle — the engine must keep working even if the DB is down
+// (fails open to a fresh computation)
+function getDB() {
+    try {
+        return require('../database-postgres');
+    } catch (e) {
+        return null;
+    }
+}
+
+async function readDailyVerdict(symbol) {
+    try {
+        const db = getDB();
+        if (!db || !db.pool) return null;
+        const result = await db.pool.query(
+            `SELECT payload FROM conviction_daily WHERE symbol = $1 AND score_date = $2 LIMIT 1`,
+            [symbol, todayUTC()]
+        );
+        return result.rows[0] ? result.rows[0].payload : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+async function writeDailyVerdict(symbol, payload) {
+    try {
+        const db = getDB();
+        if (!db || !db.pool) return;
+        await db.pool.query(
+            `INSERT INTO conviction_daily (symbol, score_date, confidence, verdict, engine, payload)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (symbol, score_date) DO NOTHING`,
+            [symbol, todayUTC(), payload.confidence, payload.verdict, payload.engine, JSON.stringify(payload)]
+        );
+    } catch (e) {
+        // Persistence is best-effort; the in-memory cache still applies
+    }
+}
 
 let yahooSession = null;                    // {cookie, crumb, expires}
 
@@ -348,6 +406,31 @@ async function getConviction({ symbol, name, winRate = null }) {
         return { ...cached.payload, context: { ...cached.payload.context, winRate } };
     }
 
+    // Someone already scored today (another request, the 7 AM scan, or a
+    // previous process before a restart) — reuse their verdict
+    const stored = await readDailyVerdict(symbol);
+    if (stored) {
+        convictionCache.set(symbol, { expires: cacheExpiryMs(), payload: stored });
+        return { ...stored, context: { ...stored.context, winRate } };
+    }
+
+    // Dedup concurrent requests for the same symbol (batch scoring can ask
+    // for one symbol from several callers at once)
+    if (inFlight.has(symbol)) {
+        const payload = await inFlight.get(symbol);
+        return { ...payload, context: { ...payload.context, winRate } };
+    }
+
+    const scoring = computeConviction({ symbol, name, winRate });
+    inFlight.set(symbol, scoring);
+    try {
+        return await scoring;
+    } finally {
+        inFlight.delete(symbol);
+    }
+}
+
+async function computeConviction({ symbol, name, winRate = null }) {
     // Each pillar degrades to neutral on its own — one source being down
     // must never take the whole check with it.
     const [technical, fundamental, information] = await Promise.all([
@@ -399,7 +482,8 @@ async function getConviction({ symbol, name, winRate = null }) {
         generatedAt: new Date().toISOString()
     };
 
-    convictionCache.set(symbol, { expires: Date.now() + CONVICTION_TTL_MS, payload });
+    convictionCache.set(symbol, { expires: cacheExpiryMs(), payload });
+    await writeDailyVerdict(symbol, payload);
     return payload;
 }
 
