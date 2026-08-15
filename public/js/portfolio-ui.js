@@ -189,7 +189,9 @@ const PortfolioUI = (function() {
         document.getElementById('detail-stocks-processed').textContent = meta.processing.totalStocksProcessed;
         document.getElementById('detail-high-conviction').textContent = meta.processing.highConvictionStocks;
         document.getElementById('detail-stale-data').textContent = `${meta.dataQuality.staleDataStocks} (${meta.dataQuality.staleDataPercent}%)`;
-        document.getElementById('detail-batches').textContent = `${meta.processing.totalBatches} batches of ${meta.processing.batchSize}`;
+        document.getElementById('detail-batches').textContent = meta.processing.concurrencyLevels
+            ? `Streaming, ${meta.processing.concurrencyLevels.fetch} at a time`
+            : meta.processing.processingMode || '-';
 
         // Signal processing
         document.getElementById('detail-signals-generated').textContent = meta.signals.totalSignalsGenerated;
@@ -198,6 +200,15 @@ const PortfolioUI = (function() {
         document.getElementById('detail-unmatched').textContent = meta.signals.unmatchedPositions > 0
             ? `${meta.signals.unmatchedPositions} (${meta.signals.unmatchedSymbols})`
             : '0';
+
+        // AI conviction gate — same engine and rules as the live pipeline
+        if (meta.aiGate) {
+            document.getElementById('detail-ai-checked').textContent = meta.aiGate.symbolsChecked;
+            document.getElementById('detail-ai-approved').textContent = meta.aiGate.approved;
+            document.getElementById('detail-ai-rejected').textContent = meta.aiGate.rejected;
+            document.getElementById('detail-ai-errors').textContent = meta.aiGate.errors;
+            document.getElementById('detail-ai-rejected-symbols').textContent = meta.aiGate.rejectedSymbols || 'None';
+        }
 
         // Force-close events
         document.getElementById('detail-force-closed-total').textContent = meta.forceClose.total;

@@ -143,11 +143,22 @@ const TradeCore = (function() {
         return `${year}-${month}-${day}`;
     }
     
+    // Both trade-core's own bootstrap and TradeUI.init() call init(); without
+    // a guard the page loaded trades twice and rendered every chart twice.
+    let initPromise = null;
+
     /**
-     * Initialize the trade management system
+     * Initialize the trade management system (idempotent)
      */
-    async function init() {
-        
+    function init() {
+        if (!initPromise) {
+            initPromise = doInit();
+        }
+        return initPromise;
+    }
+
+    async function doInit() {
+
         try {
             // First, attempt to migrate any existing localStorage data
             const migrationResult = await TradeAPI.migrateFromLocalStorage();

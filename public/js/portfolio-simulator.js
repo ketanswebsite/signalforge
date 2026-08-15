@@ -58,6 +58,42 @@ const PortfolioSimulator = (function() {
         }
     };
 
+    // Per-run cache of AI conviction verdicts (one engine call per symbol).
+    // The engine scores the stock as of TODAY — history cannot be re-scored —
+    // so a simulation applies the current verdict across its whole window.
+    const convictionCache = new Map();
+
+    /**
+     * AI conviction gate — the same engine, thresholds and fail-closed rule
+     * as the production 7 AM scanner gate and 1 PM executor (only GO trades;
+     * an unscorable signal never trades).
+     */
+    async function getConvictionVerdict(signal, stats) {
+        if (convictionCache.has(signal.symbol)) {
+            return convictionCache.get(signal.symbol);
+        }
+
+        let result;
+        try {
+            const params = new URLSearchParams();
+            if (signal.name) params.set('name', signal.name);
+            if (signal.winRate != null) params.set('winRate', signal.winRate);
+            const response = await fetch(`/api/ml/conviction/${encodeURIComponent(signal.symbol)}?${params.toString()}`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const payload = await response.json();
+            const data = payload && payload.data ? payload.data : payload;
+            if (!data || !data.verdict) throw new Error('No verdict in response');
+            result = { verdict: data.verdict, confidence: data.confidence, engine: data.engine };
+        } catch (error) {
+            // Fail-closed, exactly like production: unscored means no trade
+            result = { verdict: 'WATCH', confidence: null, engine: 'error-fallback' };
+            if (stats) stats.aiErrors++;
+        }
+
+        convictionCache.set(signal.symbol, result);
+        return result;
+    }
+
     /**
      * Main simulation function
      * @param {string} startDate - Simulation start date
@@ -66,6 +102,9 @@ const PortfolioSimulator = (function() {
      */
     async function runSimulation(startDate, displayCurrency = 'GBP', progressCallback = null) {
         try {
+            // Fresh AI verdicts each run
+            convictionCache.clear();
+
             // Layer 5: Initialize statistics tracking
             const stats = {
                 staleDataStocks: 0,
@@ -74,7 +113,12 @@ const PortfolioSimulator = (function() {
                 forceClosedTotal: 0,
                 forceClosedWithRealPrice: 0,
                 forceClosedWithFallback: 0,
-                unmatchedPositions: []
+                unmatchedPositions: [],
+                // AI conviction gate (mirrors production)
+                aiApproved: 0,
+                aiRejected: 0,
+                aiErrors: 0,
+                aiRejectedSymbols: []
             };
 
             // Report initial progress
@@ -92,10 +136,11 @@ const PortfolioSimulator = (function() {
             const stream = await streamStocksAndSignals(dates, progressCallback);
             const simulationSignals = stream.signals;
             stats.staleDataStocks = stream.totals.stale;
+            stats.openTradesIncluded = simulationSignals.filter(s => s.isOpen).length;
 
             // 6. Run day-by-day portfolio simulation
             if (progressCallback) progressCallback({ stage: 'simulate', message: 'Simulating portfolio performance...' });
-            const portfolio = await simulatePortfolio(simulationSignals, startDate, displayCurrency, stats);
+            const portfolio = await simulatePortfolio(simulationSignals, startDate, displayCurrency, stats, progressCallback);
 
             // 7. Report completion
             if (progressCallback) progressCallback({ stage: 'complete', message: 'Simulation complete!' });
@@ -138,6 +183,15 @@ const PortfolioSimulator = (function() {
                         fuzzyMatches: stats.fuzzyMatches,
                         unmatchedPositions: stats.unmatchedPositions.length,
                         unmatchedSymbols: stats.unmatchedPositions.join(', ')
+                    },
+                    // AI conviction gate (same engine + rules as production;
+                    // verdicts are the engine's view as of the run date)
+                    aiGate: {
+                        approved: stats.aiApproved,
+                        rejected: stats.aiRejected,
+                        errors: stats.aiErrors,
+                        rejectedSymbols: stats.aiRejectedSymbols.join(', '),
+                        symbolsChecked: convictionCache.size
                     },
                     // Data quality
                     dataQuality: {
@@ -305,6 +359,7 @@ const PortfolioSimulator = (function() {
                                             if (entryDate >= simStart && (!trade.isOpen || shouldIncludeOpenTrade(trade, dates))) {
                                                 signals.push({
                                                     symbol: stockObj.symbol,
+                                                    name: stockObj.name,
                                                     market: market,
                                                     entryDate: trade.entryDate,
                                                     entryPrice: trade.entryPrice,
@@ -481,7 +536,7 @@ const PortfolioSimulator = (function() {
      * Main portfolio simulation (day by day)
      * Layer 5: Tracks statistics during simulation
      */
-    async function simulatePortfolio(signals, startDate, displayCurrency, stats = null) {
+    async function simulatePortfolio(signals, startDate, displayCurrency, stats = null, progressCallback = null) {
         const portfolio = {
             cash: 0, // Track cash (not used for trades, just for display)
             positions: [],
@@ -525,9 +580,10 @@ const PortfolioSimulator = (function() {
             // 1. Check exit conditions for active positions (Layer 4: async for price fetching)
             await checkExitConditions(portfolio, dateStr, signals, stats);
 
-            // 2. Process new entry signals for this date
+            // 2. Process new entry signals for this date (async: the AI
+            // conviction gate scores each candidate before it can enter)
             const todaySignals = signalsByDate[dateStr] || [];
-            processEntrySignals(portfolio, todaySignals, dateStr);
+            await processEntrySignals(portfolio, todaySignals, dateStr, stats, progressCallback);
 
             // 3. Calculate and store daily portfolio value
             const portfolioValue = calculatePortfolioValue(portfolio, displayCurrency);
@@ -819,9 +875,13 @@ const PortfolioSimulator = (function() {
     }
 
     /**
-     * Process new entry signals
+     * Process new entry signals.
+     * Mirrors production: indicator signal + AI conviction GO must BOTH agree
+     * before capital moves. The gate is checked only for signals that would
+     * otherwise enter (slots free, no duplicate), so one engine call per
+     * candidate symbol per run.
      */
-    function processEntrySignals(portfolio, signals, date) {
+    async function processEntrySignals(portfolio, signals, date, stats = null, progressCallback = null) {
         // Count current positions per market
         const positionCounts = countPositionsByMarket(portfolio.positions);
 
@@ -846,6 +906,26 @@ const PortfolioSimulator = (function() {
                 continue; // Skip - already have a position in this stock
             }
 
+            // AI conviction gate — only GO signals invest, same as production.
+            // (Verdicts are the engine's view of the stock as of today; the
+            // engine cannot re-score historical news/fundamentals.)
+            const firstCheck = !convictionCache.has(signal.symbol);
+            if (firstCheck && progressCallback) {
+                progressCallback({ stage: 'simulate', message: `AI conviction check: ${signal.symbol}...` });
+            }
+            const conviction = await getConvictionVerdict(signal, stats);
+
+            if (conviction.verdict !== 'GO') {
+                if (stats) {
+                    stats.aiRejected++;
+                    if (firstCheck && stats.aiRejectedSymbols.length < 50) {
+                        stats.aiRejectedSymbols.push(`${signal.symbol} (${conviction.verdict}${conviction.confidence != null ? ` ${conviction.confidence}/10` : ''})`);
+                    }
+                }
+                continue;
+            }
+            if (stats) stats.aiApproved++;
+
             // Calculate dynamic trade size (grows with profits, shrinks with losses)
             const dynamicSize = calculateDynamicTradeSize(portfolio, market);
 
@@ -858,6 +938,9 @@ const PortfolioSimulator = (function() {
                 tradeSize: dynamicSize,
                 currency: CONFIG.TRADE_SIZES[market].currency,
                 winRate: signal.winRate,
+                // AI verdict that approved this entry
+                convictionVerdict: conviction.verdict,
+                convictionScore: conviction.confidence,
                 // Copy DTI values and historical signal count from signal (for force-close scenarios)
                 prevDTI: signal.prevDTI,
                 entryDTI: signal.entryDTI,

@@ -113,6 +113,24 @@
 .pnl-change-indicator .positive{color:var(--gain)}
 .pnl-change-indicator .negative{color:var(--loss)}
 @keyframes sa-float-up{to{transform:translateY(-24px);opacity:0}}
+
+/* Notes shown in place of a chart (no data / loading / error) */
+.chart-note{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-1);min-height:180px;padding:var(--s-5);text-align:center}
+.chart-note__text{font-size:var(--size-sm);color:var(--text-2)}
+.chart-note__sub{font-size:var(--size-xs);color:var(--text-3)}
+
+/* "Deeper measures" cards (rendered by TradeUI-Export-Metrics) */
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:var(--s-3)}
+.metrics-grid-spaced{margin-top:var(--s-3)}
+.metrics-row{display:contents}
+#advanced-metrics-container .metric-card{background:var(--surface-2);border:1.5px solid var(--line-strong);padding:var(--s-4)}
+#advanced-metrics-container .metric-title{font-size:var(--size-xs);color:var(--text-3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:var(--s-1)}
+#advanced-metrics-container .metric-value{font-family:var(--font-display);font-weight:var(--w-display);font-size:var(--size-h3);color:var(--text)}
+#advanced-metrics-container .metric-desc{font-size:var(--size-xs);color:var(--text-3);margin-top:var(--s-1)}
+#advanced-metrics-container .metric-card.success .metric-value{color:var(--gain)}
+#advanced-metrics-container .metric-card.danger .metric-value{color:var(--loss)}
+#advanced-metrics-container .metric-card.warning .metric-value{color:var(--warn)}
+.mini-day-cell.is-pressed{transform:scale(.95)}
 .pos-toptabs{margin-bottom:var(--s-5)}
 .sa-tab{min-height:var(--tap-min)}
 .pos-panel{margin-bottom:var(--s-5)}
@@ -202,6 +220,8 @@
 .sim-infotitle{font-size:var(--size-sm);margin-bottom:var(--s-2)}
 .info-item{display:flex;justify-content:space-between;gap:var(--s-3);font-size:var(--size-sm);padding:8px 0;border-bottom:1.5px solid var(--line)}
 .info-item:last-child{border-bottom:0}
+.info-item--note{flex-direction:column;gap:2px}
+.info-item--note .info-value{color:var(--text-3);font-size:var(--size-xs);text-align:left;word-break:break-word}
 .info-label{color:var(--text-2)}
 .info-value{font-weight:var(--w-bold);font-variant-numeric:tabular-nums;text-align:right}
 .trade-filters{margin-bottom:var(--s-4)}
@@ -223,6 +243,7 @@
 .metric-card-footer,.metric-card-detail{font-size:var(--size-xs);color:var(--text-3)}
 .metric-card-change{font-size:var(--size-xs);font-weight:600}
 .metric-card-sparkline{margin-top:4px}
+.metric-card-sparkline canvas{display:block;width:100%;height:36px}
 
 /* ---------- legacy bridge: compact calendar (TradeUI-MetricCards.js) ---------- */
 #compact-calendar-container{display:grid;gap:var(--s-3)}

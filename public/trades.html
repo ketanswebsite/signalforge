@@ -316,15 +316,6 @@
             </div>
             <div class="app-cardbody">
                 <div class="analytics-controls">
-                    <div class="sa-field time-filter">
-                        <label class="sa-field__label" for="analytics-time-filter">Counting</label>
-                        <select id="analytics-time-filter" class="sa-select">
-                            <option value="all">Everything so far</option>
-                            <option value="year">The last 12 months</option>
-                            <option value="quarter">The last 3 months</option>
-                            <option value="month">The last month</option>
-                        </select>
-                    </div>
                     <div class="export-controls sa-row">
                         <button class="export-report-btn sa-btn sa-btn--quiet sa-btn--sm" id="export-report">
                             <span class="material-symbols-rounded" aria-hidden="true">download</span>
@@ -414,7 +405,7 @@
                             <p><strong>Profit factor</strong>: money made divided by money lost. Above 1.5 points to a working rule.</p>
                             <p><strong>Expectancy</strong>: what one average trade is worth. Positive means the rule earns its keep.</p>
                             <p><strong>Annualised return</strong>: the pace of returns stretched over a year.</p>
-                            <p><strong>Win rate</strong>: how many trades made money.</p>
+                            <p><strong>Streaks</strong>: runs of wins or losses in a row — a feel for how bumpy the ride has been.</p>
                         </div>
                     </div>
                 </div>
@@ -763,12 +754,10 @@
 <script src="js/TradeUI-MetricCards.js"></script>
 <script src="js/TradeUI-Export-Metrics.js"></script>
 <script src="js/alerts-ui.js"></script>
-<script src="js/advanced-charts.js"></script>
 <script src="js/trade-modal.js"></script>
 <script src="js/capital-display.js"></script>
 <script src="js/signals-display.js"></script>
 <script src="js/trade-management.js"></script>
-<script src="js/performance-analytics.js"></script>
 
 <!-- Page behaviour: Holding now / Already sold tabs -->
 <script src="/js/positions-page.js"></script>

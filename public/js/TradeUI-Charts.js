@@ -13,12 +13,23 @@ window.TradeUIModules.charts = (function() {
      * Chart configuration constants
      * Centralized to ensure consistency and easy maintenance
      */
+    // The page's actual font (design-system token) — canvas text cannot use
+    // CSS variables, so it is resolved once here
+    const CHART_FONT = (function () {
+        try {
+            const family = getComputedStyle(document.documentElement).getPropertyValue('--font-sans').trim();
+            return family || "'Archivo', sans-serif";
+        } catch (e) {
+            return "'Archivo', sans-serif";
+        }
+    })();
+
     const CHART_CONSTANTS = {
         // Font families
         FONTS: {
-            HEADING: "'Exo 2', sans-serif",
-            BODY: "'Work Sans', sans-serif",
-            MONO: "'Roboto Mono', monospace"
+            HEADING: CHART_FONT,
+            BODY: CHART_FONT,
+            MONO: CHART_FONT
         },
 
         // Font sizes
@@ -102,6 +113,10 @@ window.TradeUIModules.charts = (function() {
         if (chartRegistry.has(id)) {
             cleanupChart(id);
         }
+        // A real chart is being drawn — remove any "nothing to chart" note
+        // left on this canvas and unhide it (registry ids drop the canvas
+        // ids' "-chart" suffix, so try both)
+        clearChartNote(document.getElementById(id) || document.getElementById(id + '-chart'));
         chartRegistry.set(id, { chart: chartInstance, listeners });
     }
 
@@ -122,6 +137,11 @@ window.TradeUIModules.charts = (function() {
             }
             chartRegistry.delete(id);
         }
+        // Restore the canvas if a "nothing to chart" note had replaced it —
+        // renderers call this before creating a chart, and Chart.js sizes
+        // the canvas at creation, so it must be visible again by then
+        // (registry ids drop the canvas ids' "-chart" suffix, so try both)
+        clearChartNote(document.getElementById(id) || document.getElementById(id + '-chart'));
     }
 
     /**
@@ -134,79 +154,68 @@ window.TradeUIModules.charts = (function() {
     }
 
     /**
-     * Show error message in chart container
-     * @param {HTMLElement} container - Container element
-     * @param {string} message - Error message to display
+     * Put a text note where a chart would be. Charts render into <canvas>
+     * elements, whose innerHTML is never displayed — so the note goes into
+     * the canvas's PARENT, the canvas is hidden, and any chart instance
+     * still painted on it is destroyed (otherwise "Clear history" leaves
+     * ghost charts on screen). Styling comes from app.css (.chart-note).
      */
+    function showChartNote(container, message, subMessage) {
+        if (!container) return;
+
+        // A canvas target means "the chart's box": destroy + hide the canvas
+        // and write next to it. A plain element target is written into.
+        let host = container;
+        if (container.tagName === 'CANVAS') {
+            const existing = typeof Chart !== 'undefined' && Chart.getChart ? Chart.getChart(container) : null;
+            if (existing) existing.destroy();
+            container.hidden = true;
+            host = container.parentElement || container;
+        }
+
+        // Replace any previous note rather than stacking them
+        const old = host.querySelector(':scope > .chart-note');
+        if (old) old.remove();
+
+        const note = document.createElement('div');
+        note.className = 'chart-note';
+        const text = document.createElement('div');
+        text.className = 'chart-note__text';
+        text.textContent = message;
+        note.appendChild(text);
+        if (subMessage) {
+            const sub = document.createElement('div');
+            sub.className = 'chart-note__sub';
+            sub.textContent = subMessage;
+            note.appendChild(sub);
+        }
+        host.appendChild(note);
+    }
+
+    /**
+     * Remove a chart-note and bring the canvas back (called by renderers
+     * before drawing real data).
+     */
+    function clearChartNote(canvas) {
+        if (!canvas || canvas.tagName !== 'CANVAS') return;
+        canvas.hidden = false;
+        const host = canvas.parentElement;
+        if (host) {
+            const note = host.querySelector(':scope > .chart-note');
+            if (note) note.remove();
+        }
+    }
+
     function showError(container, message) {
-        if (!container) return;
-        container.innerHTML = `
-            <div class="chart-error-state" style="
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                min-height: 200px;
-                padding: var(--spacing-lg);
-                text-align: center;
-                color: var(--error);
-            ">
-                <span class="material-icons" style="font-size: 48px; margin-bottom: var(--spacing-md); opacity: 0.5;">error_outline</span>
-                <div style="font-size: 0.875rem; color: var(--text-secondary);">${message}</div>
-            </div>
-        `;
+        showChartNote(container, message);
     }
 
-    /**
-     * Show loading state in chart container
-     * @param {HTMLElement} container - Container element
-     */
     function showLoading(container) {
-        if (!container) return;
-        container.innerHTML = `
-            <div class="chart-loading-state" style="
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                min-height: 200px;
-                padding: var(--spacing-lg);
-            ">
-                <div class="loading-spinner" style="
-                    width: 40px;
-                    height: 40px;
-                    border: 3px solid var(--border-color);
-                    border-top-color: var(--accent-gold);
-                    border-radius: 50%;
-                    animation: spin 0.8s linear infinite;
-                "></div>
-                <div style="margin-top: var(--spacing-md); font-size: 0.875rem; color: var(--text-secondary);">Loading chart...</div>
-            </div>
-        `;
+        showChartNote(container, 'Loading chart…');
     }
 
-    /**
-     * Show empty state in chart container
-     * @param {HTMLElement} container - Container element
-     * @param {string} message - Message to display
-     */
-    function showEmptyState(container, message = "No trade data available") {
-        if (!container) return;
-        container.innerHTML = `
-            <div class="chart-empty-state" style="
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                min-height: 200px;
-                padding: var(--spacing-lg);
-                text-align: center;
-            ">
-                <span class="material-icons" style="font-size: 48px; margin-bottom: var(--spacing-md); opacity: 0.3; color: var(--text-muted);">insert_chart_outlined</span>
-                <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: var(--spacing-xs);">${message}</div>
-                <div style="font-size: 0.8rem; color: var(--text-muted);">Add trades to see analytics</div>
-            </div>
-        `;
+    function showEmptyState(container, message = 'Nothing to chart yet') {
+        showChartNote(container, message, 'Closed trades will fill this in.');
     }
 
     /**
@@ -286,53 +295,69 @@ window.TradeUIModules.charts = (function() {
      * Returns color palette optimized for Black & Gold theme
      */
     function getThemeColors() {
-        const isDark = document.body.classList.contains('dark-theme') ||
-                       !document.body.classList.contains('light-theme');
+        // Read the live design-system tokens so the charts follow the page's
+        // actual theme. (The old detector keyed off body classes this page
+        // never sets, so light mode got white-on-cream axis text.)
+        const styles = getComputedStyle(document.documentElement);
+        const token = (name, fallback) => {
+            const value = (styles.getPropertyValue(name) || '').trim();
+            return value || fallback;
+        };
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+        const accent = token('--accent', '#B08D2E');
+        const gain = token('--gain', '#1E7A45');
+        const loss = token('--loss', '#B3402F');
+        const text = token('--text', isDark ? '#F3EFE6' : '#141210');
+        const text2 = token('--text-2', isDark ? '#C9C2B2' : '#4A463D');
+        const text3 = token('--text-3', isDark ? '#8F887A' : '#767061');
+        const surface = token('--surface', isDark ? '#1C1A16' : '#FFFFFF');
+        const line = token('--line', isDark ? 'rgba(243,239,230,0.14)' : 'rgba(20,18,16,0.12)');
 
         return {
-            // Primary gold colors
-            primary: 'rgba(212, 175, 55, 1)',           // --accent-gold
-            primaryLight: 'rgba(212, 175, 55, 0.8)',
-            primaryVeryLight: 'rgba(212, 175, 55, 0.2)',
-            primaryUltraLight: 'rgba(212, 175, 55, 0.05)',
+            // Primary accent
+            primary: accent,
+            primaryLight: accent,
+            primaryVeryLight: isDark ? 'rgba(212, 175, 55, 0.25)' : 'rgba(176, 141, 46, 0.2)',
+            primaryUltraLight: isDark ? 'rgba(212, 175, 55, 0.08)' : 'rgba(176, 141, 46, 0.06)',
 
-            // Amber accent
-            amber: 'rgba(255, 165, 0, 1)',              // --accent-amber
-            amberLight: 'rgba(255, 165, 0, 0.8)',
+            // Secondary accent
+            amber: accent,
+            amberLight: accent,
 
-            // Success colors (green)
-            success: 'rgba(34, 197, 94, 1)',            // --success
-            successLight: 'rgba(34, 197, 94, 0.7)',
-            successVeryLight: 'rgba(34, 197, 94, 0.2)',
+            // Gain colors (green)
+            success: gain,
+            successLight: gain,
+            successVeryLight: isDark ? 'rgba(56, 176, 104, 0.25)' : 'rgba(30, 122, 69, 0.18)',
 
-            // Error colors (red)
-            error: 'rgba(220, 38, 38, 1)',              // --error
-            errorLight: 'rgba(220, 38, 38, 0.7)',
-            errorVeryLight: 'rgba(220, 38, 38, 0.2)',
-            errorUltraLight: 'rgba(220, 38, 38, 0.05)',
+            // Loss colors (red)
+            error: loss,
+            errorLight: loss,
+            errorVeryLight: isDark ? 'rgba(214, 92, 74, 0.25)' : 'rgba(179, 64, 47, 0.18)',
+            errorUltraLight: isDark ? 'rgba(214, 92, 74, 0.08)' : 'rgba(179, 64, 47, 0.06)',
 
             // Text colors
-            textPrimary: isDark ? '#ffffff' : '#000000',
-            textSecondary: isDark ? '#D1D1D1' : '#2B2B2B',
-            textMuted: isDark ? '#737373' : '#525252',
+            textPrimary: text,
+            textSecondary: text2,
+            textMuted: text3,
 
             // Background colors
-            bgPrimary: isDark ? '#000000' : '#E5E5E5',
-            bgSecondary: isDark ? '#1C1C1C' : '#ffffff',
-            bgSurface: isDark ? '#2B2B2B' : '#E5E5E5',
+            bgPrimary: token('--bg', isDark ? '#141210' : '#F3EFE6'),
+            bgSecondary: surface,
+            bgSurface: token('--surface-2', surface),
 
             // Grid and borders
-            gridColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-            borderColor: isDark ? 'rgba(212, 175, 55, 0.15)' : 'rgba(0, 0, 0, 0.1)',
+            gridColor: line,
+            borderColor: line,
 
             // Tooltip
-            tooltipBg: isDark ? 'rgba(28, 28, 28, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-            tooltipText: isDark ? '#ffffff' : '#111827',
-            tooltipBorder: isDark ? 'rgba(212, 175, 55, 0.3)' : 'rgba(0, 0, 0, 0.15)',
+            tooltipBg: surface,
+            tooltipText: text,
+            tooltipBorder: line,
 
             // Point colors
-            pointBg: isDark ? 'rgba(28, 28, 28, 1)' : 'rgba(255, 255, 255, 1)',
-            pointBorder: 'rgba(212, 175, 55, 1)'
+            pointBg: surface,
+            pointBorder: accent
         };
     }
 
@@ -374,7 +399,7 @@ window.TradeUIModules.charts = (function() {
 
         // Validate TradeCore availability
         if (!window.TradeCore || typeof window.TradeCore.getEquityCurveData !== 'function') {
-            showError(container, 'Chart data service unavailable');
+            showError(container, 'Charts could not load — refresh the page');
             return;
         }
 
@@ -384,13 +409,13 @@ window.TradeUIModules.charts = (function() {
             data = window.TradeCore.getEquityCurveData();
         } catch (error) {
             console.error('Error fetching equity curve data:', error);
-            showError(container, 'Failed to load chart data');
+            showError(container, 'Charts could not load — refresh the page');
             return;
         }
 
         // Validate data
         if (!data || !Array.isArray(data) || data.length === 0) {
-            showEmptyState(container, 'No trade data available');
+            showEmptyState(container, 'Nothing to chart yet');
             return;
         }
 
@@ -421,7 +446,7 @@ window.TradeUIModules.charts = (function() {
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Portfolio Growth (%)',
+                    label: 'Portfolio growth (%)',
                     data: equityData,
                     borderColor: colors.primary,
                     backgroundColor: gradientFill,
@@ -450,7 +475,7 @@ window.TradeUIModules.charts = (function() {
                             usePointStyle: true,
                             color: colors.textPrimary,
                             font: {
-                                family: "'Exo 2', sans-serif",
+                                family: CHART_CONSTANTS.FONTS.HEADING,
                                 weight: 'bold',
                                 size: 12
                             }
@@ -467,12 +492,12 @@ window.TradeUIModules.charts = (function() {
                         padding: 12,
                         cornerRadius: 8,
                         titleFont: {
-                            family: "'Work Sans', sans-serif",
+                            family: CHART_CONSTANTS.FONTS.BODY,
                             weight: '600',
                             size: 13
                         },
                         bodyFont: {
-                            family: "'Roboto Mono', monospace",
+                            family: CHART_CONSTANTS.FONTS.MONO,
                             weight: '500',
                             size: 12
                         },
@@ -492,7 +517,7 @@ window.TradeUIModules.charts = (function() {
                             color: colors.textSecondary,
                             maxTicksLimit: Math.min(10, labels.length),
                             font: {
-                                family: "'Work Sans', sans-serif",
+                                family: CHART_CONSTANTS.FONTS.BODY,
                                 size: 11
                             }
                         }
@@ -512,7 +537,7 @@ window.TradeUIModules.charts = (function() {
                                 return value + '%';
                             },
                             font: {
-                                family: "'Roboto Mono', monospace",
+                                family: CHART_CONSTANTS.FONTS.MONO,
                                 size: 11
                             }
                         }
@@ -543,7 +568,7 @@ window.TradeUIModules.charts = (function() {
 
         // Validate TradeCore availability
         if (!window.TradeCore || typeof window.TradeCore.getDrawdownChartData !== 'function') {
-            showError(container, 'Chart data service unavailable');
+            showError(container, 'Charts could not load — refresh the page');
             return;
         }
 
@@ -553,13 +578,13 @@ window.TradeUIModules.charts = (function() {
             data = window.TradeCore.getDrawdownChartData();
         } catch (error) {
             console.error('Error fetching drawdown data:', error);
-            showError(container, 'Failed to load chart data');
+            showError(container, 'Charts could not load — refresh the page');
             return;
         }
 
         // Validate data
         if (!data || !Array.isArray(data) || data.length === 0) {
-            showEmptyState(container, 'No drawdown data available');
+            showEmptyState(container, 'Nothing to chart yet');
             return;
         }
 
@@ -618,7 +643,7 @@ window.TradeUIModules.charts = (function() {
                             usePointStyle: true,
                             color: colors.textPrimary,
                             font: {
-                                family: "'Exo 2', sans-serif",
+                                family: CHART_CONSTANTS.FONTS.HEADING,
                                 weight: 'bold',
                                 size: 12
                             }
@@ -635,12 +660,12 @@ window.TradeUIModules.charts = (function() {
                         padding: 12,
                         cornerRadius: 8,
                         titleFont: {
-                            family: "'Work Sans', sans-serif",
+                            family: CHART_CONSTANTS.FONTS.BODY,
                             weight: '600',
                             size: 13
                         },
                         bodyFont: {
-                            family: "'Roboto Mono', monospace",
+                            family: CHART_CONSTANTS.FONTS.MONO,
                             weight: '500',
                             size: 12
                         },
@@ -660,7 +685,7 @@ window.TradeUIModules.charts = (function() {
                             color: colors.textSecondary,
                             maxTicksLimit: Math.min(10, labels.length),
                             font: {
-                                family: "'Work Sans', sans-serif",
+                                family: CHART_CONSTANTS.FONTS.BODY,
                                 size: 11
                             }
                         }
@@ -681,7 +706,7 @@ window.TradeUIModules.charts = (function() {
                                 return value + '%';
                             },
                             font: {
-                                family: "'Roboto Mono', monospace",
+                                family: CHART_CONSTANTS.FONTS.MONO,
                                 size: 11
                             }
                         }
@@ -740,7 +765,7 @@ window.TradeUIModules.charts = (function() {
             data: {
                 labels: binLabels,
                 datasets: [{
-                    label: 'Number of Trades',
+                    label: 'Number of trades',
                     data: counts,
                     backgroundColor: barColors,
                     borderColor: borderColors,
@@ -769,7 +794,7 @@ window.TradeUIModules.charts = (function() {
                     x: {
                         title: {
                             display: true,
-                            text: 'Return Range (%)'
+                            text: 'Result range (%)'
                         },
                         grid: {
                             display: false
@@ -785,7 +810,7 @@ window.TradeUIModules.charts = (function() {
                     y: {
                         title: {
                             display: true,
-                            text: 'Number of Trades'
+                            text: 'Number of trades'
                         },
                         grid: {
                             color: 'rgba(0, 0, 0, 0.05)'
@@ -807,13 +832,13 @@ window.TradeUIModules.charts = (function() {
     function renderWinLossPieChart() {
         const container = document.getElementById('win-loss-pie-chart');
         if (!container) {
-            console.warn('Win/loss pie chart container not found');
+            // The Positions page has no pie-chart canvas — nothing to do
             return;
         }
 
         // Validate TradeCore availability
         if (!window.TradeCore || typeof window.TradeCore.getWinLossPieChartData !== 'function') {
-            showError(container, 'Chart data service unavailable');
+            showError(container, 'Charts could not load — refresh the page');
             return;
         }
 
@@ -823,7 +848,7 @@ window.TradeUIModules.charts = (function() {
             data = window.TradeCore.getWinLossPieChartData();
         } catch (error) {
             console.error('Error fetching win/loss pie chart data:', error);
-            showError(container, 'Failed to load chart data');
+            showError(container, 'Charts could not load — refresh the page');
             return;
         }
 
@@ -877,7 +902,7 @@ window.TradeUIModules.charts = (function() {
                             pointStyle: 'circle',
                             color: colors.textPrimary,
                             font: {
-                                family: "'Exo 2', sans-serif",
+                                family: CHART_CONSTANTS.FONTS.HEADING,
                                 size: 14,
                                 weight: 'bold'
                             },
@@ -894,12 +919,12 @@ window.TradeUIModules.charts = (function() {
                         padding: 14,
                         cornerRadius: 8,
                         titleFont: {
-                            family: "'Work Sans', sans-serif",
+                            family: CHART_CONSTANTS.FONTS.BODY,
                             weight: '600',
                             size: 14
                         },
                         bodyFont: {
-                            family: "'Roboto Mono', monospace",
+                            family: CHART_CONSTANTS.FONTS.MONO,
                             weight: '500',
                             size: 13
                         },
@@ -940,14 +965,14 @@ window.TradeUIModules.charts = (function() {
                     ctx.restore();
 
                     // Win Rate Text
-                    ctx.font = "bold 18px 'Roboto Mono', monospace";
+                    ctx.font = 'bold 18px ' + CHART_FONT;
                     ctx.fillStyle = themeColors.primary;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText(`${winRate}%`, width / 2, height / 2 - 10);
 
                     // Label Text
-                    ctx.font = "12px 'Work Sans', sans-serif";
+                    ctx.font = '12px ' + CHART_FONT;
                     ctx.fillStyle = themeColors.textSecondary;
                     ctx.fillText('Win Rate', width / 2, height / 2 + 14);
 
@@ -976,7 +1001,7 @@ window.TradeUIModules.charts = (function() {
 
         // Validate TradeCore availability
         if (!window.TradeCore || typeof window.TradeCore.getMonthlyPerformanceData !== 'function') {
-            showError(container, 'Chart data service unavailable');
+            showError(container, 'Charts could not load — refresh the page');
             return;
         }
 
@@ -986,13 +1011,13 @@ window.TradeUIModules.charts = (function() {
             data = window.TradeCore.getMonthlyPerformanceData();
         } catch (error) {
             console.error('Error fetching monthly performance data:', error);
-            showError(container, 'Failed to load chart data');
+            showError(container, 'Charts could not load — refresh the page');
             return;
         }
 
         // Validate data
         if (!data || !Array.isArray(data) || data.length === 0) {
-            showEmptyState(container, 'No monthly performance data');
+            showEmptyState(container, 'Nothing to chart yet');
             return;
         }
 
@@ -1032,7 +1057,7 @@ window.TradeUIModules.charts = (function() {
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Monthly P&L (%)',
+                    label: 'Monthly result (%)',
                     data: performanceData,
                     backgroundColor: barColors,
                     borderColor: barColors.map(c => c.replace(/[0-9].[0-9]/, '1')),
@@ -1040,7 +1065,7 @@ window.TradeUIModules.charts = (function() {
                     borderRadius: 6,
                     maxBarThickness: 45
                 }, {
-                    label: 'Trade Count',
+                    label: 'Trades',
                     data: tradeCountData,
                     type: 'line',
                     yAxisID: 'y1',
@@ -1072,7 +1097,7 @@ window.TradeUIModules.charts = (function() {
                             usePointStyle: true,
                             color: colors.textPrimary,
                             font: {
-                                family: "'Exo 2', sans-serif",
+                                family: CHART_CONSTANTS.FONTS.HEADING,
                                 weight: 'bold',
                                 size: 13
                             },
@@ -1090,12 +1115,12 @@ window.TradeUIModules.charts = (function() {
                         padding: 12,
                         cornerRadius: 8,
                         titleFont: {
-                            family: "'Work Sans', sans-serif",
+                            family: CHART_CONSTANTS.FONTS.BODY,
                             weight: '600',
                             size: 13
                         },
                         bodyFont: {
-                            family: "'Roboto Mono', monospace",
+                            family: CHART_CONSTANTS.FONTS.MONO,
                             weight: '500',
                             size: 12
                         },
@@ -1118,9 +1143,9 @@ window.TradeUIModules.charts = (function() {
                                 const dataIndex = tooltipItems[0].dataIndex;
                                 const monthData = data[dataIndex];
                                 if (!monthData || monthData.winRate === null || monthData.winRate === undefined) {
-                                    return ['Win Rate: N/A'];
+                                    return ['Win rate: N/A'];
                                 }
-                                return [`Win Rate: ${monthData.winRate.toFixed(2)}%`];
+                                return [`Win rate: ${monthData.winRate.toFixed(2)}%`];
                             }
                         }
                     }
@@ -1135,7 +1160,7 @@ window.TradeUIModules.charts = (function() {
                             maxRotation: 45,
                             minRotation: 45,
                             font: {
-                                family: "'Work Sans', sans-serif",
+                                family: CHART_CONSTANTS.FONTS.BODY,
                                 size: 11
                             }
                         }
@@ -1147,7 +1172,7 @@ window.TradeUIModules.charts = (function() {
                             text: 'P&L (%)',
                             color: colors.textPrimary,
                             font: {
-                                family: "'Exo 2', sans-serif",
+                                family: CHART_CONSTANTS.FONTS.HEADING,
                                 weight: 'bold',
                                 size: 12
                             }
@@ -1166,7 +1191,7 @@ window.TradeUIModules.charts = (function() {
                                 return value + '%';
                             },
                             font: {
-                                family: "'Roboto Mono', monospace",
+                                family: CHART_CONSTANTS.FONTS.MONO,
                                 size: 11
                             }
                         },
@@ -1190,10 +1215,10 @@ window.TradeUIModules.charts = (function() {
                         position: 'right',
                         title: {
                             display: true,
-                            text: 'Trade Count',
+                            text: 'Trades',
                             color: colors.textPrimary,
                             font: {
-                                family: "'Exo 2', sans-serif",
+                                family: CHART_CONSTANTS.FONTS.HEADING,
                                 weight: 'bold',
                                 size: 12
                             }
@@ -1208,7 +1233,7 @@ window.TradeUIModules.charts = (function() {
                             stepSize: 1,
                             precision: 0,
                             font: {
-                                family: "'Roboto Mono', monospace",
+                                family: CHART_CONSTANTS.FONTS.MONO,
                                 size: 11
                             }
                         }
@@ -1234,7 +1259,7 @@ window.TradeUIModules.charts = (function() {
 
         // Validate TradeCore availability
         if (!window.TradeCore || typeof window.TradeCore.getPerformanceByMarket !== 'function') {
-            showError(container, 'Chart data service unavailable');
+            showError(container, 'Charts could not load — refresh the page');
             return;
         }
 
@@ -1244,13 +1269,13 @@ window.TradeUIModules.charts = (function() {
             data = window.TradeCore.getPerformanceByMarket();
         } catch (error) {
             console.error('Error fetching market comparison data:', error);
-            showError(container, 'Failed to load chart data');
+            showError(container, 'Charts could not load — refresh the page');
             return;
         }
 
         // Validate data
         if (!data || !Array.isArray(data) || data.length === 0) {
-            showEmptyState(container, 'No closed trades available for market comparison');
+            showEmptyState(container, 'No sold trades to compare yet');
             return;
         }
 
@@ -1295,7 +1320,7 @@ window.TradeUIModules.charts = (function() {
                 labels: labels,
                 datasets: [
                     {
-                        label: 'Average P&L (%)',
+                        label: 'Average result (%)',
                         data: plData,
                         backgroundColor: barColors,
                         borderColor: borderColors,
@@ -1305,7 +1330,7 @@ window.TradeUIModules.charts = (function() {
                         maxBarThickness: 45
                     },
                     {
-                        label: 'Win Rate (%)',
+                        label: 'Win rate (%)',
                         data: winRateData,
                         type: 'line',
                         borderColor: colors.primary,
@@ -1320,7 +1345,7 @@ window.TradeUIModules.charts = (function() {
                         yAxisID: 'y1'
                     },
                     {
-                        label: 'Trade Count',
+                        label: 'Trades',
                         data: tradeCountData,
                         type: 'bar',
                         backgroundColor: 'rgba(168, 162, 158, 0.2)',
@@ -1352,7 +1377,7 @@ window.TradeUIModules.charts = (function() {
                             usePointStyle: true,
                             color: colors.textPrimary,
                             font: {
-                                family: "'Exo 2', sans-serif",
+                                family: CHART_CONSTANTS.FONTS.HEADING,
                                 weight: 'bold',
                                 size: 13
                             },
@@ -1386,12 +1411,12 @@ window.TradeUIModules.charts = (function() {
                         padding: 12,
                         cornerRadius: 8,
                         titleFont: {
-                            family: "'Work Sans', sans-serif",
+                            family: CHART_CONSTANTS.FONTS.BODY,
                             weight: '600',
                             size: 13
                         },
                         bodyFont: {
-                            family: "'Roboto Mono', monospace",
+                            family: CHART_CONSTANTS.FONTS.MONO,
                             weight: '500',
                             size: 12
                         },
@@ -1403,7 +1428,7 @@ window.TradeUIModules.charts = (function() {
                                 if (datasetLabel === 'Average P&L (%)') {
                                     return `Avg P&L: ${value.toFixed(2)}%`;
                                 } else if (datasetLabel === 'Win Rate (%)') {
-                                    return `Win Rate: ${value.toFixed(2)}%`;
+                                    return `Win rate: ${value.toFixed(2)}%`;
                                 } else if (datasetLabel === 'Trade Count') {
                                     return `Trades: ${value}`;
                                 }
@@ -1434,7 +1459,7 @@ window.TradeUIModules.charts = (function() {
                         position: 'left',
                         title: {
                             display: true,
-                            text: 'Average P&L (%)',
+                            text: 'Average result (%)',
                             font: {
                                 weight: 'bold',
                                 size: 12
@@ -1476,7 +1501,7 @@ window.TradeUIModules.charts = (function() {
                         position: 'right',
                         title: {
                             display: true,
-                            text: 'Win Rate (%)',
+                            text: 'Win rate (%)',
                             font: {
                                 weight: 'bold',
                                 size: 12
@@ -1532,7 +1557,7 @@ window.TradeUIModules.charts = (function() {
 
         // Validate TradeCore availability
         if (!window.TradeCore || typeof window.TradeCore.getTradeSizeVsReturnData !== 'function') {
-            showError(container, 'Chart data service unavailable');
+            showError(container, 'Charts could not load — refresh the page');
             return;
         }
 
@@ -1542,13 +1567,13 @@ window.TradeUIModules.charts = (function() {
             data = window.TradeCore.getTradeSizeVsReturnData();
         } catch (error) {
             console.error('Error fetching trade size vs return data:', error);
-            showError(container, 'Failed to load chart data');
+            showError(container, 'Charts could not load — refresh the page');
             return;
         }
 
         // Validate data
         if (!data || !Array.isArray(data) || data.length === 0) {
-            showEmptyState(container, 'No closed trades available for size vs return analysis');
+            showEmptyState(container, 'No sold trades to compare yet');
             return;
         }
 
@@ -1558,18 +1583,27 @@ window.TradeUIModules.charts = (function() {
         // Get theme colors
         const colors = getThemeColors();
         
-        // Group trades by investment size buckets
+        // Group trades into size quartiles of THIS portfolio's trades.
+        // (Fixed dollar bands made no sense across ₹/£/$ position sizes —
+        // an all-India book landed every trade in one bucket.)
+        const sizes = data.map(t => t.size).sort((a, b) => a - b);
+        const quartile = q => sizes[Math.min(sizes.length - 1, Math.floor(sizes.length * q))];
+        const q1 = quartile(0.25), q2 = quartile(0.5), q3 = quartile(0.75);
+
         const buckets = {
-            'Small (<$2.5k)': { range: [0, 2500], trades: [], totalReturn: 0, avgReturn: 0, wins: 0, losses: 0 },
-            'Medium ($2.5k-$5k)': { range: [2500, 5000], trades: [], totalReturn: 0, avgReturn: 0, wins: 0, losses: 0 },
-            'Large ($5k-$10k)': { range: [5000, 10000], trades: [], totalReturn: 0, avgReturn: 0, wins: 0, losses: 0 },
-            'Extra Large (>$10k)': { range: [10000, Infinity], trades: [], totalReturn: 0, avgReturn: 0, wins: 0, losses: 0 }
+            'Smallest quarter': { range: [-Infinity, q1], trades: [], totalReturn: 0, avgReturn: 0, wins: 0, losses: 0 },
+            'Second quarter': { range: [q1, q2], trades: [], totalReturn: 0, avgReturn: 0, wins: 0, losses: 0 },
+            'Third quarter': { range: [q2, q3], trades: [], totalReturn: 0, avgReturn: 0, wins: 0, losses: 0 },
+            'Largest quarter': { range: [q3, Infinity], trades: [], totalReturn: 0, avgReturn: 0, wins: 0, losses: 0 }
         };
-        
-        // Categorize trades into buckets
+
+        // Categorize trades into buckets (upper bound inclusive on the last)
         data.forEach(trade => {
-            for (const [bucketName, bucket] of Object.entries(buckets)) {
-                if (trade.size >= bucket.range[0] && trade.size < bucket.range[1]) {
+            const names = Object.keys(buckets);
+            for (let i = 0; i < names.length; i++) {
+                const bucket = buckets[names[i]];
+                const isLast = i === names.length - 1;
+                if (trade.size >= bucket.range[0] && (isLast || trade.size < bucket.range[1])) {
                     bucket.trades.push(trade);
                     bucket.totalReturn += trade.return;
                     if (trade.return > 0) bucket.wins++;
@@ -1610,7 +1644,7 @@ window.TradeUIModules.charts = (function() {
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Average Return (%)',
+                    label: 'Average return (%)',
                     data: avgReturns,
                     backgroundColor: barColors,
                     borderColor: barColors.map(c => c.replace('0.7', '1')),
@@ -1619,7 +1653,7 @@ window.TradeUIModules.charts = (function() {
                     yAxisID: 'y',
                     maxBarThickness: 60
                 }, {
-                    label: 'Win Rate (%)',
+                    label: 'Win rate (%)',
                     data: winRates,
                     type: 'line',
                     borderColor: colors.primary,
@@ -1651,7 +1685,7 @@ window.TradeUIModules.charts = (function() {
                             usePointStyle: true,
                             color: colors.textPrimary,
                             font: {
-                                family: "'Exo 2', sans-serif",
+                                family: CHART_CONSTANTS.FONTS.HEADING,
                                 weight: 'bold',
                                 size: 13
                             },
@@ -1669,12 +1703,12 @@ window.TradeUIModules.charts = (function() {
                         padding: 12,
                         cornerRadius: 8,
                         titleFont: {
-                            family: "'Work Sans', sans-serif",
+                            family: CHART_CONSTANTS.FONTS.BODY,
                             weight: '600',
                             size: 13
                         },
                         bodyFont: {
-                            family: "'Roboto Mono', monospace",
+                            family: CHART_CONSTANTS.FONTS.MONO,
                             weight: '500',
                             size: 12
                         },
@@ -1692,8 +1726,8 @@ window.TradeUIModules.charts = (function() {
                                 } else if (context.dataset.label === 'Win Rate (%)') {
                                     const value = context.parsed.y;
                                     return value !== null && value !== undefined 
-                                        ? `Win Rate: ${value.toFixed(1)}%` 
-                                        : 'Win Rate: N/A';
+                                        ? `Win rate: ${value.toFixed(1)}%` 
+                                        : 'Win rate: N/A';
                                 }
                             },
                             afterBody: function(tooltipItems) {
@@ -1734,7 +1768,7 @@ window.TradeUIModules.charts = (function() {
                         position: 'left',
                         title: {
                             display: true,
-                            text: 'Average Return (%)',
+                            text: 'Average return (%)',
                             font: {
                                 weight: 'bold',
                                 size: 12
@@ -1755,7 +1789,7 @@ window.TradeUIModules.charts = (function() {
                         position: 'right',
                         title: {
                             display: true,
-                            text: 'Win Rate (%)',
+                            text: 'Win rate (%)',
                             font: {
                                 weight: 'bold',
                                 size: 12
@@ -1793,7 +1827,7 @@ window.TradeUIModules.charts = (function() {
 
         // Validate TradeCore availability
         if (!window.TradeCore || typeof window.TradeCore.getHoldingPeriodStats !== 'function') {
-            showError(container, 'Chart data service unavailable');
+            showError(container, 'Charts could not load — refresh the page');
             return;
         }
 
@@ -1803,13 +1837,13 @@ window.TradeUIModules.charts = (function() {
             holdingStats = window.TradeCore.getHoldingPeriodStats();
         } catch (error) {
             console.error('Error fetching holding period data:', error);
-            showError(container, 'Failed to load chart data');
+            showError(container, 'Charts could not load — refresh the page');
             return;
         }
 
         // Validate data
         if (!holdingStats) {
-            showEmptyState(container, 'No holding period data available');
+            showEmptyState(container, 'Nothing to chart yet');
             return;
         }
 
@@ -1829,7 +1863,7 @@ window.TradeUIModules.charts = (function() {
         const colors = getThemeColors();
 
         // Prepare data
-        const labels = ['Short Term (0-10 days)', 'Medium Term (11-20 days)', 'Long Term (21+ days)'];
+        const labels = ['Held 0–10 days', 'Held 11–20 days', 'Held 21 days or more'];
         const countData = [
             holdingStats.shortTerm.count,
             holdingStats.mediumTerm.count,
@@ -1857,7 +1891,7 @@ window.TradeUIModules.charts = (function() {
                 labels: labels,
                 datasets: [
                     {
-                        label: 'Average P&L (%)',
+                        label: 'Average result (%)',
                         data: plData,
                         backgroundColor: barColors,
                         borderColor: barColors.map(c => c.replace('0.7', '1')),
@@ -1865,7 +1899,7 @@ window.TradeUIModules.charts = (function() {
                         yAxisID: 'y'
                     },
                     {
-                        label: 'Win Rate (%)',
+                        label: 'Win rate (%)',
                         data: winRateData,
                         type: 'line',
                         borderColor: colors.primary,
@@ -1890,7 +1924,7 @@ window.TradeUIModules.charts = (function() {
                         labels: {
                             color: colors.textPrimary,
                             font: {
-                                family: "'Exo 2', sans-serif",
+                                family: CHART_CONSTANTS.FONTS.HEADING,
                                 weight: 'bold',
                                 size: 12
                             }
@@ -1905,12 +1939,12 @@ window.TradeUIModules.charts = (function() {
                         padding: 12,
                         cornerRadius: 8,
                         titleFont: {
-                            family: "'Work Sans', sans-serif",
+                            family: CHART_CONSTANTS.FONTS.BODY,
                             weight: '600',
                             size: 13
                         },
                         bodyFont: {
-                            family: "'Roboto Mono', monospace",
+                            family: CHART_CONSTANTS.FONTS.MONO,
                             weight: '500',
                             size: 12
                         },
@@ -1922,7 +1956,7 @@ window.TradeUIModules.charts = (function() {
                                 if (datasetIndex === 0) {
                                     return `Average P&L: ${value.toFixed(2)}%`;
                                 } else if (datasetIndex === 1) {
-                                    return `Win Rate: ${value.toFixed(2)}%`;
+                                    return `Win rate: ${value.toFixed(2)}%`;
                                 }
 
                                 return `${context.dataset.label}: ${value}`;
@@ -1942,7 +1976,7 @@ window.TradeUIModules.charts = (function() {
                         ticks: {
                             color: colors.textSecondary,
                             font: {
-                                family: "'Work Sans', sans-serif",
+                                family: CHART_CONSTANTS.FONTS.BODY,
                                 size: 11
                             }
                         }
@@ -1951,10 +1985,10 @@ window.TradeUIModules.charts = (function() {
                         position: 'left',
                         title: {
                             display: true,
-                            text: 'Average P&L (%)',
+                            text: 'Average result (%)',
                             color: colors.textPrimary,
                             font: {
-                                family: "'Exo 2', sans-serif",
+                                family: CHART_CONSTANTS.FONTS.HEADING,
                                 weight: 'bold',
                                 size: 12
                             }
@@ -1968,7 +2002,7 @@ window.TradeUIModules.charts = (function() {
                                 return value + '%';
                             },
                             font: {
-                                family: "'Roboto Mono', monospace",
+                                family: CHART_CONSTANTS.FONTS.MONO,
                                 size: 11
                             }
                         }
@@ -1977,10 +2011,10 @@ window.TradeUIModules.charts = (function() {
                         position: 'right',
                         title: {
                             display: true,
-                            text: 'Win Rate (%)',
+                            text: 'Win rate (%)',
                             color: colors.textPrimary,
                             font: {
-                                family: "'Exo 2', sans-serif",
+                                family: CHART_CONSTANTS.FONTS.HEADING,
                                 weight: 'bold',
                                 size: 12
                             }
@@ -1996,7 +2030,7 @@ window.TradeUIModules.charts = (function() {
                                 return value + '%';
                             },
                             font: {
-                                family: "'Roboto Mono', monospace",
+                                family: CHART_CONSTANTS.FONTS.MONO,
                                 size: 11
                             }
                         }

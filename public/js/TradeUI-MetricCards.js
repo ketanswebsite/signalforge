@@ -11,23 +11,26 @@ const TradeUIMetricCards = (function() {
      * @param {HTMLElement} container - Container element
      * @param {string} message - Error message to display
      */
-    function showError(container, message) {
+    function buildNote(container, message, subMessage) {
         if (!container) return;
-        container.innerHTML = `
-            <div class="chart-error-state" style="
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                min-height: 200px;
-                padding: var(--spacing-lg);
-                text-align: center;
-                color: var(--error);
-            ">
-                <span class="material-icons" style="font-size: 48px; margin-bottom: var(--spacing-md); opacity: 0.5;">error_outline</span>
-                <div style="font-size: 0.875rem; color: var(--text-secondary);">${message}</div>
-            </div>
-        `;
+        container.textContent = '';
+        const note = document.createElement('div');
+        note.className = 'chart-note';
+        const text = document.createElement('div');
+        text.className = 'chart-note__text';
+        text.textContent = message;
+        note.appendChild(text);
+        if (subMessage) {
+            const sub = document.createElement('div');
+            sub.className = 'chart-note__sub';
+            sub.textContent = subMessage;
+            note.appendChild(sub);
+        }
+        container.appendChild(note);
+    }
+
+    function showError(container, message) {
+        buildNote(container, message);
     }
 
     /**
@@ -35,27 +38,7 @@ const TradeUIMetricCards = (function() {
      * @param {HTMLElement} container - Container element
      */
     function showLoading(container) {
-        if (!container) return;
-        container.innerHTML = `
-            <div class="chart-loading-state" style="
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                min-height: 200px;
-                padding: var(--spacing-lg);
-            ">
-                <div class="loading-spinner" style="
-                    width: 40px;
-                    height: 40px;
-                    border: 3px solid var(--border-color);
-                    border-top-color: var(--accent-gold);
-                    border-radius: 50%;
-                    animation: spin 0.8s linear infinite;
-                "></div>
-                <div style="margin-top: var(--spacing-md); font-size: 0.875rem; color: var(--text-secondary);">Loading calendar...</div>
-            </div>
-        `;
+        buildNote(container, 'Loading calendar…');
     }
 
     /**
@@ -63,23 +46,8 @@ const TradeUIMetricCards = (function() {
      * @param {HTMLElement} container - Container element
      * @param {string} message - Message to display
      */
-    function showEmptyState(container, message = "No trade data available") {
-        if (!container) return;
-        container.innerHTML = `
-            <div class="chart-empty-state" style="
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                min-height: 200px;
-                padding: var(--spacing-lg);
-                text-align: center;
-            ">
-                <span class="material-icons" style="font-size: 48px; margin-bottom: var(--spacing-md); opacity: 0.3; color: var(--text-muted);">calendar_today</span>
-                <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: var(--spacing-xs);">${message}</div>
-                <div style="font-size: 0.8rem; color: var(--text-muted);">Add trades to see the calendar heatmap</div>
-            </div>
-        `;
+    function showEmptyState(container, message = 'Nothing to show yet') {
+        buildNote(container, message, 'Sold trades will fill the calendar in.');
     }
 
     /**
@@ -93,14 +61,14 @@ const TradeUIMetricCards = (function() {
         container.innerHTML = '';
 
         const cards = [
-            createMetricCard('Win Rate', metrics.winRate, 'positive', 'trending_up', metrics.winRateTrend, metrics.winRateData),
-            createMetricCard('Total P&L', metrics.totalPL, metrics.totalPLSign >= 0 ? 'positive' : 'negative', 'account_balance', metrics.plTrend, metrics.plData),
-            createMetricCard('Avg Return', metrics.avgReturn, parseFloat(metrics.avgReturn) >= 0 ? 'positive' : 'negative', 'percent', metrics.returnTrend, metrics.returnData),
-            createMetricCard('Total Trades', metrics.totalTrades, 'neutral', 'bar_chart', null, metrics.tradeCountData),
-            createMetricCard('Best Market', metrics.bestMarket.name, 'positive', 'public', `${metrics.bestMarket.winRate}% WR`),
-            createMetricCard('Avg Duration', metrics.avgDuration, 'neutral', 'schedule', `${metrics.avgDuration} days`),
-            createMetricCard('Main Exit', metrics.mainExit.reason, metrics.mainExit.type, 'exit_to_app', `${metrics.mainExit.count} exits`),
-            createMetricCard('Max Drawdown', metrics.maxDrawdown, 'negative', 'trending_down', null, metrics.drawdownData)
+            createMetricCard('Win rate', metrics.winRate, 'positive', 'trending_up', metrics.winRateTrend, metrics.winRateData),
+            createMetricCard('From sold trades', metrics.totalPL, metrics.totalPLSign >= 0 ? 'positive' : 'negative', 'account_balance', metrics.plTrend, metrics.plData),
+            createMetricCard('Average per trade', metrics.avgReturn, parseFloat(metrics.avgReturn) >= 0 ? 'positive' : 'negative', 'percent', metrics.returnTrend, metrics.returnData),
+            createMetricCard('Trades completed', metrics.totalTrades, 'neutral', 'bar_chart', null, metrics.tradeCountData),
+            createMetricCard('Best market', metrics.bestMarket.name, 'positive', 'public', metrics.bestMarket.name === '—' ? null : `${metrics.bestMarket.winRate}% won`),
+            createMetricCard('Average hold', `${metrics.avgDuration} ${metrics.avgDuration === 1 ? 'day' : 'days'}`, 'neutral', 'schedule', null),
+            createMetricCard('Most common exit', metrics.mainExit.reason, metrics.mainExit.type, 'exit_to_app', metrics.mainExit.count > 0 ? `${metrics.mainExit.count} ${metrics.mainExit.count === 1 ? 'trade' : 'trades'}` : null),
+            createMetricCard('Deepest fall', metrics.maxDrawdown, 'negative', 'trending_down', null, metrics.drawdownData)
         ];
 
         cards.forEach(card => container.appendChild(card));
@@ -123,28 +91,32 @@ const TradeUIMetricCards = (function() {
             ? ((winningTrades.length / closedTrades.length) * 100).toFixed(1) + '%'
             : '0%';
 
-        // Total P&L - Separate by market to handle multiple currencies
-        const indiaTrades = closedTrades.filter(t => t.market === 'India');
-        const usTrades = closedTrades.filter(t => t.market === 'US');
+        // Total P&L per market — each market keeps its own currency (all
+        // three markets counted; UK used to be silently dropped here)
+        const marketFor = t => {
+            if (t.market) return t.market;
+            if (t.symbol && t.symbol.endsWith('.NS')) return 'India';
+            if (t.symbol && t.symbol.endsWith('.L')) return 'UK';
+            return 'US';
+        };
+        const plByMarket = { 'India': 0, 'UK': 0, 'US': 0 };
+        const countByMarket = { 'India': 0, 'UK': 0, 'US': 0 };
+        closedTrades.forEach(t => {
+            const market = marketFor(t);
+            plByMarket[market] += parseFloat(t.profitLoss || t.plValue || 0);
+            countByMarket[market]++;
+        });
 
-        const indiaPL = indiaTrades.reduce((sum, t) => sum + parseFloat(t.profitLoss || t.plValue || 0), 0);
-        const usPL = usTrades.reduce((sum, t) => sum + parseFloat(t.profitLoss || t.plValue || 0), 0);
+        const plFormats = {
+            'India': v => '₹' + v.toLocaleString('en-IN', { maximumFractionDigits: 0 }),
+            'UK': v => '£' + v.toLocaleString('en-GB', { maximumFractionDigits: 2 }),
+            'US': v => '$' + v.toLocaleString('en-US', { maximumFractionDigits: 0 })
+        };
 
-        // Format with currency symbols
-        const indiaPLFormatted = '₹' + indiaPL.toLocaleString('en-IN', { maximumFractionDigits: 0 });
-        const usPLFormatted = '$' + usPL.toLocaleString('en-US', { maximumFractionDigits: 0 });
-
-        // Combined display showing both markets
-        let totalPLFormatted;
-        if (indiaTrades.length > 0 && usTrades.length > 0) {
-            totalPLFormatted = `${indiaPLFormatted} | ${usPLFormatted}`;
-        } else if (indiaTrades.length > 0) {
-            totalPLFormatted = indiaPLFormatted;
-        } else if (usTrades.length > 0) {
-            totalPLFormatted = usPLFormatted;
-        } else {
-            totalPLFormatted = '₹0';
-        }
+        const activeMarkets = ['India', 'UK', 'US'].filter(m => countByMarket[m] > 0);
+        const totalPLFormatted = activeMarkets.length > 0
+            ? activeMarkets.map(m => plFormats[m](plByMarket[m])).join(' | ')
+            : '0';
 
         // Average Return
         const avgReturn = closedTrades.length > 0
@@ -169,7 +141,7 @@ const TradeUIMetricCards = (function() {
             }
         });
 
-        let bestMarket = { name: 'N/A', winRate: 0 };
+        let bestMarket = { name: '—', winRate: 0 };
         Object.keys(marketStats).forEach(market => {
             const winRate = (marketStats[market].wins / marketStats[market].total) * 100;
             if (winRate > bestMarket.winRate) {
@@ -196,7 +168,7 @@ const TradeUIMetricCards = (function() {
             exitReasons[reason] = (exitReasons[reason] || 0) + 1;
         });
 
-        let mainExit = { reason: 'N/A', count: 0, type: 'neutral' };
+        let mainExit = { reason: '—', count: 0, type: 'neutral' };
         Object.keys(exitReasons).forEach(reason => {
             if (exitReasons[reason] > mainExit.count) {
                 let type = 'neutral';
@@ -205,8 +177,11 @@ const TradeUIMetricCards = (function() {
                 } else if (reason.toLowerCase().includes('stop') || reason.toLowerCase().includes('loss')) {
                     type = 'negative';
                 }
+                // Use the page's plain-English exit wording when available
+                let label = typeof posExitLabel === 'function' ? posExitLabel(reason) : reason;
+                if (label.length > 20) label = label.substring(0, 20) + '…';
                 mainExit = {
-                    reason: reason.length > 12 ? reason.substring(0, 12) + '...' : reason,
+                    reason: label,
                     count: exitReasons[reason],
                     type: type
                 };
@@ -256,8 +231,9 @@ const TradeUIMetricCards = (function() {
               ((returnData[returnData.length - 1] - returnData[0])).toFixed(1) + '%'
             : null;
 
-        // Determine overall P&L sign for color (prioritize India market if both exist)
-        const totalPLSign = indiaTrades.length > 0 ? indiaPL : usPL;
+        // Overall P&L sign for the card colour (raw sum across currencies —
+        // only the sign is used, never the magnitude)
+        const totalPLSign = plByMarket['India'] + plByMarket['UK'] + plByMarket['US'];
 
         return {
             winRate,
@@ -378,8 +354,8 @@ const TradeUIMetricCards = (function() {
 
         // Get theme colors from CSS variables instead of hardcoded values
         const styles = getComputedStyle(document.documentElement);
-        const successColor = styles.getPropertyValue('--success').trim() || '#22C55E';
-        const errorColor = styles.getPropertyValue('--error').trim() || '#DC2626';
+        const successColor = styles.getPropertyValue('--gain').trim() || '#1E7A45';
+        const errorColor = styles.getPropertyValue('--loss').trim() || '#B3402F';
         const infoColor = styles.getPropertyValue('--info').trim() || '#D4AF37';
 
         ctx.clearRect(0, 0, width, height);
@@ -607,7 +583,7 @@ const TradeUIMetricCards = (function() {
         };
 
         legend.innerHTML = `
-            <div class="legend-title">Daily P&L</div>
+            <div class="legend-title">Daily result</div>
             <div class="legend-items">
                 <div class="legend-group">
                     <div class="legend-label">Profit:</div>
@@ -642,7 +618,7 @@ const TradeUIMetricCards = (function() {
                 <div class="legend-group">
                     <div class="legend-item">
                         <div class="legend-color no-trades"></div>
-                        <span>No Trades</span>
+                        <span>No trades</span>
                     </div>
                 </div>
             </div>
@@ -684,26 +660,37 @@ const TradeUIMetricCards = (function() {
             dayCell.setAttribute('role', 'button');
 
             if (tradesByDate[dateStr]) {
-                const dayPL = tradesByDate[dateStr].reduce((sum, t) => sum + parseFloat(t.profitLoss || t.plValue || 0), 0);
-                const tradeCount = tradesByDate[dateStr].length;
+                const dayTrades = tradesByDate[dateStr];
+                const dayPL = dayTrades.reduce((sum, t) => sum + parseFloat(t.profitLoss || t.plValue || 0), 0);
+                const tradeCount = dayTrades.length;
                 const plType = dayPL > 0 ? 'profit' : 'loss';
 
+                // Currency and intensity bands follow the day's market (the
+                // legend advertises ₹300/1K for India and 100/500 for £/$ —
+                // the cells must classify on the same bands)
+                const firstMarket = dayTrades[0].market ||
+                    (dayTrades[0].symbol && dayTrades[0].symbol.endsWith('.NS') ? 'India'
+                        : dayTrades[0].symbol && dayTrades[0].symbol.endsWith('.L') ? 'UK' : 'US');
+                const sameMarket = dayTrades.every(t => (t.market || firstMarket) === firstMarket);
+                const symbol = !sameMarket ? '' : firstMarket === 'India' ? '₹' : firstMarket === 'UK' ? '£' : '$';
+                const bands = firstMarket === 'India' ? { med: 300, high: 1000 } : { med: 100, high: 500 };
+
                 // Format P&L with currency symbol
-                const formattedPL = '₹' + Math.abs(dayPL).toFixed(2);
+                const formattedPL = symbol + Math.abs(dayPL).toFixed(2);
 
                 if (dayPL > 0) {
-                    if (dayPL > 1000) dayCell.classList.add('profit-high');
-                    else if (dayPL > 300) dayCell.classList.add('profit-medium');
+                    if (dayPL > bands.high) dayCell.classList.add('profit-high');
+                    else if (dayPL > bands.med) dayCell.classList.add('profit-medium');
                     else dayCell.classList.add('profit-low');
                 } else if (dayPL < 0) {
-                    if (dayPL < -1000) dayCell.classList.add('loss-high');
-                    else if (dayPL < -300) dayCell.classList.add('loss-medium');
+                    if (dayPL < -bands.high) dayCell.classList.add('loss-high');
+                    else if (dayPL < -bands.med) dayCell.classList.add('loss-medium');
                     else dayCell.classList.add('loss-low');
                 }
 
                 // Accessibility: Add descriptive ARIA label
                 dayCell.setAttribute('aria-label', `${dateStr}: ${plType} of ${formattedPL}, ${tradeCount} ${tradeCount === 1 ? 'trade' : 'trades'}`);
-                dayCell.title = `${dateStr}: ${dayPL > 0 ? '+' : ''}₹${dayPL.toFixed(2)} (${tradeCount} trades)`;
+                dayCell.title = `${dateStr}: ${dayPL > 0 ? '+' : ''}${symbol}${dayPL.toFixed(2)} (${tradeCount} ${tradeCount === 1 ? 'trade' : 'trades'})`;
 
                 // Add keyboard event handler for Enter and Space keys
                 dayCell.addEventListener('keydown', (e) => {
@@ -713,9 +700,9 @@ const TradeUIMetricCards = (function() {
                         dayCell.click();
 
                         // Optional: Show a visual feedback
-                        dayCell.style.transform = 'scale(0.95)';
+                        dayCell.classList.add('is-pressed');
                         setTimeout(() => {
-                            dayCell.style.transform = '';
+                            dayCell.classList.remove('is-pressed');
                         }, 100);
                     }
                 });
@@ -740,7 +727,7 @@ const TradeUIMetricCards = (function() {
             winRate: '0%',
             winRateTrend: null,
             winRateData: [],
-            totalPL: '₹0',
+            totalPL: '0',
             totalPLSign: 0,
             plTrend: null,
             plData: [],
@@ -749,9 +736,9 @@ const TradeUIMetricCards = (function() {
             returnData: [],
             totalTrades: 0,
             tradeCountData: [],
-            bestMarket: { name: 'N/A', winRate: 0 },
+            bestMarket: { name: '—', winRate: 0 },
             avgDuration: 0,
-            mainExit: { reason: 'N/A', count: 0, type: 'neutral' },
+            mainExit: { reason: '—', count: 0, type: 'neutral' },
             maxDrawdown: '0%',
             drawdownData: []
         };

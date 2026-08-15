@@ -98,22 +98,11 @@ window.TradeUIModules.export = (function() {
                     return;
                 }
                 
-                // Show loading state
+                // Show loading state (keep the page's own label to restore)
+                const originalChildren = Array.from(this.childNodes).map(n => n.cloneNode(true));
                 this.disabled = true;
-                this.innerHTML = `
-                    <svg class="spinner" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="12" y1="2" x2="12" y2="6"></line>
-                        <line x1="12" y1="18" x2="12" y2="22"></line>
-                        <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
-                        <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
-                        <line x1="2" y1="12" x2="6" y2="12"></line>
-                        <line x1="18" y1="12" x2="22" y2="12"></line>
-                        <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
-                        <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
-                    </svg>
-                    Generating CSV...
-                `;
-                
+                this.textContent = 'Generating CSV…';
+
                 // Small delay for better UX
                 setTimeout(() => {
                     try {
@@ -138,16 +127,9 @@ window.TradeUIModules.export = (function() {
                     } catch (error) {
                         TradeCore.showNotification('Error exporting trade history: ' + error.message, 'error');
                     } finally {
-                        // Reset button state
+                        // Reset button state to the page's own label
                         this.disabled = false;
-                        this.innerHTML = `
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                <polyline points="7 10 12 15 17 10"></polyline>
-                                <line x1="12" y1="15" x2="12" y2="3"></line>
-                            </svg>
-                            Export Trade History
-                        `;
+                        this.replaceChildren(...originalChildren.map(n => n.cloneNode(true)));
                     }
                 }, 500);
             });
@@ -214,22 +196,11 @@ window.TradeUIModules.export = (function() {
             return;
         }
         
-        // Show loading state
+        // Show loading state (keep the page's own label to restore)
+        const originalChildren = exportBtn ? Array.from(exportBtn.childNodes).map(n => n.cloneNode(true)) : [];
         if (exportBtn) {
             exportBtn.disabled = true;
-            exportBtn.innerHTML = `
-                <svg class="spinner" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="2" x2="12" y2="6"></line>
-                    <line x1="12" y1="18" x2="12" y2="22"></line>
-                    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
-                    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
-                    <line x1="2" y1="12" x2="6" y2="12"></line>
-                    <line x1="18" y1="12" x2="22" y2="12"></line>
-                    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
-                    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
-                </svg>
-                Exporting...
-            `;
+            exportBtn.textContent = 'Exporting…';
         }
         
         // Small delay for better UX
@@ -259,17 +230,10 @@ window.TradeUIModules.export = (function() {
             } catch (error) {
                 TradeCore.showNotification('Error exporting trades: ' + error.message, 'error');
             } finally {
-                // Reset button state
+                // Reset button state to the page's own label
                 if (exportBtn) {
                     exportBtn.disabled = false;
-                    exportBtn.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="7 10 12 15 17 10"></polyline>
-                            <line x1="12" y1="15" x2="12" y2="3"></line>
-                        </svg>
-                        Export All Trades
-                    `;
+                    exportBtn.replaceChildren(...originalChildren.map(n => n.cloneNode(true)));
                 }
             }
         }, 500);
@@ -332,20 +296,22 @@ window.TradeUIModules.export = (function() {
         return new Promise((resolve) => {
             const analyticsTabs = document.querySelectorAll('.analytics-tab');
             const tabContents = document.querySelectorAll('.analytics-tab-content');
-            
+
             if (analyticsTabs.length === 0) {
                 resolve();
                 return;
             }
-            
+
+            // Remember which tab the user was on BEFORE cycling through them
+            const originalTab = document.querySelector('.analytics-tab.active');
+
             let currentTabIndex = 0;
-            
+
             function switchToNextTab() {
                 if (currentTabIndex >= analyticsTabs.length) {
                     // All tabs processed, switch back to the originally active tab
-                    const activeTab = document.querySelector('.analytics-tab.active');
-                    if (activeTab) {
-                        activeTab.click();
+                    if (originalTab) {
+                        originalTab.click();
                     }
                     resolve();
                     return;
@@ -390,30 +356,23 @@ window.TradeUIModules.export = (function() {
     function handleExportCharts() {
         // Get the export button to show loading state
         const exportChartsBtn = document.getElementById('export-charts');
-        
-        // Show loading state
+
+        // Show loading state (keep the page's own label to restore)
+        const originalChildren = exportChartsBtn ? Array.from(exportChartsBtn.childNodes).map(n => n.cloneNode(true)) : [];
         if (exportChartsBtn) {
             exportChartsBtn.disabled = true;
-            exportChartsBtn.innerHTML = `
-                <svg class="spinner" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="2" x2="12" y2="6"></line>
-                    <line x1="12" y1="18" x2="12" y2="22"></line>
-                    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
-                    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
-                    <line x1="2" y1="12" x2="6" y2="12"></line>
-                    <line x1="18" y1="12" x2="22" y2="12"></line>
-                    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
-                    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
-                </svg>
-                Preparing Charts...
-            `;
+            exportChartsBtn.textContent = 'Preparing charts…';
         }
-        
+
         // Ensure all charts are rendered first
         ensureChartsRendered().then(() => {
             try {
                 // Create a new window for chart display
                 const exportWindow = window.open('', '_blank');
+                if (!exportWindow) {
+                    TradeCore.showNotification('Allow pop-ups for this site to export charts', 'info');
+                    return;
+                }
                 
                 // Create HTML content for the export window
                 const exportDate = new Date().toLocaleString();
@@ -423,7 +382,7 @@ window.TradeUIModules.export = (function() {
                     <head>
                         <meta charset="UTF-8">
                         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                        <title>Trading Analytics - ${exportDate}</title>
+                        <title>SutrAlgo charts - ${exportDate}</title>
                         <style>
                             body {
                                 font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -561,7 +520,7 @@ window.TradeUIModules.export = (function() {
                     </head>
                     <body>
                         <div class="header">
-                            <h1>Trading Analytics Export</h1>
+                            <h1>SutrAlgo charts export</h1>
                             <p>Generated on ${exportDate}</p>
                         </div>
                         <div class="actions">
@@ -656,7 +615,7 @@ window.TradeUIModules.export = (function() {
                 // Close the HTML
                 htmlContent += `
                         <div class="footer">
-                            <p>DTI Backtester Trading Analytics</p>
+                            <p>SutrAlgo trading analytics</p>
                         </div>
                     </body>
                     </html>
@@ -674,17 +633,10 @@ window.TradeUIModules.export = (function() {
             } catch (error) {
                 TradeCore.showNotification('Error exporting charts: ' + error.message, 'error');
             } finally {
-                // Reset button state
+                // Reset button state to the page's own label
                 if (exportChartsBtn) {
                     exportChartsBtn.disabled = false;
-                    exportChartsBtn.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                            <polyline points="21 15 16 10 5 21"></polyline>
-                        </svg>
-                        Export Charts
-                    `;
+                    exportChartsBtn.replaceChildren(...originalChildren.map(n => n.cloneNode(true)));
                 }
             }
         });
@@ -697,37 +649,29 @@ window.TradeUIModules.export = (function() {
     function handleExportReport() {
         // Get the export button to show loading state
         const exportReportBtn = document.getElementById('export-report');
-        
-        // Show loading state
+
+        // Show loading state (keep the page's own label to restore)
+        const originalChildren = exportReportBtn ? Array.from(exportReportBtn.childNodes).map(n => n.cloneNode(true)) : [];
         if (exportReportBtn) {
             exportReportBtn.disabled = true;
-            exportReportBtn.innerHTML = `
-                <svg class="spinner" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="2" x2="12" y2="6"></line>
-                    <line x1="12" y1="18" x2="12" y2="22"></line>
-                    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
-                    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
-                    <line x1="2" y1="12" x2="6" y2="12"></line>
-                    <line x1="18" y1="12" x2="22" y2="12"></line>
-                    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
-                    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
-                </svg>
-                Generating Report...
-            `;
+            exportReportBtn.textContent = 'Generating report…';
         }
-        
+
         // Ensure all charts are rendered first
         ensureChartsRendered().then(() => {
             try {
                 // Create a new window for the report
                 const reportWindow = window.open('', '_blank');
-                
+                if (!reportWindow) {
+                    TradeCore.showNotification('Allow pop-ups for this site to export the report', 'info');
+                    return;
+                }
+
                 // Get all the trading data we need for the report
                 const stats = TradeCore.getTradeStatisticsByCurrency();
                 const metrics = TradeCore.getAdvancedMetrics();
                 const exportDate = new Date().toLocaleString();
-                const timeFilter = document.getElementById('analytics-time-filter');
-                const timePeriod = timeFilter ? timeFilter.options[timeFilter.selectedIndex].text : 'All Time';
+                const timePeriod = 'Everything so far';
                 
                 // Create HTML content for the export window with inline styles
                 let htmlContent = `
@@ -736,7 +680,7 @@ window.TradeUIModules.export = (function() {
                     <head>
                         <meta charset="UTF-8">
                         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                        <title>DTI Trading Report - ${exportDate}</title>
+                        <title>SutrAlgo trading report - ${exportDate}</title>
                         <style>
                             body {
                                 font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -981,7 +925,7 @@ window.TradeUIModules.export = (function() {
                     </head>
                     <body>
                         <div class="report-header">
-                            <h1 class="report-title">DTI Trading Performance Report</h1>
+                            <h1 class="report-title">SutrAlgo trading performance report</h1>
                             <p class="report-subtitle">Report Period: ${timePeriod} • Generated on ${exportDate}</p>
                         </div>
                         
@@ -1080,17 +1024,17 @@ window.TradeUIModules.export = (function() {
                             <h2 class="section-title">Advanced Trading Metrics</h2>
                             <div class="metrics-grid">
                                 <div class="metric-card ${metrics.sharpeRatio >= 1 ? 'success' : metrics.sharpeRatio >= 0 ? 'neutral' : 'danger'}">
-                                    <div class="metric-title">Sharpe Ratio</div>
+                                    <div class="metric-title">Sharpe ratio</div>
                                     <div class="metric-value">${metrics.sharpeRatio.toFixed(2)}</div>
                                     <div class="metric-desc">Risk-adjusted return (higher is better)</div>
                                 </div>
                                 <div class="metric-card ${metrics.maxDrawdown < 10 ? 'success' : metrics.maxDrawdown < 20 ? 'neutral' : 'danger'}">
-                                    <div class="metric-title">Max Drawdown</div>
+                                    <div class="metric-title">Max drawdown</div>
                                     <div class="metric-value">${metrics.maxDrawdown.toFixed(2)}%</div>
                                     <div class="metric-desc">Largest drop from peak (${metrics.maxDrawdownDuration} days)</div>
                                 </div>
                                 <div class="metric-card ${metrics.profitFactor >= 2 ? 'success' : metrics.profitFactor >= 1 ? 'neutral' : 'danger'}">
-                                    <div class="metric-title">Profit Factor</div>
+                                    <div class="metric-title">Profit factor</div>
                                     <div class="metric-value">${metrics.profitFactor === Infinity ? '∞' : metrics.profitFactor.toFixed(2)}</div>
                                     <div class="metric-desc">Gross profit / gross loss</div>
                                 </div>
@@ -1100,30 +1044,30 @@ window.TradeUIModules.export = (function() {
                                     <div class="metric-desc">Expected return per trade</div>
                                 </div>
                                 <div class="metric-card ${metrics.avgTradeDuration < 10 ? 'success' : metrics.avgTradeDuration < 20 ? 'neutral' : 'warning'}">
-                                    <div class="metric-title">Avg Hold Time</div>
+                                    <div class="metric-title">Average hold time</div>
                                     <div class="metric-value">${metrics.avgTradeDuration.toFixed(1)} days</div>
                                     <div class="metric-desc">Average holding period</div>
                                 </div>
                                 <div class="metric-card ${metrics.annualizedReturn > 15 ? 'success' : metrics.annualizedReturn > 0 ? 'neutral' : 'danger'}">
-                                    <div class="metric-title">Annualized Return</div>
+                                    <div class="metric-title">Annualised return</div>
                                     <div class="metric-value">${metrics.annualizedReturn.toFixed(2)}%</div>
-                                    <div class="metric-desc">Return normalized to yearly basis</div>
+                                    <div class="metric-desc">The pace of returns stretched over a year</div>
                                 </div>
                             </div>
 
                             <div class="metrics-grid metrics-grid-spaced">
                                 <div class="metric-card ${streakInfo.currentStreak.type === 'win' ? 'success' : streakInfo.currentStreak.type === 'loss' ? 'danger' : 'neutral'}">
-                                    <div class="metric-title">Current Streak</div>
-                                    <div class="metric-value">${streakInfo.currentStreak.count} ${streakInfo.currentStreak.type === 'win' ? 'Wins' : 'Losses'}</div>
+                                    <div class="metric-title">Current streak</div>
+                                    <div class="metric-value">${streakInfo.currentStreak.count === 0 ? 'None yet' : streakInfo.currentStreak.count + (streakInfo.currentStreak.type === 'win' ? (streakInfo.currentStreak.count === 1 ? ' win' : ' wins') : (streakInfo.currentStreak.count === 1 ? ' loss' : ' losses'))}</div>
                                     <div class="metric-desc">Most recent consecutive results</div>
                                 </div>
                                 <div class="metric-card success">
-                                    <div class="metric-title">Longest Win Streak</div>
+                                    <div class="metric-title">Longest winning streak</div>
                                     <div class="metric-value">${streakInfo.longestWinStreak}</div>
                                     <div class="metric-desc">Most consecutive winning trades</div>
                                 </div>
                                 <div class="metric-card danger">
-                                    <div class="metric-title">Longest Loss Streak</div>
+                                    <div class="metric-title">Longest losing streak</div>
                                     <div class="metric-value">${streakInfo.longestLossStreak}</div>
                                     <div class="metric-desc">Most consecutive losing trades</div>
                                 </div>
@@ -1342,7 +1286,7 @@ window.TradeUIModules.export = (function() {
                 // Footer
                 htmlContent += `
                         <div class="footer">
-                            <p>DTI Backtester Trading Analytics Report • Generated on ${exportDate}</p>
+                            <p>SutrAlgo trading report • Generated on ${exportDate}</p>
                             <p>Report Period: ${timePeriod}</p>
                         </div>
                     </body>
@@ -1357,19 +1301,10 @@ window.TradeUIModules.export = (function() {
             } catch (error) {
                 TradeCore.showNotification('Error generating report: ' + error.message, 'error');
             } finally {
-                // Reset button state
+                // Reset button state to the page's own label
                 if (exportReportBtn) {
                     exportReportBtn.disabled = false;
-                    exportReportBtn.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14 2 14 8 20 8"></polyline>
-                            <line x1="16" y1="13" x2="8" y2="13"></line>
-                            <line x1="16" y1="17" x2="8" y2="17"></line>
-                            <polyline points="10 9 9 9 8 9"></polyline>
-                        </svg>
-                        Export Report
-                    `;
+                    exportReportBtn.replaceChildren(...originalChildren.map(n => n.cloneNode(true)));
                 }
             }
         });
@@ -1447,21 +1382,21 @@ window.TradeUIModules.metrics = (function() {
             
             // Create first row metrics
             const sharpeCard = createMetricCard(
-                'Sharpe Ratio',
+                'Sharpe ratio',
                 metrics.sharpeRatio.toFixed(2),
                 'Risk-adjusted return (higher is better)',
                 metrics.sharpeRatio >= 1 ? 'success' : metrics.sharpeRatio >= 0 ? 'neutral' : 'danger'
             );
             
             const drawdownCard = createMetricCard(
-                'Max Drawdown',
+                'Max drawdown',
                 metrics.maxDrawdown.toFixed(2) + '%',
                 `Largest drop from peak (${metrics.maxDrawdownDuration} days)`,
                 metrics.maxDrawdown < 10 ? 'success' : metrics.maxDrawdown < 20 ? 'neutral' : 'danger'
             );
             
             const profitFactorCard = createMetricCard(
-                'Profit Factor',
+                'Profit factor',
                 metrics.profitFactor === Infinity ? '∞' : metrics.profitFactor.toFixed(2),
                 'Gross profit / gross loss',
                 metrics.profitFactor >= 2 ? 'success' : metrics.profitFactor >= 1 ? 'neutral' : 'danger'
@@ -1485,16 +1420,16 @@ window.TradeUIModules.metrics = (function() {
             );
             
             const holdTimeCard = createMetricCard(
-                'Avg Hold Time',
+                'Average hold time',
                 metrics.avgTradeDuration.toFixed(1) + ' days',
                 'Average holding period',
                 metrics.avgTradeDuration < 10 ? 'success' : metrics.avgTradeDuration < 20 ? 'neutral' : 'warning'
             );
             
             const annualReturnCard = createMetricCard(
-                'Annualized Return',
+                'Annualised return',
                 metrics.annualizedReturn.toFixed(2) + '%',
-                'Return normalized to yearly basis',
+                'The pace of returns stretched over a year',
                 metrics.annualizedReturn > 15 ? 'success' : metrics.annualizedReturn > 0 ? 'neutral' : 'danger'
             );
             
@@ -1509,21 +1444,21 @@ window.TradeUIModules.metrics = (function() {
             
             // Create third row metrics
             const currentStreakCard = createMetricCard(
-                'Current Streak',
-                `${streakInfo.currentStreak.count} ${streakInfo.currentStreak.type === 'win' ? 'Wins' : 'Losses'}`,
+                'Current streak',
+                `${streakInfo.currentStreak.count === 0 ? 'None yet' : streakInfo.currentStreak.count + (streakInfo.currentStreak.type === 'win' ? (streakInfo.currentStreak.count === 1 ? ' win' : ' wins') : (streakInfo.currentStreak.count === 1 ? ' loss' : ' losses'))}`,
                 'Most recent consecutive results',
                 streakInfo.currentStreak.type === 'win' ? 'success' : streakInfo.currentStreak.type === 'loss' ? 'danger' : 'neutral'
             );
             
             const winStreakCard = createMetricCard(
-                'Longest Win Streak',
+                'Longest winning streak',
                 streakInfo.longestWinStreak.toString(),
                 'Most consecutive winning trades',
                 'success'
             );
             
             const lossStreakCard = createMetricCard(
-                'Longest Loss Streak',
+                'Longest losing streak',
                 streakInfo.longestLossStreak.toString(),
                 'Most consecutive losing trades',
                 'danger'

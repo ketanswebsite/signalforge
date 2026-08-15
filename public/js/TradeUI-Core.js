@@ -117,13 +117,9 @@ window.TradeUI = (function() {
      * Setup analytics time period filter
      */
     function setupAnalyticsTimeFilter() {
-        const timeFilterSelect = document.getElementById('analytics-time-filter');
-        if (timeFilterSelect) {
-            timeFilterSelect.addEventListener('change', function() {
-                // Refresh all charts with the new time period
-                refreshAllCharts();
-            });
-        }
+        // The old "Counting" time filter re-rendered the same all-time data
+        // without filtering anything, so the control was removed from the
+        // page. Analytics always cover everything so far.
     }
     
     /**
@@ -292,7 +288,6 @@ window.TradeUI = (function() {
                 // Render metric cards with fresh data
                 if (window.TradeUIMetricCards && window.TradeCore) {
                     const trades = window.TradeCore.getTrades();
-                    console.log('Rendering metric cards with', trades.length, 'trades');
                     window.TradeUIMetricCards.renderMetricCards(trades);
                     window.TradeUIMetricCards.renderCompactCalendar(trades);
                 }

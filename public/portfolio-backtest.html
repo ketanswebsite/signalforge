@@ -78,7 +78,7 @@
         <div class="sa-spread app-pagehead">
             <div>
                 <h1>Simulator</h1>
-                <p>Run the formula over real past prices and see every trade it would have made. Nothing here involves real money.</p>
+                <p>Run the formula over real past prices and see every trade it would have made. Entries pass the same AI conviction check as live trading — the AI scores each stock as it stands today, since news and fundamentals can't be replayed. Nothing here involves real money.</p>
             </div>
             <div class="sa-row">
                 <button id="run-simulation-btn" class="sa-btn sa-btn--primary">
@@ -272,6 +272,14 @@
                     <div class="info-item"><span class="info-label">Open trades included</span><span class="info-value" id="detail-open-trades">-</span></div>
                     <div class="info-item"><span class="info-label">Fuzzy matches</span><span class="info-value" id="detail-fuzzy-matches">-</span></div>
                     <div class="info-item"><span class="info-label">Unmatched positions</span><span class="info-value" id="detail-unmatched">-</span></div>
+                </div>
+                <div class="info-section">
+                    <h4 class="sim-infotitle">The AI check</h4>
+                    <div class="info-item"><span class="info-label">Stocks scored</span><span class="info-value" id="detail-ai-checked">-</span></div>
+                    <div class="info-item"><span class="info-label">Entries approved</span><span class="info-value" id="detail-ai-approved">-</span></div>
+                    <div class="info-item"><span class="info-label">Entries blocked</span><span class="info-value" id="detail-ai-rejected">-</span></div>
+                    <div class="info-item"><span class="info-label">Check failures (no trade)</span><span class="info-value" id="detail-ai-errors">-</span></div>
+                    <div class="info-item info-item--note"><span class="info-label">Blocked stocks</span><span class="info-value" id="detail-ai-rejected-symbols">-</span></div>
                 </div>
                 <div class="info-section">
                     <h4 class="sim-infotitle">Forced sells at the end</h4>
