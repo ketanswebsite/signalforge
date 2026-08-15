@@ -3110,34 +3110,63 @@ function isMarketOpen(symbol) {
   }
 }
 
+// Short-lived per-symbol price cache. The Positions page polls every second;
+// this keeps our load on Yahoo to at most one request per symbol per second
+// (and one shared request across tabs), while still serving fresh ticks.
+const livePriceCache = new Map();
+const LIVE_PRICE_CACHE_TTL_MS = 1000;
+
+function getCachedPrice(symbol) {
+  const entry = livePriceCache.get(symbol);
+  if (entry && (Date.now() - entry.at) < LIVE_PRICE_CACHE_TTL_MS) {
+    return entry.data;
+  }
+  return null;
+}
+
+function setCachedPrice(symbol, data) {
+  livePriceCache.set(symbol, { at: Date.now(), data });
+  // Keep the cache from growing unbounded across many symbols
+  if (livePriceCache.size > 500) {
+    const oldest = livePriceCache.keys().next().value;
+    livePriceCache.delete(oldest);
+  }
+}
+
 // Get real-time prices for multiple symbols
 app.post('/api/prices', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
     const { symbols } = req.body;
-    
+
     if (!symbols || !Array.isArray(symbols) || symbols.length === 0) {
       return res.status(400).json({ error: 'Symbols array is required' });
     }
-    
+
     const priceData = {};
-    
+
     // Fetch prices for each symbol
     const promises = symbols.map(async (symbol) => {
       try {
+        const cached = getCachedPrice(symbol);
+        if (cached) {
+          priceData[symbol] = cached;
+          return;
+        }
+
         // Check if market is open for this symbol
         const marketOpen = isMarketOpen(symbol);
-        
+
         // Add market status to response
         const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
-        
-        const response = await axios.get(url, { 
+
+        const response = await axios.get(url, {
           headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             'Accept': 'application/json'
           },
           timeout: 5000
         });
-        
+
         const data = response.data;
         if (data.chart && data.chart.result && data.chart.result.length > 0) {
           const result = data.chart.result[0];
@@ -3158,6 +3187,7 @@ app.post('/api/prices', ensureAuthenticatedAPI, ensureSubscriptionActive, async 
             timestamp: new Date().toISOString(),
             marketOpen: marketOpen
           };
+          setCachedPrice(symbol, priceData[symbol]);
         }
       } catch (error) {
         // Return null price data for failed symbols
@@ -3674,8 +3704,9 @@ async function checkTradeAlerts() {
               reason = 'Target price reached';
             }
 
-            // Stop loss hit
-            if (user.alert_on_stoploss && trade.stopLoss && currentPrice <= trade.stopLoss) {
+            // Stop loss hit (stopLossPrice is derived from the actual entry
+            // price; the old trade.stopLoss field never existed on trades)
+            if (user.alert_on_stoploss && trade.stopLossPrice && currentPrice <= trade.stopLossPrice) {
               shouldAlert = true;
               alertType = 'stop_loss';
               reason = 'Stop loss triggered';

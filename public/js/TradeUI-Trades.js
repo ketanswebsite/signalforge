@@ -110,15 +110,9 @@ function renderActiveTrades() {
     // Hide empty state message
     noActiveTradesMsg.style.display = 'none';
     
-    // Remove any existing trade cards and clean up subscriptions
+    // Remove any existing trade cards
     const existingCards = container.querySelectorAll('.trade-card');
-    existingCards.forEach(card => {
-        // Unsubscribe from price updates if available
-        if (card.dataset.unsubscribe && typeof window[card.dataset.unsubscribe] === 'function') {
-            window[card.dataset.unsubscribe]();
-        }
-        card.remove();
-    });
+    existingCards.forEach(card => card.remove());
     
     // Get the template
     const template = document.getElementById('active-trade-template');
@@ -154,43 +148,9 @@ function renderActiveTrades() {
             stockNameElement.textContent = companyName;
             stockSymbolElement.textContent = trade.symbol;
             
-            // Add price movement badge
-            const cardHeader = card.querySelector('.trade-card-header');
-            if (cardHeader) {
-                const badge = document.createElement('div');
-                badge.className = 'price-movement-badge';
-                badge.style.opacity = '0';
-                cardHeader.appendChild(badge);
-            }
-            
-            // Add sparkline container
-            const priceContainer = card.querySelector('.current-price').parentElement;
-            if (priceContainer) {
-                const sparklineContainer = document.createElement('div');
-                sparklineContainer.className = 'sparkline-container';
-                sparklineContainer.style.display = 'inline-block';
-                sparklineContainer.style.verticalAlign = 'middle';
-                priceContainer.appendChild(sparklineContainer);
-                
-                // Initialize sparkline if price service is available
-                if (window.RealTimePriceService) {
-                    window.RealTimePriceService.createSparkline(sparklineContainer, trade.symbol);
-                }
-            }
-            
-            // Set up real-time price updates
-            if (window.RealTimePriceService) {
-                const calculator = new window.LivePnLCalculator(card);
-                
-                // Subscribe to price updates
-                const unsubscribe = window.RealTimePriceService.subscribe(trade.symbol, (priceData) => {
-                    calculator.updatePrice(priceData.price, priceData.change, priceData.changePercent);
-                });
-                
-                // Store unsubscribe function on the card for cleanup
-                card.dataset.unsubscribe = unsubscribe;
-            }
-            
+            // Live prices arrive via TradeCore's batched feed; TradeUI-Core
+            // updates the card DOM when a price actually changes.
+
             // P&L Status
             const plElement = card.querySelector('.current-pl');
             const plValue = trade.currentPLPercent || 0;
@@ -257,12 +217,8 @@ function renderActiveTrades() {
                         holdingDays = Math.floor((currentDate - entryDate) / (1000 * 60 * 60 * 24));
                         // Handle negative days (future entry dates)
                         if (holdingDays < 0) holdingDays = 0;
-                        
+
                         holdingDaysText = `${holdingDays} days`;
-                        
-                        // Debug log for first trade
-                        if (index === 0) {
-                        }
                     } else {
                         holdingDaysText = '0 days';
                     }
@@ -275,14 +231,7 @@ function renderActiveTrades() {
             
             const holdingDaysElement = card.querySelector('.holding-days');
             if (holdingDaysElement) {
-                // Clear any existing content first
-                holdingDaysElement.innerHTML = '';
-                // Use the calculated text
                 holdingDaysElement.textContent = holdingDaysText;
-                // Debug - make sure element was found and updated
-                if (index === 0) {
-                }
-            } else {
             }
             
             const squareOffDateElement = card.querySelector('.square-off-date');

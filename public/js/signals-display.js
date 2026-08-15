@@ -12,7 +12,7 @@ const SignalsDisplay = (function() {
      * Initialize signals display
      */
     async function init() {
-        console.log('📈 Initializing signals display...');
+        console.log('Initializing signals display...');
 
         // Create signals container
         createSignalsContainer();
@@ -59,7 +59,7 @@ const SignalsDisplay = (function() {
                     <circle cx="8.5" cy="7" r="4"></circle>
                     <polyline points="17 11 19 13 23 9"></polyline>
                 </svg>
-                📊 7 AM Signals - Automated 1 PM Execution
+                7 AM signals — executed automatically at 1 PM
                 <span class="signal-count" id="signal-count" style="display: none;">0</span>
             </h3>
 
@@ -126,21 +126,35 @@ const SignalsDisplay = (function() {
         const grid = document.getElementById('signals-grid');
         if (!grid) return;
 
-        grid.innerHTML = `
-            <div class="signals-error">
-                <div class="error-icon">⚠️</div>
-                <div class="error-title">${title}</div>
-                <div class="error-message">${message}</div>
-                <button class="btn btn-secondary" onclick="SignalsDisplay.refreshSignals()">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="23 4 23 10 17 10"></polyline>
-                        <polyline points="1 20 1 14 7 14"></polyline>
-                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-                    </svg>
-                    Retry
-                </button>
-            </div>
-        `;
+        // Safe DOM construction — title/message can echo server text
+        grid.textContent = '';
+
+        const wrap = document.createElement('div');
+        wrap.className = 'signals-error';
+
+        const icon = document.createElement('div');
+        icon.className = 'error-icon';
+        const iconGlyph = document.createElement('span');
+        iconGlyph.className = 'material-symbols-rounded';
+        iconGlyph.setAttribute('aria-hidden', 'true');
+        iconGlyph.textContent = 'error';
+        icon.appendChild(iconGlyph);
+
+        const titleEl = document.createElement('div');
+        titleEl.className = 'error-title';
+        titleEl.textContent = title;
+
+        const messageEl = document.createElement('div');
+        messageEl.className = 'error-message';
+        messageEl.textContent = message;
+
+        const retryBtn = document.createElement('button');
+        retryBtn.className = 'sa-btn sa-btn--secondary sa-btn--sm';
+        retryBtn.textContent = 'Retry';
+        retryBtn.addEventListener('click', function () { refreshSignals(); });
+
+        wrap.append(icon, titleEl, messageEl, retryBtn);
+        grid.appendChild(wrap);
     }
 
     /**
@@ -164,13 +178,11 @@ const SignalsDisplay = (function() {
         // Render signals
         if (pendingSignals.length === 0) {
             grid.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">📭</div>
-                    <div class="empty-state-message">No pending signals</div>
-                    <p>New high-conviction opportunities will appear here daily at 7 AM UK time</p>
-                    <p style="margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.875rem;">
-                        Trades automatically execute at 1 PM in each market timezone
-                    </p>
+                <div class="empty-state sa-empty">
+                    <div class="sa-empty__icon"><span class="material-symbols-rounded" aria-hidden="true">notifications_paused</span></div>
+                    <div class="empty-state-message sa-empty__title">No pending signals</div>
+                    <p>New high-conviction opportunities appear here every weekday at 7 AM UK time.</p>
+                    <p class="empty-state-note">Approved signals execute automatically at 1 PM in each market's timezone.</p>
                 </div>
             `;
             return;
@@ -200,16 +212,16 @@ const SignalsDisplay = (function() {
                 <div class="signal-header">
                     <div class="signal-title">
                         <h4>${signal.symbol}</h4>
-                        <span class="signal-market">${signal.market} ${getMarketFlag(signal.market)}</span>
+                        <span class="signal-market">${signal.market}</span>
                     </div>
                     <span class="signal-age ${ageClass}">
-                        ${signalAge === 0 ? '🆕 Today' : signalAge === 1 ? 'Yesterday' : signalAge + 'd ago'}
+                        ${signalAge === 0 ? 'New today' : signalAge === 1 ? 'Yesterday' : signalAge + ' days ago'}
                     </span>
                 </div>
 
                 <div class="signal-info">
                     <div class="info-row">
-                        <span class="info-label">Entry Price:</span>
+                        <span class="info-label">Signal price:</span>
                         <span class="info-value">${currency}${signal.entryPrice.toFixed(2)}</span>
                     </div>
                     <div class="info-row">
@@ -217,7 +229,7 @@ const SignalsDisplay = (function() {
                         <span class="info-value success">${currency}${signal.targetPrice.toFixed(2)}</span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">Stop Loss (-5%):</span>
+                        <span class="info-label">Stop (−5%):</span>
                         <span class="info-value danger">${currency}${signal.stopLoss.toFixed(2)}</span>
                     </div>
                 </div>
@@ -235,7 +247,7 @@ const SignalsDisplay = (function() {
 
                 <div class="signal-scheduled-execution">
                     <div class="execution-status scheduled">
-                        <div class="execution-icon">⏰</div>
+                        <div class="execution-icon"><span class="material-symbols-rounded" aria-hidden="true">schedule</span></div>
                         <div class="execution-details">
                             <div class="execution-time">
                                 Auto-executes at 1:00 PM ${getMarketTimezone(signal.market)}
@@ -391,15 +403,6 @@ const SignalsDisplay = (function() {
             'US': '$'
         };
         return symbols[market] || '';
-    }
-
-    function getMarketFlag(market) {
-        const flags = {
-            'India': '🇮🇳',
-            'UK': '🇬🇧',
-            'US': '🇺🇸'
-        };
-        return flags[market] || '';
     }
 
     function getMarketTimezone(market) {

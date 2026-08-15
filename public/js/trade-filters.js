@@ -51,7 +51,7 @@ window.TradeUIModules.filters = (function() {
         filterContainer.innerHTML = `
             <div class="trades-filter-row">
                 <div class="search-container">
-                    <input type="text" id="trade-search" placeholder="Search by name or symbol..." class="trade-search">
+                    <input type="text" id="trade-search" placeholder="Search by name or symbol" class="trade-search">
                     <button id="clear-search" class="clear-search" title="Clear search">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -61,27 +61,27 @@ window.TradeUIModules.filters = (function() {
                 </div>
                 <div class="filter-controls">
                     <div class="filter-select-container">
-                        <label for="trade-filter">Filter:</label>
+                        <label for="trade-filter">Show</label>
                         <select id="trade-filter" class="trade-filter">
-                            <option value="all">All Trades</option>
-                            <option value="profit">In Profit</option>
-                            <option value="loss">In Loss</option>
-                            <option value="target-near">Near Target (>80%)</option>
-                            <option value="stop-near">Near Stop Loss (<120%)</option>
-                            <option value="expiring">Expiring Soon (7 days)</option>
+                            <option value="all">Everything</option>
+                            <option value="profit">Making money</option>
+                            <option value="loss">Losing money</option>
+                            <option value="target-near">Close to the target</option>
+                            <option value="stop-near">Close to the stop</option>
+                            <option value="expiring">Selling within 7 days</option>
                         </select>
                     </div>
                     <div class="filter-select-container">
-                        <label for="trade-sort">Sort By:</label>
+                        <label for="trade-sort">Sort by</label>
                         <select id="trade-sort" class="trade-sort">
-                            <option value="entry-desc">Entry Date (Newest)</option>
-                            <option value="entry-asc">Entry Date (Oldest)</option>
-                            <option value="pl-desc">P/L % (Highest)</option>
-                            <option value="pl-asc">P/L % (Lowest)</option>
-                            <option value="investment-desc">Investment (Highest)</option>
-                            <option value="investment-asc">Investment (Lowest)</option>
-                            <option value="expiry-asc">Expiry (Soonest)</option>
-                            <option value="expiry-desc">Expiry (Latest)</option>
+                            <option value="entry-desc">Newest first</option>
+                            <option value="entry-asc">Oldest first</option>
+                            <option value="pl-desc">Biggest gain first</option>
+                            <option value="pl-asc">Biggest loss first</option>
+                            <option value="investment-desc">Most invested first</option>
+                            <option value="investment-asc">Least invested first</option>
+                            <option value="expiry-asc">Selling soonest first</option>
+                            <option value="expiry-desc">Selling latest first</option>
                         </select>
                     </div>
                 </div>
@@ -307,18 +307,19 @@ window.TradeUIModules.filters = (function() {
             if (currentFilter !== 'all' || searchQuery) {
                 // Custom message for when filters are applied but no matches
                 noActiveTradesMsg.style.display = 'block';
-                noActiveTradesMsg.querySelector('.empty-state-message').textContent = 'No trades match your filters';
+                noActiveTradesMsg.querySelector('.empty-state-message').textContent = 'Nothing matches those filters';
                 const emptyStateDesc = noActiveTradesMsg.querySelector('p');
                 if (emptyStateDesc) {
-                    emptyStateDesc.textContent = 'Try changing your filter criteria';
+                    emptyStateDesc.textContent = 'Try a different filter or clear the search.';
                 }
             } else {
-                // Default message when there are genuinely no active trades
+                // Default message when there are genuinely no active trades —
+                // keep the page's own hand-written copy
                 noActiveTradesMsg.style.display = 'block';
-                noActiveTradesMsg.querySelector('.empty-state-message').textContent = 'No active trades';
+                noActiveTradesMsg.querySelector('.empty-state-message').textContent = 'Nothing open';
                 const emptyStateDesc = noActiveTradesMsg.querySelector('p');
                 if (emptyStateDesc) {
-                    emptyStateDesc.textContent = 'Return to the backtester to find and take new trades';
+                    emptyStateDesc.textContent = 'When you take a signal it appears here with its sell price and stop already set.';
                 }
             }
             
@@ -526,22 +527,22 @@ window.TradeUIModules.filters = (function() {
         
         if (currentFilter !== 'all') {
             const filterLabels = {
-                'profit': 'In Profit',
-                'loss': 'In Loss',
-                'target-near': 'Near Target',
-                'stop-near': 'Near Stop Loss',
-                'expiring': 'Expiring Soon'
+                'profit': 'Making money',
+                'loss': 'Losing money',
+                'target-near': 'Close to the target',
+                'stop-near': 'Close to the stop',
+                'expiring': 'Selling within 7 days'
             };
-            
-            summaryText += `Filter: ${filterLabels[currentFilter]} • `;
+
+            summaryText += `Showing: ${filterLabels[currentFilter]} • `;
         }
-        
+
         // Add count of filtered trades
-        summaryText += `Showing ${filteredTrades} of ${totalActiveTrades} active trades`;
-        
+        summaryText += `Showing ${filteredTrades} of ${totalActiveTrades} open positions`;
+
         // Add a clear all button if filters are applied
         if (currentFilter !== 'all' || searchQuery) {
-            summaryText += ` • <button id="clear-all-filters" class="clear-all-btn">Clear All</button>`;
+            summaryText += ` • <button id="clear-all-filters" class="clear-all-btn">Clear filters</button>`;
         }
         
         // Update the summary element

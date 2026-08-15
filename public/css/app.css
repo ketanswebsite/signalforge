@@ -95,6 +95,24 @@
 .sa-stat__value.positive{color:var(--gain)}
 .sa-stat__value.negative{color:var(--loss)}
 .update-status{font-size:var(--size-xs);color:var(--text-3);margin-top:var(--s-3)}
+.update-status.is-live{color:var(--gain)}
+.update-status.is-error{color:var(--warn)}
+
+/* Live tick feedback — classes are applied only when a price actually changed */
+.price-up{color:var(--gain)}
+.price-down{color:var(--loss)}
+.price-updating{transition:background-color .3s ease}
+.price-arrow{margin-left:4px;font-size:var(--size-xs)}
+.price-arrow--up{color:var(--gain)}
+.price-arrow--down{color:var(--loss)}
+.value-increase{text-shadow:0 0 12px var(--gain);transition:text-shadow .2s ease}
+.value-decrease{text-shadow:0 0 12px var(--loss);transition:text-shadow .2s ease}
+.significant-change{animation:sa-tick-pulse .6s ease}
+@keyframes sa-tick-pulse{50%{transform:scale(1.04)}}
+.pnl-change-indicator{position:fixed;z-index:1000;font-size:var(--size-xs);font-weight:var(--w-bold);pointer-events:none;animation:sa-float-up 2s ease-out forwards}
+.pnl-change-indicator .positive{color:var(--gain)}
+.pnl-change-indicator .negative{color:var(--loss)}
+@keyframes sa-float-up{to{transform:translateY(-24px);opacity:0}}
 .pos-toptabs{margin-bottom:var(--s-5)}
 .sa-tab{min-height:var(--tap-min)}
 .pos-panel{margin-bottom:var(--s-5)}
@@ -237,6 +255,9 @@
 .dialog-overlay{position:fixed;inset:0;background:var(--scrim);z-index:var(--z-scrim);display:none;align-items:center;justify-content:center;padding:var(--s-4)}
 .dialog-overlay.active{display:flex;animation:sa-fadein var(--dur-2) var(--ease-out)}
 .dialog-content{background:var(--surface);border:2.5px solid var(--frame);border-radius:var(--r-lg);box-shadow:var(--shadow-pop);width:100%;max-width:560px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;animation:sa-pop var(--dur-3) var(--ease-out)}
+.dialog-content--wide{max-width:960px}
+.pos-chart-loading{padding:var(--s-5);text-align:center;color:var(--text-3);font-size:var(--size-sm)}
+.pos-chart-grid{margin:0}
 .dialog-header{display:flex;align-items:center;justify-content:space-between;gap:var(--s-4);padding:var(--s-4) var(--s-5);background:var(--text);color:var(--bg);flex:0 0 auto}
 .dialog-title{display:flex;align-items:center;gap:8px;font-family:var(--font-display);font-weight:var(--w-display);font-size:var(--size-h4);text-transform:uppercase;letter-spacing:.02em;margin:0;color:var(--bg)}
 .dialog-close{background:none;border:0;color:var(--bg);cursor:pointer;min-width:var(--tap-min);min-height:var(--tap-min);font-size:24px;line-height:1;display:inline-flex;align-items:center;justify-content:center}
@@ -274,6 +295,12 @@
 .capital-grid,.signals-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--s-3)}
 .capital-totals{display:flex;gap:var(--s-4);flex-wrap:wrap;margin-top:var(--s-3);font-size:var(--size-sm);color:var(--text-2)}
 .signal-count{font-size:var(--size-xs);color:var(--text-3);font-family:var(--font-sans);text-transform:none;letter-spacing:0;margin-left:6px}
+.empty-state-note{margin-top:var(--s-2);color:var(--text-3);font-size:var(--size-xs)}
+.signals-error{text-align:center;padding:var(--s-5);display:grid;gap:var(--s-2);justify-items:center}
+.signals-error .error-icon .material-symbols-rounded{font-size:28px;color:var(--warn)}
+.signals-error .error-title{font-weight:var(--w-bold)}
+.signals-error .error-message{color:var(--text-2);font-size:var(--size-sm)}
+.execution-icon .material-symbols-rounded{font-size:18px;vertical-align:-3px}
 
 /* ---------- account ---------- */
 .ac-tabs{margin-bottom:var(--s-5)}

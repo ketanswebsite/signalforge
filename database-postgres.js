@@ -315,6 +315,16 @@ async function initializeDatabase() {
       // Columns might already exist
     }
 
+    // Allow 'not_taken' on high_conviction_portfolio: trades whose signal the
+    // AI rejected are retired from tracking without polluting closed-trade
+    // statistics (all summary queries filter on 'active'/'closed' explicitly)
+    try {
+      await pool.query(`ALTER TABLE high_conviction_portfolio DROP CONSTRAINT IF EXISTS chk_hcp_status`);
+      await pool.query(`ALTER TABLE high_conviction_portfolio ADD CONSTRAINT chk_hcp_status CHECK (status IN ('active', 'closed', 'not_taken'))`);
+    } catch (err) {
+      console.error('Could not update chk_hcp_status constraint:', err.message);
+    }
+
     // Create index on user_id for better performance
     await pool.query('CREATE INDEX IF NOT EXISTS idx_trades_user_id ON trades(user_id)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_trades_status ON trades(status)');

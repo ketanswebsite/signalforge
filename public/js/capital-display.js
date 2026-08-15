@@ -11,7 +11,7 @@ const CapitalDisplay = (function() {
      * Initialize capital display
      */
     async function init() {
-        console.log('📊 Initializing capital display...');
+        console.log('Initializing capital display...');
 
         // Create capital display container
         createCapitalContainer();

@@ -54,9 +54,9 @@ window.TradeUI = (function() {
         // Update market status every minute (60000ms) for accurate time display
         setInterval(updateMarketStatus, 60000);
 
-        // Start real-time price and statistics updates every second
-        startRealTimeUpdates();
-
+        // Price/P&L animations are event-driven: TradeCore fetches once per
+        // second and dispatches 'tradesUpdated' (silent) only when a price
+        // actually changed, so animations always reflect real data movement.
     }
     
     /**
@@ -278,9 +278,11 @@ window.TradeUI = (function() {
             if (isSilent) {
                 // Update prices in the DOM without full re-render
                 updatePricesOnly();
+                // Keep the headline Open P&L stat in step with the cards
+                updateOpenPLOnly();
                 // Update market status indicators
                 updateMarketStatus();
-                
+
                 // Don't refresh trades or charts on price updates
             } else {
                 // For non-silent updates, do full update immediately
@@ -364,59 +366,11 @@ window.TradeUI = (function() {
     }
     
     /**
-     * Start real-time price and statistics updates
-     */
-    function startRealTimeUpdates() {
-        // Update prices and open P&L every second
-        setInterval(() => {
-            // Temporary: simulate price changes for testing animations
-            if (window.simulatePriceChanges) {
-                simulatePriceChangesForTesting();
-            }
-            
-            updatePricesOnly();
-            updateOpenPLOnly();
-        }, 1000);
-        
-        // Statistics will update only on actual trade events (add, close, edit, delete)
-        // This prevents the jarring 5-second refresh
-    }
-    
-    /**
-     * Temporary function to simulate price changes for testing animations
-     */
-    function simulatePriceChangesForTesting() {
-        const activeTrades = TradeCore.getTrades('active');
-        activeTrades.forEach(trade => {
-            // Simulate small random price changes
-            const changePercent = (Math.random() - 0.5) * 0.5; // -0.25% to +0.25%
-            const priceChange = trade.currentPrice * (changePercent / 100);
-            trade.currentPrice = Math.max(0.01, trade.currentPrice + priceChange);
-        });
-    }
-    
-    /**
-     * Update only the Open P&L % in Signal Performance with subtle glow animation
+     * Update only the Open P&L % in Signal Performance with subtle glow animation.
+     * Trade objects are the single source of truth — TradeCore updates them
+     * from the price feed before dispatching the event that lands here.
      */
     function updateOpenPLOnly() {
-        // First sync trade prices from DOM to TradeCore
-        const activeTrades = TradeCore.getTrades('active');
-        activeTrades.forEach(trade => {
-            const tradeCard = document.querySelector(`[data-trade-id="${trade.id}"]`);
-            if (tradeCard) {
-                const currentPriceEl = tradeCard.querySelector('.current-price');
-                if (currentPriceEl) {
-                    const priceText = currentPriceEl.textContent;
-                    const currentPrice = parseFloat(priceText.replace(/[^0-9.-]/g, ''));
-                    if (!isNaN(currentPrice) && currentPrice > 0) {
-                        trade.currentPrice = currentPrice;
-                        trade.currentValue = currentPrice * trade.shares;
-                        trade.unrealizedPL = (currentPrice - trade.entryPrice) * trade.shares;
-                    }
-                }
-            }
-        });
-        
         // Get current statistics with updated prices
         const stats = TradeCore.getTradeStatisticsByCurrency();
         
@@ -494,77 +448,94 @@ window.TradeUI = (function() {
      */
     function animateValue(element, start, end, duration, formatter) {
         const startTime = performance.now();
-        
+        const finalText = formatter ? formatter(end) : end.toFixed(2);
+
         const animate = (currentTime) => {
             const elapsed = currentTime - startTime;
             const progress = Math.min(elapsed / duration, 1);
-            
+
             // Easing function
             const easeOut = 1 - Math.pow(1 - progress, 3);
-            
+
             const current = start + (end - start) * easeOut;
             element.textContent = formatter ? formatter(current) : current.toFixed(2);
-            
+
             if (progress < 1) {
                 requestAnimationFrame(animate);
             }
         };
-        
+
         requestAnimationFrame(animate);
+
+        // Guarantee the final value even when animation frames are throttled
+        // (hidden tab) — data correctness must never depend on the animation.
+        setTimeout(() => { element.textContent = finalText; }, duration + 100);
     }
     
     /**
-     * Update only prices in the DOM without full re-render
-     * Optimized for 1-second updates with animations
+     * Format a per-share price the same way the card renderers do:
+     * UK (.L) prices are in pence, everything else uses the currency symbol.
+     */
+    function formatCardPrice(trade, value) {
+        if (trade.symbol && trade.symbol.endsWith('.L')) {
+            return `${value.toFixed(2)}p`;
+        }
+        return `${trade.currencySymbol || TradeCore.getCurrencySymbol()}${value.toFixed(2)}`;
+    }
+
+    /**
+     * Format a monetary value (position worth) — always in the currency, even
+     * for UK stocks where per-share prices are shown in pence.
+     */
+    function formatCardValue(trade, value) {
+        const symbol = trade.symbol && trade.symbol.endsWith('.L')
+            ? (trade.currencySymbol || '£')
+            : (trade.currencySymbol || TradeCore.getCurrencySymbol());
+        return `${symbol}${value.toFixed(2)}`;
+    }
+
+    /**
+     * Update only prices in the DOM without full re-render.
+     * Runs when TradeCore reports that a price actually changed.
      */
     function updatePricesOnly() {
         // Update active trade prices directly in the DOM
         const activeTrades = TradeCore.getTrades('active');
-        
-        // Only update trades in open markets
-        const tradesToUpdate = activeTrades.filter(trade => {
-            const marketStatus = TradeCore.getMarketStatus(trade.symbol);
-            return marketStatus.isOpen || marketStatus.isExtendedHours;
-        });
-        
-        tradesToUpdate.forEach(trade => {
+
+        activeTrades.forEach(trade => {
             const tradeCard = document.querySelector(`[data-trade-id="${trade.id}"]`);
             if (!tradeCard) return;
-            
+
             // Store previous values for comparison
             const prevPrice = parseFloat(tradeCard.dataset.prevPrice) || trade.entryPrice;
-            const prevPL = parseFloat(tradeCard.dataset.prevPL) || 0;
-            
+            const newPrice = trade.currentPrice;
+            const priceChanged = Math.abs(newPrice - prevPrice) > 0.005;
+
             // Update current price with animation
             const priceElement = tradeCard.querySelector('.current-price');
             if (priceElement) {
-                const newPrice = trade.currentPrice;
-                
-                if (Math.abs(newPrice - prevPrice) > 0.01) {
+                if (priceChanged) {
                     // Add price direction classes
                     const priceContainer = priceElement.parentElement;
                     priceContainer.classList.add('price-updating');
-                    
+
                     if (newPrice > prevPrice) {
                         priceElement.classList.add('price-up');
                         priceElement.classList.remove('price-down');
-                        
+
                         // Add arrow indicator
                         showPriceArrow(priceElement, true);
                     } else if (newPrice < prevPrice) {
                         priceElement.classList.add('price-down');
                         priceElement.classList.remove('price-up');
-                        
+
                         // Add arrow indicator
                         showPriceArrow(priceElement, false);
                     }
-                    
+
                     // Animate the price change
-                    animateValue(priceElement, prevPrice, newPrice, 500, (val) => `${trade.currencySymbol || TradeCore.getCurrencySymbol()}${val.toFixed(2)}`);
-                    
-                    // Store new price for next comparison
-                    tradeCard.dataset.prevPrice = newPrice;
-                    
+                    animateValue(priceElement, prevPrice, newPrice, 500, (val) => formatCardPrice(trade, val));
+
                     // Remove animation classes after completion
                     setTimeout(() => {
                         priceContainer.classList.remove('price-updating');
@@ -572,15 +543,18 @@ window.TradeUI = (function() {
                     }, 600);
                 }
             }
-            
+
+            // Always store the latest price for the next comparison
+            tradeCard.dataset.prevPrice = newPrice;
+
             // Update current value with animation
             const currentValueElement = tradeCard.querySelector('.current-value');
             if (currentValueElement) {
                 const oldValue = parseFloat(currentValueElement.textContent.replace(/[^0-9.-]/g, '')) || 0;
                 const currentValue = trade.currentPrice * trade.shares;
-                
+
                 if (Math.abs(currentValue - oldValue) > 0.01) {
-                    animateValue(currentValueElement, oldValue, currentValue, 500, (val) => `${trade.currencySymbol || TradeCore.getCurrencySymbol()}${val.toFixed(2)}`);
+                    animateValue(currentValueElement, oldValue, currentValue, 500, (val) => formatCardValue(trade, val));
                 }
             }
             
@@ -657,12 +631,13 @@ window.TradeUI = (function() {
                 // Store new P&L for next comparison
                 tradeCard.dataset.prevPL = plPercent;
             }
-            
-            // Update price movement badge
-            if (trade.currentPrice !== prevPrice) {
-                updatePriceMovementBadge(tradeCard, trade.currentPrice > prevPrice);
+
+            // Update price movement badge — only on a real movement, never on
+            // rounding noise
+            if (priceChanged) {
+                updatePriceMovementBadge(tradeCard, newPrice > prevPrice);
             }
-            
+
             // Update status badge
             const statusElement = tradeCard.querySelector('.trade-status');
             if (statusElement) {
@@ -695,16 +670,31 @@ window.TradeUI = (function() {
                 }
             }
             
-            // Update days remaining
-            const daysRemainingElement = tradeCard.querySelector('.days-remaining');
-            if (daysRemainingElement && trade.squareOffDate) {
-                const daysRemaining = Math.max(0, Math.floor((trade.squareOffDate - new Date()) / (1000 * 60 * 60 * 24)));
-                daysRemainingElement.textContent = daysRemaining;
+            // Keep the stop → break-even → target rail, the 30-day bar and the
+            // exit badge in step with the live price (they used to render once
+            // and freeze).
+            if (typeof window.applyPosterPositionBits === 'function') {
+                const plPercent = ((trade.currentPrice - trade.entryPrice) / trade.entryPrice) * 100;
+
+                let holdingDays = 0;
+                if (trade.entryDate) {
+                    const entryDate = trade.entryDate instanceof Date ? trade.entryDate : new Date(trade.entryDate);
+                    if (!isNaN(entryDate.getTime())) {
+                        holdingDays = Math.max(0, Math.floor((new Date() - entryDate) / (1000 * 60 * 60 * 24)));
+                    }
+                }
+
+                let daysRemaining = Math.max(0, 30 - holdingDays);
+                if (trade.squareOffDate) {
+                    const squareOffDate = trade.squareOffDate instanceof Date ? trade.squareOffDate : new Date(trade.squareOffDate);
+                    if (!isNaN(squareOffDate.getTime())) {
+                        daysRemaining = Math.max(0, Math.floor((squareOffDate - new Date()) / (1000 * 60 * 60 * 24)));
+                    }
+                }
+
+                window.applyPosterPositionBits(tradeCard, plPercent, holdingDays, daysRemaining);
             }
         });
-        
-        // No need to update summary statistics on every price update
-        // This will be done in the full refresh every 5 seconds
     }
     
     /**
@@ -985,10 +975,9 @@ window.TradeUI = (function() {
         }
         
         const arrow = document.createElement('span');
-        arrow.className = 'price-arrow';
+        arrow.className = `price-arrow ${isUp ? 'price-arrow--up' : 'price-arrow--down'}`;
         arrow.textContent = isUp ? '↑' : '↓';
-        arrow.style.color = isUp ? 'var(--success-color)' : 'var(--danger-color)';
-        
+
         element.appendChild(arrow);
     }
     
@@ -998,22 +987,17 @@ window.TradeUI = (function() {
     function showPLChangeIndicator(element, change) {
         const indicator = document.createElement('div');
         indicator.className = 'pnl-change-indicator';
-        indicator.innerHTML = `
-            <span class="${change >= 0 ? 'positive' : 'negative'}">
-                ${change >= 0 ? '+' : ''}${change.toFixed(2)}%
-            </span>
-        `;
-        
-        // Position near the P&L display
+
+        const span = document.createElement('span');
+        span.className = change >= 0 ? 'positive' : 'negative';
+        span.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
+        indicator.appendChild(span);
+
+        // Position near the P&L display (coordinates only; looks come from CSS)
         const rect = element.getBoundingClientRect();
-        indicator.style.cssText = `
-            position: fixed;
-            left: ${rect.left}px;
-            top: ${rect.top - 20}px;
-            animation: floatUp 2s ease-out forwards;
-            z-index: 1000;
-        `;
-        
+        indicator.style.left = `${rect.left}px`;
+        indicator.style.top = `${rect.top - 20}px`;
+
         document.body.appendChild(indicator);
         setTimeout(() => indicator.remove(), 2000);
     }

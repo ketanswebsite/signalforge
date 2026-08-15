@@ -735,6 +735,7 @@ const TradeCore = (function() {
                     // Set up regular price updates every second for open markets
                     priceUpdateInterval = setInterval(updatePrices, PRICE_UPDATE_INTERVAL);
                 } else {
+                    setPriceStatus('closed');
                 }
             });
         }
@@ -813,6 +814,7 @@ const TradeCore = (function() {
             // Markets just closed - stop price updates
             clearInterval(priceUpdateInterval);
             priceUpdateInterval = null;
+            setPriceStatus('closed');
         }
         
         // Also trigger UI update for market status badges
@@ -868,51 +870,24 @@ const TradeCore = (function() {
      */
     async function updatePricesOnce() {
         if (!activeTrades || activeTrades.length === 0) return;
-        
-        
-        try {
-            // Process all trades in batches
-            const BATCH_SIZE = 5;
-            const batches = [];
-            
-            for (let i = 0; i < activeTrades.length; i += BATCH_SIZE) {
-                batches.push(activeTrades.slice(i, i + BATCH_SIZE));
-            }
-            
-            // Process batches sequentially
-            for (const batch of batches) {
-                await Promise.all(batch.map(trade => updateSingleTradePrice(trade)));
-                
-                // Small delay between batches
-                if (batches.indexOf(batch) < batches.length - 1) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                }
-            }
-            
-            
-            // Trigger UI update
-            const event = new CustomEvent('tradesUpdated', { detail: { silent: true } });
-            document.dispatchEvent(event);
-            
-        } catch (error) {
-        }
+        await fetchAndApplyPrices(activeTrades);
     }
-    
+
     /**
-     * Update current prices for active trades
-     * Uses Yahoo Finance API via CORS proxy
-     * Optimized for 1-second updates
+     * Update current prices for active trades (the 1-second tick).
+     * Only markets that are open (or in pre-market) are fetched.
      */
     async function updatePrices() {
         if (activeTrades.length === 0) return;
-        
+        if (document.hidden) return; // Don't poll in background tabs
+
         // First, check if any markets are open or in pre-market
         const tradesToUpdate = activeTrades.filter(trade => {
             const status = getMarketStatus(trade.symbol);
             // Only update prices if market is open or in pre-market
             return status.isOpen || (status.isExtendedHours && status.status === 'pre-market');
         });
-        
+
         if (tradesToUpdate.length === 0) {
             // Even though we're not updating prices, ensure P&L is calculated with last known prices
             activeTrades.forEach(trade => {
@@ -924,151 +899,112 @@ const TradeCore = (function() {
                     trade.currentValue = trade.currentPrice * trade.shares;
                 }
             });
+            setPriceStatus('closed');
             return;
         }
-        
+
         // Prevent overlapping updates
         const now = Date.now();
         if (now - lastUpdateTime < PRICE_UPDATE_INTERVAL / 2) {
             return;
         }
-        
+
         if (isUpdating) {
             return;
         }
-        
+
         isUpdating = true;
         lastUpdateTime = now;
-        
-        
+
         try {
-            // Process trades in smaller batches to avoid overwhelming the API
-            const BATCH_SIZE = 5;
-            const batches = [];
-            
-            for (let i = 0; i < tradesToUpdate.length; i += BATCH_SIZE) {
-                batches.push(tradesToUpdate.slice(i, i + BATCH_SIZE));
-            }
-            
-            // Process batches sequentially with minimal delay
-            for (const batch of batches) {
-                await Promise.all(batch.map(trade => updateSingleTradePrice(trade)));
-                
-                // Minimal delay between batches (50ms)
-                if (batches.indexOf(batch) < batches.length - 1) {
-                    await new Promise(resolve => setTimeout(resolve, 50));
-                }
-            }
+            await fetchAndApplyPrices(tradesToUpdate);
         } catch (error) {
         } finally {
             isUpdating = false;
         }
     }
-    
+
     /**
-     * Update price for a single trade with optimized retry logic
+     * Fetch live prices for the given trades in ONE batched request and apply
+     * them to the trade objects. The DOM is updated by TradeUI listening for
+     * the 'tradesUpdated' (silent) event — this module never writes the DOM,
+     * so there is exactly one writer and the animations always reflect data
+     * that actually changed.
      */
-    async function updateSingleTradePrice(trade, retryCount = 0) {
+    async function fetchAndApplyPrices(trades) {
+        const symbols = [...new Set(trades.map(trade => trade.symbol))];
+        if (symbols.length === 0) return;
+
         try {
-            const response = await fetch(`/yahoo/quote?symbol=${trade.symbol}`, {
-                signal: AbortSignal.timeout(2000) // 2 second timeout
+            const response = await fetch('/api/prices', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ symbols }),
+                signal: AbortSignal.timeout(4000)
             });
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
+
             const data = await response.json();
-            
-            if (data && data.chart && data.chart.result && data.chart.result[0]) {
-                const quote = data.chart.result[0];
-                const meta = quote.meta;
-                const currentPrice = meta.regularMarketPrice;
-                
-                if (currentPrice && !isNaN(currentPrice)) {
-                    // Note: For UK stocks (.L), prices from API are already in pence
-                    // and our stored prices are also in pence, so no conversion needed here
-                    const profitLoss = (currentPrice - trade.entryPrice) * trade.shares;
-                    const percentChange = ((currentPrice - trade.entryPrice) / trade.entryPrice) * 100;
-                    
-                    // Update trade object
-                    trade.currentPrice = currentPrice;
-                    trade.currentValue = currentPrice * trade.shares;
-                    trade.unrealizedPL = profitLoss;
-                    trade.percentChange = percentChange;
-                    trade.currentPLPercent = percentChange; // Add this for UI compatibility
-                    trade.lastUpdated = new Date();
-                    trade.lastPriceUpdate = new Date(); // Track when price was last updated
-                    
-                    // Update UI without animations during rapid updates
-                    updateTradePriceUI(trade, false);
+            let anyChanged = false;
+
+            trades.forEach(trade => {
+                const priceData = data[trade.symbol];
+                if (!priceData || priceData.error || !priceData.price || isNaN(priceData.price)) return;
+
+                // Note: for UK stocks (.L) Yahoo returns pence and our stored
+                // prices are also in pence, so no conversion is needed here
+                const currentPrice = parseFloat(priceData.price);
+                if (currentPrice <= 0) return;
+
+                if (trade.currentPrice !== currentPrice) {
+                    anyChanged = true;
                 }
+
+                trade.currentPrice = currentPrice;
+                trade.currentValue = currentPrice * trade.shares;
+                trade.unrealizedPL = (currentPrice - trade.entryPrice) * trade.shares;
+                trade.percentChange = ((currentPrice - trade.entryPrice) / trade.entryPrice) * 100;
+                trade.currentPLPercent = trade.percentChange;
+                trade.lastUpdated = new Date();
+                trade.lastPriceUpdate = new Date();
+            });
+
+            setPriceStatus('live');
+
+            // Only wake the UI when a price actually moved — this is what keeps
+            // the animations honest: no data change, no animation.
+            if (anyChanged) {
+                document.dispatchEvent(new CustomEvent('tradesUpdated', { detail: { silent: true } }));
             }
         } catch (error) {
-            if (retryCount < MAX_RETRIES) {
-                await new Promise(resolve => setTimeout(resolve, 500 * (retryCount + 1)));
-                return updateSingleTradePrice(trade, retryCount + 1);
-            } else {
-            }
+            setPriceStatus('error');
         }
     }
-    
+
     /**
-     * Update trade price in UI with minimal DOM manipulation
+     * Reflect the real state of the price feed in the status line, so the UI
+     * never claims to be updating when it isn't.
      */
-    function updateTradePriceUI(trade, animate = true) {
-        const tradeCard = document.querySelector(`[data-trade-id="${trade.id}"]`);
-        if (!tradeCard) return;
-        
-        // Use requestAnimationFrame for smooth updates
-        requestAnimationFrame(() => {
-            // Update current price
-            const priceElement = tradeCard.querySelector('.current-price');
-            if (priceElement) {
-                const oldPrice = parseFloat(priceElement.textContent.replace(/[^0-9.-]/g, ''));
-                priceElement.textContent = `${trade.currencySymbol}${trade.currentPrice.toFixed(2)}`;
-                
-                if (animate && oldPrice !== trade.currentPrice) {
-                    // Flash effect for price changes
-                    priceElement.style.transition = 'none';
-                    priceElement.style.backgroundColor = trade.currentPrice > oldPrice ? '#10b98133' : '#ef444433';
-                    
-                    const timeout = setTimeout(() => {
-                        priceElement.style.transition = 'background-color 0.5s ease';
-                        priceElement.style.backgroundColor = 'transparent';
-                        updateTimeouts.delete(timeout);
-                    }, 100);
-                    updateTimeouts.add(timeout);
-                }
-            }
-            
-            // Update profit/loss percentage
-            const plElement = tradeCard.querySelector('.current-pl');
-            if (plElement) {
-                const plValue = trade.currentPLPercent || 0;
-                plElement.textContent = `${plValue.toFixed(2)}%`;
-                
-                // Update color classes
-                plElement.classList.remove('positive', 'negative');
-                if (plValue > 0) {
-                    plElement.classList.add('positive');
-                } else if (plValue < 0) {
-                    plElement.classList.add('negative');
-                }
-            }
-            
-            // Update current value
-            const valueElement = tradeCard.querySelector('.current-value');
-            if (valueElement) {
-                valueElement.textContent = `${trade.currencySymbol}${trade.currentValue.toFixed(2)}`;
-            }
-            
-            // Update last updated time
-            const timeElement = tradeCard.querySelector('.last-updated');
-            if (timeElement && trade.lastUpdated) {
-                timeElement.textContent = `Updated: ${new Date(trade.lastUpdated).toLocaleTimeString()}`;
-            }
-        });
+    function setPriceStatus(state) {
+        const statusElement = document.getElementById('price-update-status');
+        if (!statusElement) return;
+
+        statusElement.classList.remove('is-live', 'is-closed', 'is-error');
+
+        if (state === 'live') {
+            const time = new Date().toLocaleTimeString();
+            statusElement.textContent = `Live — prices checked at ${time}`;
+            statusElement.classList.add('is-live');
+        } else if (state === 'closed') {
+            statusElement.textContent = 'Markets closed — showing the last close';
+            statusElement.classList.add('is-closed');
+        } else if (state === 'error') {
+            statusElement.textContent = 'Price update hit a snag — retrying';
+            statusElement.classList.add('is-error');
+        }
     }
     
     /**
