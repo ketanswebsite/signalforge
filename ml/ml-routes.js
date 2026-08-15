@@ -82,6 +82,23 @@ const { getConviction } = require('./conviction-engine');
  * Scoring lives in conviction-engine.js (shared with the 7 AM scanner gate
  * and the 1 PM executor safety net) — this route is a thin auth'd wrapper.
  */
+/**
+ * GET /api/ml/conviction/sweep-status
+ * Weekend sweep progress + weekly verdict coverage — rendered on the
+ * Simulator page so it is visible that the week's AI scores are in place.
+ * MUST be registered before /conviction/:symbol or it matches as a symbol.
+ */
+router.get('/conviction/sweep-status', ensureSubscriptionActive, async (req, res) => {
+    try {
+        const { getSweepStatus, getCoverage } = require('./conviction-sweep');
+        const sweep = getSweepStatus();
+        const coverage = await getCoverage();
+        res.json({ success: true, sweep, coverage });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 router.get('/conviction/:symbol', ensureSubscriptionActive, async (req, res) => {
     try {
         const symbol = req.params.symbol.toUpperCase();

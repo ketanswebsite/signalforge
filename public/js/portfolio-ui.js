@@ -32,6 +32,57 @@ const PortfolioUI = (function() {
                 switchAnalyticsTab(this.dataset.tab);
             });
         });
+
+        // Weekly AI score coverage (weekend sweep status)
+        refreshAiCoverage();
+    }
+
+    /**
+     * Show how much of the universe holds a weekly AI verdict — and live
+     * sweep progress while the Saturday sweep is running.
+     */
+    let aiCoverageTimer = null;
+    async function refreshAiCoverage() {
+        const line = document.getElementById('ai-coverage-line');
+        const text = document.getElementById('ai-coverage-text');
+        const bar = document.getElementById('ai-coverage-bar');
+        if (!line || !text) return;
+
+        try {
+            const response = await fetch('/api/ml/conviction/sweep-status');
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            const sweep = data.sweep || {};
+            const coverage = data.coverage || {};
+
+            line.hidden = false;
+
+            if (sweep.running) {
+                text.textContent = `Weekend AI sweep running — ${sweep.done || 0} of ${sweep.total || 0} stocks checked`;
+                if (bar) bar.hidden = false;
+                // Keep watching while it runs
+                if (!aiCoverageTimer) {
+                    aiCoverageTimer = setInterval(refreshAiCoverage, 20000);
+                }
+            } else {
+                if (bar) bar.hidden = true;
+                if (aiCoverageTimer) {
+                    clearInterval(aiCoverageTimer);
+                    aiCoverageTimer = null;
+                }
+                if (coverage.scored > 0) {
+                    const when = coverage.latestScoreDate
+                        ? new Date(coverage.latestScoreDate).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+                        : 'this week';
+                    text.textContent = `This week's AI scores: ${coverage.scored.toLocaleString()} of ${coverage.universe.toLocaleString()} stocks ready (scored ${when})`;
+                } else {
+                    text.textContent = 'No weekly AI scores yet — stocks are scored on demand during a run; the Saturday sweep covers the whole market.';
+                }
+            }
+        } catch (error) {
+            // Leave the line hidden if the status can't be read
+            line.hidden = true;
+        }
     }
 
     /**
@@ -56,23 +107,53 @@ const PortfolioUI = (function() {
             statusDiv.classList.remove('hidden');
             statusDiv.className = 'simulation-status info';
 
-            // Progress callback to update UI
+            // Progress callback to update UI (safe DOM construction; the bar
+            // element is reused between updates so it animates smoothly)
             const updateProgress = (progress) => {
-                let message = progress.message || 'Working\u2026';
-                let html = '<div class="sa-prog"><div class="sa-prog__meta"><span></span>'
-                    + (progress.percent !== undefined ? '<span>' + progress.percent + '%</span>' : '')
-                    + '</div>';
+                const message = progress.message || 'Working\u2026';
+                const hasBar = progress.percent !== undefined;
 
-                if (progress.percent !== undefined) {
-                    html += '<div class="sa-prog__track"><div class="sa-prog__fill" style="width: '
-                        + progress.percent + '%"></div></div>'
-                        + '<div class="sa-prog__detail">' + (progress.current || 0) + ' of ' + (progress.total || 0) + ' checked</div>';
+                let prog = statusDiv.querySelector('.sa-prog');
+                let rebuilt = false;
+                if (!prog || (hasBar !== !!prog.querySelector('.sa-prog__track'))) {
+                    statusDiv.textContent = '';
+                    prog = document.createElement('div');
+                    prog.className = 'sa-prog';
+
+                    const meta = document.createElement('div');
+                    meta.className = 'sa-prog__meta';
+                    meta.appendChild(document.createElement('span'));
+                    if (hasBar) meta.appendChild(document.createElement('span'));
+                    prog.appendChild(meta);
+
+                    if (hasBar) {
+                        const track = document.createElement('div');
+                        track.className = 'sa-prog__track';
+                        const fill = document.createElement('div');
+                        fill.className = 'sa-prog__fill';
+                        track.appendChild(fill);
+                        prog.appendChild(track);
+
+                        const detail = document.createElement('div');
+                        detail.className = 'sa-prog__detail';
+                        prog.appendChild(detail);
+                    }
+                    statusDiv.appendChild(prog);
+                    rebuilt = true;
                 }
-                html += '</div>';
 
-                statusDiv.innerHTML = html;
-                const messageEl = statusDiv.querySelector('.sa-prog__meta span');
-                if (messageEl) messageEl.textContent = message;
+                const metaSpans = prog.querySelectorAll('.sa-prog__meta span');
+                if (metaSpans[0] && (rebuilt || progress.message)) metaSpans[0].textContent = message;
+                if (hasBar) {
+                    if (metaSpans[1]) metaSpans[1].textContent = progress.percent + '%';
+                    const fill = prog.querySelector('.sa-prog__fill');
+                    if (fill) fill.style.width = progress.percent + '%';
+                    const detail = prog.querySelector('.sa-prog__detail');
+                    if (detail) {
+                        detail.textContent = progress.detail
+                            || ((progress.current || 0) + ' of ' + (progress.total || 0) + ' checked');
+                    }
+                }
             };
 
             // Run simulation with progress updates

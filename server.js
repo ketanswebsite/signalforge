@@ -416,6 +416,27 @@ app.post('/api/scanner/run', (req, res) => {
 // day's 'added' pending_signals, and removes that day's active HC-portfolio
 // rows. Manual trades are never touched. Built to unwind 2026-08-10 (the last
 // indicator-only day before the AI conviction gate); kept for future ops.
+// Manually start (or check on) the weekend AI conviction sweep.
+// Fire-and-forget: responds immediately, the sweep runs in the background;
+// progress via GET /api/ml/conviction/sweep-status.
+app.post('/api/ops/conviction-sweep', async (req, res) => {
+  const token = req.query.token || req.get('x-analysis-token');
+  if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  try {
+    const { runConvictionSweep, getSweepStatus } = require('./ml/conviction-sweep');
+    const current = getSweepStatus();
+    if (current.running) {
+      return res.status(409).json({ started: false, reason: 'Sweep already running', sweep: current });
+    }
+    runConvictionSweep().catch(err => console.error('❌ [AI SWEEP] Background run failed:', err.message));
+    res.json({ started: true, note: 'Sweep running in background — poll /api/ml/conviction/sweep-status' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.post('/api/ops/reset-day-trades', async (req, res) => {
   const token = req.query.token || req.get('x-analysis-token');
   if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {

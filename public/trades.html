@@ -439,7 +439,10 @@
                     <button class="dialog-close" id="position-chart-x" aria-label="Close dialog">&times;</button>
                 </div>
                 <div class="dialog-body">
-                    <div id="position-chart-loading" class="pos-chart-loading">Loading five years of price history…</div>
+                    <div id="position-chart-loading" class="pos-chart-loading">
+                        <span class="sa-prog--indet" aria-hidden="true"><i></i></span>
+                        <span id="position-chart-loading-text">Loading five years of price history…</span>
+                    </div>
                     <div class="charts-grid sc-charts pos-chart-grid" id="position-chart-grid" hidden>
                         <div>
                             <div class="sa-chart__head"><h4 class="sa-chart__title">Price</h4></div>

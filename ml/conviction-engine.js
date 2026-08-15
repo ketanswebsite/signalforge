@@ -24,19 +24,30 @@ const cheerio = require('cheerio');
 const Sentiment = require('sentiment');
 const headlineSentiment = new Sentiment();
 
-// Verdicts are cached per symbol per UTC DAY — the same semantic production
-// already uses (a signal is scored once at 7 AM and its verdict reused at
-// 1 PM). Cached in memory for speed and in Postgres so restarts, the
-// scanner, the simulator and the insights panel all share one score — and
-// Gemini runs at most once per symbol per day across the whole system.
-// Override with CONVICTION_CACHE_TTL_MIN (minutes) to shorten it.
+// Verdicts are scored by the WEEKEND SWEEP (Saturday, full universe) and
+// reused for the whole following week — by the 7 AM scanner, the 1 PM
+// executor, the insights panel and the simulator alike, so every surface
+// sees the same verdict and the engine (and Gemini) runs at most once per
+// symbol per week. A symbol the sweep missed is scored on demand and then
+// sticks for the same window. CONVICTION_MAX_AGE_DAYS (default 7) sets how
+// old a stored verdict may be; CONVICTION_CACHE_TTL_MIN shortens the
+// in-memory layer. NOTE: the 7 PM EOD summary reads fetchRecentHeadlines
+// directly and is NOT cached — it always reports the day's fresh news.
 const convictionCache = new Map();          // symbol → {expires, payload}
 const inFlight = new Map();                 // symbol → Promise (dedup concurrent scoring)
+
+const NEUTRAL_RETRY_MS = 30 * 60 * 1000;    // all-sources-failed results retry after 30 min
+
+function maxAgeDays() {
+    const days = parseInt(process.env.CONVICTION_MAX_AGE_DAYS, 10);
+    return days > 0 ? days : 7;
+}
 
 function cacheExpiryMs() {
     const ttlMin = parseInt(process.env.CONVICTION_CACHE_TTL_MIN, 10);
     if (ttlMin > 0) return Date.now() + ttlMin * 60 * 1000;
-    // Default: rest of the current UTC day
+    // Default: rest of the current UTC day (the DB row carries the verdict
+    // across days within the week window)
     const now = new Date();
     const midnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
     return midnight;
@@ -44,6 +55,25 @@ function cacheExpiryMs() {
 
 function todayUTC() {
     return new Date().toISOString().split('T')[0];
+}
+
+function oldestAcceptedUTC() {
+    const cutoff = new Date(Date.now() - (maxAgeDays() - 1) * 24 * 60 * 60 * 1000);
+    return cutoff.toISOString().split('T')[0];
+}
+
+/**
+ * A result where every pillar came back exactly neutral with no Gemini
+ * layer almost always means the data sources were unreachable (each pillar
+ * degrades to 5 on failure). Persisting that for a week would block trades
+ * on healthy stocks — so it is kept only briefly in memory and retried.
+ */
+function isAllNeutral(payload) {
+    const p = payload.pillars || {};
+    return payload.engine === 'rule-based' &&
+        p.technical && p.technical.score === 5 &&
+        p.fundamental && p.fundamental.score === 5 &&
+        p.information && p.information.score === 5;
 }
 
 // Lazy DB handle — the engine must keep working even if the DB is down
@@ -61,8 +91,10 @@ async function readDailyVerdict(symbol) {
         const db = getDB();
         if (!db || !db.pool) return null;
         const result = await db.pool.query(
-            `SELECT payload FROM conviction_daily WHERE symbol = $1 AND score_date = $2 LIMIT 1`,
-            [symbol, todayUTC()]
+            `SELECT payload FROM conviction_daily
+             WHERE symbol = $1 AND score_date >= $2
+             ORDER BY score_date DESC LIMIT 1`,
+            [symbol, oldestAcceptedUTC()]
         );
         return result.rows[0] ? result.rows[0].payload : null;
     } catch (e) {
@@ -482,8 +514,14 @@ async function computeConviction({ symbol, name, winRate = null }) {
         generatedAt: new Date().toISOString()
     };
 
-    convictionCache.set(symbol, { expires: cacheExpiryMs(), payload });
-    await writeDailyVerdict(symbol, payload);
+    if (isAllNeutral(payload)) {
+        // Sources were likely all down — hold briefly and retry, never
+        // persist a blind verdict for the whole week
+        convictionCache.set(symbol, { expires: Date.now() + NEUTRAL_RETRY_MS, payload });
+    } else {
+        convictionCache.set(symbol, { expires: cacheExpiryMs(), payload });
+        await writeDailyVerdict(symbol, payload);
+    }
     return payload;
 }
 

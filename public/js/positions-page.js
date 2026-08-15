@@ -53,10 +53,12 @@
     const loading = document.getElementById('position-chart-loading');
     const grid = document.getElementById('position-chart-grid');
 
+    const loadingText = document.getElementById('position-chart-loading-text');
+
     if (titleEl) titleEl.textContent = displayName ? displayName + ' — ' + symbol : symbol;
     if (loading) {
       loading.hidden = false;
-      loading.textContent = 'Loading five years of price history…';
+      if (loadingText) loadingText.textContent = 'Loading five years of price history…';
     }
     if (grid) grid.hidden = true;
     dialog.classList.add('active');
@@ -98,7 +100,10 @@
     } catch (e) {
       if (loading) {
         loading.hidden = false;
-        loading.textContent = 'Could not load the chart for ' + symbol + '. Close this and try again in a moment.';
+        const failText = document.getElementById('position-chart-loading-text');
+        if (failText) {
+          failText.textContent = 'Could not load the chart for ' + symbol + '. Close this and try again in a moment.';
+        }
       }
       if (grid) grid.hidden = true;
     }

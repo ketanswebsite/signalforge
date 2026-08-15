@@ -277,8 +277,18 @@
 .dialog-overlay.active{display:flex;animation:sa-fadein var(--dur-2) var(--ease-out)}
 .dialog-content{background:var(--surface);border:2.5px solid var(--frame);border-radius:var(--r-lg);box-shadow:var(--shadow-pop);width:100%;max-width:560px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;animation:sa-pop var(--dur-3) var(--ease-out)}
 .dialog-content--wide{max-width:960px}
-.pos-chart-loading{padding:var(--s-5);text-align:center;color:var(--text-3);font-size:var(--size-sm)}
+.pos-chart-loading{padding:var(--s-5);text-align:center;color:var(--text-3);font-size:var(--size-sm);display:grid;gap:var(--s-3);justify-items:center}
 .pos-chart-grid{margin:0}
+
+/* Indeterminate progress bar — for waits without a known total */
+.sa-prog--indet{display:block;width:220px;max-width:100%;height:4px;background:var(--surface-3);border:1px solid var(--line-strong);overflow:hidden}
+.sa-prog--indet i{display:block;height:100%;width:40%;background:var(--accent);animation:sa-indet 1.2s ease-in-out infinite}
+@keyframes sa-indet{0%{transform:translateX(-110%)}100%{transform:translateX(360%)}}
+
+/* Weekly AI score coverage line on the Simulator config card */
+.sim-ai-coverage{display:flex;align-items:center;gap:var(--s-2);flex-wrap:wrap;margin-top:var(--s-3);font-size:var(--size-xs);color:var(--text-2)}
+.sim-ai-coverage .material-symbols-rounded{font-size:16px;color:var(--accent)}
+.sim-ai-coverage .sa-prog--indet{width:120px}
 .dialog-header{display:flex;align-items:center;justify-content:space-between;gap:var(--s-4);padding:var(--s-4) var(--s-5);background:var(--text);color:var(--bg);flex:0 0 auto}
 .dialog-title{display:flex;align-items:center;gap:8px;font-family:var(--font-display);font-weight:var(--w-display);font-size:var(--size-h4);text-transform:uppercase;letter-spacing:.02em;margin:0;color:var(--bg)}
 .dialog-close{background:none;border:0;color:var(--bg);cursor:pointer;min-width:var(--tap-min);min-height:var(--tap-min);font-size:24px;line-height:1;display:inline-flex;align-items:center;justify-content:center}

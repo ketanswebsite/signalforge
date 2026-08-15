@@ -621,6 +621,13 @@ const PortfolioSimulator = (function() {
         const start = new Date(startDate);
         const today = new Date();
 
+        // Count trading days up front so the progress bar has a total
+        let totalDays = 0;
+        for (let d = new Date(start); d <= today; d.setDate(d.getDate() + 1)) {
+            if (d.getDay() !== 0 && d.getDay() !== 6) totalDays++;
+        }
+        let dayIndex = 0;
+
         // Simulate day by day
         for (let date = new Date(start); date <= today; date.setDate(date.getDate() + 1)) {
             const dateStr = date.toISOString().split('T')[0];
@@ -628,13 +635,38 @@ const PortfolioSimulator = (function() {
             // Skip weekends
             if (date.getDay() === 0 || date.getDay() === 6) continue;
 
+            dayIndex++;
+            const percent = Math.round((dayIndex / totalDays) * 100);
+            if (progressCallback) {
+                progressCallback({
+                    stage: 'simulate',
+                    message: 'Replaying the market day by day…',
+                    current: dayIndex,
+                    total: totalDays,
+                    percent: percent,
+                    detail: `Day ${dayIndex} of ${totalDays} — ${dateStr}`
+                });
+            }
+
+            // AI messages keep the same bar position so the display doesn't flicker
+            const dayProgress = progressCallback
+                ? (update) => progressCallback({
+                    stage: 'simulate',
+                    current: dayIndex,
+                    total: totalDays,
+                    percent: percent,
+                    detail: `Day ${dayIndex} of ${totalDays} — ${dateStr}`,
+                    ...update
+                })
+                : null;
+
             // 1. Check exit conditions for active positions (Layer 4: async for price fetching)
             await checkExitConditions(portfolio, dateStr, signals, stats);
 
             // 2. Process new entry signals for this date (async: the AI
             // conviction gate scores each candidate before it can enter)
             const todaySignals = signalsByDate[dateStr] || [];
-            await processEntrySignals(portfolio, todaySignals, dateStr, stats, progressCallback);
+            await processEntrySignals(portfolio, todaySignals, dateStr, stats, dayProgress);
 
             // 3. Calculate and store daily portfolio value
             const portfolioValue = calculatePortfolioValue(portfolio, displayCurrency);
