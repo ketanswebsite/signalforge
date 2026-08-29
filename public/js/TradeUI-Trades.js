@@ -502,7 +502,7 @@ function renderActiveTrades() {
             const plPercent = Number(trade.profitLossPercentage || trade.plPercent) || 0;
             const plValue = Number(trade.profitLoss || trade.plValue) || 0;
             const currency = trade.currencySymbol || TradeCore.getCurrencySymbol(trade.symbol);
-            const tone = plPercent > 0 ? 'gain' : 'loss';
+            const tone = plPercent > 0 ? 'gain' : (plPercent < 0 ? 'loss' : '');
 
             const displayName = window.CompanyNames ?
                 window.CompanyNames.getCompanyName(trade.symbol) :
@@ -518,7 +518,7 @@ function renderActiveTrades() {
             row.appendChild(posEl('td', 'num', holdingDays + ' days'));
             row.appendChild(posEl('td', 'num', currency + investmentAmount.toFixed(2)));
             row.appendChild(posEl('td', 'num ' + tone, plPercent.toFixed(2) + '%'));
-            row.appendChild(posEl('td', 'num ' + (plValue > 0 ? 'gain' : 'loss'),
+            row.appendChild(posEl('td', 'num ' + (plValue > 0 ? 'gain' : (plValue < 0 ? 'loss' : '')),
                 (plValue < 0 ? '\u2212' : '') + currency + Math.abs(plValue).toFixed(2)));
             const reasonTd = document.createElement('td');
             reasonTd.appendChild(posEl('span', 'sa-badge sa-badge--' + posExitTone(trade.exitReason), posExitLabel(trade.exitReason)));
@@ -553,7 +553,7 @@ function renderActiveTrades() {
         const top = posEl('div', 'sa-rowcard__top');
         const title = posEl('strong', null, trade.symbol || displayName);
         top.appendChild(title);
-        top.appendChild(posEl('span', 'sa-rowcard__v ' + (plPercent > 0 ? 'gain' : 'loss'), plPercent.toFixed(2) + '%'));
+        top.appendChild(posEl('span', 'sa-rowcard__v ' + (plPercent > 0 ? 'gain' : (plPercent < 0 ? 'loss' : '')), plPercent.toFixed(2) + '%'));
         rc.appendChild(top);
         const grid = posEl('div', 'sa-rowcard__grid');
         [['Sold on', TradeCore.formatDate(trade.exitDate)],

@@ -736,7 +736,7 @@ class AccountPage {
         const nextBillingDate = new Date(sub.subscription_end_date);
         const daysUntilRenewal = Math.max(0, Math.ceil((nextBillingDate - new Date()) / (1000 * 60 * 60 * 24)));
         const amountPaid = parseFloat(sub.amount_paid) || 0;
-        const endDateText = nextBillingDate.toLocaleDateString();
+        const endDateText = DateFormatter.format(nextBillingDate);
 
         const frag = document.createDocumentFragment();
 
@@ -786,7 +786,7 @@ class AccountPage {
         const daysSinceMember = Math.floor((new Date() - startDate) / (1000 * 60 * 60 * 24));
 
         const grid = document.getElementById('quick-stats');
-        grid.replaceChildren(acStat('With the formula since', startDate.toLocaleDateString(),
+        grid.replaceChildren(acStat('With the formula since', DateFormatter.format(startDate),
             daysSinceMember + (daysSinceMember === 1 ? ' day' : ' days') + ' so far.', { small: true }));
         document.getElementById('quick-stats-section').hidden = false;
     }
@@ -800,7 +800,7 @@ class AccountPage {
         document.getElementById('recent-payment-card').replaceChildren(
             acStat('Last payment',
                 this.getCurrencySymbol(recentPayment.currency) + recentPayment.amount.toFixed(2),
-                paymentDate.toLocaleDateString() + ' \u00b7 ' + this.formatPaymentStatus(recentPayment.status) + '.',
+                DateFormatter.format(paymentDate) + ' \u00b7 ' + this.formatPaymentStatus(recentPayment.status) + '.',
                 { small: true }));
         document.getElementById('recent-payment-section').hidden = false;
     }
@@ -827,7 +827,7 @@ class AccountPage {
         if (amountPaid > 0) addRow('Price', currencySymbol + amountPaid.toFixed(2) + ' a ' + (sub.billing_period || 'month'));
         addRow('Status', this.formatStatus(sub.status));
         addRow('Started', DateFormatter.format(sub.subscription_start_date));
-        addRow(isTrial ? 'Trial ends' : (isCancelled || isExpired) ? 'Access until' : 'Renews on', nextBillingDate.toLocaleDateString());
+        addRow(isTrial ? 'Trial ends' : (isCancelled || isExpired) ? 'Access until' : 'Renews on', DateFormatter.format(nextBillingDate));
         if (sub.auto_renew !== undefined) addRow('Renews itself', sub.auto_renew ? 'Yes' : 'No');
 
         document.getElementById('subscription-full-details').replaceChildren(wrap);

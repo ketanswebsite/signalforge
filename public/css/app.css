@@ -94,6 +94,8 @@
 @media (max-width:720px){.currency-stats-grid{grid-template-columns:1fr}}
 .sa-stat__value.positive{color:var(--gain)}
 .sa-stat__value.negative{color:var(--loss)}
+.sa-pos__pl.positive,.current-pl.positive,.trade-pl-info.positive,.trade-details .detail-value.positive{color:var(--gain)}
+.sa-pos__pl.negative,.current-pl.negative,.trade-pl-info.negative,.trade-details .detail-value.negative{color:var(--loss)}
 .update-status{font-size:var(--size-xs);color:var(--text-3);margin-top:var(--s-3)}
 .update-status.is-live{color:var(--gain)}
 .update-status.is-error{color:var(--warn)}
@@ -325,6 +327,9 @@
 .btn-icon:hover{background:var(--accent-soft);color:var(--text)}
 .capital-grid,.signals-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--s-3)}
 .capital-totals{display:flex;gap:var(--s-4);flex-wrap:wrap;margin-top:var(--s-3);font-size:var(--size-sm);color:var(--text-2)}
+.capital-value{font-weight:600;font-variant-numeric:tabular-nums}
+.capital-value.positive{color:var(--gain)}
+.capital-value.negative{color:var(--loss)}
 .signal-count{font-size:var(--size-xs);color:var(--text-3);font-family:var(--font-sans);text-transform:none;letter-spacing:0;margin-left:6px}
 .empty-state-note{margin-top:var(--s-2);color:var(--text-3);font-size:var(--size-xs)}
 .signals-error{text-align:center;padding:var(--s-5);display:grid;gap:var(--s-2);justify-items:center}
@@ -417,6 +422,9 @@
 .al-step__title{font-weight:var(--w-medium);color:var(--text)}
 .al-step__body{font-size:var(--size-sm);margin-top:2px}
 .al-finehint{font-size:var(--size-xs);color:var(--text-3)}
+.al-qr{width:168px;padding:var(--s-2);background:#fff;border:2px solid var(--frame)}
+.al-qr svg{display:block;width:100%;height:auto}
+.al-qr:empty{display:none}
 .al-unlinkrow{margin-top:var(--s-3)}
 #deep-link-display{display:grid;gap:var(--s-2);justify-items:start}
 #deep-link-display[hidden]{display:none}

@@ -18,7 +18,8 @@ window.DateFormatter = (function() {
   }
 
   /**
-   * Format date as readable string (e.g., "Jan 15, 2026")
+   * Format date as DD-MM-YYYY (the app-wide display standard).
+   * Built manually — toLocaleDateString('en-GB') can only produce slashes.
    * @param {string|number|Date} date - Date input
    * @param {string} fallback - Fallback value if date is invalid
    * @returns {string} Formatted date
@@ -26,15 +27,13 @@ window.DateFormatter = (function() {
   function format(date, fallback = '-') {
     const parsed = parseDate(date);
     if (!parsed) return fallback;
-    return parsed.toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+    const dd = String(parsed.getDate()).padStart(2, '0');
+    const mm = String(parsed.getMonth() + 1).padStart(2, '0');
+    return `${dd}-${mm}-${parsed.getFullYear()}`;
   }
 
   /**
-   * Format date as short string (e.g., "15/01/26")
+   * Format date as short string (e.g., "15-01-26")
    * @param {string|number|Date} date - Date input
    * @param {string} fallback - Fallback value if date is invalid
    * @returns {string} Formatted date
@@ -42,15 +41,14 @@ window.DateFormatter = (function() {
   function formatShort(date, fallback = '-') {
     const parsed = parseDate(date);
     if (!parsed) return fallback;
-    return parsed.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
-      year: '2-digit'
-    });
+    const dd = String(parsed.getDate()).padStart(2, '0');
+    const mm = String(parsed.getMonth() + 1).padStart(2, '0');
+    const yy = String(parsed.getFullYear() % 100).padStart(2, '0');
+    return `${dd}-${mm}-${yy}`;
   }
 
   /**
-   * Format date with time (e.g., "Jan 15, 2026, 2:30 PM")
+   * Format date with time (e.g., "15-01-2026, 2:30 pm")
    * @param {string|number|Date} date - Date input
    * @param {string} fallback - Fallback value if date is invalid
    * @returns {string} Formatted date and time
@@ -58,14 +56,12 @@ window.DateFormatter = (function() {
   function formatTime(date, fallback = '-') {
     const parsed = parseDate(date);
     if (!parsed) return fallback;
-    return parsed.toLocaleString('en-GB', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
+    const time = parsed.toLocaleTimeString('en-GB', {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true
     });
+    return `${format(parsed)}, ${time}`;
   }
 
   /**

@@ -159,7 +159,7 @@ router.get('/users', asyncHandler(async (req, res) => {
 
   // Summarise what each user can actually use — shown in User Management
   const ADMIN_EMAIL_ACCESS = process.env.ADMIN_EMAIL || 'ketanjoshisahs@gmail.com';
-  const shortDate = d => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : null;
+  const shortDate = d => d ? require('../lib/shared/date-format').formatDateDDMMYYYY(d) : null;
   const withAccess = usersResult.rows.map(row => {
     let access;
     if (row.email === ADMIN_EMAIL_ACCESS) {

@@ -500,6 +500,92 @@ app.post('/api/ops/reset-day-trades', async (req, res) => {
   }
 });
 
+// Token-guarded capital-ledger reconciliation. Recomputes portfolio_capital
+// from the trades table (auto trades only — manual trades never allocate) and
+// reports the drift. Dry-run by default; pass ?apply=true to write.
+app.post('/api/ops/reconcile-capital', async (req, res) => {
+  const token = req.query.token || req.get('x-analysis-token');
+  if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  try {
+    const apply = req.query.apply === 'true';
+
+    const { rows } = await TradeDB.pool.query(`
+      SELECT pc.user_id, pc.market, pc.currency,
+             pc.initial_capital::float,
+             pc.realized_pl::float        AS ledger_realized,
+             pc.allocated_capital::float  AS ledger_allocated,
+             pc.available_capital::float  AS ledger_available,
+             pc.active_positions          AS ledger_positions,
+             COALESCE(t.realized, 0)::float  AS trades_realized,
+             COALESCE(t.allocated, 0)::float AS trades_allocated,
+             COALESCE(t.open_count, 0)::int  AS trades_positions
+      FROM portfolio_capital pc
+      LEFT JOIN (
+        SELECT user_id, market,
+               SUM(CASE WHEN status = 'closed' THEN COALESCE(
+                     profit_loss,
+                     (exit_price - entry_price) * shares,
+                     COALESCE(investment_amount, trade_size) * profit_loss_percentage / 100,
+                     0) ELSE 0 END) AS realized,
+               SUM(CASE WHEN status = 'active' THEN COALESCE(investment_amount, trade_size, 0) ELSE 0 END) AS allocated,
+               COUNT(*) FILTER (WHERE status = 'active') AS open_count
+        FROM trades
+        WHERE auto_added = true AND market IS NOT NULL
+        GROUP BY user_id, market
+      ) t ON t.user_id = pc.user_id AND t.market = pc.market
+      ORDER BY pc.user_id, pc.market
+    `);
+
+    const report = rows.map(r => {
+      const targetAvailable = r.initial_capital + r.trades_realized - r.trades_allocated;
+      return {
+        user_id: r.user_id,
+        market: r.market,
+        currency: r.currency,
+        before: {
+          realized: r.ledger_realized,
+          allocated: r.ledger_allocated,
+          available: r.ledger_available,
+          positions: r.ledger_positions
+        },
+        after: {
+          realized: r.trades_realized,
+          allocated: r.trades_allocated,
+          available: targetAvailable,
+          positions: r.trades_positions
+        },
+        drift: {
+          realized: +(r.trades_realized - r.ledger_realized).toFixed(2),
+          allocated: +(r.trades_allocated - r.ledger_allocated).toFixed(2),
+          positions: r.trades_positions - r.ledger_positions
+        }
+      };
+    });
+
+    if (apply) {
+      for (const r of report) {
+        await TradeDB.pool.query(`
+          UPDATE portfolio_capital
+          SET realized_pl = $1,
+              allocated_capital = $2,
+              available_capital = initial_capital + $1 - $2,
+              active_positions = $3,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE user_id = $4 AND market = $5
+        `, [r.after.realized, r.after.allocated, r.after.positions, r.user_id, r.market]);
+        console.log(`[RECONCILE] ${r.user_id}/${r.market}: realized ${r.before.realized} → ${r.after.realized}, allocated ${r.before.allocated} → ${r.after.allocated}, positions ${r.before.positions} → ${r.after.positions}`);
+      }
+    }
+
+    res.json({ success: true, applied: apply, markets: report });
+  } catch (error) {
+    console.error('[RECONCILE] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Token-guarded manual EOD-summary trigger (ops/testing) — same job the
 // 7 PM UK cron runs. Fire-and-forget.
 app.post('/api/ops/eod-summary', (req, res) => {
@@ -749,18 +835,21 @@ app.get(['/admin-portal', '/admin-v2'], (req, res) => {
 
 // API endpoint to get all Telegram subscribers (admin only)
 app.get('/api/admin/subscribers', ensureAuthenticatedAPI, async (req, res) => {
-  // Check if user is admin
-  if (req.user.email !== ADMIN_EMAIL) {
+  // Check if user is admin (ADMIN_DEV_BYPASS covers local no-auth dev, never production)
+  const devBypass = process.env.ADMIN_DEV_BYPASS === 'true' && process.env.NODE_ENV !== 'production';
+  if (!devBypass && (!req.user || req.user.email !== ADMIN_EMAIL)) {
     return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
   }
 
   try {
-    // Get all subscribers (both active and inactive)
-    const subscribers = await TradeDB.getAllActiveSubscribers();
+    // Get all subscribers (both active and inactive) with linked-account info
+    const subscribers = await TradeDB.getAllSubscribersWithLinks();
 
     res.json({
       success: true,
       total: subscribers.length,
+      active: subscribers.filter(s => s.is_active).length,
+      linked: subscribers.filter(s => s.linked_email).length,
       subscribers: subscribers
     });
   } catch (error) {
@@ -2226,22 +2315,32 @@ app.put('/api/trades/:id', ensureAuthenticatedAPI, ensureSubscriptionActive, asy
     // Check if trade is being closed (status changing from 'active' to 'closed')
     const isBeingClosed = existingTrade.status === 'active' && req.body.status === 'closed';
 
+    if (isBeingClosed) {
+      // Close + capital release in ONE transaction against the live DB row.
+      // (The old path released from the pre-update trade object, which lacked
+      // investmentAmount/market — it released 0 and leaked the ledger.)
+      console.log(`[TRADE UPDATE] Trade ${req.params.id} (${existingTrade.symbol}) closing via closeTradeAndRelease`);
+      const closeResult = await TradeDB.closeTradeAndRelease(req.params.id, {
+        exitDate: req.body.exitDate,
+        exitPrice: req.body.exitPrice,
+        profitLoss: req.body.profitLoss,
+        profitLossPercent: req.body.profitLossPercentage !== undefined ? req.body.profitLossPercentage : req.body.profitLossPercent,
+        exitReason: req.body.exitReason
+      }, userId);
+
+      if (!closeResult.closed) {
+        return res.status(409).json({ error: 'Trade is no longer active' });
+      }
+      if (req.body.notes !== undefined) {
+        await TradeDB.updateTrade(req.params.id, { notes: req.body.notes }, userId);
+      }
+      return res.json({ message: 'Trade updated successfully' });
+    }
+
     // Update the trade
     const success = await TradeDB.updateTrade(req.params.id, req.body, userId);
     if (!success) {
       return res.status(404).json({ error: 'Trade not found' });
-    }
-
-    // If trade was closed, release capital to free up position slot
-    if (isBeingClosed) {
-      try {
-        console.log(`[TRADE UPDATE] Trade ${req.params.id} (${existingTrade.symbol}) closed - releasing capital`);
-        await CapitalManager.releaseFromTrade(existingTrade, userId);
-        console.log(`[TRADE UPDATE] Capital released successfully for ${existingTrade.symbol}`);
-      } catch (releaseError) {
-        console.error(`[TRADE UPDATE] Error releasing capital for trade ${req.params.id}:`, releaseError.message);
-        // Don't fail the request - trade is already updated, but log the error
-      }
     }
 
     res.json({ message: 'Trade updated successfully' });
@@ -3768,18 +3867,25 @@ async function checkTradeAlerts() {
                 // Record that alert was sent
                 await recordAlertSent(trade.id, user.user_id, alertType, currentPrice, percentGain);
 
-                // Close the trade for target_reached or stop_loss
+                // Close the trade for target_reached or stop_loss.
+                // closeTradeAndRelease settles the capital ledger in the same
+                // transaction, and is a no-op if the exit monitor already
+                // closed this trade (this loop used to skip the ledger entirely).
                 if (alertType === 'target_reached' || alertType === 'stop_loss') {
                   console.log(`[TRADE ALERTS] Closing trade ${trade.symbol} (${alertType})`);
                   try {
-                    await TradeDB.closeTrade(trade.id, {
+                    const closeResult = await TradeDB.closeTradeAndRelease(trade.id, {
                       exitDate: new Date().toISOString().split('T')[0],
                       exitPrice: currentPrice,
                       profitLoss: profitLossValue,
                       profitLossPercent: percentGain,
                       exitReason: reason
                     }, user.user_id);
-                    console.log(`[TRADE ALERTS] Trade ${trade.symbol} closed successfully`);
+                    if (closeResult.closed) {
+                      console.log(`[TRADE ALERTS] Trade ${trade.symbol} closed successfully`);
+                    } else {
+                      console.log(`[TRADE ALERTS] Trade ${trade.symbol} already closed elsewhere - no action`);
+                    }
                   } catch (closeError) {
                     console.error(`[TRADE ALERTS] Error closing trade ${trade.symbol}:`, closeError.message);
                   }

@@ -634,9 +634,11 @@ DTIUI.Controls = (function() {
             tradeDetailChart.destroy();
         }
         
-        // Get the data for this trade period
-        const allDates = DTIBacktester.priceChart.data.labels;
-        const allPrices = DTIBacktester.priceChart.data.datasets[0].data;
+        // Get the data for this trade period. Read from chartData, NOT the live
+        // chart's dataset — in candlestick mode dataset 0 holds candle objects
+        // ({x, y:[low,high], open, close}), not scalar prices.
+        const allDates = (DTIBacktester.chartData && DTIBacktester.chartData.dates) || DTIBacktester.priceChart.data.labels;
+        const allPrices = (DTIBacktester.chartData && DTIBacktester.chartData.prices) || DTIBacktester.priceChart.data.datasets[0].data;
 
         const entryIndex = allDates.indexOf(trade.entryDate);
         const exitIndex = trade.exitDate ? allDates.indexOf(trade.exitDate) : allDates.length - 1;

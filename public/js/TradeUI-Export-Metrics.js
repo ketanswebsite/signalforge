@@ -375,7 +375,7 @@ window.TradeUIModules.export = (function() {
                 }
                 
                 // Create HTML content for the export window
-                const exportDate = new Date().toLocaleString();
+                const exportDate = window.DateFormatter ? window.DateFormatter.formatTime(new Date()) : new Date().toLocaleString();
                 let htmlContent = `
                     <!DOCTYPE html>
                     <html lang="en">
@@ -670,7 +670,7 @@ window.TradeUIModules.export = (function() {
                 // Get all the trading data we need for the report
                 const stats = TradeCore.getTradeStatisticsByCurrency();
                 const metrics = TradeCore.getAdvancedMetrics();
-                const exportDate = new Date().toLocaleString();
+                const exportDate = window.DateFormatter ? window.DateFormatter.formatTime(new Date()) : new Date().toLocaleString();
                 const timePeriod = 'Everything so far';
                 
                 // Create HTML content for the export window with inline styles
@@ -971,7 +971,7 @@ window.TradeUIModules.export = (function() {
                                     </div>
                                     <div class="stat-card">
                                         <div class="stat-title">Avg Profit/Trade</div>
-                                        <div class="stat-value ${currencyStats.avgProfit > 0 ? 'positive' : 'negative'}">${currencyStats.avgProfit.toFixed(2)}%</div>
+                                        <div class="stat-value ${currencyStats.avgProfit > 0 ? 'positive' : (currencyStats.avgProfit < 0 ? 'negative' : '')}">${currencyStats.avgProfit.toFixed(2)}%</div>
                                     </div>
                                 </div>
                             </div>
@@ -1003,7 +1003,7 @@ window.TradeUIModules.export = (function() {
                             </div>
                             <div class="stat-card">
                                 <div class="stat-title">Avg Profit/Trade</div>
-                                <div class="stat-value ${stats.overall.avgProfit > 0 ? 'positive' : 'negative'}">${stats.overall.avgProfit.toFixed(2)}%</div>
+                                <div class="stat-value ${stats.overall.avgProfit > 0 ? 'positive' : (stats.overall.avgProfit < 0 ? 'negative' : '')}">${stats.overall.avgProfit.toFixed(2)}%</div>
                             </div>
                         </div>
                     `;
@@ -1259,8 +1259,8 @@ window.TradeUIModules.export = (function() {
                                 <td>${TradeCore.formatDate(trade.exitDate)}</td>
                                 <td>${holdingDays} days</td>
                                 <td>${trade.currencySymbol || TradeCore.CURRENCY_SYMBOL}${trade.investmentAmount.toFixed(2)}</td>
-                                <td class="${trade.plPercent > 0 ? 'positive' : 'negative'}">${trade.plPercent.toFixed(2)}%</td>
-                                <td class="${trade.plValue > 0 ? 'positive' : 'negative'}">${trade.currencySymbol || TradeCore.CURRENCY_SYMBOL}${trade.plValue.toFixed(2)}</td>
+                                <td class="${trade.plPercent > 0 ? 'positive' : (trade.plPercent < 0 ? 'negative' : '')}">${trade.plPercent.toFixed(2)}%</td>
+                                <td class="${trade.plValue > 0 ? 'positive' : (trade.plValue < 0 ? 'negative' : '')}">${trade.plValue < 0 ? '−' : ''}${trade.currencySymbol || TradeCore.CURRENCY_SYMBOL}${Math.abs(trade.plValue).toFixed(2)}</td>
                                 <td><span class="exit-tag ${exitTagClass}">${trade.exitReason}</span></td>
                             </tr>
                         `;
@@ -1416,7 +1416,7 @@ window.TradeUIModules.metrics = (function() {
                 'Expectancy',
                 metrics.expectancy.toFixed(2) + '%',
                 'Expected return per trade',
-                metrics.expectancy > 0 ? 'success' : 'danger'
+                metrics.expectancy > 0 ? 'success' : (metrics.expectancy < 0 ? 'danger' : 'neutral')
             );
             
             const holdTimeCard = createMetricCard(
@@ -1682,7 +1682,7 @@ function renderCalendarHeatmap(year) {
                 }
                 
                 // Add tooltip data
-                dayCell.setAttribute('data-date', date.toLocaleDateString());
+                dayCell.setAttribute('data-date', window.DateFormatter ? window.DateFormatter.format(date) : date.toLocaleDateString());
                 dayCell.setAttribute('data-trades', dayData.trades || 0);
                 dayCell.setAttribute('data-value', value.toFixed(2) + '%');
                 

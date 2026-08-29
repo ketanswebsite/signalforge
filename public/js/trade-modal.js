@@ -588,8 +588,8 @@ function calculateTradeDetails() {
             if (isNaN(dateObj.getTime())) {
                 return String(date); // Return original value as string if invalid date
             }
-            
-            return dateObj.toLocaleDateString();
+
+            return window.DateFormatter ? window.DateFormatter.format(dateObj) : dateObj.toLocaleDateString();
         } catch (error) {
             return String(date); // Fallback to string representation
         }

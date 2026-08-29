@@ -369,7 +369,7 @@ const AdminDatabase = {
                                 ${applied.map(migration => `
                                     <tr>
                                         <td><code>${migration.filename || migration}</code></td>
-                                        <td>${migration.applied_at ? new Date(migration.applied_at).toLocaleString() : 'Unknown'}</td>
+                                        <td>${migration.applied_at ? DateFormatter.formatTime(migration.applied_at) : 'Unknown'}</td>
                                     </tr>
                                 `).join('')}
                             </tbody>
@@ -540,7 +540,7 @@ const AdminDatabase = {
                                     <tr>
                                         <td><code>${backup.filename}</code></td>
                                         <td>${formatSize(backup.size || 0)}</td>
-                                        <td>${new Date(backup.created_at).toLocaleString()}</td>
+                                        <td>${DateFormatter.formatTime(backup.created_at)}</td>
                                         <td>
                                             <button class="btn btn-sm btn-secondary" onclick="AdminDatabase.downloadBackup('${backup.filename}')">
                                                  Download
@@ -803,7 +803,7 @@ const AdminDatabase = {
         container.innerHTML = this.queryHistory.map((item, index) => `
             <div class="query-history-item">
                 <div class="flex-between mb-1">
-                    <small class="text-muted">${item.timestamp.toLocaleString()}</small>
+                    <small class="text-muted">${DateFormatter.formatTime(item.timestamp)}</small>
                     <small class="text-muted">${item.rowCount} rows • ${item.executionTime}ms</small>
                 </div>
                 <code class="code-block">${item.query}</code>

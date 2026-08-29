@@ -561,9 +561,9 @@ window.TradeUIModules.dialogs = (function() {
                         
                         // Format date
                         const exportDate = new Date(jsonData.metadata.exportDate);
-                        document.getElementById('preview-date').textContent = isNaN(exportDate) ? 
-                            jsonData.metadata.exportDate : 
-                            exportDate.toLocaleString();
+                        document.getElementById('preview-date').textContent = isNaN(exportDate) ?
+                            jsonData.metadata.exportDate :
+                            (window.DateFormatter ? window.DateFormatter.formatTime(exportDate) : exportDate.toLocaleString());
                         
                         // Show preview and enable import button
                         importPreview
@@ -1165,7 +1165,7 @@ window.TradeUIModules.dialogs = (function() {
                 const currentPLValue = trade.currentPLValue || trade.unrealizedPL || 0;
                 plInfoElement.innerHTML = `
                     <div class="trade-pl-info ${currentPLPercent >= 0 ? 'positive' : 'negative'}">
-                        Current P&L: ${currentPLPercent.toFixed(2)}% (${trade.currencySymbol || TradeCore.CURRENCY_SYMBOL}${currentPLValue.toFixed(2)})
+                        Current P&L: ${currentPLPercent.toFixed(2)}% (${currentPLValue < 0 ? '−' : ''}${trade.currencySymbol || TradeCore.CURRENCY_SYMBOL}${Math.abs(currentPLValue).toFixed(2)})
                     </div>
                 `;
             } else {
@@ -1176,7 +1176,7 @@ window.TradeUIModules.dialogs = (function() {
                 const currentPLValue = trade.currentPLValue || trade.unrealizedPL || 0;
                 plInfo.innerHTML = `
                     <div class="trade-pl-info ${currentPLPercent >= 0 ? 'positive' : 'negative'}">
-                        Current P&L: ${currentPLPercent.toFixed(2)}% (${trade.currencySymbol || TradeCore.CURRENCY_SYMBOL}${currentPLValue.toFixed(2)})
+                        Current P&L: ${currentPLPercent.toFixed(2)}% (${currentPLValue < 0 ? '−' : ''}${trade.currencySymbol || TradeCore.CURRENCY_SYMBOL}${Math.abs(currentPLValue).toFixed(2)})
                     </div>
                 `;
                 dialogBody.insertBefore(plInfo, dialogBody.firstChild);

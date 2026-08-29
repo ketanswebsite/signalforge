@@ -653,6 +653,7 @@ const PortfolioUI = (function() {
      */
     function formatDate(dateStr) {
         const date = new Date(dateStr);
+        if (window.DateFormatter) return window.DateFormatter.format(date);
         return date.toLocaleDateString('en-GB', {
             day: '2-digit',
             month: 'short',

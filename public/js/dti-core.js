@@ -37,8 +37,8 @@ const DTIBacktester = {
                 if (isNaN(date.getTime())) {
                     return String(dateInput); // Return original value as string if invalid date
                 }
-                
-                return date.toLocaleDateString();
+
+                return window.DateFormatter ? window.DateFormatter.format(date) : date.toLocaleDateString();
             } catch (error) {
                 return String(dateInput); // Fallback to string representation
             }

@@ -119,8 +119,8 @@ const TradeCore = (function() {
             if (isNaN(date.getTime())) {
                 return String(dateInput); // Return original value as string if invalid date
             }
-            
-            return date.toLocaleDateString();
+
+            return window.DateFormatter ? window.DateFormatter.format(date) : date.toLocaleDateString();
         } catch (error) {
             return String(dateInput); // Fallback to string representation
         }
@@ -322,6 +322,12 @@ const TradeCore = (function() {
                         trade.plValue = (trade.exitPrice - trade.entryPrice) * trade.shares;
                         trade.profitLoss = trade.plValue;
                     }
+
+                    // Re-sync the statistics fields AFTER the fallback recalcs above —
+                    // otherwise a trade whose DB profit_loss was NULL keeps profit=0
+                    // and the per-market win rate counts a winner as a loss
+                    trade.profit = trade.profitLoss || 0;
+                    trade.percentGain = trade.profitLossPercentage || 0;
                 } else {
                     // For active trades, ensure currentPrice is set
                     if (!trade.currentPrice || trade.currentPrice === 0) {

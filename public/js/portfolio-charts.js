@@ -38,7 +38,7 @@ const PortfolioCharts = (function() {
         const ctx = document.getElementById('portfolio-value-chart');
         if (!ctx) return;
 
-        const dates = dailyValues.map(d => d.date);
+        const dates = dailyValues.map(d => window.DateFormatter ? window.DateFormatter.formatShort(d.date) : d.date);
         const values = dailyValues.map(d => d.value);
 
         const currencySymbol = window.PortfolioSimulator.getCurrencySymbol(currency);
@@ -393,7 +393,7 @@ const PortfolioCharts = (function() {
 
         // Calculate drawdown series
         const drawdowns = calculateDrawdownSeries(dailyValues);
-        const dates = dailyValues.map(d => d.date);
+        const dates = dailyValues.map(d => window.DateFormatter ? window.DateFormatter.formatShort(d.date) : d.date);
 
         charts.drawdown = new Chart(ctx, {
             type: 'line',

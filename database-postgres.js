@@ -1714,6 +1714,14 @@ const TradeDB = {
         profitLossPercentage: row.profit_loss_percentage ? parseFloat(row.profit_loss_percentage) : null,
         notes: row.notes,
         user_id: row.user_id,
+        exitReason: row.exit_reason,
+        stockName: row.stock_name,
+        investmentAmount: row.investment_amount ? parseFloat(row.investment_amount) : null,
+        tradeSize: row.trade_size ? parseFloat(row.trade_size) : null,
+        currencySymbol: row.currency_symbol,
+        squareOffDate: row.square_off_date,
+        market: row.market,
+        autoAdded: row.auto_added,
         // Missing field transformations added for standardization
         currentMarketPrice: row.current_market_price ? parseFloat(row.current_market_price) : null,
         unrealizedPL: row.unrealized_pl ? parseFloat(row.unrealized_pl) : null,
@@ -2287,9 +2295,9 @@ const TradeDB = {
         INSERT INTO telegram_subscribers 
           (chat_id, user_id, username, first_name, last_name, subscription_type, referral_source)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
-        ON CONFLICT (chat_id) 
-        DO UPDATE SET 
-          user_id = EXCLUDED.user_id,
+        ON CONFLICT (chat_id)
+        DO UPDATE SET
+          user_id = COALESCE(telegram_subscribers.user_id, EXCLUDED.user_id),
           username = EXCLUDED.username,
           first_name = EXCLUDED.first_name,
           last_name = EXCLUDED.last_name,
@@ -2348,6 +2356,27 @@ const TradeDB = {
       query += ` ORDER BY subscribed_at DESC`;
 
       const result = await pool.query(query, params);
+      return result.rows;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Full subscriber list for the admin view — includes inactive rows and the
+  // linked app account. Join on users.telegram_chat_id (the durable link),
+  // not telegram_subscribers.user_id, which historically held mixed values.
+  async getAllSubscribersWithLinks() {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        SELECT ts.chat_id, ts.user_id, ts.username, ts.first_name, ts.last_name,
+               ts.subscription_type, ts.referral_source, ts.is_active,
+               ts.subscribed_at, ts.last_activity,
+               u.email AS linked_email, u.name AS linked_name, u.telegram_linked_at AS linked_at
+        FROM telegram_subscribers ts
+        LEFT JOIN users u ON u.telegram_chat_id = ts.chat_id
+        ORDER BY ts.subscribed_at DESC
+      `);
       return result.rows;
     } catch (error) {
       throw error;
@@ -2761,6 +2790,22 @@ const TradeDB = {
     }
   },
 
+  // An ACTIVE position in this symbol, regardless of signal date — used to stop
+  // a re-triggered signal from booking the same stock twice while it is held.
+  async activeHighConvictionTradeExists(symbol) {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        SELECT id FROM high_conviction_portfolio
+        WHERE symbol = $1 AND status = 'active'
+        LIMIT 1
+      `, [symbol]);
+      return result.rows.length > 0;
+    } catch (error) {
+      return false;
+    }
+  },
+
   // ===== TRADING SIGNALS INTEGRATION FUNCTIONS =====
 
   // Store a pending signal
@@ -2980,7 +3025,7 @@ const TradeDB = {
         VALUES ($1, $2, $3, $4, $4)
         ON CONFLICT (user_id, market) DO UPDATE SET
           initial_capital = $4,
-          available_capital = portfolio_capital.initial_capital + portfolio_capital.realized_pl - portfolio_capital.allocated_capital,
+          available_capital = $4 + portfolio_capital.realized_pl - portfolio_capital.allocated_capital,
           updated_at = CURRENT_TIMESTAMP
         RETURNING *
       `, [userId, market, currency, initialCapital]);
@@ -3138,6 +3183,7 @@ const TradeDB = {
       const result = await this.updateTrade(tradeId, {
         exitDate: exitData.exitDate,
         exitPrice: exitData.exitPrice,
+        profitLoss: exitData.profitLoss,
         profitLossPercentage: exitData.profitLossPercent,
         exitReason: exitData.exitReason,
         status: 'closed'
@@ -3153,6 +3199,99 @@ const TradeDB = {
     } catch (error) {
       console.error(`[DB] ❌ Error closing trade id=${tradeId}:`, error);
       throw error;
+    }
+  },
+
+  // Close a trade AND settle the capital ledger in one transaction.
+  // The status='active' guard makes it idempotent: if two monitors race to close
+  // the same trade, only one closes it and releases capital; the other is a no-op.
+  // Capital is released only for trades that allocated it at entry (auto_added=true) —
+  // manually logged trades never touch the ledger on either side.
+  async closeTradeAndRelease(tradeId, exitData, userId = 'default') {
+    checkConnection();
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const current = await client.query(`
+        SELECT * FROM trades
+        WHERE id = $1 AND user_id = $2 AND status = 'active'
+        FOR UPDATE
+      `, [tradeId, userId]);
+
+      if (current.rows.length === 0) {
+        await client.query('ROLLBACK');
+        console.log(`[DB] closeTradeAndRelease: trade id=${tradeId} not active for user=${userId} — nothing to do`);
+        return { closed: false, released: false, trade: null };
+      }
+
+      const t = current.rows[0];
+      const entryPrice = parseFloat(t.entry_price);
+      const shares = t.shares !== null && t.shares !== undefined ? parseFloat(t.shares) : null;
+      const exitPrice = exitData.exitPrice !== undefined && exitData.exitPrice !== null
+        ? parseFloat(exitData.exitPrice) : null;
+
+      const invested = t.investment_amount !== null && t.investment_amount !== undefined
+        ? parseFloat(t.investment_amount)
+        : (t.trade_size !== null && t.trade_size !== undefined
+          ? parseFloat(t.trade_size)
+          : (shares && entryPrice ? shares * entryPrice : 0));
+
+      let plPercent = exitData.profitLossPercent;
+      if ((plPercent === undefined || plPercent === null) && entryPrice > 0 && exitPrice !== null) {
+        plPercent = ((exitPrice - entryPrice) / entryPrice) * 100;
+      }
+
+      let profitLoss = exitData.profitLoss;
+      if (profitLoss === undefined || profitLoss === null) {
+        if (shares && exitPrice !== null) {
+          profitLoss = (exitPrice - entryPrice) * shares;
+        } else if (plPercent !== undefined && plPercent !== null && invested) {
+          profitLoss = invested * plPercent / 100;
+        } else {
+          profitLoss = 0;
+        }
+      }
+
+      await client.query(`
+        UPDATE trades
+        SET status = 'closed',
+            exit_date = $1,
+            exit_price = $2,
+            profit_loss = $3,
+            profit_loss_percentage = $4,
+            exit_reason = $5,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $6
+      `, [exitData.exitDate, exitData.exitPrice, profitLoss, plPercent, exitData.exitReason, t.id]);
+
+      let released = false;
+      if (t.auto_added === true && t.market && invested > 0) {
+        const rel = await client.query(`
+          UPDATE portfolio_capital
+          SET allocated_capital = allocated_capital - $1,
+              realized_pl = realized_pl + $2,
+              available_capital = initial_capital + (realized_pl + $2) - (allocated_capital - $1),
+              active_positions = GREATEST(active_positions - 1, 0),
+              updated_at = CURRENT_TIMESTAMP
+          WHERE market = $3 AND user_id = $4
+          RETURNING *
+        `, [invested, profitLoss, t.market, userId]);
+        released = rel.rows.length > 0;
+        if (!released) {
+          console.warn(`[DB] closeTradeAndRelease: no portfolio_capital row for market=${t.market} user=${userId} — trade closed without release`);
+        }
+      }
+
+      await client.query('COMMIT');
+      console.log(`[DB] ✅ closeTradeAndRelease: id=${t.id} ${t.symbol} closed (P/L ${profitLoss !== null ? Number(profitLoss).toFixed(2) : 'n/a'}), capital ${released ? `released ${invested}` : 'not released'}`);
+      return { closed: true, released, profitLoss, profitLossPercent: plPercent, investmentReleased: released ? invested : 0, trade: t };
+    } catch (error) {
+      await client.query('ROLLBACK').catch(() => {});
+      console.error(`[DB] ❌ closeTradeAndRelease failed for id=${tradeId}:`, error);
+      throw error;
+    } finally {
+      client.release();
     }
   },
 

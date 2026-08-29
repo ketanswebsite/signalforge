@@ -29,6 +29,7 @@
     <script src="/js/admin-tables-v2.js"></script>
     <script src="/js/admin-dashboard.js"></script>
     <script src="/js/admin-users.js"></script>
+    <script src="/js/admin-telegram-subscribers.js"></script>
     <script src="/js/admin-complimentary.js"></script>
     <script src="/js/admin-subscriptions.js"></script>
     <script src="/js/admin-payments.js"></script>
@@ -77,6 +78,7 @@
         <button class="sa-sidenav__item nav-item" data-tab="analytics"><span class="material-symbols-rounded" aria-hidden="true">monitoring</span>Analytics</button>
         <span class="sa-sidenav__group">People &amp; money</span>
         <button class="sa-sidenav__item nav-item" data-tab="users"><span class="material-symbols-rounded" aria-hidden="true">group</span>Users</button>
+        <button class="sa-sidenav__item nav-item" data-tab="telegram"><span class="material-symbols-rounded" aria-hidden="true">send</span>Telegram</button>
         <button class="sa-sidenav__item nav-item" data-tab="subscriptions"><span class="material-symbols-rounded" aria-hidden="true">card_membership</span>Subscriptions</button>
         <button class="sa-sidenav__item nav-item" data-tab="payments"><span class="material-symbols-rounded" aria-hidden="true">payments</span>Payments</button>
         <span class="sa-sidenav__group">Engine room</span>
@@ -231,6 +233,10 @@
                 </div>
             </div>
 
+                        <div id="telegram-page" class="admin-tab">
+                <div class="spinner-container"><div class="spinner-medium spinner"></div></div>
+            </div>
+
                         <div id="subscriptions-page" class="admin-tab">
                 <div class="spinner-container"><div class="spinner-medium spinner"></div></div>
             </div>
@@ -306,6 +312,11 @@
                     }
                     if (typeof AdminComplimentary !== 'undefined' && AdminComplimentary.init) {
                         AdminComplimentary.init();
+                    }
+                    break;
+                case 'telegram':
+                    if (typeof AdminTelegramSubscribers !== 'undefined' && AdminTelegramSubscribers.init) {
+                        AdminTelegramSubscribers.init();
                     }
                     break;
                 case 'subscriptions':

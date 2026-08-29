@@ -152,7 +152,7 @@ const CapitalDisplay = (function() {
         // Calculate total capital
         const totalCapital = marketData.initial + marketData.realized;
         const plClass = marketData.realized >= 0 ? 'positive' : 'negative';
-        const plSign = marketData.realized >= 0 ? '+' : '';
+        const plSign = marketData.realized >= 0 ? '+' : '−';
 
         return `
             <div class="capital-market-card">

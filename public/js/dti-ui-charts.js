@@ -204,16 +204,13 @@ DTIUI.Charts = (function() {
             ohlcData
         };
         
-        // Initialize default chart type if not set
+        // Initialize default chart type if not set — candlestick everywhere.
+        // createCharts falls back to line automatically when OHLC is missing,
+        // so this default is safe on every surface.
         if (!DTIBacktester.chartType) {
-            DTIBacktester.chartType = 'line'; // Default to line chart
+            DTIBacktester.chartType = 'candlestick';
         }
-        
-        // Ensure we don't try candlestick on first load
-        if (!DTIBacktester.hasLoadedOnce) {
-            DTIBacktester.chartType = 'line';
-            DTIBacktester.hasLoadedOnce = true;
-        }
+        DTIBacktester.hasLoadedOnce = true;
 
         // Add chart type toggle button
         setTimeout(() => {
@@ -332,9 +329,10 @@ DTIUI.Charts = (function() {
                     callbacks: {
                         title: function(tooltipItems) {
                             const date = new Date(tooltipItems[0].label);
-                            return date.toLocaleDateString(undefined, { 
-                                year: 'numeric', 
-                                month: 'short', 
+                            if (window.DateFormatter) return window.DateFormatter.format(date);
+                            return date.toLocaleDateString(undefined, {
+                                year: 'numeric',
+                                month: 'short',
                                 day: 'numeric'
                             });
                         },

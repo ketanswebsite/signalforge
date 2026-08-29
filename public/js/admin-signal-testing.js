@@ -446,7 +446,7 @@ const AdminSignalTesting = {
         `;
 
         trades.forEach(trade => {
-            const entered = new Date(trade.entry_date).toLocaleString();
+            const entered = DateFormatter.formatTime(trade.entry_date);
             html += `
                 <tr>
                     <td><strong>${trade.symbol}</strong></td>
@@ -488,7 +488,7 @@ const AdminSignalTesting = {
             html += '<div class="execution-logs-list">';
 
             data.executionLogs.forEach(log => {
-                const timestamp = new Date(log.timestamp).toLocaleString();
+                const timestamp = DateFormatter.formatTime(log.timestamp);
                 html += `
                     <div class="log-card">
                         <div class="log-card-header">

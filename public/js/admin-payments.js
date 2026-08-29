@@ -639,7 +639,7 @@ const AdminPayments = {
           })}
         </div>
         <div class="mb-2">
-          <strong>Date:</strong> ${new Date(payment.created_at).toLocaleString()}
+          <strong>Date:</strong> ${DateFormatter.formatTime(payment.created_at)}
         </div>
         ${payment.description ? `<div class="mb-2"><strong>Description:</strong> ${payment.description}</div>` : ''}
       </div>

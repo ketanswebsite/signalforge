@@ -808,7 +808,7 @@ async function sendDirectOpportunityAlerts(opportunities) {
         // Create a single comprehensive message with all opportunities
         let message = `📊 *🎯 HIGH CONVICTION TRADING OPPORTUNITIES*\n`;
         message += `Found ${alertOpportunities.length} Active Trades\n`;
-        message += `Scan Date: *${new Date().toLocaleDateString('en-GB')}*\n\n`;
+        message += `Scan Date: *${window.DateFormatter ? window.DateFormatter.format(new Date()) : new Date().toLocaleDateString('en-GB')}*\n\n`;
         
         // Add individual opportunities with complete details
         for (let i = 0; i < alertOpportunities.length; i++) {
@@ -904,7 +904,7 @@ function calculateSquareOffDate(entryDate) {
     const entry = new Date(entryDate);
     const squareOff = new Date(entry);
     squareOff.setDate(entry.getDate() + 30); // Max holding period
-    return squareOff.toLocaleDateString('en-GB');
+    return window.DateFormatter ? window.DateFormatter.format(squareOff) : squareOff.toLocaleDateString('en-GB');
 }
 
 /**

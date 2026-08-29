@@ -297,7 +297,7 @@ router.post('/user/subscription/cancel', ensureAuthenticated, async (req, res) =
     res.json(successResponse({
       cancelled: true,
       accessUntil: subscription.subscription_end_date,
-      message: `Your subscription has been cancelled. You'll continue to have access until ${new Date(subscription.subscription_end_date).toLocaleDateString()}.`
+      message: `Your subscription has been cancelled. You'll continue to have access until ${require('../lib/shared/date-format').formatDateDDMMYYYY(subscription.subscription_end_date)}.`
     }));
 
   } catch (error) {

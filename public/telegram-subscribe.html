@@ -11,6 +11,10 @@
     <link rel="stylesheet" href="/css/app.css">
     <script>try{if(localStorage.getItem('sa-theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
 
+    <!-- Shared DD-MM-YYYY date formatting (used by the inline connect script) -->
+    <script src="/js/utils/date-formatter.js"></script>
+    <!-- Self-hosted QR rendering (Telegram deep link + ntfy topic) -->
+    <script src="/js/vendor/qrcode.js"></script>
     <!-- App shell (theme, nav, user menu, legal note) -->
     <script src="/js/app-shell.js" defer></script>
     <!-- Alert type switches (reads and saves /api/alerts/preferences) -->
@@ -119,7 +123,8 @@
                                     <span class="material-symbols-rounded" aria-hidden="true">open_in_new</span>
                                     Tap here if Telegram didn't open
                                 </a>
-                                <p class="al-finehint">The link is personal to you and works once.</p>
+                                <div class="al-qr" id="telegram-qr" role="img" aria-label="Scan with your phone to open the Telegram bot"></div>
+                                <p class="al-finehint">Or scan with your phone. The link is personal to you and works once.</p>
                             </div>
 
                             <p class="al-finehint">Prefer to search inside Telegram? The bot is <strong>@MySignalForgeBot</strong>.</p>
@@ -149,6 +154,27 @@
                     </div>
                     <div class="sa-stack al-switches" id="alert-switches"></div>
                     <p class="al-finehint" id="alert-prefs-status" role="status"></p>
+                </section>
+
+                <section class="sa-card" id="ntfy-section">
+                    <div class="sa-card__head">
+                        <div>
+                            <h3 class="sa-card__title">ntfy — daily AI analysis</h3>
+                            <p class="sa-card__hint">A public feed. No account, no linking — just subscribe to the topic.</p>
+                        </div>
+                        <span class="sa-badge">Public</span>
+                    </div>
+                    <div class="sa-stack">
+                        <p class="al-step__body">Install the free <strong>ntfy</strong> app (ntfy.sh), then subscribe to the topic <strong>sutralgosignals</strong> — or scan the code.</p>
+                        <div class="al-qr" id="ntfy-qr" role="img" aria-label="Scan to subscribe to the ntfy topic"></div>
+                        <div class="sa-row">
+                            <a class="sa-btn sa-btn--secondary" href="https://ntfy.sh/sutralgosignals" target="_blank" rel="noopener">
+                                <span class="material-symbols-rounded" aria-hidden="true">open_in_new</span>
+                                Open the topic
+                            </a>
+                        </div>
+                        <p class="al-finehint">Every weekday morning the AI's read on that day's screened stocks lands here. The topic is public — nothing personal is ever posted to it.</p>
+                    </div>
                 </section>
 
             </div>
@@ -261,7 +287,7 @@
         document.getElementById('linked-badge').hidden = false;
         document.getElementById('telegram-card-hint').textContent = 'Connected — messages are on their way.';
         document.getElementById('linked-username').textContent = data.username ? '@' + data.username : 'your Telegram';
-        document.getElementById('linked-date').textContent = data.linkedAt ? new Date(data.linkedAt).toLocaleDateString() : '—';
+        document.getElementById('linked-date').textContent = data.linkedAt ? window.DateFormatter.format(data.linkedAt) : '—';
     }
 
     function showNotLinkedState() {
@@ -273,8 +299,26 @@
         document.getElementById('generate-link-btn').hidden = false;
     }
 
+    // Render a QR code into an element (self-hosted qrcode-generator library;
+    // the SVG is generated locally from a URL we control, parsed via DOMParser)
+    function renderQr(elId, text) {
+        try {
+            const el = document.getElementById(elId);
+            if (!el || typeof qrcode !== 'function') return;
+            const qr = qrcode(0, 'M');
+            qr.addData(text);
+            qr.make();
+            const svgMarkup = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+            const doc = new DOMParser().parseFromString(svgMarkup, 'image/svg+xml');
+            el.replaceChildren(doc.documentElement);
+        } catch (error) {
+            console.error('QR render failed:', error);
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         checkAuthAndLinkingStatus();
+        renderQr('ntfy-qr', 'https://ntfy.sh/sutralgosignals');
 
         document.getElementById('generate-link-btn').addEventListener('click', async function () {
             try {
@@ -284,6 +328,7 @@
                 if (data.success && data.deepLink) {
                     const link = document.getElementById('telegram-deep-link');
                     link.href = data.deepLink;
+                    renderQr('telegram-qr', data.deepLink);
                     document.getElementById('deep-link-display').hidden = false;
                     window.open(data.deepLink, '_blank', 'noopener');
                 }

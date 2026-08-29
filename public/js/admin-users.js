@@ -362,14 +362,14 @@ const AdminUsers = {
         ${AdminComponents.formField({
           label: 'First Login',
           name: 'first_login',
-          value: user.first_login ? new Date(user.first_login).toLocaleString() : 'Never',
+          value: user.first_login ? DateFormatter.formatTime(user.first_login) : 'Never',
           disabled: true
         })}
 
         ${AdminComponents.formField({
           label: 'Last Login',
           name: 'last_login',
-          value: user.last_login ? new Date(user.last_login).toLocaleString() : 'Never',
+          value: user.last_login ? DateFormatter.formatTime(user.last_login) : 'Never',
           disabled: true
         })}
 

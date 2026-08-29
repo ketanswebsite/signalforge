@@ -108,9 +108,9 @@ const TradeUIMetricCards = (function() {
         });
 
         const plFormats = {
-            'India': v => '₹' + v.toLocaleString('en-IN', { maximumFractionDigits: 0 }),
-            'UK': v => '£' + v.toLocaleString('en-GB', { maximumFractionDigits: 2 }),
-            'US': v => '$' + v.toLocaleString('en-US', { maximumFractionDigits: 0 })
+            'India': v => (v < 0 ? '−' : '') + '₹' + Math.abs(v).toLocaleString('en-IN', { maximumFractionDigits: 0 }),
+            'UK': v => (v < 0 ? '−' : '') + '£' + Math.abs(v).toLocaleString('en-GB', { maximumFractionDigits: 2 }),
+            'US': v => (v < 0 ? '−' : '') + '$' + Math.abs(v).toLocaleString('en-US', { maximumFractionDigits: 0 })
         };
 
         const activeMarkets = ['India', 'UK', 'US'].filter(m => countByMarket[m] > 0);
