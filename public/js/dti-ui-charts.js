@@ -554,9 +554,9 @@ DTIUI.Charts = (function() {
                 const low = ohlcData.low[i];
                 const close = prices[i];
                 
-                // Skip invalid data points
-                if (isNaN(open) || isNaN(high) || isNaN(low) || isNaN(close) || 
-                    open === null || high === null || low === null || close === null) {
+                // Skip invalid data points (NaN, null, zero, negative — a zero
+                // open or low anchors a candle at ₹0 and wrecks the chart)
+                if (!(open > 0) || !(high > 0) || !(low > 0) || !(close > 0)) {
                     candleData.push(null);
                     return;
                 }
@@ -589,7 +589,10 @@ DTIUI.Charts = (function() {
                     barPercentage: 0.8,
                     categoryPercentage: 0.9,
                     borderSkipped: false,
-                    order: 1
+                    order: 1,
+                    // The wick plugin reads OHLC from here — per chart, so a
+                    // reopened dialog on another stock never uses stale data
+                    _candleSource: candleData
                 });
                 
                 // Add custom plugin to draw wicks
@@ -598,36 +601,52 @@ DTIUI.Charts = (function() {
                         id: 'candlestickWicks',
                         afterDatasetsDraw: function(chart) {
                             const ctx = chart.ctx;
-                            const meta = chart.getDatasetMeta(chart.data.datasets.findIndex(d => d.label === 'Price'));
-                            
-                            if (!meta || !meta.data) return;
-                            
+                            const dsIndex = chart.data.datasets.findIndex(d => d.label === 'Price');
+                            const meta = chart.getDatasetMeta(dsIndex);
+                            const candles = dsIndex >= 0 ? chart.data.datasets[dsIndex]._candleSource : null;
+
+                            if (!meta || !meta.data || !candles) return;
+
+                            // Adaptive density: with more candles than pixels the
+                            // 1px wicks merge into a solid mass. Skip wicks until
+                            // there is at least ~2px per candle — zooming in or a
+                            // shorter range button re-renders and brings them back.
+                            const xScale = chart.scales.x;
+                            if (xScale) {
+                                const visibleCount = Math.max(1, (xScale.max - xScale.min) + 1);
+                                const pxPerCandle = (xScale.right - xScale.left) / visibleCount;
+                                if (pxPerCandle < 2) return;
+                            }
+
                             ctx.save();
                             ctx.strokeStyle = 'rgba(71, 85, 105, 1)';
                             ctx.lineWidth = 1;
-                            
+
                             meta.data.forEach((bar, index) => {
-                                if (!bar || !candleData[index]) return;
-                                
+                                if (!bar || !candles[index]) return;
+
                                 const x = bar.x;
-                                const high = chart.scales.y.getPixelForValue(candleData[index].high);
-                                const low = chart.scales.y.getPixelForValue(candleData[index].low);
-                                const barTop = bar.y;
-                                const barBottom = bar.y + bar.height;
-                                
+                                const high = chart.scales.y.getPixelForValue(candles[index].high);
+                                const low = chart.scales.y.getPixelForValue(candles[index].low);
+                                // bar.base is the pixel of the body's other end;
+                                // bar.y + bar.height misbehaves on floating bars
+                                const bottomPx = bar.base !== undefined ? bar.base : bar.y + bar.height;
+                                const barTop = Math.min(bar.y, bottomPx);
+                                const barBottom = Math.max(bar.y, bottomPx);
+
                                 // Draw upper wick
                                 ctx.beginPath();
                                 ctx.moveTo(x, barTop);
                                 ctx.lineTo(x, high);
                                 ctx.stroke();
-                                
+
                                 // Draw lower wick
                                 ctx.beginPath();
                                 ctx.moveTo(x, barBottom);
                                 ctx.lineTo(x, low);
                                 ctx.stroke();
                             });
-                            
+
                             ctx.restore();
                         }
                     };

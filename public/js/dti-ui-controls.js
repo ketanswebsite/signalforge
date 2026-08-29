@@ -24,7 +24,8 @@ DTIUI.Controls = (function() {
                     <button class="range-btn" data-range="3m">3M</button>
                     <button class="range-btn" data-range="6m">6M</button>
                     <button class="range-btn" data-range="1y">1Y</button>
-                    <button class="range-btn active" data-range="all">All</button>
+                    <button class="range-btn" data-range="3y">3Y</button>
+                    <button class="range-btn active" data-range="all">5Y</button>
                 </div>
                 
                 <div class="control-group visibility-controls">
@@ -270,6 +271,10 @@ DTIUI.Controls = (function() {
             case '1y':
                 startDate = new Date(lastDate);
                 startDate.setFullYear(lastDate.getFullYear() - 1);
+                break;
+            case '3y':
+                startDate = new Date(lastDate);
+                startDate.setFullYear(lastDate.getFullYear() - 3);
                 break;
             default:
                 return;
