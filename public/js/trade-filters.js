@@ -423,7 +423,7 @@ window.TradeUIModules.filters = (function() {
                 card.querySelector('.days-remaining').textContent = daysRemaining;
 
                 if (window.applyPosterPositionBits) {
-                    window.applyPosterPositionBits(card, plValue, holdingDays, daysRemaining);
+                    window.applyPosterPositionBits(card, plValue, holdingDays, daysRemaining, trade);
                 }
                 
                 // Add highlighting for trades matching filter

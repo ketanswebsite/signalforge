@@ -2876,6 +2876,7 @@ const TradeDB = {
       SELECT id, symbol, market, signal_date, entry_price, target_price,
              stop_loss, square_off_date, win_rate, historical_signal_count,
              status, conviction_score, conviction_verdict, conviction_summary,
+             entry_dti, prev_dti, entry_7day_dti, prev_7day_dti,
              added_to_trade_id, created_at
       FROM pending_signals
       WHERE signal_date >= CURRENT_DATE - $1::int

@@ -70,8 +70,11 @@
       const processed = DTIData.processStockCSV(data, { symbol: symbol, name: displayName || symbol });
       if (!processed) throw new Error('Could not process data');
 
-      // Store OHLC data globally — the chart module reads it for candlesticks
+      // Store OHLC data globally — the chart module reads it for candlesticks.
+      // currentStockIndex drives the chart's currency symbol (₹/£/$): passing
+      // the raw symbol lets TradeCore.getCurrencySymbol resolve it by suffix.
       if (typeof DTIBacktester !== 'undefined') {
+        DTIBacktester.currentStockIndex = symbol;
         DTIBacktester.ohlcData = {
           dates: processed.dates,
           open: processed.open || processed.close,

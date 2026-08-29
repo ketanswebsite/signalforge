@@ -588,7 +588,7 @@ DTIUI.Controls = (function() {
             </div>
             <div class="detail-group">
                 <div class="detail-label">Entry Price</div>
-                <div class="detail-value">${currencySymbol}${trade.entryPrice.toFixed(2)}</div>
+                <div class="detail-value">${formatChartPrice(trade.entryPrice)}</div>
             </div>
             <div class="detail-group">
                 <div class="detail-label">Entry DTI</div>
@@ -604,7 +604,7 @@ DTIUI.Controls = (function() {
             </div>
             <div class="detail-group">
                 <div class="detail-label">Exit Price</div>
-                <div class="detail-value">${trade.exitPrice ? currencySymbol + trade.exitPrice.toFixed(2) : currencySymbol + trade.currentPrice.toFixed(2) + ' (Current)'}</div>
+                <div class="detail-value">${trade.exitPrice ? formatChartPrice(trade.exitPrice) : formatChartPrice(trade.currentPrice) + ' (Current)'}</div>
             </div>
             <div class="detail-group">
                 <div class="detail-label">P/L</div>
@@ -723,7 +723,7 @@ DTIUI.Controls = (function() {
                                 // Get currency symbol
                                 const currencySymbol = getCurrencySymbolForDisplay(DTIBacktester.currentStockIndex);
                                 
-                                return currencySymbol + value.toFixed(2);
+                                return formatChartPrice(value);
                             }
                         }
                     }

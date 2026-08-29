@@ -350,7 +350,7 @@ DTIUI.Charts = (function() {
                                 
                                 if (tradeData.type === 'entry') {
                                     return [
-                                        `Entry: ${currencySymbol}${tradeData.price.toFixed(2)}`,
+                                        `Entry: ${formatChartPrice(tradeData.price)}`,
                                         `Date: ${DTIBacktester.utils.formatDate(tradeData.date)}`,
                                         `Holding Period: ${tradeData.holdingDays} days`,
                                         `Result: ${tradeData.plPercent.toFixed(2)}%`,
@@ -359,7 +359,7 @@ DTIUI.Charts = (function() {
                                     ];
                                 } else {
                                     return [
-                                        `Exit: ${currencySymbol}${tradeData.price.toFixed(2)}`,
+                                        `Exit: ${formatChartPrice(tradeData.price)}`,
                                         `Date: ${DTIBacktester.utils.formatDate(tradeData.date)}`,
                                         `Exit Reason: ${tradeData.exitReason}`,
                                         `P/L: ${tradeData.plPercent.toFixed(2)}%`,
@@ -399,11 +399,11 @@ DTIUI.Charts = (function() {
                                         const sevenDayValue = daily7DayDTI[index] ? daily7DayDTI[index].toFixed(2) : 'N/A';
                                         
                                         return [
-                                            `Open: ${currencySymbol}${candleData.open.toFixed(2)}`,
-                                            `High: ${currencySymbol}${candleData.high.toFixed(2)}`,
-                                            `Low: ${currencySymbol}${candleData.low.toFixed(2)}`,
-                                            `Close: ${currencySymbol}${candleData.close.toFixed(2)}`,
-                                            `Change: ${changeSign}${currencySymbol}${Math.abs(change).toFixed(2)} (${changeSign}${changePercent}%)`,
+                                            `Open: ${formatChartPrice(candleData.open)}`,
+                                            `High: ${formatChartPrice(candleData.high)}`,
+                                            `Low: ${formatChartPrice(candleData.low)}`,
+                                            `Close: ${formatChartPrice(candleData.close)}`,
+                                            `Change: ${changeSign}${formatChartPrice(Math.abs(change))} (${changeSign}${changePercent}%)`,
                                             ``,
                                             `DTI: ${dtiValue}`,
                                             `7-Day DTI: ${sevenDayValue}`
@@ -420,11 +420,11 @@ DTIUI.Charts = (function() {
                                     const sevenDayValue = daily7DayDTI[index] ? daily7DayDTI[index].toFixed(2) : 'N/A';
                                     
                                     return [
-                                        `Open: ${currencySymbol}${raw.o.toFixed(2)}`,
-                                        `High: ${currencySymbol}${raw.h.toFixed(2)}`,
-                                        `Low: ${currencySymbol}${raw.l.toFixed(2)}`,
-                                        `Close: ${currencySymbol}${raw.c.toFixed(2)}`,
-                                        `Change: ${changeSign}${currencySymbol}${Math.abs(change).toFixed(2)} (${changeSign}${changePercent}%)`,
+                                        `Open: ${formatChartPrice(raw.o)}`,
+                                        `High: ${formatChartPrice(raw.h)}`,
+                                        `Low: ${formatChartPrice(raw.l)}`,
+                                        `Close: ${formatChartPrice(raw.c)}`,
+                                        `Change: ${changeSign}${formatChartPrice(Math.abs(change))} (${changeSign}${changePercent}%)`,
                                         ``,
                                         `DTI: ${dtiValue}`,
                                         `7-Day DTI: ${sevenDayValue}`
@@ -443,7 +443,7 @@ DTIUI.Charts = (function() {
                                     const sevenDayValue = daily7DayDTI[index] ? daily7DayDTI[index].toFixed(2) : 'N/A';
                                     
                                     return [
-                                        `${label}: ${currencySymbol}${value.toFixed(2)}${percentChange}`,
+                                        `${label}: ${formatChartPrice(value)}${percentChange}`,
                                         `DTI: ${dtiValue}`,
                                         `7-Day DTI: ${sevenDayValue}`
                                     ];
@@ -457,7 +457,7 @@ DTIUI.Charts = (function() {
                                 
                                 return [
                                     `${label}: ${value.toFixed(2)}`,
-                                    `Price: ${currencySymbol}${priceValue.toFixed(2)}`
+                                    `Price: ${formatChartPrice(priceValue)}`
                                 ];
                             }
                             
@@ -808,7 +808,7 @@ DTIUI.Charts = (function() {
                                 // Get currency symbol
                                 const currencySymbol = getCurrencySymbolForDisplay(DTIBacktester.currentStockIndex);
                                 
-                                return currencySymbol + value.toFixed(2);
+                                return formatChartPrice(value);
                             },
                             color: '#64748b',
                             font: {

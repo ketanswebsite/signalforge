@@ -137,6 +137,26 @@
         badges.appendChild(statusBadge(signal));
         row.appendChild(badges);
 
+        // What triggered it — the DTI readings at signal time
+        const entryDti = signal.entry_dti != null ? parseFloat(signal.entry_dti) : null;
+        if (entryDti != null && isFinite(entryDti)) {
+            const fmtDti = v => (v > 0 ? '+' : '') + Number(v).toFixed(1);
+            const prevDti = signal.prev_dti != null ? parseFloat(signal.prev_dti) : null;
+            const entry7 = signal.entry_7day_dti != null ? parseFloat(signal.entry_7day_dti) : null;
+            const prev7 = signal.prev_7day_dti != null ? parseFloat(signal.prev_7day_dti) : null;
+            let triggerText = 'Trigger · Daily DTI '
+                + (prevDti != null && isFinite(prevDti) ? fmtDti(prevDti) + ' → ' : '')
+                + fmtDti(entryDti);
+            if (entry7 != null && isFinite(entry7)) {
+                triggerText += ' · Weekly '
+                    + (prev7 != null && isFinite(prev7) ? fmtDti(prev7) + ' → ' : '')
+                    + fmtDti(entry7);
+            }
+            const triggerLine = el('p', 'sg-summary', triggerText);
+            triggerLine.title = 'The formula buys when the daily DTI turns up from below its trigger and the weekly DTI agrees.';
+            row.appendChild(triggerLine);
+        }
+
         if (signal.conviction_summary) {
             row.appendChild(el('p', 'sg-summary', String(signal.conviction_summary).slice(0, 260)));
         }

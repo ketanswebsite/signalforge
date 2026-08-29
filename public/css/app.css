@@ -167,6 +167,7 @@ body.positions-page .currency-stat-card + .currency-stat-card{margin-top:var(--s
 @media (min-width:1240px){body.positions-page #active-trades-container{grid-template-columns:repeat(3,minmax(0,1fr))}}
 body.positions-page #active-trades-container{gap:var(--s-3)}
 body.positions-page .sa-pos{padding:var(--s-3);gap:var(--s-2)}
+.pos-trigger{font-size:var(--size-xs);color:var(--text-3);margin:0;font-variant-numeric:tabular-nums}
 body.positions-page .sa-pos__grid{gap:var(--s-2) var(--s-3)}
 body.positions-page .sa-pos__foot{padding-top:var(--s-2)}
 body.positions-page .capital-grid{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:var(--s-2)}

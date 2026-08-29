@@ -2,7 +2,31 @@
  * v3 Poster bits on a cloned position card: the stop-to-target rail,
  * the days bar, and the exit-rule badge. Shared by every template cloner.
  */
-window.applyPosterPositionBits = function (card, plValue, holdingDays, daysRemaining) {
+window.applyPosterPositionBits = function (card, plValue, holdingDays, daysRemaining, trade) {
+    // What triggered the entry — the DTI readings recorded at signal time.
+    // Only touched when the trade object is supplied (full card renders);
+    // price-tick updates call with 4 args and leave the line alone.
+    if (trade !== undefined) {
+        const triggerEl = card.querySelector('.entry-trigger');
+        if (triggerEl) {
+            const fmtDti = v => (v > 0 ? '+' : '') + Number(v).toFixed(1);
+            if (trade && trade.entryDTI !== null && trade.entryDTI !== undefined) {
+                let triggerText = 'Trigger · Daily DTI '
+                    + (trade.prevDTI !== null && trade.prevDTI !== undefined ? fmtDti(trade.prevDTI) + ' → ' : '')
+                    + fmtDti(trade.entryDTI);
+                if (trade.entry7DayDTI !== null && trade.entry7DayDTI !== undefined) {
+                    triggerText += ' · Weekly '
+                        + (trade.prev7DayDTI !== null && trade.prev7DayDTI !== undefined ? fmtDti(trade.prev7DayDTI) + ' → ' : '')
+                        + fmtDti(trade.entry7DayDTI);
+                }
+                triggerEl.textContent = triggerText;
+                triggerEl.hidden = false;
+            } else {
+                triggerEl.hidden = true;
+            }
+        }
+    }
+
     const railFill = card.querySelector('.sa-pos__fill');
     if (railFill) {
         const clamped = Math.max(-5, Math.min(8, plValue));
@@ -256,7 +280,7 @@ function renderActiveTrades() {
                 daysRemainingElement.textContent = daysRemaining;
             }
 
-            window.applyPosterPositionBits(card, plValue, holdingDays, daysRemaining);
+            window.applyPosterPositionBits(card, plValue, holdingDays, daysRemaining, trade);
             
             // Close button event
             const closeBtn = card.querySelector('.btn-close-trade');

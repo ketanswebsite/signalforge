@@ -22,6 +22,21 @@ function getCurrencySymbolForDisplay(symbolOrMarket) {
     return '₹';
 }
 
+/**
+ * Format a chart price with the right currency for the CURRENT chart's stock.
+ * Prefix symbol for ₹/$ markets; pence SUFFIX for LSE symbols, because Yahoo
+ * quotes .L prices in pence and a £ prefix would overstate them 100×.
+ */
+function formatChartPrice(value, symbolOrMarket) {
+    const target = symbolOrMarket !== undefined
+        ? symbolOrMarket
+        : (typeof DTIBacktester !== 'undefined' ? DTIBacktester.currentStockIndex : undefined);
+    const sym = getCurrencySymbolForDisplay(target);
+    const n = Number(value);
+    if (!isFinite(n)) return '—';
+    return sym === '£' ? n.toFixed(2) + 'p' : sym + n.toFixed(2);
+}
+
 // Create DTIUI module
 const DTIUI = (function() {
     // Add flag to track "View Details" clicks - FIX FOR OPPORTUNITY LIST DISAPPEARING
