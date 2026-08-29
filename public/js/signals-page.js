@@ -137,23 +137,25 @@
         badges.appendChild(statusBadge(signal));
         row.appendChild(badges);
 
-        // What triggered it — the DTI readings at signal time
+        // What triggered it — previous vs trigger DTI, and the rule that fired.
+        // Rule (backtest-calculator): daily DTI turns up vs the day before while
+        // still below 0, with the weekly DTI also rising.
         const entryDti = signal.entry_dti != null ? parseFloat(signal.entry_dti) : null;
         if (entryDti != null && isFinite(entryDti)) {
             const fmtDti = v => (v > 0 ? '+' : '') + Number(v).toFixed(1);
             const prevDti = signal.prev_dti != null ? parseFloat(signal.prev_dti) : null;
             const entry7 = signal.entry_7day_dti != null ? parseFloat(signal.entry_7day_dti) : null;
             const prev7 = signal.prev_7day_dti != null ? parseFloat(signal.prev_7day_dti) : null;
-            let triggerText = 'Trigger · Daily DTI '
+            let triggerText = 'Trigger — Daily DTI turned up below 0: '
                 + (prevDti != null && isFinite(prevDti) ? fmtDti(prevDti) + ' → ' : '')
                 + fmtDti(entryDti);
             if (entry7 != null && isFinite(entry7)) {
-                triggerText += ' · Weekly '
+                triggerText += ' · Weekly rising: '
                     + (prev7 != null && isFinite(prev7) ? fmtDti(prev7) + ' → ' : '')
                     + fmtDti(entry7);
             }
             const triggerLine = el('p', 'sg-summary', triggerText);
-            triggerLine.title = 'The formula buys when the daily DTI turns up from below its trigger and the weekly DTI agrees.';
+            triggerLine.title = 'Entry rule: the daily DTI rises versus the previous day while still below 0 (the trigger), and the weekly DTI is also rising (the confirmation).';
             row.appendChild(triggerLine);
         }
 

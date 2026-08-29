@@ -2,6 +2,25 @@
  * v3 Poster bits on a cloned position card: the stop-to-target rail,
  * the days bar, and the exit-rule badge. Shared by every template cloner.
  */
+/**
+ * One shared sentence for "what fired this entry", built from the previous vs
+ * trigger DTI readings. The rule (lib/shared/backtest-calculator.js): the daily
+ * DTI turns UP versus the day before while still below 0, and the weekly DTI
+ * is also rising — so the daily cross IS the trigger, the weekly confirms it.
+ */
+window.formatDtiTrigger = function (prevDTI, entryDTI, prev7DayDTI, entry7DayDTI) {
+    const fmt = v => (v > 0 ? '+' : '') + Number(v).toFixed(1);
+    let text = 'Trigger — Daily DTI turned up below 0: '
+        + (prevDTI !== null && prevDTI !== undefined ? fmt(prevDTI) + ' → ' : '')
+        + fmt(entryDTI);
+    if (entry7DayDTI !== null && entry7DayDTI !== undefined) {
+        text += ' · Weekly rising: '
+            + (prev7DayDTI !== null && prev7DayDTI !== undefined ? fmt(prev7DayDTI) + ' → ' : '')
+            + fmt(entry7DayDTI);
+    }
+    return text;
+};
+
 window.applyPosterPositionBits = function (card, plValue, holdingDays, daysRemaining, trade) {
     // What triggered the entry — the DTI readings recorded at signal time.
     // Only touched when the trade object is supplied (full card renders);
@@ -9,17 +28,9 @@ window.applyPosterPositionBits = function (card, plValue, holdingDays, daysRemai
     if (trade !== undefined) {
         const triggerEl = card.querySelector('.entry-trigger');
         if (triggerEl) {
-            const fmtDti = v => (v > 0 ? '+' : '') + Number(v).toFixed(1);
             if (trade && trade.entryDTI !== null && trade.entryDTI !== undefined) {
-                let triggerText = 'Trigger · Daily DTI '
-                    + (trade.prevDTI !== null && trade.prevDTI !== undefined ? fmtDti(trade.prevDTI) + ' → ' : '')
-                    + fmtDti(trade.entryDTI);
-                if (trade.entry7DayDTI !== null && trade.entry7DayDTI !== undefined) {
-                    triggerText += ' · Weekly '
-                        + (trade.prev7DayDTI !== null && trade.prev7DayDTI !== undefined ? fmtDti(trade.prev7DayDTI) + ' → ' : '')
-                        + fmtDti(trade.entry7DayDTI);
-                }
-                triggerEl.textContent = triggerText;
+                triggerEl.textContent = window.formatDtiTrigger(
+                    trade.prevDTI, trade.entryDTI, trade.prev7DayDTI, trade.entry7DayDTI);
                 triggerEl.hidden = false;
             } else {
                 triggerEl.hidden = true;
