@@ -599,6 +599,61 @@ DTIUI.Charts = (function() {
                 if (!DTIBacktester.candlestickPlugin) {
                     DTIBacktester.candlestickPlugin = {
                         id: 'candlestickWicks',
+                        // Gold gradient under the closes — long-range candle views
+                        // get the same depth as the line chart. Reads the scales
+                        // each draw, so zoom and the range buttons keep it correct.
+                        beforeDatasetsDraw: function(chart) {
+                            const dsIndex = chart.data.datasets.findIndex(d => d.label === 'Price');
+                            const ds = dsIndex >= 0 ? chart.data.datasets[dsIndex] : null;
+                            const candles = ds && ds._candleSource;
+                            if (!candles || ds.hidden) return;
+                            const xs = chart.scales.x;
+                            const ys = chart.scales.y;
+                            if (!xs || !ys || !chart.chartArea) return;
+
+                            const start = Math.max(0, Math.floor(xs.min != null ? xs.min : 0));
+                            const end = Math.min(candles.length - 1, Math.ceil(xs.max != null ? xs.max : candles.length - 1));
+
+                            const ctx = chart.ctx;
+                            const area = chart.chartArea;
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.rect(area.left, area.top, area.right - area.left, area.bottom - area.top);
+                            ctx.clip();
+
+                            ctx.beginPath();
+                            let started = false;
+                            let firstX = null;
+                            let lastX = null;
+                            for (let i = start; i <= end; i++) {
+                                const c = candles[i];
+                                if (!c) continue;
+                                const x = xs.getPixelForValue(i);
+                                const y = ys.getPixelForValue(c.close);
+                                if (!started) {
+                                    ctx.moveTo(x, y);
+                                    started = true;
+                                    firstX = x;
+                                } else {
+                                    ctx.lineTo(x, y);
+                                }
+                                lastX = x;
+                            }
+
+                            if (started) {
+                                const gradient = ctx.createLinearGradient(0, area.bottom, 0, area.top);
+                                gradient.addColorStop(0, 'rgba(212, 175, 55, 0.01)');
+                                gradient.addColorStop(0.3, 'rgba(212, 175, 55, 0.1)');
+                                gradient.addColorStop(0.6, 'rgba(212, 175, 55, 0.18)');
+                                gradient.addColorStop(1, 'rgba(212, 175, 55, 0.25)');
+                                ctx.lineTo(lastX, area.bottom);
+                                ctx.lineTo(firstX, area.bottom);
+                                ctx.closePath();
+                                ctx.fillStyle = gradient;
+                                ctx.fill();
+                            }
+                            ctx.restore();
+                        },
                         afterDatasetsDraw: function(chart) {
                             const ctx = chart.ctx;
                             const dsIndex = chart.data.datasets.findIndex(d => d.label === 'Price');

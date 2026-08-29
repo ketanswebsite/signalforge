@@ -140,6 +140,49 @@
 #active-trades-container{display:grid;gap:var(--s-4);grid-template-columns:repeat(2,minmax(0,1fr))}
 @media (max-width:960px){#active-trades-container{grid-template-columns:1fr}}
 #active-trades-container>.sa-empty{grid-column:1/-1}
+
+/* ---------- positions page density pass ----------
+   One padding step down, KPI bands 6-across on wide screens, a single
+   shared stat size, 3-across position cards — same Poster vocabulary,
+   less air. Scoped to body.positions-page so other pages keep their scale. */
+body.positions-page .app-pagehead{margin-bottom:var(--s-4)}
+body.positions-page .sc-markets{margin-bottom:var(--s-4)}
+body.positions-page .pos-statscard,body.positions-page .pos-panel{margin-bottom:var(--s-4)}
+body.positions-page .pos-toptabs{margin-bottom:var(--s-4)}
+body.positions-page .sa-card,body.positions-page .card.sa-card,body.positions-page .card{padding:var(--s-4);margin-bottom:var(--s-4)}
+body.positions-page .sa-card--flush,body.positions-page .card.sa-card--flush{padding:0}
+body.positions-page .app-cardbody,body.positions-page .sa-card--flush .app-cardbody{padding:var(--s-4)}
+body.positions-page .sa-card__head{margin-bottom:var(--s-3)}
+body.positions-page .trade-statistics{grid-template-columns:repeat(6,1fr);gap:var(--s-2)}
+@media (max-width:1240px){body.positions-page .trade-statistics{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:720px){body.positions-page .trade-statistics{grid-template-columns:repeat(2,1fr)}}
+body.positions-page .currency-stats-grid{grid-template-columns:repeat(6,1fr);gap:var(--s-2)}
+@media (max-width:1240px){body.positions-page .currency-stats-grid{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:720px){body.positions-page .currency-stats-grid{grid-template-columns:repeat(2,1fr)}}
+body.positions-page .statistic-card{padding:var(--s-3)}
+body.positions-page .sa-stat{gap:4px}
+body.positions-page .sa-stat__value{font-size:var(--size-stat-sm)}
+body.positions-page .sa-stat__context{line-height:1.35}
+body.positions-page .currency-stat-card + .currency-stat-card{margin-top:var(--s-3)}
+@media (min-width:1240px){body.positions-page #active-trades-container{grid-template-columns:repeat(3,minmax(0,1fr))}}
+body.positions-page #active-trades-container{gap:var(--s-3)}
+body.positions-page .sa-pos{padding:var(--s-3);gap:var(--s-2)}
+body.positions-page .sa-pos__grid{gap:var(--s-2) var(--s-3)}
+body.positions-page .sa-pos__foot{padding-top:var(--s-2)}
+body.positions-page .capital-grid{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:var(--s-2)}
+body.positions-page .capital-market-card{background:var(--surface-2);border:1.5px solid var(--line-strong);padding:var(--s-3)}
+body.positions-page .market-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px}
+body.positions-page .market-header h4{font-size:var(--size-xs);font-weight:var(--w-bold);text-transform:uppercase;letter-spacing:var(--track-label);margin:0;color:var(--text)}
+body.positions-page .capital-row{display:flex;justify-content:space-between;gap:var(--s-3);font-size:var(--size-sm);padding:2px 0}
+body.positions-page .capital-label{color:var(--text-2)}
+body.positions-page .positions-bar{margin-top:6px;font-size:var(--size-xs);color:var(--text-3)}
+body.positions-page .positions-bar .progress-bar{height:6px;background:var(--surface-3);border:1px solid var(--line-strong);margin-top:4px;overflow:hidden}
+body.positions-page .positions-bar .progress-fill{display:block;height:100%;background:var(--accent-field)}
+body.positions-page .positions-bar .progress-fill.warning{background:var(--warn)}
+body.positions-page .positions-bar .progress-fill.success{background:var(--gain)}
+body.positions-page .sa-empty{padding:var(--s-5) var(--s-4);gap:var(--s-2)}
+body.positions-page .sa-empty__icon{width:44px;height:44px}
+body.positions-page #advanced-metrics-container .metric-card{padding:var(--s-3)}
 .sa-pos__fill.is-gain{background:var(--gain)}
 .sa-pos__fill.is-loss{background:var(--loss)}
 .sa-pos__pin{left:38.46%}
