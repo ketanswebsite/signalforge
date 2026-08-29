@@ -4,49 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#141210">
-    <meta name="description" content="The SutrAlgo scanner checks every stock on your watchlist for one specific setup, then tells you what to pay, what to sell at, and when to give up.">
+    <meta name="description" content="What the 7 AM scan found across India, the UK and the US — the DTI setups, the AI's verdict on each, and what got traded.">
     <title>Scanner — SutrAlgo</title>
     <link rel="icon" type="image/png" href="/images/brand/favicon.png">
     <link rel="stylesheet" href="/css/design-system/index.css">
     <link rel="stylesheet" href="/css/app.css">
     <script>try{if(localStorage.getItem('sa-theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
 
-    <!-- Chart.js and PapaParse -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
-
-    <!-- Chart.js plugins (candlesticks, zoom, annotations) -->
-    <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@0.1.1/dist/chartjs-chart-financial.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/2.1.2/chartjs-plugin-annotation.min.js"></script>
-
-    <!-- XSS Protection (load first for security) -->
-    <script src="js/xss-protection.js"></script>
-
     <!-- Shared Utilities -->
-    <script src="js/utils/date-formatter.js"></script>
-    <script src="js/utils/notifications.js"></script>
-    <script src="js/utils/export-manager.js"></script>
-
-    <!-- Infrastructure -->
-    <script src="js/error-handler.js"></script>
-    <script src="js/abort-controller-manager.js"></script>
-    <script src="js/network-retry.js"></script>
-    <script src="js/loading-states.js"></script>
-    <script src="js/form-validation.js"></script>
-    <script src="js/accessibility-enhancer.js"></script>
-    <script src="js/chart-performance.js"></script>
-    <script src="js/cookie-consent.js"></script>
-    <script src="js/chart-theme.js"></script>
-
-    <!-- ML Insights UI -->
-    <script src="js/ml-insights-ui.js" defer></script>
+    <script src="/js/utils/date-formatter.js"></script>
+    <script src="/js/company-names.js"></script>
 
     <!-- App shell (theme, nav, user menu, legal note) -->
     <script src="/js/app-shell.js" defer></script>
+    <!-- Signals feed + personal auto-trading controls -->
+    <script src="/js/signals-page.js" defer></script>
 </head>
 <body class="app-body">
 
@@ -95,149 +67,64 @@
 <main class="app-main">
     <div class="sa-page">
 
-        <!-- Fixed formula parameters (read by the backtest engine) -->
-        <input type="hidden" id="r" value="14">
-        <input type="hidden" id="s" value="10">
-        <input type="hidden" id="u" value="5">
-        <input type="hidden" id="enable-weekly-dti" value="true">
-        <input type="hidden" id="entry-threshold" value="0">
-        <input type="hidden" id="take-profit" value="8">
-        <input type="hidden" id="stop-loss" value="5">
-        <input type="hidden" id="max-days" value="30">
-
         <div class="sa-spread app-pagehead">
             <div>
                 <h1>Scanner</h1>
-                <p>One button. It checks every stock on your watchlist for the setup the formula looks for.</p>
+                <p>What the 7 AM scan found, what the AI made of it, and what got traded.</p>
             </div>
-            <div class="sa-row" id="batch-process-container"></div>
         </div>
 
-        <div class="sc-markets" id="market-status-container"></div>
-
-        <div id="data-fetch-status"></div>
-
-        <section class="chart-section" hidden>
-            <div class="sa-card sa-card--flush">
-                <div class="sa-card__head">
-                    <div>
-                        <h3 class="sa-card__title">Look closer at one stock</h3>
-                        <p class="sa-card__hint">Choose "Look closer" on a signal and its five-year backtest loads here.</p>
-                    </div>
-                </div>
-                <div class="app-cardbody">
-                    <div class="charts-grid sc-charts">
-                        <div>
-                            <div class="sa-chart__head"><h4 class="sa-chart__title">Price</h4></div>
-                            <p class="sa-chart__read">Five years of closing prices. Green markers are buys, red markers are the sells that followed.</p>
-                            <div class="chart-container app-chart"><canvas id="price-chart"></canvas></div>
-                        </div>
-                        <div>
-                            <div class="sa-chart__head"><h4 class="sa-chart__title">The daily signal</h4></div>
-                            <p class="sa-chart__read">The indicator the formula watches each day. A setup starts when this line turns up from below its trigger.</p>
-                            <div class="chart-container app-chart app-chart--sm"><canvas id="dti-chart"></canvas></div>
-                        </div>
-                        <div>
-                            <div class="sa-chart__head"><h4 class="sa-chart__title">The weekly signal</h4></div>
-                            <p class="sa-chart__read">The same check on weekly bars. A signal only counts when this agrees with the daily line.</p>
-                            <div class="chart-container app-chart app-chart--sm"><canvas id="weekly-dti-chart"></canvas></div>
-                        </div>
-                    </div>
-
-                    <div class="sc-stats" id="statistics">
-                        <div class="sa-card sa-card--sunk"><div class="sa-stat">
-                            <span class="sa-stat__label">Total trades</span>
-                            <span class="sa-stat__value">0</span>
-                            <span class="sa-stat__context">Every trade this stock's five-year backtest would have made.</span>
-                        </div></div>
-                        <div class="sa-card sa-card--sunk"><div class="sa-stat">
-                            <span class="sa-stat__label">Win rate</span>
-                            <span class="sa-stat__value">0%</span>
-                            <span class="sa-stat__context">How many of them made money.</span>
-                        </div></div>
-                        <div class="sa-card sa-card--sunk"><div class="sa-stat">
-                            <span class="sa-stat__label">Average per trade</span>
-                            <span class="sa-stat__value">0%</span>
-                            <span class="sa-stat__context">The mean result of one trade, before costs.</span>
-                        </div></div>
-                        <div class="sa-card sa-card--sunk"><div class="sa-stat">
-                            <span class="sa-stat__label">All trades together</span>
-                            <span class="sa-stat__value">0%</span>
-                            <span class="sa-stat__context">Every result added up, before costs.</span>
-                        </div></div>
-                    </div>
-
-                    <div class="sa-card sa-card--flush">
-                        <div class="sa-card__head">
-                            <div>
-                                <h3 class="sa-card__title">Every simulated trade</h3>
-                                <p class="sa-card__hint">What the formula would have done with this stock.</p>
-                            </div>
-                        </div>
-                        <div class="sa-table-wrap">
-                            <table class="sa-table" id="trades-table">
-                                <thead>
-                                    <tr>
-                                        <th>Bought on</th>
-                                        <th class="num">Bought at</th>
-                                        <th class="num">Daily DTI</th>
-                                        <th class="num">Weekly DTI</th>
-                                        <th>Sold on</th>
-                                        <th class="num">Sold at</th>
-                                        <th class="num">Held for</th>
-                                        <th class="num">Change</th>
-                                        <th>Why it sold</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr><td colspan="9" class="sa-table__empty">Pick a signal above and choose "Look closer" to load its trades.</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="sa-table__cards app-cardbody" id="trades-table-cards"></div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section class="sa-card sc-settings">
+        <section class="sa-card" id="auto-trading-card">
             <div class="sa-card__head">
                 <div>
-                    <h3 class="sa-card__title">What to look at</h3>
-                    <p class="sa-card__hint">Change the watchlist and run the scan again. The exit rule never changes.</p>
+                    <h3 class="sa-card__title">The 7 AM scans, on your portfolio</h3>
+                    <p class="sa-card__hint">Every weekday at 7 AM UK the engine screens ~5,000 stocks across India, the UK and the US with the DTI formula, then the AI scores each candidate. GO signals execute automatically at 1 PM in each market's own timezone.</p>
+                </div>
+                <span class="sa-badge sa-badge--gain" id="at-badge" hidden>On</span>
+            </div>
+
+            <div id="at-off" hidden>
+                <div class="sa-stack">
+                    <p class="al-step__body">Right now those trades book to the house portfolio below. Switch on <strong>your own trading signals</strong> and every GO signal is also booked to <em>your</em> portfolio — sized to your own capital, with its own targets, stops and day-30 square-offs, from today onwards.</p>
+                    <div class="sa-row">
+                        <button class="sa-btn sa-btn--primary" id="at-enable" type="button">
+                            <span class="material-symbols-rounded" aria-hidden="true">bolt</span>
+                            Subscribe to my own trading signals
+                        </button>
+                    </div>
+                    <p class="al-finehint">Paper capital of ₹10,00,000 / £10,000 / $15,000. Targets +8%, stops −5%, 30-day max hold. Switching off later stops new entries; open positions are still managed to their exits. Educational only — not investment advice.</p>
                 </div>
             </div>
-            <div class="sa-grid sa-grid--3">
-                <div id="stock-index-selector-container"></div>
-                <div class="sa-field">
-                    <span class="sa-field__label">The exit rule</span>
-                    <p class="sc-rule-line"><strong>+8%</strong> target · <strong>−5%</strong> stop · <strong>30</strong> days</p>
-                    <span class="sa-field__hint">Every position sells at whichever comes first.</span>
-                </div>
-                <div class="sa-field">
-                    <span class="sa-field__label">Weekly check</span>
-                    <p class="sc-rule-line">On for every scan</p>
-                    <span class="sa-field__hint">A signal only counts when the weekly chart agrees with the daily one.</span>
+
+            <div id="at-on" hidden>
+                <div class="sa-stack">
+                    <div class="sa-callout sa-callout--gain">
+                        <span class="material-symbols-rounded" aria-hidden="true">bolt</span>
+                        <div>
+                            <strong>Auto-trading is on</strong>
+                            <span>GO signals are booked to your portfolio at 1 PM. On since <span id="at-since">—</span>. See them on your <a href="/trades.html">Positions</a> page.</span>
+                        </div>
+                    </div>
+                    <p class="al-finehint">Want each booking, exit and evening summary in your Telegram DMs? Link Telegram on the <a href="/telegram-subscribe.html">Alerts page</a>.</p>
+                    <div class="sa-row al-unlinkrow">
+                        <button class="sa-btn sa-btn--quiet sa-btn--sm" id="at-disable" type="button">Stop auto-trading</button>
+                    </div>
                 </div>
             </div>
+
+            <p class="al-finehint" id="at-status" role="status" hidden></p>
         </section>
 
-        <section class="sa-card sa-card--flush sc-settings">
-            <div class="sa-card__head">
-                <div>
-                    <h3 class="sa-card__title">What the scan found</h3>
-                    <p class="sa-card__hint">Each one already has its sell price and stop worked out.</p>
-                </div>
+        <div class="sa-spread app-pagehead sg-feedhead">
+            <div>
+                <h2 class="sa-card__title">Recent signals</h2>
+                <p class="sa-card__hint">Each morning's setups (DTI + AI), newest first, with what happened at 1 PM.</p>
             </div>
-            <div class="app-cardbody" id="buying-opportunities">
-                <div class="sa-empty">
-                    <div class="sa-empty__icon"><span class="material-symbols-rounded" aria-hidden="true">radar</span></div>
-                    <div class="sa-empty__title">Nothing scanned yet</div>
-                    <p>Press "Run the scan" and every stock on your watchlist gets checked against the formula. A full market takes a few minutes.</p>
-                </div>
-            </div>
-        </section>
+        </div>
 
+        <div id="signals-feed">
+            <p class="sg-empty">Loading the recent scans…</p>
+        </div>
 
         <div class="sa-legal app-legal">
             <button class="sa-legal__btn" type="button" aria-expanded="false">
@@ -257,72 +144,9 @@
             <a href="/data-management.html">Data management</a>
             <span>© 2026 SutrAlgo</span>
         </footer>
+
     </div>
 </main>
-
-<nav class="sa-bottomnav" aria-label="Primary">
-    <a class="sa-bottomnav__item" href="/index.html" aria-current="page"><span class="material-symbols-rounded" aria-hidden="true">radar</span>Scanner</a>
-    <a class="sa-bottomnav__item" href="/trades.html"><span class="material-symbols-rounded" aria-hidden="true">account_balance_wallet</span>Positions</a>
-    <a class="sa-bottomnav__item" href="/portfolio-backtest.html"><span class="material-symbols-rounded" aria-hidden="true">science</span>Simulator</a>
-    <a class="sa-bottomnav__item" href="/telegram-subscribe.html"><span class="material-symbols-rounded" aria-hidden="true">notifications</span>Alerts</a>
-    <a class="sa-bottomnav__item" href="/account.html"><span class="material-symbols-rounded" aria-hidden="true">person</span>Account</a>
-</nav>
-
-<!-- Trade management modal placeholder -->
-<div id="trade-modal-placeholder"></div>
-
-<!-- Notification container -->
-<div id="notification-container"></div>
-
-<!-- Core functionality -->
-<script src="js/api-client.js"></script>
-<script src="js/dti-core.js"></script>
-
-<!-- Shared modules (SINGLE SOURCE OF TRUTH) -->
-<script src="../lib/shared/stock-data.js"></script>
-<script src="../lib/shared/dti-calculator.js"></script>
-<script src="../lib/shared/backtest-calculator.js"></script>
-
-<!-- Core data processing and algorithms (load BEFORE UI modules) -->
-<script src="js/dti-data.js"></script>
-<script src="js/dti-indicators.js"></script>
-<script src="js/dti-backtest.js"></script>
-
-<!-- UI modules (depend on core modules above) -->
-<script src="js/dti-ui-core.js"></script>
-<script src="js/dti-ui-charts.js"></script>
-<script src="js/dti-ui-controls.js"></script>
-<script src="js/dti-ui-trades.js"></script>
-<script src="js/dti-ui-selector.js"></script>
-
-<!-- Performance Modal -->
-<script src="js/dti-performance-modal.js"></script>
-
-<!-- Scan persistence (restores the last scan after navigating away) -->
-<script src="js/scan-store.js"></script>
-
-<!-- Company Names Mapping -->
-<script src="js/company-names.js"></script>
-
-<!-- Market status pills -->
-<script src="js/market-holidays.js"></script>
-<script src="js/market-status-robust.js"></script>
-<script src="js/enhanced-market-status.js"></script>
-<script src="js/market-status-manager.js"></script>
-<script src="js/market-status-initializer.js"></script>
-
-<!-- Trade management modules -->
-<script src="js/trade-core.js"></script>
-<script src="js/TradeUI-Core.js"></script>
-<script src="js/TradeUI-Trades.js"></script>
-<script src="js/TradeUI-Dialogs.js"></script>
-<script src="js/TradeUI-Charts.js"></script>
-<script src="js/TradeUI-Export-Metrics.js"></script>
-<script src="js/trade-modal.js"></script>
-
-<!-- Alerts -->
-<script src="js/alerts-ui.js"></script>
-<script src="js/backtest-alerts.js"></script>
 
 </body>
 </html>

@@ -425,6 +425,17 @@
 .al-qr{width:168px;padding:var(--s-2);background:#fff;border:2px solid var(--frame)}
 .al-qr svg{display:block;width:100%;height:auto}
 .al-qr:empty{display:none}
+
+/* ---------- scanner signals feed ---------- */
+.sg-feedhead{margin-top:var(--s-6)}
+.sg-day{font-size:var(--size-xs);font-weight:var(--w-bold);text-transform:uppercase;letter-spacing:var(--track-label);color:var(--text-2);margin:var(--s-5) 0 var(--s-3)}
+.sg-row{display:grid;grid-template-columns:1fr auto;gap:var(--s-2) var(--s-4);align-items:start;padding:var(--s-4);background:var(--surface);border:2px solid var(--frame);margin-bottom:var(--s-3)}
+.sg-name{font-size:var(--size-sm);color:var(--text-2)}
+.sg-prices{font-size:var(--size-sm);color:var(--text-2);font-variant-numeric:tabular-nums;margin-top:4px}
+.sg-badges{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.sg-summary{grid-column:1 / -1;font-size:var(--size-xs);color:var(--text-3);margin:0}
+.sg-empty{color:var(--text-3);padding:var(--s-5) 0}
+@media (max-width:720px){.sg-row{grid-template-columns:1fr}.sg-badges{justify-content:flex-start}}
 .al-unlinkrow{margin-top:var(--s-3)}
 #deep-link-display{display:grid;gap:var(--s-2);justify-items:start}
 #deep-link-display[hidden]{display:none}

@@ -80,6 +80,8 @@ async function initializeDatabase() {
       await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_username VARCHAR(100)`);
       await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS linking_token VARCHAR(100)`);
       await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_linked_at TIMESTAMP`);
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS auto_trading_enabled BOOLEAN DEFAULT false`);
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS auto_trading_started_at TIMESTAMP`);
     } catch (err) {
       // Columns might already exist
     }
@@ -2788,6 +2790,98 @@ const TradeDB = {
     } catch (error) {
       return false;
     }
+  },
+
+  // ===== PER-USER AUTO-TRADING =====
+
+  // Everyone who switched on personal auto-trading (their portfolios get the
+  // 1 PM bookings alongside the admin/system portfolio)
+  async getAutoTradingUsers() {
+    checkConnection();
+    try {
+      const result = await pool.query(`
+        SELECT email, telegram_chat_id, auto_trading_started_at
+        FROM users
+        WHERE auto_trading_enabled = true
+        ORDER BY email
+      `);
+      return result.rows;
+    } catch (error) {
+      console.error('[DB] getAutoTradingUsers failed:', error.message);
+      return [];
+    }
+  },
+
+  async getAutoTradingStatus(email) {
+    checkConnection();
+    const result = await pool.query(`
+      SELECT auto_trading_enabled, auto_trading_started_at
+      FROM users WHERE email = $1
+    `, [email]);
+    if (result.rows.length === 0) return { enabled: false, startedAt: null };
+    return {
+      enabled: result.rows[0].auto_trading_enabled === true,
+      startedAt: result.rows[0].auto_trading_started_at
+    };
+  },
+
+  async setAutoTrading(email, enabled) {
+    checkConnection();
+    const result = await pool.query(`
+      UPDATE users
+      SET auto_trading_enabled = $2,
+          auto_trading_started_at = CASE
+            WHEN $2 = true AND auto_trading_started_at IS NULL THEN CURRENT_TIMESTAMP
+            ELSE auto_trading_started_at
+          END
+      WHERE email = $1
+      RETURNING auto_trading_enabled, auto_trading_started_at
+    `, [email, enabled === true]);
+    if (result.rows.length === 0) return null;
+
+    if (enabled === true) {
+      // Make sure the paper-capital ledger exists for this user (idempotent —
+      // signup already seeds it, this covers any stragglers)
+      await pool.query(`
+        INSERT INTO portfolio_capital (user_id, market, currency, initial_capital, available_capital)
+        VALUES
+          ($1, 'India', 'INR', 1000000, 1000000),
+          ($1, 'UK', 'GBP', 10000, 10000),
+          ($1, 'US', 'USD', 15000, 15000)
+        ON CONFLICT (user_id, market) DO NOTHING
+      `, [email]);
+    }
+
+    return {
+      enabled: result.rows[0].auto_trading_enabled === true,
+      startedAt: result.rows[0].auto_trading_started_at
+    };
+  },
+
+  async getUserChatId(email) {
+    checkConnection();
+    try {
+      const result = await pool.query(`SELECT telegram_chat_id FROM users WHERE email = $1`, [email]);
+      return result.rows.length > 0 ? result.rows[0].telegram_chat_id : null;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  // The 7 AM scan's recent output for the Scanner page — every signal in the
+  // window with its AI verdict and booking outcome, newest first
+  async getRecentSignals(days = 7) {
+    checkConnection();
+    const result = await pool.query(`
+      SELECT id, symbol, market, signal_date, entry_price, target_price,
+             stop_loss, square_off_date, win_rate, historical_signal_count,
+             status, conviction_score, conviction_verdict, conviction_summary,
+             added_to_trade_id, created_at
+      FROM pending_signals
+      WHERE signal_date >= CURRENT_DATE - $1::int
+      ORDER BY signal_date DESC, market, conviction_score DESC NULLS LAST, symbol
+    `, [days]);
+    return result.rows;
   },
 
   // An ACTIVE position in this symbol, regardless of signal date — used to stop

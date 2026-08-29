@@ -586,6 +586,21 @@ app.post('/api/ops/reconcile-capital', async (req, res) => {
   }
 });
 
+// Token-guarded deploy/version probe — Render injects RENDER_GIT_COMMIT, so
+// this answers "which commit is actually live?" after a push.
+app.get('/api/ops/version', (req, res) => {
+  const token = req.query.token || req.get('x-analysis-token');
+  if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  res.json({
+    success: true,
+    commit: process.env.RENDER_GIT_COMMIT || null,
+    node: process.version,
+    uptimeSeconds: Math.round(process.uptime())
+  });
+});
+
 // Token-guarded manual EOD-summary trigger (ops/testing) — same job the
 // 7 PM UK cron runs. Fire-and-forget.
 app.post('/api/ops/eod-summary', (req, res) => {
@@ -858,6 +873,48 @@ app.get('/api/admin/subscribers', ensureAuthenticatedAPI, async (req, res) => {
 });
 
 // Note: /api/admin/users endpoint is now handled by routes/admin.js with proper pagination
+
+// ===== PER-USER AUTO-TRADING =====
+
+// Where the user stands: is the 1 PM engine booking signals to their portfolio?
+app.get('/api/user/auto-trading', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const email = req.user ? req.user.email : 'default';
+    const status = await TradeDB.getAutoTradingStatus(email);
+    res.json({ success: true, enabled: status.enabled, startedAt: status.startedAt });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Flip personal auto-trading on/off. Enabling seeds the paper-capital ledger
+// if it is somehow missing; disabling stops NEW entries only — open positions
+// keep being managed to their exits.
+app.post('/api/user/auto-trading', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
+  try {
+    const email = req.user ? req.user.email : 'default';
+    const enabled = req.body && req.body.enabled === true;
+    const status = await TradeDB.setAutoTrading(email, enabled);
+    if (!status) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+    console.log(`[AUTO-TRADING] ${email} ${enabled ? 'ENABLED' : 'disabled'} personal auto-trading`);
+    res.json({ success: true, enabled: status.enabled, startedAt: status.startedAt });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// The 7 AM scan's recent output — feeds the Scanner page's signals feed
+app.get('/api/signals/recent', ensureAuthenticatedAPI, async (req, res) => {
+  try {
+    const days = Math.min(30, Math.max(1, parseInt(req.query.days, 10) || 7));
+    const signals = await TradeDB.getRecentSignals(days);
+    res.json({ success: true, days, signals });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 // OAuth-Telegram Linking Endpoints
 // Generate linking token for current user
