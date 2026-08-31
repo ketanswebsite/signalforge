@@ -33,13 +33,13 @@ const PortfolioUI = (function() {
             });
         });
 
-        // Weekly AI score coverage (weekend sweep status)
+        // Monthly AI score coverage (sweep status)
         refreshAiCoverage();
     }
 
     /**
-     * Show how much of the universe holds a weekly AI verdict — and live
-     * sweep progress while the Saturday sweep is running.
+     * Show how much of the universe holds a current AI verdict — and live
+     * sweep progress while the monthly sweep is running.
      */
     let aiCoverageTimer = null;
     async function refreshAiCoverage() {
@@ -58,7 +58,7 @@ const PortfolioUI = (function() {
             line.hidden = false;
 
             if (sweep.running) {
-                text.textContent = `Weekend AI sweep running — ${sweep.done || 0} of ${sweep.total || 0} stocks checked`;
+                text.textContent = `Monthly AI sweep running — ${sweep.done || 0} of ${sweep.total || 0} stocks checked`;
                 if (bar) bar.hidden = false;
                 // Keep watching while it runs
                 if (!aiCoverageTimer) {
@@ -73,10 +73,10 @@ const PortfolioUI = (function() {
                 if (coverage.scored > 0) {
                     const when = coverage.latestScoreDate
                         ? new Date(coverage.latestScoreDate).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
-                        : 'this week';
-                    text.textContent = `This week's AI scores: ${coverage.scored.toLocaleString()} of ${coverage.universe.toLocaleString()} stocks ready (scored ${when})`;
+                        : 'this month';
+                    text.textContent = `This month's AI scores: ${coverage.scored.toLocaleString()} of ${coverage.universe.toLocaleString()} stocks ready (scored ${when})`;
                 } else {
-                    text.textContent = 'No weekly AI scores yet — stocks are scored on demand during a run; the Saturday sweep covers the whole market.';
+                    text.textContent = 'No AI scores yet this month — stocks are scored on demand during a run; the monthly sweep (first Saturday) covers the whole market.';
                 }
             }
         } catch (error) {

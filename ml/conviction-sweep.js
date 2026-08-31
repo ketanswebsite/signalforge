@@ -1,17 +1,19 @@
 /**
- * Weekend AI conviction sweep
+ * Monthly AI conviction sweep
  *
- * Scores the FULL stock universe (~5,000 symbols) once over the weekend and
- * persists the verdicts to conviction_daily, where the engine's week-long
- * read window (CONVICTION_MAX_AGE_DAYS) serves them to the 7 AM scanner,
- * the 1 PM executor, the insights panel and the simulator all week.
+ * Scores the FULL stock universe (~5,000 symbols) once a month and persists
+ * the verdicts to conviction_daily, where the engine's month-long read
+ * window (CONVICTION_MAX_AGE_DAYS) serves them to the 7 AM scanner, the
+ * 1 PM executor, the insights panel and the simulator until the next sweep.
  *
- * Runs Saturday morning from the scanner cron hub; resumable — symbols
- * already scored inside the current window are skipped, so a crash or
- * restart continues where it left off. Deliberately gentle on the data
- * sources: low concurrency plus a per-symbol delay. Results where every
- * pillar failed to neutral are not persisted (see conviction-engine), so a
- * rate-limited stretch never locks blind verdicts in for the week.
+ * Runs on the FIRST Saturday of each month from the scanner cron hub
+ * (weekly used to be the cadence; dropped to monthly 2026-08 to cut AI
+ * cost). Resumable — symbols already scored inside the resume window are
+ * skipped, so a crash or restart continues where it left off. Deliberately
+ * gentle on the data sources: low concurrency plus a per-symbol delay.
+ * Results where every pillar failed to neutral are not persisted (see
+ * conviction-engine), so a rate-limited stretch never locks blind verdicts
+ * in for the month.
  *
  * Kill switch: CONVICTION_SWEEP=false
  * Manual trigger: POST /api/ops/conviction-sweep?token=ANALYSIS_API_TOKEN
@@ -44,20 +46,33 @@ function getDB() {
     }
 }
 
-function maxAgeDays() {
+// Read window: how old a stored verdict may be and still be served — must
+// mirror the default in conviction-engine.js (37: consecutive first
+// Saturdays are at most 35 days apart, plus margin).
+function readWindowDays() {
     const days = parseInt(process.env.CONVICTION_MAX_AGE_DAYS, 10);
-    return days > 0 ? days : 7;
+    return days > 0 ? days : 37;
+}
+
+// Resume window: how recent a verdict must be for the sweep to SKIP the
+// symbol. Deliberately much shorter than the read window — long enough that
+// a crashed sweep resumed days later skips its finished symbols, but shorter
+// than the 28-day minimum gap between monthly sweeps, so a new month's sweep
+// always re-scores the whole universe.
+function resumeWindowDays() {
+    const days = parseInt(process.env.CONVICTION_SWEEP_RESUME_DAYS, 10);
+    return days > 0 ? days : 14;
 }
 
 /**
- * Symbols already scored inside the current window — skipped so re-runs
+ * Symbols already scored inside the resume window — skipped so re-runs
  * resume instead of starting over.
  */
 async function alreadyScored() {
     try {
         const db = getDB();
         if (!db || !db.pool) return new Set();
-        const cutoff = new Date(Date.now() - (maxAgeDays() - 1) * 24 * 60 * 60 * 1000)
+        const cutoff = new Date(Date.now() - (resumeWindowDays() - 1) * 24 * 60 * 60 * 1000)
             .toISOString().split('T')[0];
         const result = await db.pool.query(
             `SELECT DISTINCT symbol FROM conviction_daily WHERE score_date >= $1`,
@@ -146,16 +161,16 @@ function getSweepStatus() {
 }
 
 /**
- * Weekly coverage: how many of the universe's symbols hold a verdict inside
- * the current window. Rendered on the Simulator page so it's visible that
- * "everything is in place" for the week.
+ * Monthly coverage: how many of the universe's symbols hold a verdict inside
+ * the read window. Rendered on the Simulator page so it's visible that
+ * "everything is in place" for the month.
  */
 async function getCoverage() {
     const universe = new Set(StockData.getAllStocks().map(s => s.symbol)).size;
     try {
         const db = getDB();
         if (!db || !db.pool) return { universe, scored: 0 };
-        const cutoff = new Date(Date.now() - (maxAgeDays() - 1) * 24 * 60 * 60 * 1000)
+        const cutoff = new Date(Date.now() - (readWindowDays() - 1) * 24 * 60 * 60 * 1000)
             .toISOString().split('T')[0];
         const result = await db.pool.query(
             `SELECT COUNT(DISTINCT symbol) AS n, MAX(score_date) AS latest

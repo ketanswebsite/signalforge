@@ -416,7 +416,7 @@ app.post('/api/scanner/run', (req, res) => {
 // day's 'added' pending_signals, and removes that day's active HC-portfolio
 // rows. Manual trades are never touched. Built to unwind 2026-08-10 (the last
 // indicator-only day before the AI conviction gate); kept for future ops.
-// Manually start (or check on) the weekend AI conviction sweep.
+// Manually start (or check on) the monthly AI conviction sweep.
 // Fire-and-forget: responds immediately, the sweep runs in the background;
 // progress via GET /api/ml/conviction/sweep-status.
 app.post('/api/ops/conviction-sweep', async (req, res) => {

@@ -24,15 +24,17 @@ const cheerio = require('cheerio');
 const Sentiment = require('sentiment');
 const headlineSentiment = new Sentiment();
 
-// Verdicts are scored by the WEEKEND SWEEP (Saturday, full universe) and
-// reused for the whole following week — by the 7 AM scanner, the 1 PM
-// executor, the insights panel and the simulator alike, so every surface
-// sees the same verdict and the engine (and Gemini) runs at most once per
-// symbol per week. A symbol the sweep missed is scored on demand and then
-// sticks for the same window. CONVICTION_MAX_AGE_DAYS (default 7) sets how
-// old a stored verdict may be; CONVICTION_CACHE_TTL_MIN shortens the
-// in-memory layer. NOTE: the 7 PM EOD summary reads fetchRecentHeadlines
-// directly and is NOT cached — it always reports the day's fresh news.
+// Verdicts are scored by the MONTHLY SWEEP (first Saturday of the month,
+// full universe) and reused for the whole following month — by the 7 AM
+// scanner, the 1 PM executor, the insights panel and the simulator alike,
+// so every surface sees the same verdict and the engine (and Gemini) runs
+// at most once per symbol per month. A symbol the sweep missed is scored on
+// demand and then sticks for the same window. CONVICTION_MAX_AGE_DAYS
+// (default 37 — consecutive first Saturdays are at most 35 days apart, plus
+// margin) sets how old a stored verdict may be; CONVICTION_CACHE_TTL_MIN
+// shortens the in-memory layer. NOTE: the 7 PM EOD summary reads
+// fetchRecentHeadlines directly and is NOT cached — it always reports the
+// day's fresh news.
 const convictionCache = new Map();          // symbol → {expires, payload}
 const inFlight = new Map();                 // symbol → Promise (dedup concurrent scoring)
 
@@ -40,7 +42,7 @@ const NEUTRAL_RETRY_MS = 30 * 60 * 1000;    // all-sources-failed results retry 
 
 function maxAgeDays() {
     const days = parseInt(process.env.CONVICTION_MAX_AGE_DAYS, 10);
-    return days > 0 ? days : 7;
+    return days > 0 ? days : 37;
 }
 
 function cacheExpiryMs() {
