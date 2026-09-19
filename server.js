@@ -3441,6 +3441,8 @@ app.post('/api/settings/reset', ensureAuthenticatedAPI, async (req, res) => {
 
 const { repairYahooChartResult, describeReport } = require('./lib/shared/price-unit-repair');
 const unitRepairsLogged = new Set();
+const staleFillRepair = require('./lib/shared/stale-fill-repair');
+const staleFillsLogged = new Set();
 
 // Yahoo Finance proxy - Historical data
 app.get('/yahoo/history', async (req, res) => {
@@ -3478,6 +3480,8 @@ app.get('/yahoo/history', async (req, res) => {
     const timestamps = result.timestamp || [];
     let quotes = result.indicators.quote[0] || {};
     let adjclose = result.indicators.adjclose ? result.indicators.adjclose[0].adjclose : null;
+    // The series in ONE unit, whether or not that repair is the one being served
+    let unitView = null;
 
     // Yahoo steps some lines (mostly London) between pence and pounds inside one series,
     // which a backtest reads as -99% / +9900% days. Every history consumer - scanner,
@@ -3489,6 +3493,9 @@ app.get('/yahoo/history', async (req, res) => {
       if (unitRepair.report.status !== 'clean') {
         const enabled = String(process.env.PRICE_UNIT_REPAIR || '').trim().toLowerCase() === 'true';
         const applied = enabled && unitRepair.report.status === 'repaired';
+        if (unitRepair.report.status === 'repaired') {
+          unitView = { quote: unitRepair.quote, adjclose: unitRepair.adjclose, served: applied };
+        }
         if (applied) {
           quotes = unitRepair.quote;
           adjclose = unitRepair.adjclose;
@@ -3502,6 +3509,31 @@ app.get('/yahoo/history', async (req, res) => {
       }
     } catch (repairError) {
       console.warn(`[yahoo/history] ${symbol} price-unit repair failed, serving raw data: ${repairError.message}`);
+    }
+
+    // A rarer artefact the unit repair cannot see: no-trade days filled with a price no
+    // trade ever printed (HOME.L shows its 38.05p suspension price between trades at 10p).
+    // It is judged on the one-unit view so the two repairs never claim the same bar, which
+    // also means it can only be served on top of that view. Detect-only until
+    // STALE_FILL_REPAIR=true, for the same reason: it changes what the scanner selects.
+    try {
+      const staleFills = staleFillRepair.repairYahooChartStaleFills(result, unitView);
+      if (staleFills.report.status !== 'clean') {
+        const onServedView = !unitView || unitView.served;
+        const applied = staleFillRepair.isRepairEnabled() && staleFills.report.status === 'repaired' && onServedView;
+        if (applied) {
+          quotes = staleFills.quote;
+          adjclose = staleFills.adjclose;
+        }
+        const summary = `${staleFillRepair.describeReport(staleFills.report)}; applied=${applied}`;
+        res.set('X-Stale-Fill-Repair', summary);
+        if (!staleFillsLogged.has(symbol)) {
+          staleFillsLogged.add(symbol);
+          console.log(`[yahoo/history] ${symbol} stale fills: ${summary}`);
+        }
+      }
+    } catch (repairError) {
+      console.warn(`[yahoo/history] ${symbol} stale-fill repair failed, serving data without it: ${repairError.message}`);
     }
 
     let csvData = 'Date,Open,High,Low,Close,Adj Close,Volume\n';
