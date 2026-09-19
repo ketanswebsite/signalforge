@@ -4082,32 +4082,6 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 
 // Stock scanner endpoints
-app.post('/api/scanner/run', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
-  try {
-    if (!stockScanner) {
-      return res.status(503).json({ error: 'Stock scanner not available' });
-    }
-    
-    // Use user's Telegram chat ID if available
-    const user = await TradeDB.getUserByEmail(req.user.email);
-    const chatId = user?.telegram_chat_id || process.env.TELEGRAM_CHAT_ID;
-    
-    if (!chatId) {
-      return res.status(400).json({ error: 'No Telegram chat ID configured' });
-    }
-    
-    // Run high conviction scan (same as successful manual scan logic)
-    stockScanner.runHighConvictionScan(chatId);
-    
-    res.json({ 
-      success: true, 
-      message: 'Global scan started. Results will be sent to your Telegram.' 
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to start scan' });
-  }
-});
-
 app.get('/api/scanner/status', ensureAuthenticatedAPI, ensureSubscriptionActive, (req, res) => {
   try {
     if (!stockScanner) {
