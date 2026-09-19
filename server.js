@@ -3370,6 +3370,9 @@ app.post('/api/settings/reset', ensureAuthenticatedAPI, async (req, res) => {
   }
 });
 
+const { repairYahooChartResult, describeReport } = require('./lib/shared/price-unit-repair');
+const unitRepairsLogged = new Set();
+
 // Yahoo Finance proxy - Historical data
 app.get('/yahoo/history', async (req, res) => {
   try {
@@ -3404,9 +3407,34 @@ app.get('/yahoo/history', async (req, res) => {
     
     const result = jsonData.chart.result[0];
     const timestamps = result.timestamp || [];
-    const quotes = result.indicators.quote[0] || {};
-    const adjclose = result.indicators.adjclose ? result.indicators.adjclose[0].adjclose : null;
-    
+    let quotes = result.indicators.quote[0] || {};
+    let adjclose = result.indicators.adjclose ? result.indicators.adjclose[0].adjclose : null;
+
+    // Yahoo steps some lines (mostly London) between pence and pounds inside one series,
+    // which a backtest reads as -99% / +9900% days. Every history consumer - scanner,
+    // simulator, charts, ML - reads this route, so it is the one place to repair it.
+    // Detect-only until PRICE_UNIT_REPAIR=true: applying it changes which stocks clear
+    // the scanner's >75% win-rate bar, and that is the owner's call.
+    try {
+      const unitRepair = repairYahooChartResult(result);
+      if (unitRepair.report.status !== 'clean') {
+        const enabled = String(process.env.PRICE_UNIT_REPAIR || '').trim().toLowerCase() === 'true';
+        const applied = enabled && unitRepair.report.status === 'repaired';
+        if (applied) {
+          quotes = unitRepair.quote;
+          adjclose = unitRepair.adjclose;
+        }
+        const summary = `${describeReport(unitRepair.report)}; applied=${applied}`;
+        res.set('X-Price-Unit-Repair', summary);
+        if (!unitRepairsLogged.has(symbol)) {
+          unitRepairsLogged.add(symbol);
+          console.log(`[yahoo/history] ${symbol} price units: ${summary}`);
+        }
+      }
+    } catch (repairError) {
+      console.warn(`[yahoo/history] ${symbol} price-unit repair failed, serving raw data: ${repairError.message}`);
+    }
+
     let csvData = 'Date,Open,High,Low,Close,Adj Close,Volume\n';
     
     for (let i = 0; i < timestamps.length; i++) {
