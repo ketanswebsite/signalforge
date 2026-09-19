@@ -20,6 +20,8 @@
 const {
     repairPriceUnits,
     repairYahooChartResult,
+    alignToQuoteUnit,
+    isRepairEnabled,
     isLoneDownStepAUnitChange
 } = require('../../lib/shared/price-unit-repair');
 
@@ -418,5 +420,100 @@ describe('isLoneDownStepAUnitChange - the default policy for the one ambiguous s
 
     test('a volume spike is not', () => {
         expect(isLoneDownStepAUnitChange(step({ intrabarSpread: 1.1, volumeSpike: 12 }))).toBe(false);
+    });
+});
+
+describe('alignToQuoteUnit - a window set against the live quote', () => {
+    // A day move compares a bar with the QUOTE. A short window can be continuous - nothing
+    // for repairPriceUnits to find - and still sit wholly in the other unit.
+
+    test('real data - GVMH.L 2026-09-19: four forward-filled bars in pounds under a pence quote', () => {
+        const closes = [0.006000000052154064, 0.006000000052154064, 0.006000000052154064, null, 0.006000000052154064];
+        expect(repairPriceUnits(bars(closes), { anchorPrice: 0.6 }).report.status).toBe('clean');
+
+        const { prices, factor } = alignToQuoteUnit(closes, 0.6);
+
+        expect(factor).toBe(100);
+        [0, 1, 2, 4].forEach(i => expect(prices[i]).toBeCloseTo(0.6, 6));
+        expect(prices[3]).toBeNull();
+    });
+
+    test('bars in pence under a quote in pounds come down by exactly 100', () => {
+        const { prices, factor } = alignToQuoteUnit([60, 60.5, 44.2], 0.445);
+
+        expect(factor).toBe(0.01);
+        // Divided, not multiplied by 0.01: 44.2 / 100 is exact where 44.2 * 0.01 is not
+        expect(prices).toEqual([0.6, 0.605, 0.442]);
+    });
+
+    test('a real move between the newest bar and the quote survives: the rescale is exactly 100', () => {
+        const { prices } = alignToQuoteUnit([1.50, 1.52], 156.56);
+
+        expect(prices[1]).toBeCloseTo(152, 6);
+        expect(156.56 / prices[1] - 1).toBeCloseTo(0.03, 6);
+    });
+
+    test('the newest close decides, even when today\'s bar is still empty (VTA.L shape)', () => {
+        const { prices, factor } = alignToQuoteUnit([595, 595, null, null], 5.95);
+
+        expect(factor).toBe(0.01);
+        expect(prices).toEqual([5.95, 5.95, null, null]);
+    });
+
+    test('a genuine -60% or -97% gap to the quote is nowhere near a unit gap', () => {
+        const closes = [100, 100];
+        expect(alignToQuoteUnit(closes, 40)).toEqual({ prices: closes, factor: 1 });
+        expect(alignToQuoteUnit(closes, 3)).toEqual({ prices: closes, factor: 1 });
+    });
+
+    test('a window already in the quote\'s unit is handed back as-is, not copied', () => {
+        const closes = [60, 60.5, 61];
+        expect(alignToQuoteUnit(closes, 61.2).prices).toBe(closes);
+    });
+
+    test('no usable quote, no usable price, or not an array: nothing happens', () => {
+        const closes = [0.006, 0.006];
+        [undefined, null, NaN, 0, -1, '0.6'].forEach(quote => {
+            expect(alignToQuoteUnit(closes, quote)).toEqual({ prices: closes, factor: 1 });
+        });
+        const empty = [null, NaN, 0];
+        expect(alignToQuoteUnit(empty, 0.6).prices).toBe(empty);
+        expect(alignToQuoteUnit(undefined, 0.6)).toEqual({ prices: undefined, factor: 1 });
+    });
+
+    test('frozen input survives and is never mutated', () => {
+        const closes = Object.freeze([0.006, null, 0.006]);
+        const { prices } = alignToQuoteUnit(closes, 0.6);
+
+        expect(closes).toEqual([0.006, null, 0.006]);
+        expect(prices).not.toBe(closes);
+    });
+});
+
+describe('isRepairEnabled - the owner\'s switch', () => {
+    test('only the word true turns it on - any case, stray whitespace allowed', () => {
+        ['true', 'TRUE', 'True', ' true '].forEach(value => {
+            expect(isRepairEnabled({ PRICE_UNIT_REPAIR: value })).toBe(true);
+        });
+    });
+
+    test('unset, empty, "false", "1", "yes" and "on" all leave it off', () => {
+        [undefined, '', 'false', '1', 'yes', 'on', 'truee'].forEach(value => {
+            expect(isRepairEnabled({ PRICE_UNIT_REPAIR: value })).toBe(false);
+        });
+        expect(isRepairEnabled({})).toBe(false);
+    });
+
+    test('reads process.env when it is not handed an environment', () => {
+        const atStart = process.env.PRICE_UNIT_REPAIR;
+        try {
+            process.env.PRICE_UNIT_REPAIR = 'true';
+            expect(isRepairEnabled()).toBe(true);
+            delete process.env.PRICE_UNIT_REPAIR;
+            expect(isRepairEnabled()).toBe(false);
+        } finally {
+            if (atStart === undefined) delete process.env.PRICE_UNIT_REPAIR;
+            else process.env.PRICE_UNIT_REPAIR = atStart;
+        }
     });
 });

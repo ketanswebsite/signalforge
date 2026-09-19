@@ -22,6 +22,7 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 const Sentiment = require('sentiment');
+const { repairYahooChartResult, describeReport, isRepairEnabled } = require('../lib/shared/price-unit-repair');
 const headlineSentiment = new Sentiment();
 
 // Verdicts are scored by the MONTHLY SWEEP (first Saturday of the month,
@@ -146,6 +147,35 @@ async function getYahooSession() {
 const clampScore = v => Math.round(Math.max(1, Math.min(10, v)) * 10) / 10;
 const pct = v => (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
 
+const unitRepairsLogged = new Set();        // one log line per symbol per process
+
+/**
+ * The bars the technical pillar reads.
+ *
+ * Yahoo steps London lines between pence and pounds inside one series. A step inside
+ * this window reads as -99% / +9900% momentum and wrecks the 50-day average (VTA.L:
+ * "21-day move -99.0%", pillar 2.5 where the repaired bars score 5.5). Repairing it
+ * moves the pillar, and with it which signals clear the GO / WATCH / PASS gate - so,
+ * exactly like /yahoo/history, it is detect-only until the owner sets
+ * PRICE_UNIT_REPAIR=true. Off = the very same raw quote object, untouched.
+ */
+function technicalQuote(result, symbol) {
+    const raw = result.indicators.quote[0];
+    try {
+        const unitRepair = repairYahooChartResult(result);
+        if (unitRepair.report.status === 'clean') return raw;
+        const applied = isRepairEnabled() && unitRepair.report.status === 'repaired';
+        if (!unitRepairsLogged.has(symbol)) {
+            unitRepairsLogged.add(symbol);
+            console.log(`[conviction] ${symbol} price units: ${describeReport(unitRepair.report)}; applied=${applied}`);
+        }
+        return applied ? unitRepair.quote : raw;
+    } catch (e) {
+        console.warn(`[conviction] ${symbol} price-unit repair failed, scoring the raw bars: ${e.message}`);
+        return raw;
+    }
+}
+
 async function scoreTechnical(symbol) {
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}`;
     const { data } = await axios.get(url, {
@@ -155,7 +185,7 @@ async function scoreTechnical(symbol) {
     });
     const result = data && data.chart && data.chart.result && data.chart.result[0];
     if (!result || !result.indicators.quote[0]) throw new Error('No price history');
-    const q = result.indicators.quote[0];
+    const q = technicalQuote(result, symbol);
     const bars = [];
     for (let i = 0; i < (result.timestamp || []).length; i++) {
         if (q.close[i] != null && q.high[i] != null && q.low[i] != null) {
@@ -541,4 +571,4 @@ function summarizeConviction(payload) {
         .slice(0, 500);
 }
 
-module.exports = { getConviction, summarizeConviction, fetchRecentHeadlines };
+module.exports = { getConviction, summarizeConviction, fetchRecentHeadlines, scoreTechnical };
