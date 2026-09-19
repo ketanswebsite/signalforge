@@ -40,39 +40,6 @@ function formatChartPrice(value, symbolOrMarket) {
 // Create DTIUI module
 const DTIUI = (function() {
     /**
-     * Helper function to get index identifier from stock symbol
-     * @param {string} symbol - Stock symbol
-     * @returns {string} - Index identifier (e.g., 'nifty50', 'ftse100')
-     */
-    function getIndexIdentifierFromSymbol(symbol) {
-        if (!symbol) return null;
-        
-        if (symbol.endsWith('.NS')) {
-            if (DTIData.getStockLists().nifty50.some(stock => stock.symbol === symbol)) {
-                return 'nifty50';
-            } else if (DTIData.getStockLists().niftyNext50.some(stock => stock.symbol === symbol)) {
-                return 'niftyNext50';
-            } else if (DTIData.getStockLists().niftyMidcap150.some(stock => stock.symbol === symbol)) {
-                return 'niftyMidcap150';
-            }
-            return 'nifty50'; // Default to nifty50 if not found in specific lists
-        } else if (symbol.endsWith('.L')) {
-            if (DTIData.getStockLists().ftse100.some(stock => stock.symbol === symbol)) {
-                return 'ftse100';
-            } else if (DTIData.getStockLists().ftse250.some(stock => stock.symbol === symbol)) {
-                return 'ftse250';
-            }
-            return 'ftse100'; // Default to ftse100 if not found in specific lists
-        } else if (!symbol.includes('.')) {
-            return 'usStocks';
-        } else if (symbol.startsWith('^')) {
-            return 'indices';
-        }
-        
-        return null;
-    }
-    
-    /**
      * Calculate win rates for all stocks based on historical trades
      * @returns {Object} - Object mapping stock symbols to win rates
      */
@@ -137,7 +104,6 @@ const DTIUI = (function() {
 
     // Export public API for core functions
     return {
-        getIndexIdentifierFromSymbol,
         calculateStockWinRates,
         initializeModules
     };
