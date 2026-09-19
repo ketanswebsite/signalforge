@@ -1,11 +1,14 @@
 /**
  * Exit-check retention (lib/portfolio/exit-check-retention.js) — GAPS #13
  *
- * Two things are pinned down here:
+ * Three things are pinned down here:
  *   1. The duplicate-alert guard is untouched. checkAlertSent() in both
  *      managers still reads ONLY alert_sent = true rows, and no statement the
  *      prune can issue is able to delete one.
- *   2. The job's safety rails: a dry run unless EXIT_CHECK_PRUNE=true,
+ *   2. History is rolled up before it is pruned: the rollup runs first, a
+ *      failed rollup means no delete, and the DELETE itself refuses any day
+ *      that is not in the rollup.
+ *   3. The job's safety rails: a kill switch and a dry run that write nothing,
  *      batching, a missing table, a clamped retention policy, never throwing.
  *
  * The database is mocked, so what is asserted is the SQL the job sends. That
@@ -26,19 +29,30 @@ const exitMonitor = require('../../lib/portfolio/exit-monitor');
 const HighConvictionPortfolioManager = require('../../lib/portfolio/high-conviction-manager');
 const retention = require('../../lib/portfolio/exit-check-retention');
 
-const { BATCH_SIZE, MAX_BATCHES, MIN_RETENTION_DAYS } = retention;
+const { BATCH_SIZE, MAX_BATCHES, MIN_RETENTION_DAYS, ROLLUP_TABLE } = retention;
+
+const WRITE = /^\s*(DELETE|INSERT|CREATE|UPDATE|DROP|ALTER|TRUNCATE)\b/i;
 
 /**
- * A pool.query stand-in that answers the job's four kinds of statement.
- *   missing   tables that to_regclass() should not find
- *   prunable  what the dry-run count reports
- *   batches   rowCount of each successive DELETE (then 0 for ever)
+ * A pool.query stand-in that answers every kind of statement the job sends.
+ *   missing     tables that to_regclass() should not find
+ *   prunable    what the dry-run count reports
+ *   batches     rowCount of each successive DELETE (then 0 for ever)
+ *   rolledUp    rowCount of the rollup INSERT
+ *   rollupFails make the rollup INSERT reject
  */
-function mockDatabase({ missing = [], prunable = 0, batches = [] } = {}) {
+function mockDatabase({ missing = [], prunable = 0, batches = [], rolledUp = 0, rollupFails = false } = {}) {
     const remaining = [...batches];
     TradeDB.pool.query.mockImplementation(async (sql, params) => {
         if (/to_regclass/.test(sql)) {
             return { rows: [{ oid: missing.includes(params[0]) ? null : params[0] }] };
+        }
+        if (/^\s*CREATE TABLE/.test(sql)) {
+            return { rowCount: null };
+        }
+        if (/^\s*INSERT INTO/.test(sql)) {
+            if (rollupFails) throw new Error('rollup failed');
+            return { rowCount: rolledUp };
         }
         if (/^\s*DELETE/.test(sql)) {
             return { rowCount: remaining.length ? remaining.shift() : 0 };
@@ -46,15 +60,20 @@ function mockDatabase({ missing = [], prunable = 0, batches = [] } = {}) {
         if (/routine_rows/.test(sql)) {
             return { rows: [{ routine_rows: '282357', recent_rows: '40000', recent_days: '5', table_bytes: '47169536' }] };
         }
+        if (/position_days/.test(sql)) {
+            return { rows: [{ days: '281' }] };
+        }
         return { rows: [{ rows: String(prunable), oldest: null, newest: null }] };
     });
 }
 
 const PROD_LIKE = { missing: ['high_conviction_exit_checks'] };
 
-function deletes() {
-    return TradeDB.pool.query.mock.calls.filter(([sql]) => /^\s*DELETE/.test(sql));
+function statements(pattern) {
+    return TradeDB.pool.query.mock.calls.filter(([sql]) => pattern.test(sql));
 }
+const deletes = () => statements(/^\s*DELETE/);
+const writes = () => statements(WRITE);
 
 beforeEach(() => {
     jest.spyOn(console, 'log').mockImplementation(() => {});
@@ -121,7 +140,6 @@ describe('Duplicate-alert guard — checkAlertSent() is untouched', () => {
     });
 
     test('no DELETE the job issues can reach an alert row', async () => {
-        process.env.EXIT_CHECK_PRUNE = 'true';
         mockDatabase({ batches: [BATCH_SIZE, 12, 7] });
 
         await retention.pruneExitChecks();
@@ -136,7 +154,6 @@ describe('Duplicate-alert guard — checkAlertSent() is untouched', () => {
     });
 
     test('the job deletes from the two exit-check tables and nothing else', async () => {
-        process.env.EXIT_CHECK_PRUNE = 'true';
         mockDatabase({ batches: [5, 5] });
 
         await retention.pruneExitChecks();
@@ -147,53 +164,121 @@ describe('Duplicate-alert guard — checkAlertSent() is untouched', () => {
     });
 });
 
-describe('Deleting needs consent — a dry run is the default', () => {
-    test('without EXIT_CHECK_PRUNE the job only counts', async () => {
-        mockDatabase({ ...PROD_LIKE, prunable: 33166 });
+describe('History is rolled up before it is pruned', () => {
+    test('the rollup runs before the first DELETE', async () => {
+        mockDatabase({ ...PROD_LIKE, rolledUp: 281, batches: [33166 % BATCH_SIZE] });
+
+        const result = await retention.pruneExitChecks();
+
+        const order = TradeDB.pool.query.mock.calls
+            .map(([sql]) => (sql.match(WRITE) || [])[1])
+            .filter(Boolean)
+            .map(verb => verb.toUpperCase());
+        expect(order).toEqual(['CREATE', 'INSERT', 'DELETE']);
+        expect(result.tables[0]).toMatchObject({ rolledUp: 281 });
+    });
+
+    test('a failed rollup means nothing is deleted', async () => {
+        mockDatabase({ ...PROD_LIKE, rollupFails: true, batches: [BATCH_SIZE] });
 
         const result = await retention.pruneExitChecks();
 
         expect(deletes()).toHaveLength(0);
-        expect(result.dryRun).toBe(true);
-        expect(result.enabled).toBe(false);
-        expect(result.tables[0]).toMatchObject({ table: 'trade_exit_checks', wouldDelete: 33166, retentionDays: 30 });
+        expect(result.error).toBe('rollup failed');
     });
 
-    test('a caller asking for a real run cannot override the missing consent', async () => {
+    test('the DELETE itself refuses a day that is not in the rollup', async () => {
+        mockDatabase({ batches: [4, 4] });
+
+        await retention.pruneExitChecks();
+
+        const [[tradeChecksSql], [highConvictionSql]] = deletes();
+        const gate = new RegExp(`EXISTS \\(SELECT 1 FROM ${ROLLUP_TABLE} d`, 'g');
+        // On the id subquery and on the DELETE, like the alert-row protection
+        expect(tradeChecksSql.match(gate)).toHaveLength(2);
+        expect(tradeChecksSql).toMatch(/d\.trade_id = c\.trade_id AND d\.day = c\.check_time::date/);
+        // Pruned without a rollup by design: keyed by symbol, absent on production
+        expect(highConvictionSql).not.toMatch(gate);
+    });
+
+    test('only complete days are rolled up, and a rolled-up day is never rewritten', async () => {
+        mockDatabase({ ...PROD_LIKE, batches: [1] });
+
+        await retention.pruneExitChecks();
+
+        const [[sql]] = statements(/^\s*INSERT INTO/);
+        expect(sql).toMatch(new RegExp(`INSERT INTO ${ROLLUP_TABLE}`));
+        expect(sql).toMatch(/c\.check_time < CURRENT_DATE/);
+        expect(sql).toMatch(/AND NOT EXISTS \(SELECT 1 FROM trade_exit_checks_daily d/);
+        expect(sql).toMatch(/GROUP BY c\.trade_id, c\.check_time::date/);
+        expect(sql).toMatch(/ON CONFLICT \(trade_id, day\) DO NOTHING/);
+        expect(sql).not.toMatch(/DO UPDATE/i);
+    });
+
+    test('whole days only: the cutoff is a date, not a moment', async () => {
+        process.env.EXIT_CHECK_RETENTION_DAYS = '14';
+        mockDatabase({ ...PROD_LIKE, batches: [9] });
+
+        await retention.pruneExitChecks();
+
+        expect(deletes()[0][0]).toMatch(/c\.check_time < \(CURRENT_DATE - \$1::int\)/);
+        expect(deletes()[0][1][0]).toBe(14);
+    });
+});
+
+describe('Kill switch and dry run write nothing', () => {
+    test('pruning is on by default — the owner approved it on 2026-09-19', async () => {
+        mockDatabase({ ...PROD_LIKE, batches: [3] });
+
+        const result = await retention.pruneExitChecks();
+
+        expect(result).toMatchObject({ dryRun: false, enabled: true });
+        expect(deletes()).toHaveLength(1);
+    });
+
+    test.each(['false', 'FALSE', ' False ', '0', 'no', 'off'])('EXIT_CHECK_PRUNE=%p stops it: no table, no rollup, no delete', async (value) => {
+        process.env.EXIT_CHECK_PRUNE = value;
+        mockDatabase({ ...PROD_LIKE, prunable: 33166 });
+
+        const result = await retention.pruneExitChecks();
+
+        expect(writes()).toHaveLength(0);
+        expect(result).toMatchObject({ dryRun: true, enabled: false });
+        expect(result.tables[0]).toMatchObject({ table: 'trade_exit_checks', wouldDelete: 33166, wouldRollUp: 281, retentionDays: 30 });
+    });
+
+    test('with the kill switch on, a caller asking for a real run still gets a dry run', async () => {
+        process.env.EXIT_CHECK_PRUNE = 'false';
         mockDatabase({ ...PROD_LIKE, prunable: 33166 });
 
         const result = await retention.pruneExitChecks({ dryRun: false });
 
-        expect(deletes()).toHaveLength(0);
+        expect(writes()).toHaveLength(0);
         expect(result.dryRun).toBe(true);
     });
 
-    test.each(['TRUE', '1', 'yes', 'on', ' true'])('EXIT_CHECK_PRUNE=%p is not consent — only the exact string "true" is', async (value) => {
-        process.env.EXIT_CHECK_PRUNE = value;
-        mockDatabase({ ...PROD_LIKE, prunable: 10 });
-
-        const result = await retention.pruneExitChecks();
-
-        expect(deletes()).toHaveLength(0);
-        expect(result.dryRun).toBe(true);
-    });
-
-    test('dryRun: true still only counts once pruning is enabled', async () => {
-        process.env.EXIT_CHECK_PRUNE = 'true';
+    test('dryRun: true writes nothing even though pruning is enabled', async () => {
         mockDatabase({ ...PROD_LIKE, prunable: 33166 });
 
         const result = await retention.pruneExitChecks({ dryRun: true });
 
-        expect(deletes()).toHaveLength(0);
+        expect(writes()).toHaveLength(0);
         expect(result).toMatchObject({ dryRun: true, enabled: true });
+    });
+
+    test('a dry run before the first real run copes with the rollup table not existing yet', async () => {
+        mockDatabase({ missing: ['high_conviction_exit_checks', ROLLUP_TABLE], prunable: 10 });
+
+        const result = await retention.pruneExitChecks({ dryRun: true });
+
+        expect(result.error).toBeUndefined();
+        expect(result.tables[0].wouldRollUp).toBe(281);
+        const [[pendingSql]] = statements(/position_days/);
+        expect(pendingSql).not.toMatch(new RegExp(ROLLUP_TABLE));
     });
 });
 
 describe('Pruning', () => {
-    beforeEach(() => {
-        process.env.EXIT_CHECK_PRUNE = 'true';
-    });
-
     test('deletes in batches until a batch comes back short', async () => {
         mockDatabase({ ...PROD_LIKE, batches: [BATCH_SIZE, BATCH_SIZE, 3166] });
 
@@ -271,17 +356,6 @@ describe('Retention window', () => {
             expect(retention.getConfig({ EXIT_CHECK_RETENTION_DAYS: bad }).retentionDays).toBe(30);
         }
         expect(retention.getConfig({ EXIT_CHECK_RETENTION_DAYS: '99999' }).retentionDays).toBe(3650);
-    });
-
-    test('the configured window is the day count the database receives', async () => {
-        process.env.EXIT_CHECK_PRUNE = 'true';
-        process.env.EXIT_CHECK_RETENTION_DAYS = '14';
-        mockDatabase({ ...PROD_LIKE, batches: [9] });
-
-        await retention.pruneExitChecks();
-
-        expect(deletes()[0][0]).toMatch(/make_interval\(days => \$1::int\)/);
-        expect(deletes()[0][1][0]).toBe(14);
     });
 
     test('the policy can shorten the window, down to the floor, and no further', () => {
