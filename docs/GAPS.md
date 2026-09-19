@@ -26,7 +26,7 @@ re-test should not start until every CRITICAL is closed.
 | 10 | MEDIUM | Stock universe is a hardcoded snapshot (2025-10-27, 5,251 symbols); delisted tickers fail silently forever. | Refresh script + per-symbol consecutive-failure counter that prunes/flags dead tickers. |
 | 11 | LOW | Hardcoded FX rates (GBP_TO_INR 105 etc.) skew all cross-currency reporting. | Daily FX fetch cached in DB; reports use dated rates. |
 | 12 | LOW | Telegram sends swallow errors (empty catch blocks) — delivery failures are invisible. | Failures logged with counts; weekly report includes delivery stats. |
-| 13 | LOW | trade_exit_checks grows unbounded (409,385 rows; DB 79 MB). | 30-day retention job. |
+| 13 | LOW | trade_exit_checks grows unbounded (409,385 rows; DB 79 MB). Re-measured 2026-09-19, 29 trading days after the reset: 282,381 rows / 45 MB = 63% of the DB, 24 of them the alert rows the duplicate-alert guard reads; ~1,070 rows per open position per day, so it scales with subscribers. `high_conviction_exit_checks` does not exist on production (migration never applied). | 30-day retention job. **Built 2026-09-19, not yet closed:** `lib/portfolio/exit-check-retention.js`, daily 23:20 UK, never deletes `alert_sent = true` rows — but ships as a DRY RUN. Closed once the owner sets `EXIT_CHECK_PRUNE=true` and `GET /api/ops/exit-checks-stats` shows the table has plateaued. |
 
 ## C. Test-readiness & measurement
 

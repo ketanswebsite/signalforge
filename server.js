@@ -735,6 +735,20 @@ app.get('/api/ops/exit-checks-stats', async (req, res) => {
   }
 });
 
+// Token-guarded manual run of the exit-check retention job — the same job the
+// 11:20 PM UK cron runs. Pass dryRun=true to only count what would go. The
+// token alone can never delete: a real prune also needs EXIT_CHECK_PRUNE=true
+// on the server (the owner's consent), otherwise every run is a dry run.
+app.post('/api/ops/prune-exit-checks', async (req, res) => {
+  const token = req.query.token || req.get('x-analysis-token');
+  if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  const { pruneExitChecks } = require('./lib/portfolio/exit-check-retention');
+  const result = await pruneExitChecks({ dryRun: req.query.dryRun === 'true' });
+  res.status(result.error ? 500 : 200).json({ success: !result.error, ...result });
+});
+
 // Token-guarded manual EOD-summary trigger (ops/testing) — same job the
 // 7 PM UK cron runs. Fire-and-forget.
 app.post('/api/ops/eod-summary', (req, res) => {
