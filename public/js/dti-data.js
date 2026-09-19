@@ -1,21 +1,10 @@
 /**
  * DTI Backtester - Data Module
  * Handles data management, fetching, and processing
- * Uses shared stock data module - NO DUPLICATION
  */
 
 // Create DTIData module
 const DTIData = (function() {
-    // Get stock lists from shared module (SINGLE SOURCE OF TRUTH)
-    const stockLists = window.StockData.getStockLists();
-    const nifty50Stocks = stockLists.nifty50;
-    const niftyNext50Stocks = stockLists.niftyNext50;
-    const niftyMidcap150Stocks = stockLists.niftyMidcap150;
-    const ftse100Stocks = stockLists.ftse100;
-    const ftse250Stocks = stockLists.ftse250;
-    const usStocks = stockLists.usStocks;
-    const marketIndices = stockLists.indices;
-
     // Data caching
     const dataCache = new Map();
     
@@ -602,20 +591,7 @@ async function fetchCurrentQuote(symbol) {
         validateStockList,
         debugStocks,
         exportConfiguration,
-        importConfiguration,
-        
-        // Stock lists exposed for access by other modules
-        getStockLists() {
-            return {
-                nifty50: nifty50Stocks,
-                niftyNext50: niftyNext50Stocks,
-                niftyMidcap150: niftyMidcap150Stocks,
-                ftse100: ftse100Stocks,
-                ftse250: ftse250Stocks,
-                usStocks: usStocks,
-                indices: marketIndices
-            };
-        }
+        importConfiguration
     };
 })();
 
