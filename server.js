@@ -601,6 +601,140 @@ app.get('/api/ops/version', (req, res) => {
   });
 });
 
+// Token-guarded, READ-ONLY size probe for the two exit-check tables (GAPS #13).
+// The exit monitor writes one row per open position per minute and the HC
+// manager one per position per 10 minutes, so these are the tables that grow
+// with subscriber count. Fixed queries only — nothing here takes SQL from the
+// caller. Measures before/after any retention change.
+app.get('/api/ops/exit-checks-stats', async (req, res) => {
+  const token = req.query.token || req.get('x-analysis-token');
+  if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  try {
+    const pool = TradeDB.pool;
+
+    // keyColumn is what each table's duplicate-alert guard looks rows up by
+    const tableStats = async (table, keyColumn) => {
+      // high_conviction_exit_checks comes from a standalone migration, not the
+      // boot-time schema, so it may legitimately be absent
+      const { rows: [found] } = await pool.query('SELECT to_regclass($1) AS oid', [table]);
+      if (!found.oid) {
+        return { exists: false };
+      }
+
+      const { rows: [size] } = await pool.query(`
+        SELECT pg_total_relation_size($1::regclass) AS total_bytes,
+               pg_size_pretty(pg_total_relation_size($1::regclass)) AS total,
+               pg_size_pretty(pg_relation_size($1::regclass)) AS heap,
+               pg_size_pretty(pg_indexes_size($1::regclass)) AS indexes
+      `, [table]);
+
+      const { rows: [counts] } = await pool.query(`
+        SELECT count(*) AS rows,
+               count(*) FILTER (WHERE alert_sent) AS alert_rows,
+               count(*) FILTER (WHERE alert_type IS NOT NULL AND NOT alert_sent) AS unsent_exit_rows,
+               count(DISTINCT ${keyColumn}) AS distinct_keys,
+               count(DISTINCT check_time::date) AS days_with_rows,
+               min(check_time) AS oldest,
+               max(check_time) AS newest
+        FROM ${table}
+      `);
+
+      const { rows: perDay } = await pool.query(`
+        SELECT to_char(check_time::date, 'YYYY-MM-DD') AS day,
+               count(*) AS rows,
+               count(DISTINCT ${keyColumn}) AS positions
+        FROM ${table}
+        GROUP BY 1
+        ORDER BY 1 DESC
+        LIMIT 30
+      `);
+
+      const { rows: [vacuum] } = await pool.query(`
+        SELECT n_live_tup, n_dead_tup, last_autovacuum, last_autoanalyze
+        FROM pg_stat_user_tables
+        WHERE relname = $1
+      `, [table]);
+
+      const rows = Number(counts.rows);
+      const totalBytes = Number(size.total_bytes);
+      return {
+        exists: true,
+        rows,
+        alertRows: Number(counts.alert_rows),
+        unsentExitRows: Number(counts.unsent_exit_rows),
+        routineRows: rows - Number(counts.alert_rows) - Number(counts.unsent_exit_rows),
+        distinctKeys: Number(counts.distinct_keys),
+        daysWithRows: Number(counts.days_with_rows),
+        oldest: counts.oldest,
+        newest: counts.newest,
+        totalBytes,
+        total: size.total,
+        heap: size.heap,
+        indexes: size.indexes,
+        bytesPerRow: rows > 0 ? Math.round(totalBytes / rows) : null,
+        liveTuples: vacuum ? Number(vacuum.n_live_tup) : null,
+        deadTuples: vacuum ? Number(vacuum.n_dead_tup) : null,
+        lastAutovacuum: vacuum ? vacuum.last_autovacuum : null,
+        perDay: perDay.map(d => ({ day: d.day, rows: Number(d.rows), positions: Number(d.positions) }))
+      };
+    };
+
+    const tradeChecks = await tableStats('trade_exit_checks', 'trade_id');
+    const hcChecks = await tableStats('high_conviction_exit_checks', 'symbol');
+
+    const { rows: [db] } = await pool.query(`
+      SELECT pg_database_size(current_database()) AS bytes,
+             pg_size_pretty(pg_database_size(current_database())) AS pretty
+    `);
+    const { rows: [openTrades] } = await pool.query(`
+      SELECT count(*) AS active, count(DISTINCT user_id) AS owners, count(DISTINCT symbol) AS symbols
+      FROM trades WHERE status = 'active'
+    `);
+    const { rows: [openHC] } = await pool.query(`
+      SELECT count(*) AS active FROM high_conviction_portfolio WHERE status = 'active'
+    `);
+
+    // The HC guard is keyed by SYMBOL, so an alert row left by an earlier trade
+    // also matches a later re-entry of the same symbol. List open HC positions
+    // that already carry such a row from before they were entered.
+    let hcStaleGuards = [];
+    if (hcChecks.exists) {
+      const { rows } = await pool.query(`
+        SELECT p.symbol,
+               to_char(p.entry_date, 'YYYY-MM-DD') AS entry_date,
+               c.alert_type,
+               to_char(max(c.check_time), 'YYYY-MM-DD') AS alerted_on
+        FROM high_conviction_portfolio p
+        JOIN high_conviction_exit_checks c
+          ON c.symbol = p.symbol AND c.alert_sent = true AND c.check_time < p.entry_date
+        WHERE p.status = 'active'
+        GROUP BY p.symbol, p.entry_date, c.alert_type
+        ORDER BY p.symbol
+      `);
+      hcStaleGuards = rows;
+    }
+
+    res.json({
+      success: true,
+      measuredAt: new Date().toISOString(),
+      database: { bytes: Number(db.bytes), pretty: db.pretty },
+      openPositions: {
+        trades: Number(openTrades.active),
+        tradeOwners: Number(openTrades.owners),
+        tradeSymbols: Number(openTrades.symbols),
+        highConviction: Number(openHC.active)
+      },
+      tradeExitChecks: tradeChecks,
+      highConvictionExitChecks: hcChecks,
+      hcStaleGuards
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Token-guarded manual EOD-summary trigger (ops/testing) — same job the
 // 7 PM UK cron runs. Fire-and-forget.
 app.post('/api/ops/eod-summary', (req, res) => {
