@@ -601,6 +601,75 @@ app.get('/api/ops/version', (req, res) => {
   });
 });
 
+// Token-guarded, READ-ONLY probe for the Alerts page switches (alert_preferences).
+// Counts only — no emails, no chat ids. No sender reads this table today, so
+// this answers "who would honouring it affect?" BEFORE anything does:
+// telegram_enabled DEFAULTs false and the page POSTs the whole object, so a
+// stored false is not proof of an opt-out — `audience.masterOff` is how many
+// linked subscribers a naive master-switch check would silence.
+app.get('/api/ops/alert-prefs-stats', async (req, res) => {
+  const token = req.query.token || req.get('x-analysis-token');
+  if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  try {
+    const pool = TradeDB.pool;
+    const adminEmail = process.env.ADMIN_EMAIL || 'ketanjoshisahs@gmail.com';
+    const toNumbers = (row) => Object.fromEntries(
+      Object.entries(row).map(([key, value]) => [key, /^\d+$/.test(String(value)) ? Number(value) : value])
+    );
+
+    const { rows: [table] } = await pool.query(`
+      SELECT count(*) AS "rows",
+             count(*) FILTER (WHERE telegram_enabled) AS "masterOn",
+             count(*) FILTER (WHERE telegram_enabled IS NOT TRUE) AS "masterOff",
+             count(*) FILTER (WHERE alert_on_buy IS FALSE) AS "buyOff",
+             count(*) FILTER (WHERE alert_on_target IS FALSE) AS "targetOff",
+             count(*) FILTER (WHERE alert_on_stoploss IS FALSE) AS "stoplossOff",
+             count(*) FILTER (WHERE alert_on_time_exit IS FALSE) AS "timeExitOff",
+             count(*) FILTER (WHERE telegram_chat_id IS NOT NULL) AS "legacyChatIdSet",
+             min(updated_at) AS "oldestUpdate",
+             max(updated_at) AS "newestUpdate"
+      FROM alert_preferences
+    `);
+
+    // The audience: everyone who can receive a personal DM today — a linked
+    // Telegram (users.telegram_chat_id) and not the admin, whose trades
+    // broadcast publicly instead
+    const { rows: [audience] } = await pool.query(`
+      SELECT count(*) AS "linkedNonAdmin",
+             count(*) FILTER (WHERE u.auto_trading_enabled) AS "autoTrading",
+             count(ap.user_id) AS "withPrefsRow",
+             count(*) FILTER (WHERE ap.user_id IS NULL) AS "withoutPrefsRow",
+             count(*) FILTER (WHERE ap.user_id IS NOT NULL AND ap.telegram_enabled IS NOT TRUE) AS "masterOff",
+             count(*) FILTER (WHERE ap.alert_on_buy IS FALSE) AS "buyOff",
+             count(*) FILTER (WHERE ap.alert_on_target IS FALSE) AS "targetOff",
+             count(*) FILTER (WHERE ap.alert_on_stoploss IS FALSE) AS "stoplossOff",
+             count(*) FILTER (WHERE ap.alert_on_time_exit IS FALSE) AS "timeExitOff"
+      FROM users u
+      LEFT JOIN alert_preferences ap ON ap.user_id = u.email
+      WHERE u.telegram_chat_id IS NOT NULL AND u.email <> $1
+    `, [adminEmail]);
+
+    const { rows: [open] } = await pool.query(`
+      SELECT count(DISTINCT t.user_id) AS "owners",
+             count(*) AS "positions"
+      FROM trades t
+      JOIN users u ON u.email = t.user_id
+      WHERE t.status = 'active' AND u.telegram_chat_id IS NOT NULL AND u.email <> $1
+    `, [adminEmail]);
+
+    res.json({
+      success: true,
+      table: toNumbers(table),
+      audience: toNumbers(audience),
+      audienceOpenPositions: toNumbers(open)
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Token-guarded, READ-ONLY size probe for the two exit-check tables (GAPS #13).
 // The exit monitor writes one row per open position per minute and the HC
 // manager one per position per 10 minutes, so these are the tables that grow
