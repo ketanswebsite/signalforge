@@ -81,12 +81,6 @@ const DTIBacktester = {
         // Add page load animations
         this.addPageLoadAnimations();
 
-        // Initialize stock selector
-        this.initStockSelector();
-
-        // Create buying opportunities section
-        this.createBuyingOpportunitiesSection();
-
         // Update app description with warm-up period info
         this.updateAppDescription();
 
@@ -129,18 +123,6 @@ const DTIBacktester = {
         }
     },
 
-    // Initialize stock selector UI
-    initStockSelector: function() {
-        // This will be fully implemented in dti-ui.js
-        // Just a placeholder for now - will be overridden by the UI module
-    },
-    
-    // Create buying opportunities section if it doesn't exist
-    createBuyingOpportunitiesSection: function() {
-        // This will be fully implemented in dti-ui.js
-        // Just a placeholder for now - will be overridden by the UI module
-    },
-    
     // Update app description with warm-up period info
     updateAppDescription: function() {
         const appDescription = document.querySelector('.app-description');

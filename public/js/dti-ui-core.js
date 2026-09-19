@@ -39,40 +39,6 @@ function formatChartPrice(value, symbolOrMarket) {
 
 // Create DTIUI module
 const DTIUI = (function() {
-    // Add flag to track "View Details" clicks - FIX FOR OPPORTUNITY LIST DISAPPEARING
-    let isViewingOpportunityDetails = false;
-    
-    /**
-     * Helper to get index display name from stock symbol
-     * @param {string} symbol - Stock symbol
-     * @returns {string} - Index display name
-     */
-    function getIndexDisplayNameFromSymbol(symbol) {
-        if (!symbol) return 'Unknown';
-        
-        if (symbol.endsWith('.NS')) {
-            if (DTIData.getStockLists().nifty50.some(stock => stock.symbol === symbol)) {
-                return 'Nifty 50';
-            } else if (DTIData.getStockLists().niftyNext50.some(stock => stock.symbol === symbol)) {
-                return 'Nifty Next 50';
-            } else if (DTIData.getStockLists().niftyMidcap150.some(stock => stock.symbol === symbol)) {
-                return 'Nifty Midcap 150';
-            }
-            return 'India';
-        } else if (symbol.endsWith('.L')) {
-            if (DTIData.getStockLists().ftse100.some(stock => stock.symbol === symbol)) {
-                return 'FTSE 100';
-            } else if (DTIData.getStockLists().ftse250.some(stock => stock.symbol === symbol)) {
-                return 'FTSE 250';
-            }
-            return 'UK';
-        } else if (!symbol.includes('.')) {
-            return 'US Stocks';
-        }
-        
-        return 'Unknown';
-    }
-    
     /**
      * Helper function to get index identifier from stock symbol
      * @param {string} symbol - Stock symbol
@@ -157,19 +123,6 @@ const DTIUI = (function() {
             }
         };
 
-        // Override the existing stubs with full implementations
-        DTIBacktester.initStockSelector = function() {
-            if (typeof DTIUI.StockSelector !== 'undefined') {
-                DTIUI.StockSelector.initStockSelector();
-            }
-        };
-
-        DTIBacktester.createBuyingOpportunitiesSection = function() {
-            if (typeof DTIUI.TradeDisplay !== 'undefined') {
-                DTIUI.TradeDisplay.createBuyingOpportunitiesSection();
-            }
-        };
-
         // Add properties for chart interactivity
         DTIBacktester.tradeData = []; // Stores trade data for interactions
         DTIBacktester.annotations = {}; // Stores chart annotations
@@ -180,50 +133,10 @@ const DTIUI = (function() {
                 DTIUI.Charts.initParameterChangeListeners();
             }
         });
-        
-        // Connect data processing results to UI display
-        if (typeof DTIData !== 'undefined') {
-            // Store original processCSV function
-            const originalProcessCSV = DTIData.processCSV;
-            
-            // Override processCSV to update UI after processing
-            DTIData.processCSV = function(results) {
-                // Call original processing function
-                originalProcessCSV.apply(this, arguments);
-                
-                // After processing, update the buying opportunities
-                if (DTIBacktester.activeTradeOpportunities && 
-                    typeof DTIUI.TradeDisplay !== 'undefined' && 
-                    typeof DTIUI.TradeDisplay.displayBuyingOpportunities === 'function') {
-                    DTIUI.TradeDisplay.displayBuyingOpportunities();
-                }
-            };
-        }
-        
-        // Also hook into fetchAllStocksData to update opportunities after batch processing
-        if (typeof DTIData !== 'undefined' && DTIData.fetchAllStocksData) {
-            const originalFetchAllStocks = DTIData.fetchAllStocksData;
-            
-            DTIData.fetchAllStocksData = async function() {
-                // Call original function
-                const result = await originalFetchAllStocks.apply(this, arguments);
-                
-                // After processing, update the buying opportunities
-                if (DTIBacktester.activeTradeOpportunities && 
-                    typeof DTIUI.TradeDisplay !== 'undefined' && 
-                    typeof DTIUI.TradeDisplay.displayBuyingOpportunities === 'function') {
-                    DTIUI.TradeDisplay.displayBuyingOpportunities();
-                }
-                
-                return result;
-            };
-        }
     }
 
     // Export public API for core functions
     return {
-        isViewingOpportunityDetails,
-        getIndexDisplayNameFromSymbol,
         getIndexIdentifierFromSymbol,
         calculateStockWinRates,
         initializeModules
