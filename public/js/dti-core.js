@@ -6,7 +6,6 @@
 // Global state for the application
 const DTIBacktester = {
     // Core state
-    isProcessing: false,
     allStocksData: [],
     activeTradeOpportunities: [],
     currentStockIndex: 'nifty50', // Default to Nifty 50
@@ -53,25 +52,6 @@ const DTIBacktester = {
             } else {
                 console[type === 'error' ? 'error' : 'log'](`[${type.toUpperCase()}] ${message}`);
             }
-        },
-        
-        // Parse month abbreviation to month number (0-11)
-        parseMonth: function(monthStr) {
-            const months = {
-                'jan': 0, 'feb': 1, 'mar': 2, 'apr': 3, 'may': 4, 'jun': 5,
-                'jul': 6, 'aug': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dec': 11
-            };
-            return months[monthStr.toLowerCase()];
-        },
-        
-        // Safely parse float values, handling commas in number strings
-        parseFloatSafe: function(value) {
-            if (typeof value === 'number') return value;
-            if (!value) return NaN;
-            
-            // Handle string values that might contain commas as thousand separators
-            const cleanedValue = value.toString().replace(/,/g, '');
-            return parseFloat(cleanedValue);
         }
     },
     
