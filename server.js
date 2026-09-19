@@ -437,6 +437,24 @@ app.post('/api/ops/conviction-sweep', async (req, res) => {
   }
 });
 
+// Token-guarded, READ-ONLY probe for the AI verdict store (conviction_daily).
+// Counts and dates only. Answers "did the monthly sweep really re-score the
+// universe?": a genuine sweep is a universe-sized spike on one date, verdicts
+// scored on demand are a smear of small counts. ?days=N widens the history.
+app.get('/api/ops/conviction-stats', async (req, res) => {
+  const token = req.query.token || req.get('x-analysis-token');
+  if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  try {
+    const { getVerdictStats, getSweepStatus } = require('./ml/conviction-sweep');
+    const days = Math.min(Math.max(parseInt(req.query.days, 10) || 120, 1), 730);
+    res.json({ success: true, sweep: getSweepStatus(), ...(await getVerdictStats(days)) });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 app.post('/api/ops/reset-day-trades', async (req, res) => {
   const token = req.query.token || req.get('x-analysis-token');
   if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {

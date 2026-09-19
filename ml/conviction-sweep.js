@@ -187,4 +187,64 @@ async function getCoverage() {
     }
 }
 
-module.exports = { runConvictionSweep, stopSweep, getSweepStatus, getCoverage };
+/**
+ * Read-only picture of the verdict store, for GET /api/ops/conviction-stats.
+ * A genuine sweep is a universe-sized spike on one date (its first and last
+ * write give its duration); verdicts scored on demand are a smear of small
+ * counts. `served` groups the verdict each symbol is being served TODAY by
+ * the date it was scored, with the last day the read window still accepts it.
+ */
+async function getVerdictStats(days = 120) {
+    const db = getDB();
+    if (!db || !db.pool) throw new Error('Database unavailable');
+
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const isoDay = (ms) => new Date(ms).toISOString().split('T')[0];
+    const readDays = readWindowDays();
+
+    const byDate = await db.pool.query(
+        `SELECT to_char(score_date, 'YYYY-MM-DD') AS "date",
+                trim(to_char(score_date, 'Dy')) AS "day",
+                count(*)::int AS "verdicts",
+                count(*) FILTER (WHERE engine <> 'rule-based')::int AS "gemini",
+                to_char(min(created_at), 'HH24:MI') AS "firstWrite",
+                to_char(max(created_at), 'HH24:MI') AS "lastWrite"
+         FROM conviction_daily
+         WHERE score_date >= $1
+         GROUP BY score_date
+         ORDER BY score_date DESC`,
+        [isoDay(Date.now() - days * DAY_MS)]
+    );
+    const served = await db.pool.query(
+        `SELECT to_char(newest, 'YYYY-MM-DD') AS "scoredOn", count(*)::int AS "symbols"
+         FROM (SELECT symbol, max(score_date) AS newest
+               FROM conviction_daily WHERE score_date >= $1 GROUP BY symbol) latest
+         GROUP BY newest
+         ORDER BY newest DESC`,
+        [isoDay(Date.now() - (readDays - 1) * DAY_MS)]
+    );
+    const totals = await db.pool.query(
+        `SELECT count(*)::int AS "verdicts", count(DISTINCT symbol)::int AS "symbols",
+                to_char(min(score_date), 'YYYY-MM-DD') AS "oldest",
+                to_char(max(score_date), 'YYYY-MM-DD') AS "newest"
+         FROM conviction_daily`
+    );
+
+    return {
+        universe: new Set(StockData.getAllStocks().map(s => s.symbol)).size,
+        settings: {
+            readWindowDays: readDays,
+            resumeWindowDays: resumeWindowDays(),
+            sweepEnabled: process.env.CONVICTION_SWEEP !== 'false',
+            geminiConfigured: !!process.env.GEMINI_API_KEY
+        },
+        totals: totals.rows[0],
+        served: served.rows.map(r => ({
+            ...r,
+            servedUntil: isoDay(Date.parse(r.scoredOn) + (readDays - 1) * DAY_MS)
+        })),
+        byDate: byDate.rows
+    };
+}
+
+module.exports = { runConvictionSweep, stopSweep, getSweepStatus, getCoverage, getVerdictStats };
