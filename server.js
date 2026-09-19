@@ -3698,67 +3698,6 @@ app.get('/api/alerts/bot-info', ensureAuthenticatedAPI, ensureSubscriptionActive
   }
 });
 
-// Send custom alert message
-app.post('/api/alerts/send-custom', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
-  try {
-    const { chatId, message } = req.body;
-    
-    // Enhanced debugging for telegram bot initialization
-    
-    if (!telegramBot) {
-      return res.status(400).json({ error: 'Telegram bot not initialized' });
-    }
-    
-    if (typeof telegramBot.sendTelegramAlert !== 'function') {
-      return res.status(400).json({ error: 'Telegram bot sendTelegramAlert method not available' });
-    }
-    
-    if (!chatId || !message) {
-      return res.status(400).json({ error: 'Missing chatId or message' });
-    }
-    
-    // Format the message based on type
-    let formattedMessage = '';
-    
-    if (message.type === 'backtest_complete' || message.type === 'opportunity_scan') {
-      formattedMessage = `📊 *${message.title}*\n${message.text}\n\n`;
-      message.fields.forEach(field => {
-        formattedMessage += `${field.label}: *${field.value}*\n`;
-      });
-    } else if (message.type === 'buy_opportunity') {
-      formattedMessage = `🎯 *${message.title}*\n\n`;
-      formattedMessage += `📊 *Stock:* ${message.stock}\n`;
-      message.fields.forEach(field => {
-        formattedMessage += `${field.label}: *${field.value}*\n`;
-      });
-      if (message.action) {
-        formattedMessage += `\n💡 *Action:* ${message.action}`;
-      }
-    } else if (message.type === 'custom') {
-      // Handle custom messages - just use the message string directly
-      formattedMessage = message.message || '';
-    } else {
-      // Fallback for unknown message types
-      formattedMessage = typeof message === 'string' ? message : JSON.stringify(message);
-    }
-    
-    
-    const result = await telegramBot.sendTelegramAlert(chatId, {
-      type: 'custom',
-      message: formattedMessage
-    });
-    
-    
-    if (result === false) {
-      return res.status(400).json({ error: 'Failed to send telegram alert - check bot configuration' });
-    }
-    
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // ==================== Push Notification Endpoints ====================
 
 // Get VAPID public key for client
