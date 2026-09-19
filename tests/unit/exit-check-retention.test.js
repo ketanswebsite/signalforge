@@ -2,9 +2,11 @@
  * Exit-check retention (lib/portfolio/exit-check-retention.js) — GAPS #13
  *
  * Three things are pinned down here:
- *   1. The duplicate-alert guard is untouched. checkAlertSent() in both
- *      managers still reads ONLY alert_sent = true rows, and no statement the
- *      prune can issue is able to delete one.
+ *   1. The duplicate-alert guard is untouched. The exit monitor's
+ *      checkAlertSent() still reads ONLY alert_sent = true rows, and no
+ *      statement the prune can issue is able to delete one. (The
+ *      high-conviction manager has no such lookup: its closes are guarded by
+ *      status = 'active' — see high-conviction-reentry.test.js.)
  *   2. History is rolled up before it is pruned: the rollup runs first, a
  *      failed rollup means no delete, and the DELETE itself refuses any day
  *      that is not in the rollup.
@@ -26,7 +28,6 @@ jest.mock('../../lib/telegram/telegram-bot', () => ({
 
 const TradeDB = require('../../database-postgres');
 const exitMonitor = require('../../lib/portfolio/exit-monitor');
-const HighConvictionPortfolioManager = require('../../lib/portfolio/high-conviction-manager');
 const retention = require('../../lib/portfolio/exit-check-retention');
 
 const { BATCH_SIZE, MAX_BATCHES, MIN_RETENTION_DAYS, ROLLUP_TABLE } = retention;
@@ -112,31 +113,6 @@ describe('Duplicate-alert guard — checkAlertSent() is untouched', () => {
         TradeDB.pool.query.mockRejectedValue(new Error('db down'));
 
         expect(await exitMonitor.checkAlertSent(42, 'stop_loss')).toBe(false);
-    });
-
-    test('high-conviction manager: the same guard, keyed by symbol', async () => {
-        TradeDB.pool.query.mockResolvedValue({ rows: [{ id: 1 }] });
-        const manager = new HighConvictionPortfolioManager();
-
-        const sent = await manager.checkAlertSent('DIXON.NS', 'take_profit');
-
-        expect(sent).toBe(true);
-        const [sql, params] = TradeDB.pool.query.mock.calls[0];
-        expect(sql).toMatch(/FROM high_conviction_exit_checks/);
-        expect(sql).toMatch(/symbol = \$1/);
-        expect(sql).toMatch(/alert_sent = true/);
-        expect(sql).toMatch(/alert_type = \$2/);
-        expect(params).toEqual(['DIXON.NS', 'take_profit']);
-    });
-
-    test('high-conviction manager: no row, or a failed lookup, means not sent', async () => {
-        const manager = new HighConvictionPortfolioManager();
-
-        TradeDB.pool.query.mockResolvedValue({ rows: [] });
-        expect(await manager.checkAlertSent('DIXON.NS', 'stop_loss')).toBe(false);
-
-        TradeDB.pool.query.mockRejectedValue(new Error('relation does not exist'));
-        expect(await manager.checkAlertSent('DIXON.NS', 'stop_loss')).toBe(false);
     });
 
     test('no DELETE the job issues can reach an alert row', async () => {

@@ -4726,7 +4726,13 @@ app.post('/api/portfolio/close-trade/:symbol', ensureAuthenticatedAPI, async (re
       plAmountUSD: pl.plUSD
     };
 
-    const result = await TradeDB.closeHighConvictionTrade(symbol, exitData);
+    // Closed by row id and only while still active. If the automatic exit pass
+    // closed this position between the lookup above and here, nothing comes
+    // back — it has already sent the alert, so this request must not send another
+    const result = await TradeDB.closeHighConvictionTrade(trade.id, exitData);
+    if (!result) {
+      return res.status(409).json({ error: 'Trade was already closed - no alert sent' });
+    }
 
     // Send exit alert to all subscribers
     const closure = {

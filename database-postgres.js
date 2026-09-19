@@ -2704,8 +2704,12 @@ const TradeDB = {
     }
   },
 
-  // Close high conviction trade
-  async closeHighConvictionTrade(symbol, exitData) {
+  // Close ONE high conviction position, by its portfolio row id — a symbol can
+  // be re-entered after it closes, so a symbol does not identify a position.
+  // The status = 'active' guard is what makes an exit alert exactly once: of
+  // any callers racing to close the same row, one gets the row back and sends
+  // the alert; the others get undefined and must not alert.
+  async closeHighConvictionTrade(tradeId, exitData) {
     checkConnection();
     try {
       const result = await pool.query(`
@@ -2721,7 +2725,7 @@ const TradeDB = {
           pl_amount_usd = $7,
           current_price = $2,
           updated_at = CURRENT_TIMESTAMP
-        WHERE symbol = $8 AND status = 'active'
+        WHERE id = $8 AND status = 'active'
         RETURNING *
       `, [
         exitData.exitDate,
@@ -2731,7 +2735,7 @@ const TradeDB = {
         exitData.plAmountGBP,
         exitData.plAmountINR,
         exitData.plAmountUSD,
-        symbol
+        tradeId
       ]);
       return result.rows[0];
     } catch (error) {
