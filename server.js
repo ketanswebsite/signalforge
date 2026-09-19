@@ -716,9 +716,64 @@ app.get('/api/ops/exit-checks-stats', async (req, res) => {
       hcStaleGuards = rows;
     }
 
+    // The daily rollup the retention job writes before it prunes. The
+    // self-check recomputes every complete day that is still fully present in
+    // the raw table and counts disagreements with its rollup row; a day whose
+    // raw rows have been pruned (fewer rows left than the rollup counted) is
+    // reported as pruned, not compared.
+    let rollup = { exists: false };
+    const { rows: [rollupFound] } = await pool.query(`SELECT to_regclass('trade_exit_checks_daily') AS oid`);
+    if (rollupFound.oid && tradeChecks.exists) {
+      const { rows: [totals] } = await pool.query(`
+        SELECT count(*) AS rows,
+               count(DISTINCT trade_id) AS trades,
+               to_char(min(day), 'YYYY-MM-DD') AS first_day,
+               to_char(max(day), 'YYYY-MM-DD') AS last_day,
+               coalesce(sum(checks), 0) AS checks_summarised,
+               pg_size_pretty(pg_total_relation_size('trade_exit_checks_daily')) AS total
+        FROM trade_exit_checks_daily
+      `);
+      const { rows: [verdict] } = await pool.query(`
+        WITH raw AS (
+          SELECT trade_id, check_time::date AS day, count(*) AS checks,
+                 max(current_price) AS high_price, min(current_price) AS low_price,
+                 max(pl_percent) AS high_pl, min(pl_percent) AS low_pl
+          FROM trade_exit_checks
+          WHERE check_time < CURRENT_DATE
+          GROUP BY 1, 2
+        )
+        SELECT count(*) FILTER (WHERE d.trade_id IS NULL) AS not_rolled_up,
+               count(*) FILTER (WHERE raw.checks = d.checks) AS verified,
+               count(*) FILTER (WHERE raw.checks = d.checks
+                                  AND (raw.high_price <> d.high_price OR raw.low_price <> d.low_price
+                                       OR raw.high_pl <> d.high_pl_percent OR raw.low_pl <> d.low_pl_percent)) AS mismatched,
+               count(*) FILTER (WHERE raw.checks > d.checks) AS grew_after_rollup,
+               count(*) FILTER (WHERE raw.checks < d.checks) AS pruned
+        FROM raw
+        LEFT JOIN trade_exit_checks_daily d ON d.trade_id = raw.trade_id AND d.day = raw.day
+      `);
+      rollup = {
+        exists: true,
+        rows: Number(totals.rows),
+        trades: Number(totals.trades),
+        firstDay: totals.first_day,
+        lastDay: totals.last_day,
+        checksSummarised: Number(totals.checks_summarised),
+        total: totals.total,
+        selfCheck: {
+          notRolledUp: Number(verdict.not_rolled_up),
+          verified: Number(verdict.verified),
+          mismatched: Number(verdict.mismatched),
+          grewAfterRollup: Number(verdict.grew_after_rollup),
+          pruned: Number(verdict.pruned)
+        }
+      };
+    }
+
     res.json({
       success: true,
       measuredAt: new Date().toISOString(),
+      rollup,
       database: { bytes: Number(db.bytes), pretty: db.pretty },
       openPositions: {
         trades: Number(openTrades.active),
@@ -736,9 +791,10 @@ app.get('/api/ops/exit-checks-stats', async (req, res) => {
 });
 
 // Token-guarded manual run of the exit-check retention job — the same job the
-// 11:20 PM UK cron runs. Pass dryRun=true to only count what would go. The
-// token alone can never delete: a real prune also needs EXIT_CHECK_PRUNE=true
-// on the server (the owner's consent), otherwise every run is a dry run.
+// 11:20 PM UK cron runs: roll complete days up into trade_exit_checks_daily,
+// then prune minute rows older than the window (never alert rows). Pass
+// dryRun=true to only report; EXIT_CHECK_PRUNE=false on the server is the kill
+// switch and turns every run into a dry run.
 app.post('/api/ops/prune-exit-checks', async (req, res) => {
   const token = req.query.token || req.get('x-analysis-token');
   if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {
