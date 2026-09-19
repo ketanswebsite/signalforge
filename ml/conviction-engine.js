@@ -33,7 +33,10 @@ const headlineSentiment = new Sentiment();
 // demand and then sticks for the same window. CONVICTION_MAX_AGE_DAYS
 // (default 37 — consecutive first Saturdays are at most 35 days apart, plus
 // margin) sets how old a stored verdict may be; CONVICTION_CACHE_TTL_MIN
-// shortens the in-memory layer. NOTE: the 7 PM EOD summary reads
+// shortens the in-memory layer. That margin means a verdict is still being
+// served on the morning of the NEXT sweep (28 or 35 days on), so the sweep
+// asks for `fresh` verdicts — otherwise it would be handed last month's
+// straight back and re-score nothing. NOTE: the 7 PM EOD summary reads
 // fetchRecentHeadlines directly and is NOT cached — it always reports the
 // day's fresh news.
 const convictionCache = new Map();          // symbol → {expires, payload}
@@ -105,14 +108,22 @@ async function readDailyVerdict(symbol) {
     }
 }
 
-async function writeDailyVerdict(symbol, payload) {
+// Ordinary scoring keeps the first verdict of the day (another process got
+// there first — every surface should read that one). A fresh re-score is the
+// newer truth by definition, so it replaces today's row.
+async function writeDailyVerdict(symbol, payload, { replace = false } = {}) {
     try {
         const db = getDB();
         if (!db || !db.pool) return;
+        const onConflict = replace
+            ? `DO UPDATE SET confidence = EXCLUDED.confidence, verdict = EXCLUDED.verdict,
+                             engine = EXCLUDED.engine, payload = EXCLUDED.payload,
+                             created_at = CURRENT_TIMESTAMP`
+            : 'DO NOTHING';
         await db.pool.query(
             `INSERT INTO conviction_daily (symbol, score_date, confidence, verdict, engine, payload)
              VALUES ($1, $2, $3, $4, $5, $6)
-             ON CONFLICT (symbol, score_date) DO NOTHING`,
+             ON CONFLICT (symbol, score_date) ${onConflict}`,
             [symbol, todayUTC(), payload.confidence, payload.verdict, payload.engine, JSON.stringify(payload)]
         );
     } catch (e) {
@@ -461,31 +472,40 @@ async function geminiConviction({ symbol, name, technical, fundamental, informat
  * Run the full three-pillar conviction check for one stock.
  * Returns the same payload shape the /api/ml/conviction/:symbol route serves.
  * 15-minute in-memory cache per symbol (winRate in context is always fresh).
+ *
+ * `fresh: true` is for the monthly sweep ONLY: it goes past both cache layers
+ * and scores again, replacing what is stored. Every other caller must leave
+ * it off — reusing the stored verdict is what keeps all surfaces on the same
+ * score and Gemini at one call per symbol per month.
  */
-async function getConviction({ symbol, name, winRate = null }) {
+async function getConviction({ symbol, name, winRate = null, fresh = false }) {
     symbol = symbol.toUpperCase();
 
-    const cached = convictionCache.get(symbol);
-    if (cached && cached.expires > Date.now()) {
-        return { ...cached.payload, context: { ...cached.payload.context, winRate } };
-    }
+    if (!fresh) {
+        const cached = convictionCache.get(symbol);
+        if (cached && cached.expires > Date.now()) {
+            return { ...cached.payload, context: { ...cached.payload.context, winRate } };
+        }
 
-    // Someone already scored today (another request, the 7 AM scan, or a
-    // previous process before a restart) — reuse their verdict
-    const stored = await readDailyVerdict(symbol);
-    if (stored) {
-        convictionCache.set(symbol, { expires: cacheExpiryMs(), payload: stored });
-        return { ...stored, context: { ...stored.context, winRate } };
+        // Someone already scored inside the read window (the monthly sweep,
+        // the 7 AM scan, another request, or a previous process before a
+        // restart) — reuse their verdict
+        const stored = await readDailyVerdict(symbol);
+        if (stored) {
+            convictionCache.set(symbol, { expires: cacheExpiryMs(), payload: stored });
+            return { ...stored, context: { ...stored.context, winRate } };
+        }
     }
 
     // Dedup concurrent requests for the same symbol (batch scoring can ask
-    // for one symbol from several callers at once)
+    // for one symbol from several callers at once). A scoring already in
+    // flight is as fresh as it gets, so a fresh caller joins it too.
     if (inFlight.has(symbol)) {
         const payload = await inFlight.get(symbol);
         return { ...payload, context: { ...payload.context, winRate } };
     }
 
-    const scoring = computeConviction({ symbol, name, winRate });
+    const scoring = computeConviction({ symbol, name, winRate, fresh });
     inFlight.set(symbol, scoring);
     try {
         return await scoring;
@@ -494,7 +514,7 @@ async function getConviction({ symbol, name, winRate = null }) {
     }
 }
 
-async function computeConviction({ symbol, name, winRate = null }) {
+async function computeConviction({ symbol, name, winRate = null, fresh = false }) {
     // Each pillar degrades to neutral on its own — one source being down
     // must never take the whole check with it.
     const [technical, fundamental, information] = await Promise.all([
@@ -548,11 +568,13 @@ async function computeConviction({ symbol, name, winRate = null }) {
 
     if (isAllNeutral(payload)) {
         // Sources were likely all down — hold briefly and retry, never
-        // persist a blind verdict for the whole week
-        convictionCache.set(symbol, { expires: Date.now() + NEUTRAL_RETRY_MS, payload });
+        // persist a blind verdict for the whole month. A fresh re-score
+        // does not even hold it in memory: the stored verdict it failed to
+        // replace is still the best there is, and must keep being served.
+        if (!fresh) convictionCache.set(symbol, { expires: Date.now() + NEUTRAL_RETRY_MS, payload });
     } else {
         convictionCache.set(symbol, { expires: cacheExpiryMs(), payload });
-        await writeDailyVerdict(symbol, payload);
+        await writeDailyVerdict(symbol, payload, { replace: fresh });
     }
     return payload;
 }
@@ -571,4 +593,4 @@ function summarizeConviction(payload) {
         .slice(0, 500);
 }
 
-module.exports = { getConviction, summarizeConviction, fetchRecentHeadlines, scoreTechnical };
+module.exports = { getConviction, summarizeConviction, fetchRecentHeadlines, scoreTechnical, isAllNeutral };

@@ -23,7 +23,7 @@ const db = require('../../database-postgres');
 const StockData = require('../../lib/shared/stock-data');
 const { getVerdictStats } = require('../../ml/conviction-sweep');
 
-const ENV = ['CONVICTION_MAX_AGE_DAYS', 'CONVICTION_SWEEP_RESUME_DAYS', 'CONVICTION_SWEEP', 'GEMINI_API_KEY'];
+const ENV = ['CONVICTION_MAX_AGE_DAYS', 'CONVICTION_SWEEP_RESUME_DAYS', 'CONVICTION_SWEEP', 'CONVICTION_SWEEP_FRESH', 'GEMINI_API_KEY'];
 const envAtStart = Object.fromEntries(ENV.map(k => [k, process.env[k]]));
 
 // restoreMocks wipes jest.fn() implementations before every test, so each test installs its own
@@ -82,7 +82,7 @@ describe('getVerdictStats', () => {
             { scoredOn: '2026-09-15', symbols: 12, servedUntil: '2026-10-21' }
         ]);
         expect(stats.settings).toEqual({
-            readWindowDays: 37, resumeWindowDays: 14, sweepEnabled: true, geminiConfigured: false
+            readWindowDays: 37, resumeWindowDays: 14, sweepEnabled: true, sweepFresh: true, geminiConfigured: false
         });
         expect(stats.universe).toBe(2);   // deduplicated
     });
@@ -91,12 +91,13 @@ describe('getVerdictStats', () => {
         process.env.CONVICTION_MAX_AGE_DAYS = '7';
         process.env.CONVICTION_SWEEP_RESUME_DAYS = '3';
         process.env.CONVICTION_SWEEP = 'false';
+        process.env.CONVICTION_SWEEP_FRESH = 'false';
         process.env.GEMINI_API_KEY = 'set';
         serveRows({ served: [{ scoredOn: '2026-09-15', symbols: 1 }] });
         const stats = await getVerdictStats();
 
         expect(stats.settings).toEqual({
-            readWindowDays: 7, resumeWindowDays: 3, sweepEnabled: false, geminiConfigured: true
+            readWindowDays: 7, resumeWindowDays: 3, sweepEnabled: false, sweepFresh: false, geminiConfigured: true
         });
         expect(stats.served[0].servedUntil).toBe('2026-09-21');
     });

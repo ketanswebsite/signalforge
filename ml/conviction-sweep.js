@@ -6,6 +6,15 @@
  * window (CONVICTION_MAX_AGE_DAYS) serves them to the 7 AM scanner, the
  * 1 PM executor, the insights panel and the simulator until the next sweep.
  *
+ * The sweep asks the engine for FRESH verdicts. It has to: the read window
+ * (37 days) outlasts the gap between sweeps (28 or 35), so on sweep morning
+ * every verdict from the last sweep is still being served, and an ordinary
+ * getConviction() call hands it straight back. Until 2026-09 that is what
+ * happened — on production the 2026-09-05 sweep left 257 verdicts from
+ * 08-15..08-22 untouched and counted them as scored. The tally below is
+ * therefore honest: `scored` = computed now and stored, `reused` = handed a
+ * stored verdict, `blind` = every source was down, nothing stored.
+ *
  * Runs on the FIRST Saturday of each month from the scanner cron hub
  * (weekly used to be the cadence; dropped to monthly 2026-08 to cut AI
  * cost). Resumable — symbols already scored inside the resume window are
@@ -16,10 +25,11 @@
  * in for the month.
  *
  * Kill switch: CONVICTION_SWEEP=false
+ * Reuse instead of re-scoring (the pre-2026-09 behaviour): CONVICTION_SWEEP_FRESH=false
  * Manual trigger: POST /api/ops/conviction-sweep?token=ANALYSIS_API_TOKEN
  */
 
-const { getConviction } = require('./conviction-engine');
+const { getConviction, isAllNeutral } = require('./conviction-engine');
 const StockData = require('../lib/shared/stock-data');
 
 const CONCURRENCY = parseInt(process.env.CONVICTION_SWEEP_CONCURRENCY, 10) || 3;
@@ -32,6 +42,8 @@ const status = {
     total: 0,
     done: 0,
     scored: 0,
+    reused: 0,
+    blind: 0,
     skipped: 0,
     failed: 0,
     lastSymbol: null,
@@ -64,6 +76,18 @@ function resumeWindowDays() {
     return days > 0 ? days : 14;
 }
 
+// Fresh re-score is the default. CONVICTION_SWEEP_FRESH=false goes back to
+// reusing any verdict still inside the read window — every other sweep then
+// re-scores next to nothing, which halves the AI calls and lets verdicts
+// expire mid-month into piecemeal on-demand scoring.
+function sweepIsFresh() {
+    return process.env.CONVICTION_SWEEP_FRESH !== 'false';
+}
+
+function tally() {
+    return `${status.scored} scored, ${status.reused} reused, ${status.blind} blind, ${status.skipped} skipped, ${status.failed} failed`;
+}
+
 /**
  * Symbols already scored inside the resume window — skipped so re-runs
  * resume instead of starting over.
@@ -94,6 +118,8 @@ async function runConvictionSweep() {
     status.finishedAt = null;
     status.done = 0;
     status.scored = 0;
+    status.reused = 0;
+    status.blind = 0;
     status.skipped = 0;
     status.failed = 0;
     status.lastError = null;
@@ -110,7 +136,11 @@ async function runConvictionSweep() {
     const queue = [...bySymbol.values()];
     status.total = queue.length;
 
+    const fresh = sweepIsFresh();
     console.log(`\n🧠 [AI SWEEP] Scoring ${queue.length} stocks (${scoredSet.size} already scored this window, will skip)`);
+    console.log(fresh
+        ? '🧠 [AI SWEEP] Fresh re-score: stored verdicts are replaced, not reused'
+        : '🧠 [AI SWEEP] CONVICTION_SWEEP_FRESH=false: a verdict still inside the read window is REUSED, not re-scored');
     console.log(`🧠 [AI SWEEP] Concurrency ${CONCURRENCY}, delay ${DELAY_MS} ms — expect a few hours\n`);
 
     async function worker() {
@@ -125,8 +155,14 @@ async function runConvictionSweep() {
             }
 
             try {
-                await getConviction({ symbol: stock.symbol, name: stock.name });
-                status.scored++;
+                const askedAt = Date.now();
+                const payload = await getConviction({ symbol: stock.symbol, name: stock.name, fresh });
+                // Count what really happened: a verdict generated before we
+                // asked was handed back from the store, and one where every
+                // source was down is never stored — neither refreshed anything
+                if (!(Date.parse(payload.generatedAt) >= askedAt)) status.reused++;
+                else if (isAllNeutral(payload)) status.blind++;
+                else status.scored++;
             } catch (error) {
                 status.failed++;
                 status.lastError = `${stock.symbol}: ${error.message}`;
@@ -134,7 +170,7 @@ async function runConvictionSweep() {
             status.done++;
 
             if (status.done % 250 === 0) {
-                console.log(`🧠 [AI SWEEP] ${status.done}/${status.total} (${status.scored} scored, ${status.skipped} skipped, ${status.failed} failed)`);
+                console.log(`🧠 [AI SWEEP] ${status.done}/${status.total} (${tally()})`);
             }
 
             await new Promise(resolve => setTimeout(resolve, DELAY_MS));
@@ -146,7 +182,7 @@ async function runConvictionSweep() {
     } finally {
         status.running = false;
         status.finishedAt = new Date().toISOString();
-        console.log(`\n🧠 [AI SWEEP] Complete: ${status.scored} scored, ${status.skipped} skipped, ${status.failed} failed of ${status.total}\n`);
+        console.log(`\n🧠 [AI SWEEP] Complete: ${tally()} of ${status.total}\n`);
     }
 
     return { started: true, ...getSweepStatus() };
@@ -236,6 +272,7 @@ async function getVerdictStats(days = 120) {
             readWindowDays: readDays,
             resumeWindowDays: resumeWindowDays(),
             sweepEnabled: process.env.CONVICTION_SWEEP !== 'false',
+            sweepFresh: sweepIsFresh(),
             geminiConfigured: !!process.env.GEMINI_API_KEY
         },
         totals: totals.rows[0],
