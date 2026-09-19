@@ -936,28 +936,6 @@ table {
     border-radius: 50%;
 }
 
-/* === Specific Button IDs (Dynamically Created) === */
-#fetch-data-btn,
-#batch-process-btn,
-#process-btn {
-    /* Ensure these inherit all .btn and .btn-primary styles */
-    min-width: 160px;
-    position: relative;
-}
-
-#fetch-data-btn svg,
-#batch-process-btn svg,
-#process-btn svg {
-    flex-shrink: 0;
-    transition: transform var(--transition-base);
-}
-
-#fetch-data-btn:not(:disabled):hover svg,
-#batch-process-btn:not(:disabled):hover svg,
-#process-btn:not(:disabled):hover svg {
-    transform: translateY(-2px);
-}
-
 /* Spinner inside buttons */
 button .spinner,
 .btn .spinner {
@@ -1061,14 +1039,6 @@ select:disabled,
     opacity: 0.5;
     cursor: not-allowed;
     background-color: var(--bg-surface);
-}
-
-/* Specific styling for dynamically created selects */
-#index-selector,
-#stock-selector,
-#period-selector,
-#scan-type-selector {
-    font-weight: 500;
 }
 
 /* Option elements styling */
@@ -2479,20 +2449,8 @@ a .material-icons {
         gap: var(--spacing-xs);
     }
 
-    #fetch-data-btn,
-    #batch-process-btn,
-    #process-btn {
-        min-width: 140px;
-        font-size: 0.875rem;
-        padding: 0.75rem 1.25rem;
-    }
-
     select,
-    .form-select,
-    #index-selector,
-    #stock-selector,
-    #period-selector,
-    #scan-type-selector {
+    .form-select {
         font-size: 0.9375rem;
         padding: 0.75rem 1rem;
         padding-right: 2.5rem;
@@ -3226,19 +3184,6 @@ a .material-icons {
     flex: 1 1 auto;
 }
 
-/* Scan type selector container - compact size */
-#stock-index-selector-container {
-    flex: 0 1 auto;
-    max-width: 300px;
-    min-width: 250px;
-}
-
-/* Button container - takes remaining space for long button text */
-#batch-process-container {
-    flex: 1 1 auto;
-    min-width: 250px;
-}
-
 .control-group label {
     font-size: 0.875rem;
     font-weight: 600;
@@ -3291,14 +3236,6 @@ a .material-icons {
     .control-group {
         min-width: 180px;
     }
-
-    #stock-index-selector-container {
-        max-width: 250px;
-    }
-
-    #batch-process-container {
-        min-width: 220px;
-    }
 }
 
 @media (max-width: 768px) {
@@ -3319,12 +3256,6 @@ a .material-icons {
         min-width: 100%;
         width: 100%;
         max-width: 100%;
-    }
-
-    #stock-index-selector-container,
-    #batch-process-container {
-        max-width: 100%;
-        min-width: 100%;
     }
 
     .control-group button {

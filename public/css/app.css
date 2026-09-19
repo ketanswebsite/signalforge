@@ -76,9 +76,6 @@
 .sc-signal .sa-pos__v.is-loss{color:var(--loss)}
 .sa-rowcard__v.gain{color:var(--gain)}
 .sa-rowcard__v.loss{color:var(--loss)}
-#batch-status{border:2px solid var(--frame);background:var(--surface);padding:var(--s-4);margin-bottom:var(--s-5)}
-#batch-status .sa-callout{border:0}
-#data-fetch-status:empty{display:none}
 
 /* ---------- positions ---------- */
 .pos-statscard{margin-bottom:var(--s-5)}
