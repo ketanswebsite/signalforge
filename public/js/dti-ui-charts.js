@@ -1317,12 +1317,6 @@ DTIUI.Charts = (function() {
         
         // Store updated trade data for interactions
         DTIBacktester.tradeData = trades;
-        
-        // Update statistics and trades table
-        if (typeof DTIUI.TradeDisplay !== 'undefined') {
-            DTIUI.TradeDisplay.displayStatistics(trades);
-            DTIUI.TradeDisplay.displayTrades(trades);
-        }
     }
 
     /**
@@ -1357,14 +1351,11 @@ DTIUI.Charts = (function() {
     // Expose createCharts directly on DTIUI object
     DTIUI.createCharts = createCharts;
 
-    // Create stub functions for displayStatistics and displayTrades that dynamically look for implementations
+    // Basic renderers for a page that provides #statistics / #trades-table containers.
+    // No page has them today; the only caller left is DTIData.processCSV (itself uncalled).
     if (!DTIUI.displayStatistics) {
         DTIUI.displayStatistics = function(trades) {
-            // Check if TradeDisplay module is available at call time
-            if (DTIUI.TradeDisplay && typeof DTIUI.TradeDisplay.displayStatistics === 'function') {
-                return DTIUI.TradeDisplay.displayStatistics(trades);
-            } else {
-                // Try fallback to original statistics element if it exists
+                // Render into the statistics element if the page has one
                 const statsElement = document.getElementById('statistics');
                 if (statsElement) {
                     // Basic stats display as fallback
@@ -1390,17 +1381,12 @@ DTIUI.Charts = (function() {
                         </div>
                     `;
                 }
-            }
         };
     }
 
 if (!DTIUI.displayTrades) {
     DTIUI.displayTrades = function(trades) {
-        // Check if TradeDisplay module is available at call time
-        if (DTIUI.TradeDisplay && typeof DTIUI.TradeDisplay.displayTrades === 'function') {
-            return DTIUI.TradeDisplay.displayTrades(trades);
-        } else {
-            // Try fallback to original trade table if it exists
+            // Render into the trades table if the page has one
             const tradesTable = document.getElementById('trades-table');
             if (tradesTable) {
                 // Create a basic table header
@@ -1455,7 +1441,6 @@ if (!DTIUI.displayTrades) {
                 tableHtml += `</tbody>`;
                 tradesTable.innerHTML = tableHtml;
             }
-        }
     };
 }
 
