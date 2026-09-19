@@ -803,6 +803,47 @@ app.get('/api/ops/exit-checks-stats', async (req, res) => {
       hcStaleGuards = rows;
     }
 
+    // Closes the database refused (exit-monitor.js handleCloseFailure). Every
+    // failed pass leaves a row with an exit type and alert_sent = false. On a
+    // trade that is STILL active such rows mean its close is failing — or was:
+    // compare lastFailed with measuredAt. (A trade closed elsewhere leaves one
+    // such row too, but it is no longer active, so it is not listed.)
+    // ownerTelegramLinked answers "could the owner alert be delivered at all?"
+    // — a yes/no only, never the chat id.
+    let closeFailureAlerts = { ...require('./lib/portfolio/close-failure-alerts').getConfig() };
+    if (tradeChecks.exists) {
+      const { rows: [owner] } = await pool.query(
+        'SELECT count(*) AS linked FROM users WHERE email = $1 AND telegram_chat_id IS NOT NULL',
+        [process.env.ADMIN_EMAIL || 'ketanjoshisahs@gmail.com']
+      );
+      const { rows: failedCloses } = await pool.query(`
+        SELECT c.trade_id, t.symbol, t.market, c.alert_type,
+               count(*) AS failed_passes,
+               min(c.check_time) AS first_failed,
+               max(c.check_time) AS last_failed,
+               (array_agg(c.pl_percent ORDER BY c.check_time DESC, c.id DESC))[1] AS last_pl_percent
+        FROM trade_exit_checks c
+        JOIN trades t ON t.id = c.trade_id
+        WHERE c.alert_type IS NOT NULL AND c.alert_sent = false AND t.status = 'active'
+        GROUP BY c.trade_id, t.symbol, t.market, c.alert_type
+        ORDER BY max(c.check_time) DESC
+      `);
+      closeFailureAlerts = {
+        ...closeFailureAlerts,
+        ownerTelegramLinked: Number(owner.linked) > 0,
+        failedCloses: failedCloses.map(f => ({
+          tradeId: Number(f.trade_id),
+          symbol: f.symbol,
+          market: f.market,
+          exitType: f.alert_type,
+          failedPasses: Number(f.failed_passes),
+          firstFailed: f.first_failed,
+          lastFailed: f.last_failed,
+          lastPlPercent: Number(f.last_pl_percent)
+        }))
+      };
+    }
+
     // The daily rollup the retention job writes before it prunes. The
     // self-check recomputes every complete day that is still fully present in
     // the raw table and counts disagreements with its rollup row; a day whose
@@ -868,6 +909,7 @@ app.get('/api/ops/exit-checks-stats', async (req, res) => {
         tradeSymbols: Number(openTrades.symbols),
         highConviction: Number(openHC.active)
       },
+      closeFailureAlerts,
       tradeExitChecks: tradeChecks,
       highConvictionExitChecks: hcChecks,
       hcStaleGuards
