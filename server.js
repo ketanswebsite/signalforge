@@ -4103,24 +4103,20 @@ app.get('/', (req, res) => {
 // Protect static files except landing page, login page, and lib directory
 app.use((req, res, next) => {
   // Allow access to the public marketing surface (landing, pricing, sign-in,
-  // legal pages), its design-system assets, lib directory, PWA assets, and
-  // specific legacy assets without authentication
+  // legal pages), its design-system assets, lib directory and PWA assets
+  // without authentication
   if (req.path === '/landing.html' ||
       req.path === '/login.html' ||
       req.path === '/pricing.html' ||
       req.path === '/terms.html' ||
       req.path === '/privacy.html' ||
       req.path === '/data-management.html' ||
-      req.path === '/styles.css' ||
-      req.path === '/css/main.css' ||
       req.path === '/css/marketing.css' ||
       req.path === '/css/commerce.css' ||
       req.path === '/js/legal-doc.js' ||
       req.path === '/js/data-page.js' ||
       req.path.startsWith('/css/design-system/') ||
       req.path === '/js/marketing.js' ||
-      req.path === '/js/modern-effects.js' ||
-      req.path === '/js/landing.js' ||
       req.path === '/service-worker.js' ||
       req.path === '/manifest.json' ||
       req.path === '/js/push-notifications.js' ||
