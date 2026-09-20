@@ -555,43 +555,6 @@ body.positions-page #advanced-metrics-container .metric-card{padding:var(--s-3)}
 .trade-detail-modal .trade-details{border:0}
 .trade-chart-mini{padding:var(--s-4) var(--s-5);height:220px;position:relative}
 
-/* Performance modal (dti-performance-modal.js) — readable poster defaults */
-.performance-modal{max-width:880px}
-.performance-modal .modal-body{padding:var(--s-6) var(--s-6) var(--s-5);gap:var(--s-5)}
-/* grid children may not force the body wider than the modal — the table scrolls in its own wrap */
-.performance-modal .modal-body>*,.performance-trades-sections,.performance-section{min-width:0}
-.performance-modal h4{margin:0 0 var(--s-3)}
-.performance-summary{display:grid;gap:var(--s-5)}
-.summary-intro{font-size:var(--size-base);line-height:1.6;margin:0}
-.exit-timeline,.exit-reasons{border:1.5px solid var(--line-strong);background:var(--surface-2);padding:var(--s-4) var(--s-5)}
-.timeline-item,.reason-item{display:flex;justify-content:space-between;gap:var(--s-3);font-size:var(--size-sm);padding:6px 0}
-.timeline-count,.reason-count{font-weight:var(--w-bold);font-variant-numeric:tabular-nums}
-.performance-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:var(--s-4)}
-.performance-metrics .metric-card{border:1.5px solid var(--line-strong);background:var(--surface-2);padding:var(--s-4);display:flex;flex-direction:column;gap:6px}
-.performance-metrics .metric-value{font-family:var(--font-display);font-weight:var(--w-display);font-size:var(--size-stat-sm);font-variant-numeric:tabular-nums;line-height:1}
-.performance-metrics .metric-label{font-size:11px;font-weight:var(--w-bold);text-transform:uppercase;letter-spacing:var(--track-label);color:var(--text-2)}
-.performance-metrics .metric-card.profit .metric-value,.performance-modal .profit{color:var(--gain)}
-.performance-metrics .metric-card.loss .metric-value,.performance-modal .loss{color:var(--loss)}
-.performance-details{border:1.5px solid var(--line-strong);padding:var(--s-2) var(--s-5)}
-.performance-details .detail-row{display:flex;justify-content:space-between;gap:var(--s-3);font-size:var(--size-sm);padding:10px 0;border-bottom:1.5px solid var(--line)}
-.performance-details .detail-row.total{font-weight:var(--w-bold);border-bottom:0}
-.analysis-sections{display:grid;gap:var(--s-4)}
-@media (min-width:720px){.analysis-sections{grid-template-columns:1fr 1fr}}
-.pm-months{display:flex;align-items:center;gap:var(--s-3);padding:var(--s-3) var(--s-5);border-bottom:2px solid var(--frame);background:var(--surface-2);flex:0 0 auto}
-.pm-months__tabs{display:flex;gap:var(--s-2);flex:1;justify-content:center;flex-wrap:wrap}
-.pm-months__tab{appearance:none;border:1.5px solid var(--frame);background:transparent;color:var(--text-2);font-family:var(--font-sans);font-size:var(--size-xs);font-weight:var(--w-bold);text-transform:uppercase;letter-spacing:.04em;padding:8px 16px;cursor:pointer;min-height:36px;transition:background var(--dur-1) var(--ease-out),color var(--dur-1) var(--ease-out)}
-.pm-months__tab:hover{background:var(--accent-soft);color:var(--text)}
-.pm-months__tab.is-active{background:var(--text);color:var(--bg)}
-.pm-months__arrow{appearance:none;display:inline-flex;align-items:center;justify-content:center;border:1.5px solid var(--frame);background:transparent;color:var(--text);min-width:36px;min-height:36px;cursor:pointer;transition:background var(--dur-1) var(--ease-out)}
-.pm-months__arrow:hover:not([disabled]){background:var(--accent-soft)}
-.pm-months__arrow[disabled]{opacity:.3;cursor:default}
-.pm-tablewrap{max-height:340px;overflow:auto;border:1.5px solid var(--line-strong)}
-.pm-tablewrap .sa-table th{position:sticky;top:0;background:var(--surface-2);z-index:1}
-.pm-count{display:inline-block;min-width:22px;text-align:center;padding:2px 8px;margin-left:6px;border:1.5px solid var(--line-strong);background:var(--surface-2);font-size:var(--size-xs);font-variant-numeric:tabular-nums}
-@media (max-width:720px){.performance-modal .sa-table-wrap{display:block}.performance-modal .modal-body{padding:var(--s-4)}.pm-months{padding:var(--s-3) var(--s-4)}}
-.performance-section-title{font-family:var(--font-sans);font-weight:var(--w-bold);font-size:var(--size-sm);text-transform:none}
-.no-trades-message{color:var(--text-3);font-size:var(--size-sm)}
-
 /* AI check modal (ml-insights-ui.js) — three-pillar conviction report */
 .ai-check{max-width:640px}
 .ai-check .dialog-body{gap:var(--s-4)}
