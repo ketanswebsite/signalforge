@@ -4210,35 +4210,6 @@ app.post('/api/run-migration-trade-alerts', ensureAuthenticatedAPI, async (req, 
   }
 });
 
-// Test endpoint for 7 AM scan - simulates the exact cron job behavior
-app.post('/api/test-7am-scan', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
-  try {
-    if (!stockScanner) {
-      return res.status(503).json({ error: 'Stock scanner not available' });
-    }
-
-    console.log('🧪 [TEST] Manual 7 AM scan test triggered');
-    console.log('🧪 [TEST] UK Time:', new Date().toLocaleString("en-GB", {timeZone: "Europe/London"}));
-    console.log('🧪 [TEST] This will broadcast to ALL subscribers');
-
-    // Run high conviction scan WITHOUT chatId to broadcast to all subscribers
-    // This simulates the exact behavior of the 7 AM cron job
-    stockScanner.runHighConvictionScan();
-
-    res.json({
-      success: true,
-      message: '7 AM scan test initiated. This simulates the exact behavior of the scheduled scan. Check your Telegram for results.',
-      details: {
-        ukTime: new Date().toLocaleString("en-GB", {timeZone: "Europe/London"}),
-        telegramChatId: process.env.TELEGRAM_CHAT_ID ? 'Configured' : 'Not configured'
-      }
-    });
-  } catch (error) {
-    console.error('🧪 [TEST] Failed to start test:', error.message);
-    res.status(500).json({ error: 'Failed to start 7 AM scan test' });
-  }
-});
-
 // Dismiss old pending signals - admin endpoint
 app.post('/api/admin/dismiss-old-signals', ensureAuthenticatedAPI, async (req, res) => {
   try {
