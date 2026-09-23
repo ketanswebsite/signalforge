@@ -4000,8 +4000,10 @@ app.get('/favicon.ico', (req, res) => {
   res.sendStatus(204);
 });
 
-// Serve lib directory for frontend shared modules (BEFORE auth middleware)
-app.use('/lib', express.static(path.join(__dirname, 'lib')));
+// lib/ is server source. Only the few files the pages load are served (the browser
+// backtests with the server's own code), and only to signed-in users, like the pages.
+const { browserLib } = require('./middleware/browser-lib');
+app.use('/lib', ensureAuthenticated, browserLib(path.join(__dirname, 'lib')));
 
 // Root route - serve landing page for unauthenticated users, redirect to dashboard for authenticated users
 app.get('/', (req, res) => {
@@ -4014,11 +4016,11 @@ app.get('/', (req, res) => {
   }
 });
 
-// Protect static files except landing page, login page, and lib directory
+// Protect static files except the public pages and their assets
 app.use((req, res, next) => {
   // Allow access to the public marketing surface (landing, pricing, sign-in,
-  // legal pages), its design-system assets, lib directory and PWA assets
-  // without authentication
+  // legal pages), its design-system assets and PWA assets without
+  // authentication
   if (req.path === '/landing.html' ||
       req.path === '/login.html' ||
       req.path === '/pricing.html' ||
@@ -4034,8 +4036,7 @@ app.use((req, res, next) => {
       req.path === '/service-worker.js' ||
       req.path === '/manifest.json' ||
       req.path === '/js/push-notifications.js' ||
-      req.path.startsWith('/images/') ||
-      req.path.startsWith('/lib/')) {
+      req.path.startsWith('/images/')) {
     return next();
   }
   // The admin portal's HTML is admin-only even as a static file
