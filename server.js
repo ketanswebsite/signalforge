@@ -4419,51 +4419,6 @@ app.post('/api/force-cron-trigger', ensureAuthenticatedAPI, async (req, res) => 
   }
 });
 
-// Debug DTI scan endpoint - for testing with detailed logging
-app.post('/api/debug-dti-scan', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
-  try {
-
-    // Set debug mode environment variable
-    process.env.DTI_DEBUG = 'true';
-
-    // Use new scanner service for debug scan
-    
-    if (!stockScanner) {
-      throw new Error('Stock Scanner Service not available');
-    }
-    
-    const result = await stockScanner.runHighConvictionScan();
-    
-    const opportunities = result.opportunities || [];
-    
-    // Reset debug mode
-    delete process.env.DTI_DEBUG;
-    
-    
-    res.json({ 
-      success: true, 
-      message: `Debug DTI scan completed. Found ${opportunities.length} opportunities.`,
-      opportunities: opportunities.map(opp => ({
-        symbol: opp.stock.symbol,
-        name: opp.stock.name,
-        entryDate: opp.activeTrade.entryDate,
-        entryPrice: opp.activeTrade.entryPrice,
-        entryDTI: opp.activeTrade.entryDTI,
-        currentPrice: opp.currentPrice,
-        currentDTI: opp.currentDTI
-      })),
-      details: {
-        totalOpportunities: opportunities.length,
-        debugMode: true,
-        stocksProcessed: 'First 10 stocks only'
-      }
-    });
-    
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to run debug DTI scan', details: error.message });
-  }
-});
-
 // ===== HIGH CONVICTION PORTFOLIO ENDPOINTS =====
 
 // Get portfolio status (admin only)
