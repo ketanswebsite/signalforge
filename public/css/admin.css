@@ -117,7 +117,7 @@
 /* ---------- alerts & status messages ---------- */
 .admin-portal .alert{display:flex;align-items:flex-start;gap:var(--s-3);border:2px solid var(--frame);background:var(--surface-2);padding:var(--s-3) var(--s-4);margin:var(--s-3) 0;font-size:var(--size-sm)}
 .admin-portal .alert-success{border-color:var(--gain);background:var(--gain-soft)}
-.admin-portal .alert-error,.admin-portal .alert-danger{border-color:var(--loss);background:var(--loss-soft)}
+.admin-portal .alert-error{border-color:var(--loss);background:var(--loss-soft)}
 .admin-portal .alert-warning{border-color:var(--warn);background:var(--warn-soft)}
 .admin-portal .alert-info{background:var(--accent-soft)}
 .admin-portal .alert-content,.admin-portal .alert-message{flex:1;min-width:0}

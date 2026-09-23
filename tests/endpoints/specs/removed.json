@@ -633,5 +633,89 @@
     "note": "signed in: the /api/ml router now holds only the conviction routes; the 404 fallback answers"
    }
   ]
+ },
+ {
+  "route": "POST /api/admin/tests/database",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I13 (\"Remove the admin Run-tests feature\"): it spawned tests/database.test.js against the live database (a user_settings row per click and a TEST.NS signal) and always failed. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/tests/performance",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I13 (\"Remove the admin Run-tests feature\"): it spawned tests/performance.test.js against the live database. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/tests/verify-system",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I13 (\"Remove the admin Run-tests feature\"): it spawned scripts/verify-system.js, which always stopped at its file check (public/js/trades-ui.js never existed). Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/test",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I13 (\"Remove the admin Run-tests feature\"): its only caller was scripts/health-check.js, removed with it. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "token",
+    "status": 401,
+    "note": "the ops token does not reopen it"
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: no handler, the 404 fallback answers"
+   }
+  ]
  }
 ]

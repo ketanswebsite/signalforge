@@ -887,6 +887,42 @@ app.post('/api/ops/eod-summary', (req, res) => {
   res.json({ success: true, started: true, note: 'EOD summary running in background — watch logs/Telegram.' });
 });
 
+// What the removed admin "Run tests" buttons (2026-09-24) left in the live database.
+// tests/database.test.js wrote a user_settings row per click under test_user_<Date.now()> and one
+// TEST.NS signal, dismissed a few ms later; tests/performance.test.js wrote ten settings under
+// perf_test_<Date.now()> and deleted them again unless a run died midway. Nothing else writes those
+// ids or that symbol (TEST.NS is not in the universe). Token-guarded (header only) and READ-ONLY:
+// deleting the rows is the owner's call. Remove this probe once it reads clean on prod.
+app.get('/api/ops/test-residue-stats', async (req, res) => {
+  if (!process.env.ANALYSIS_API_TOKEN || req.get('x-analysis-token') !== process.env.ANALYSIS_API_TOKEN) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  try {
+    const { rows: [settings] } = await TradeDB.pool.query(`
+      SELECT count(*) FILTER (WHERE user_id ~ '^test_user_[0-9]+$')::int AS "testUserRows",
+             count(*) FILTER (WHERE user_id ~ '^perf_test_[0-9]+$')::int AS "perfTestRows",
+             count(DISTINCT user_id) FILTER (WHERE user_id ~ '^(test_user|perf_test)_[0-9]+$')::int AS "runs",
+             min(created_at) FILTER (WHERE user_id ~ '^(test_user|perf_test)_[0-9]+$') AS "oldest",
+             max(created_at) FILTER (WHERE user_id ~ '^(test_user|perf_test)_[0-9]+$') AS "newest"
+      FROM user_settings
+    `);
+    const { rows: testSignals } = await TradeDB.pool.query(`
+      SELECT id, status, to_char(signal_date, 'YYYY-MM-DD') AS "signalDate", dismissed_at AS "dismissedAt"
+      FROM pending_signals
+      WHERE symbol = 'TEST.NS'
+      ORDER BY id
+    `);
+    res.json({
+      success: true,
+      clean: settings.testUserRows + settings.perfTestRows === 0 && testSignals.length === 0,
+      userSettings: settings,
+      testSignals
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Protect all API routes except auth routes and telegram webhook
 app.use('/api', ensureAuthenticatedAPI);
 
@@ -947,15 +983,6 @@ try {
 } catch (error) {
   console.error('✗ Failed to load Stripe routes:', error.message);
 }
-
-// Test endpoint
-app.get('/api/test', (req, res) => {
-  res.json({
-    message: 'API test endpoint is working!',
-    server: 'app.js',
-    timestamp: new Date().toISOString()
-  });
-});
 
 // Admin routes - restricted to specific admin email
 
@@ -1563,117 +1590,6 @@ app.post('/api/admin/remove-telegram-user', ensureAuthenticatedAPI, async (req, 
   } catch (error) {
     console.error('Error removing Telegram user:', error);
     res.status(500).json({ error: 'Failed to remove user', details: error.message });
-  }
-});
-
-// Run Database Tests API endpoint
-app.post('/api/admin/tests/database', ensureAuthenticatedAPI, async (req, res) => {
-  if (req.user.email !== ADMIN_EMAIL) {
-    return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
-  }
-
-  try {
-    const { spawn } = require('child_process');
-    const path = require('path');
-
-    const testProcess = spawn('node', [path.join(__dirname, 'tests/database.test.js')]);
-
-    let output = '';
-    let errors = '';
-
-    testProcess.stdout.on('data', (data) => {
-      output += data.toString();
-    });
-
-    testProcess.stderr.on('data', (data) => {
-      errors += data.toString();
-    });
-
-    testProcess.on('close', (code) => {
-      res.json({
-        success: code === 0,
-        exitCode: code,
-        output: output,
-        errors: errors
-      });
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Run Performance Tests API endpoint
-app.post('/api/admin/tests/performance', ensureAuthenticatedAPI, async (req, res) => {
-  if (req.user.email !== ADMIN_EMAIL) {
-    return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
-  }
-
-  try {
-    const { spawn } = require('child_process');
-    const path = require('path');
-
-    const testProcess = spawn('node', [path.join(__dirname, 'tests/performance.test.js')]);
-
-    let output = '';
-    let errors = '';
-
-    testProcess.stdout.on('data', (data) => {
-      output += data.toString();
-    });
-
-    testProcess.stderr.on('data', (data) => {
-      errors += data.toString();
-    });
-
-    testProcess.on('close', (code) => {
-      res.json({
-        success: code === 0,
-        exitCode: code,
-        output: output,
-        errors: errors
-      });
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Run System Verification API endpoint
-app.post('/api/admin/tests/verify-system', ensureAuthenticatedAPI, async (req, res) => {
-  if (req.user.email !== ADMIN_EMAIL) {
-    return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
-  }
-
-  try {
-    const { spawn } = require('child_process');
-    const path = require('path');
-
-    const quick = req.body.quick || false;
-    const args = quick ? ['--quick'] : [];
-
-    const testProcess = spawn('node', [path.join(__dirname, 'scripts/verify-system.js'), ...args]);
-
-    let output = '';
-    let errors = '';
-
-    testProcess.stdout.on('data', (data) => {
-      output += data.toString();
-    });
-
-    testProcess.stderr.on('data', (data) => {
-      errors += data.toString();
-    });
-
-    testProcess.on('close', (code) => {
-      res.json({
-        success: code === 0,
-        exitCode: code,
-        output: output,
-        errors: errors
-      });
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
   }
 });
 

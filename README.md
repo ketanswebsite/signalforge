@@ -83,24 +83,22 @@ Update it in the same commit as the change it describes. See rule 1.
 | Plans & subscriptions | 1.0 | 2026-09-23 · endpoint | ⚠️ Faulty: invalid input (an unknown region, a non-numeric price) crashes with 500, and deleting a plan still in use reports a misleading 400; counts and MRR miss Stripe rows; the trends are hard-coded. 2 known bugs pinned in the harness. |
 | Payments | 1.0 | 2026-09-23 · endpoint | ❌ Broken: refunds always return 500 (wrong table); "verify" never activates the subscription and accepts missing or already-completed transactions. 4 known bugs pinned in the harness. |
 | Analytics | 1.0 | 2026-09-23 · endpoint | ⚠️ Faulty: the routes answer, but invented numbers are shown as data. |
-| Database tools & system health | 1.0 | 2026-09-23 · endpoint | ⚠️ Faulty: `/database/status` always returns 500; stubs report success for things they never do; `analyze-table` is unvalidated; the SQL console's read-only mode is bypassable. 5 known bugs pinned in the harness. |
+| Database tools & system health | 1.1 | 2026-09-24 · endpoint | ⚠️ Faulty: `/database/status` always returns 500; stubs report success for things they never do; `analyze-table` is unvalidated; the SQL console's read-only mode is bypassable. 5 known bugs pinned in the harness. The Run-tests button is gone: it ran test scripts against the live database. |
 | Settings | 1.0 | 2026-09-23 · endpoint | ⚠️ Faulty: 8 buttons report success without doing anything; an unknown email template returns 200. 1 known bug pinned in the harness. |
 | Signal testing & diagnostics | 1.1 | 2026-09-23 · endpoint | ⚠️ Faulty: diagnostics show every signal as `MARKET_NOT_FOUND`; test-scan reports success on errors. The caller-less dismiss-old-signals route is gone. |
 | Telegram subscribers | 1.0 | 2026-09-23 · endpoint | ⚠️ Faulty: malformed chat ids crash with 500. 2 known bugs pinned in the harness. |
-| "Run tests" buttons (`/api/admin/tests/*`) | 1.0 | 2026-09-23 · endpoint | ❌ Broken: they spawn scripts that write test rows into the prod DB and always fail (the harness only probes them). Removal queued. |
 | Audit log viewer, JWT token auth | 1.0 | 2026-09-23 · endpoint | 🗑️ Dead: no page loads them, and malformed input crashes them. 7 known bugs pinned in the harness. Removal queued. |
 
 ### Platform
 
 | Feature | Version | Last tested | Status |
 |---|---|---|---|
-| Ops probes & health (`/api/ops/*`, `/health`) | 1.2 | 2026-09-23 · unit + endpoint | ✅ Working: `/health` shows the right UK time and next scan all year (unit-tested on both sides of the clock change) and names the real session store. The subscription schema probe is admin-only. |
+| Ops probes & health (`/api/ops/*`, `/health`) | 1.3 | 2026-09-24 · unit + endpoint | ✅ Working: `/health` shows the right UK time and next scan all year (unit-tested on both sides of the clock change) and names the real session store. The subscription schema probe is admin-only. One-off: `GET /api/ops/test-residue-stats` (read-only, header token) counts the rows the removed Run-tests buttons left in the database; it goes once prod reads clean. |
 | Access control: sign-in gate, subscription gate, one admin guard for all of `/api/admin` | 1.0 | 2026-09-23 · unit + endpoint | ✅ Working: the access matrix of every route (anonymous 401, non-subscriber 403, non-admin 403, token-only ops) passes in the harness; the admin guard is unit-tested. |
 | Pages, static files & `/lib` allow-list (16 pages) | 1.0 | 2026-09-23 · unit + endpoint | ✅ Working |
 | Process reliability (crash handlers, shutdown, sessions, DB pools) | 1.2 | 2026-09-24 · unit | ⚠️ Faulty: sessions are in memory (every deploy signs everyone out) and there are 12 extra pg pools. Fixed on 2026-09-24: an unhandled rejection is reported to the owner instead of crashing the server, a crash reports before it exits, and a deploy's SIGTERM closes the server and exits within 20 s (`lib/shared/process-guards.js`). geoip-lite (146 MiB of memory at boot) is gone. |
-| Diagnostics & legacy one-off routes | 1.2 | 2026-09-23 · endpoint | 🗑️ Dead: only `GET /api/test` remains; it goes with the Run-tests buttons. Removed on 2026-09-23: the 14 routes any signed-in account could use, then 13 caller-less ones (legacy v1 admin, finished one-off migrations, stubs, duplicates of `/health`) and 2 shadowed duplicate handlers. The harness keeps all of them gone. |
 | `routes/gdpr.js` (never mounted) | 1.0 | — | 🗑️ Dead |
-| Endpoint test harness (every route, every page contract) | 1.0 | 2026-09-23 · endpoint | ✅ Working: 204 specs (163 live routes, 5 unmounted Stripe routes, 36 removed routes), 847 cases; 813 pass and 34 known bugs fail as expected. Fresh scratch database and server per run, cron stubbed, no network. |
+| Endpoint test harness (every route, every page contract) | 1.0 | 2026-09-24 · endpoint | ✅ Working: 205 specs (160 live routes, 5 unmounted Stripe routes, 40 removed routes), 850 cases; 816 pass and 34 known bugs fail as expected. Fresh scratch database and server per run, cron stubbed, no network. |
 
 ### Strategy & data quality: the GAPS register (from the 2026-08-07 audit; full evidence in `git show e2774d5:docs/GAPS.md`)
 
@@ -130,7 +128,8 @@ Update it in the same commit as the change it describes. See rule 1.
 Newest first. Each line is one commit on `main`; `git show <sha>` has the full reasoning.
 
 **2026-09-24**
-- *(this commit)* Reliability rails: an unhandled promise rejection is logged and reported to the owner (throttled) instead of crashing the server and signing everyone out; an uncaught exception reports before it exits; a deploy's SIGTERM closes the HTTP server and exits within 20 s (the old instance used to keep sweeping until Render killed it). The owner also hears when an exit-monitor pass fails outright (hourly at most) and when a high-conviction exit alert or weekly report reaches nobody. The owner-alert sender never rejects
+- *(this commit)* Remove the admin Run-tests feature: the Database tab's button and runner, its 3 routes (they spawned test scripts against the live database, wrote rows there and always failed), `GET /api/test` and the 4 scripts behind them. A read-only token probe, `GET /api/ops/test-residue-stats`, counts the rows they left. The harness keeps all 40 removed routes gone
+- `e5a3e6d` Reliability rails: an unhandled promise rejection is logged and reported to the owner (throttled) instead of crashing the server and signing everyone out; an uncaught exception reports before it exits; a deploy's SIGTERM closes the HTTP server and exits within 20 s (the old instance used to keep sweeping until Render killed it). The owner also hears when an exit-monitor pass fails outright (hourly at most) and when a high-conviction exit alert or weekly report reaches nobody. The owner-alert sender never rejects
 - `cceab88` On-demand AI conviction checks score only symbols in the scan universe, under the universe's own name. Any trial account could spend Gemini calls on arbitrary symbols, or pass a misleading company name that steered the news search behind a verdict the 7 AM gate, the executor and the Simulator share for up to 37 days. A GET on the batch path answers 405 instead of scoring a stock called "BATCH"
 - `49b7b62` Telegram safety: a non-production boot no longer polls or deletes the webhook (with the real token it deleted prod's, and prod stopped receiving bot commands until its next boot); polling is opt-in with `TELEGRAM_POLLING=true`. Production always registers the webhook with a secret, derived from the bot token when `TELEGRAM_WEBHOOK_SECRET` is unset, and enforces a derived one only after Telegram accepts it. The webhook log no longer records users' names, message text or account-link tokens
 
@@ -318,7 +317,7 @@ These rules bind every contributor and every Claude session; `CLAUDE.md` points 
 13. **Deploy freeze:** no pushes on the first Saturday of a month between 08:00 and 12:00 UK. The monthly AI sweep runs in-process, and a deploy kills it.
 
 ### 4.4 Safety
-14. Never run a script, route or handler that touches production data, messages users or spends paid-API budget just to see what it does. Scan triggers, broadcasts, the sweep and admin test runners are off-limits for probing.
+14. Never run a script, route or handler that touches production data, messages users or spends paid-API budget just to see what it does. Scan triggers, broadcasts and the sweep are off-limits for probing.
 15. **Signed in is not an authorisation boundary**: anyone can start a free trial. Anything that acts on other users, the whole system or paid services is either admin-only (`requireAdmin` guards all of `/api/admin`) or token-guarded (`/api/ops/*`, header `x-analysis-token`). A user may only ever touch their own rows, and the session decides whose, never the body.
 16. Probe the database read-only. Schema changes are idempotent SQL: boot DDL in `database-postgres.js`, or a file in `migrations/` (file names are migration keys, so never rename them). Verify the result on the target database.
 17. Local runs use the local Postgres and stub `node-cron`. On weekdays 02:00–22:00 UK, an unstubbed boot runs the exit monitor every minute. A local boot never polls Telegram or deletes its webhook; `TELEGRAM_POLLING=true` turns polling on (and deletes the webhook), so use it only with a separate test bot's token.
@@ -375,11 +374,10 @@ signalforge/
 │   └── admin/                sse-handler.js (no producer, removal queued)
 ├── ml/                       conviction-engine.js + conviction-sweep.js (the AI gate), ml-routes.js (/api/ml/conviction/*)
 ├── migrations/               NNN_*.sql, applied by hand (names are keys)
-├── scripts/                  health-check.js, verify-system.js (removal queued with the admin Run-tests buttons)
 ├── tests/
 │   ├── unit/                 jest unit suites (npm test), including the route-spec coverage test
 │   ├── endpoints/            HTTP harness (npm run test:endpoints): harness/ (preload, setup, seed), specs/*.json (one per route)
-│   └── (integration/, database/performance scripts: mock-only or spawned by admin buttons; removal queued)
+│   └── (integration/, performance/: a jest suite that only calls its own fetch mock, and an inert benchmark file; removal queued)
 ├── public/                   16 pages (*.html), js/ (91 files), css/ (design-system + page sheets), images/brand/
 ├── design/handoff-v3/        v3 "Poster" design hand-off (tidy-up queued)
 └── docs/history/             three stale 2025 audits (removal queued)

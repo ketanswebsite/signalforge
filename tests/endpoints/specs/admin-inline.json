@@ -188,60 +188,6 @@
   "note": "order last: a bulk-destructive admin handler. Its only writing case targets a row that does not exist, so it changes nothing today; running it last keeps any future regression from reaching data that other specs read."
  },
  {
-  "route": "POST /api/admin/tests/database",
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401
-   },
-   {
-    "as": "nosub",
-    "status": 403
-   },
-   {
-    "as": "user",
-    "status": 403,
-    "note": "probe-only: spawns tests/database.test.js, never called authorised"
-   }
-  ]
- },
- {
-  "route": "POST /api/admin/tests/performance",
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401
-   },
-   {
-    "as": "nosub",
-    "status": 403
-   },
-   {
-    "as": "user",
-    "status": 403,
-    "note": "probe-only: spawns tests/performance.test.js, never called authorised"
-   }
-  ]
- },
- {
-  "route": "POST /api/admin/tests/verify-system",
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401
-   },
-   {
-    "as": "nosub",
-    "status": 403
-   },
-   {
-    "as": "user",
-    "status": 403,
-    "note": "probe-only: spawns scripts/verify-system.js, never called authorised"
-   }
-  ]
- },
- {
   "route": "GET /api/check-subscription-setup",
   "cases": [
    {
