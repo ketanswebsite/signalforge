@@ -68,3 +68,9 @@ dist/
 .claude/settings.local.json
 # Brand assets are shipped despite the global *.png ignore
 !public/images/brand/*.png
+
+# Retired: plan documents (README.md is the single source of truth), local tool state
+PLAN-*.md
+coverage/
+.claude/launch.json
+.claude/worktrees/
