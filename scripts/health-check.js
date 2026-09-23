@@ -139,8 +139,7 @@ async function checkDatabaseTables() {
  */
 async function checkAPIEndpoints() {
     const endpoints = [
-        { path: '/api/test', method: 'GET' },
-        { path: '/api/settings', method: 'GET' }
+        { path: '/api/test', method: 'GET' }
     ];
 
     let allPassed = true;

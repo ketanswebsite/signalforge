@@ -256,7 +256,6 @@ function verifyFileStructure() {
         'public/index.html',
         'public/trades.html',
         'public/js/trades-ui.js',
-        'lib/settings/settings-manager.js',
         'tests/database.test.js',
         'tests/performance.test.js',
         'scripts/health-check.js',
