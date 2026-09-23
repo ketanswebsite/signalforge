@@ -486,7 +486,7 @@
    {
     "as": "user",
     "status": 400,
-    "bug": "no JSON body -> req.body is undefined under Express 5 / body-parser 2, and `const { marketState } = req.body` (ml/ml-routes.js:183) throws a TypeError that the catch turns into 500; a missing body is a client error (400)"
+    "note": "Fixed 2026-09-23: the Express 4 req.body default is restored (server.js)."
    },
    {
     "as": "user",
@@ -539,7 +539,7 @@
    {
     "as": "user",
     "status": 400,
-    "bug": "no JSON body -> req.body is undefined under Express 5 / body-parser 2, and `const { priceData } = req.body` (ml/ml-routes.js:204) throws a TypeError that the catch turns into 500; a missing body is a client error (400)"
+    "note": "Fixed 2026-09-23: the Express 4 req.body default is restored (server.js)."
    },
    {
     "as": "user",
@@ -662,7 +662,7 @@
    {
     "as": "user",
     "status": 400,
-    "bug": "no JSON body -> req.body is undefined under Express 5 / body-parser 2, and `const { portfolio, days = 30, iterations = 1000 } = req.body` (ml/ml-routes.js:246) throws a TypeError that the catch turns into 500; a missing body is a client error (400)"
+    "note": "Fixed 2026-09-23: the Express 4 req.body default is restored (server.js)."
    },
    {
     "as": "user",
@@ -735,7 +735,7 @@
    {
     "as": "user",
     "status": 400,
-    "bug": "no JSON body -> req.body is undefined under Express 5 / body-parser 2, and `const { positions } = req.body` (ml/ml-routes.js:271) throws a TypeError that the catch turns into 500; a missing body is a client error (400)"
+    "note": "Fixed 2026-09-23: the Express 4 req.body default is restored (server.js)."
    },
    {
     "as": "user",
@@ -792,7 +792,7 @@
    {
     "as": "admin",
     "status": 400,
-    "bug": "no JSON body -> req.body is undefined under Express 5 / body-parser 2, and `const { trainingData } = req.body` (ml/ml-routes.js:292) throws a TypeError that the catch turns into 500; a missing body is a client error (400)"
+    "note": "Fixed 2026-09-23: the Express 4 req.body default is restored (server.js)."
    },
    {
     "as": "admin",
@@ -976,7 +976,7 @@
    {
     "as": "nosub",
     "status": 404,
-    "bug": "no JSON body -> req.body is undefined under Express 5, and `const { reason } = req.body` (routes/subscription.js:251) throws before the lookup, so the catch answers 500 \"Failed to cancel subscription\"; reason is optional, so a body-less cancel must reach the lookup (404 here, nosub has no subscription)"
+    "note": "Fixed 2026-09-23: the Express 4 req.body default is restored (server.js)."
    },
    {
     "as": "trial",

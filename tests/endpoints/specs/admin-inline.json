@@ -52,7 +52,7 @@
    {
     "as": "admin",
     "status": 400,
-    "bug": "no JSON body leaves req.body undefined (Express 5 / body-parser 2 no longer default it to {}); server.js:1580 destructures it unguarded and the catch at server.js:1598-1600 answers 500 'Failed to link accounts' instead of 400"
+    "note": "Fixed 2026-09-23: the Express 4 req.body default is restored (server.js)."
    },
    {
     "as": "admin",
@@ -122,7 +122,7 @@
    {
     "as": "admin",
     "status": 400,
-    "bug": "no JSON body leaves req.body undefined (Express 5 / body-parser 2); server.js:1612 destructures it unguarded and the catch at server.js:1623-1625 answers 500 'Failed to unlink account' instead of 400"
+    "note": "Fixed 2026-09-23: the Express 4 req.body default is restored (server.js)."
    },
    {
     "as": "admin",
@@ -164,7 +164,7 @@
    {
     "as": "admin",
     "status": 400,
-    "bug": "no JSON body leaves req.body undefined (Express 5 / body-parser 2); server.js:1637 destructures it unguarded and the catch at server.js:1650-1652 answers 500 'Failed to remove user' instead of 400"
+    "note": "Fixed 2026-09-23: the Express 4 req.body default is restored (server.js)."
    },
    {
     "as": "admin",
@@ -216,7 +216,7 @@
    {
     "as": "admin",
     "status": 400,
-    "bug": "no JSON body leaves req.body undefined (Express 5 / body-parser 2); server.js:1664 destructures it unguarded and the catch at server.js:1692-1694 answers 500 'Failed to remove user' instead of 400"
+    "note": "Fixed 2026-09-23: the Express 4 req.body default is restored (server.js)."
    },
    {
     "as": "admin",
@@ -571,7 +571,7 @@
    {
     "as": "admin",
     "status": 400,
-    "bug": "no JSON body leaves req.body undefined (Express 5 / body-parser 2); server.js:3579 destructures it unguarded and the catch at server.js:3626-3628 answers 500 instead of 400"
+    "note": "Fixed 2026-09-23: the Express 4 req.body default is restored (server.js)."
    },
    {
     "as": "admin",
@@ -804,7 +804,7 @@
    {
     "as": "admin",
     "status": 400,
-    "bug": "no JSON body leaves req.body undefined (Express 5 / body-parser 2); server.js:3842 destructures it unguarded and the catch at server.js:3898-3899 answers 500 instead of 400"
+    "note": "Fixed 2026-09-23: the Express 4 req.body default is restored (server.js)."
    },
    {
     "as": "admin",

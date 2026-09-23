@@ -576,8 +576,7 @@
    {
     "as": "user",
     "status": 400,
-    "note": "no request body at all",
-    "bug": "a POST without a JSON body crashes instead of failing validation: under Express 5 / body-parser 2 req.body stays undefined when nothing is parsed, and server.js:2679 destructures it (`const { symbols } = req.body`) before the 400 check -> TypeError -> 500. Same pattern, same 500, in this slice's POST /api/trades (2374), PUT /api/trades/:id (2397), POST /api/trades/bulk (2461), POST /api/portfolio/initialize-capital (2476), POST /api/push/subscribe (3286) and POST /api/push/unsubscribe (3306)"
+    "note": "no request body at all Fixed 2026-09-23: the Express 4 req.body default is restored (server.js)."
    }
   ]
  },

@@ -153,6 +153,13 @@ try {
 // Middleware
 app.use(cors());
 app.use(express.json());
+// Express 5 leaves req.body undefined when a request has no body (Express 4 gave {}). Handlers
+// that destructure it crashed with 500 instead of answering 400: 22 routes, pinned by the
+// endpoint harness (tests/endpoints). Restore the Express 4 default.
+app.use((req, res, next) => {
+  if (req.body === undefined) req.body = {};
+  next();
+});
 
 // Session and passport middleware only if auth is enabled
 if (authEnabled) {

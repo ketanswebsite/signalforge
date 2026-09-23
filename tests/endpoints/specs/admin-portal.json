@@ -280,7 +280,7 @@
    {
     "as": "admin",
     "status": 400,
-    "bug": "Express 5 leaves req.body undefined when no JSON body is sent, so the handler's destructuring of req.body throws a TypeError before its own field validation -> 500 (routes/admin.js:240); correct is 400 MISSING_REQUIRED_FIELD"
+    "note": "Fixed 2026-09-23: the Express 4 req.body default is restored (server.js)."
    },
    {
     "as": "admin",
@@ -344,7 +344,7 @@
    {
     "as": "admin",
     "status": 400,
-    "bug": "Express 5 leaves req.body undefined when no JSON body is sent, so the handler's destructuring of req.body throws a TypeError before its own field validation -> 500 (routes/admin.js:255); correct is 400 MISSING_REQUIRED_FIELD"
+    "note": "Fixed 2026-09-23: the Express 4 req.body default is restored (server.js)."
    },
    {
     "as": "admin",
@@ -492,7 +492,7 @@
    {
     "as": "admin",
     "status": 400,
-    "bug": "Express 5 leaves req.body undefined when no JSON body is sent, so the handler's destructuring of req.body throws a TypeError before its own field validation -> 500 (routes/admin.js:308); correct is 400 MISSING_REQUIRED_FIELD"
+    "note": "Fixed 2026-09-23: the Express 4 req.body default is restored (server.js)."
    },
    {
     "as": "admin",
@@ -575,7 +575,7 @@
    {
     "as": "admin",
     "status": 400,
-    "bug": "Express 5 leaves req.body undefined when no JSON body is sent, so the handler's destructuring of req.body throws a TypeError before its own field validation -> 500 (routes/admin.js:326); correct is 400 MISSING_REQUIRED_FIELD"
+    "note": "Fixed 2026-09-23: the Express 4 req.body default is restored (server.js)."
    },
    {
     "as": "admin",
@@ -745,7 +745,7 @@
    {
     "as": "admin",
     "status": 400,
-    "bug": "Express 5 leaves req.body undefined when no JSON body is sent, so the handler's destructuring of req.body throws a TypeError before its own field validation -> 500 (routes/admin.js:472); correct is 400 MISSING_REQUIRED_FIELD"
+    "note": "Fixed 2026-09-23: the Express 4 req.body default is restored (server.js)."
    },
    {
     "as": "admin",
@@ -839,7 +839,7 @@
    {
     "as": "admin",
     "status": 400,
-    "bug": "Express 5 leaves req.body undefined when no JSON body is sent, so the handler's destructuring of req.body throws a TypeError before its own field validation -> 500 (routes/admin.js:520); correct is 400 MISSING_REQUIRED_FIELD"
+    "note": "Fixed 2026-09-23: the Express 4 req.body default is restored (server.js)."
    },
    {
     "as": "admin",
@@ -906,7 +906,7 @@
    {
     "as": "admin",
     "status": 400,
-    "bug": "Express 5 leaves req.body undefined when no JSON body is sent, so the handler's destructuring of req.body throws a TypeError before its own field validation -> 500 (routes/admin.js:551); correct is 400 MISSING_REQUIRED_FIELD"
+    "note": "Fixed 2026-09-23: the Express 4 req.body default is restored (server.js)."
    },
    {
     "as": "admin",
@@ -1133,7 +1133,7 @@
    {
     "as": "admin",
     "status": 400,
-    "bug": "Express 5 leaves req.body undefined when no JSON body is sent, so the handler's destructuring of req.body throws a TypeError before its own field validation -> 500 (routes/admin.js:736); correct is 400 MISSING_REQUIRED_FIELD"
+    "note": "Fixed 2026-09-23: the Express 4 req.body default is restored (server.js)."
    },
    {
     "as": "admin",
@@ -1197,7 +1197,7 @@
    {
     "as": "admin",
     "status": 400,
-    "bug": "Express 5 leaves req.body undefined when no JSON body is sent, so the handler's destructuring of req.body throws a TypeError before its own field validation -> 500 (routes/admin.js:765); correct is 400 MISSING_REQUIRED_FIELD"
+    "note": "Fixed 2026-09-23: the Express 4 req.body default is restored (server.js)."
    },
    {
     "as": "admin",
