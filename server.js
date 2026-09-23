@@ -225,10 +225,13 @@ const telegramWebhookLimiter = rateLimit({
 // IMPORTANT: Telegram webhook must come BEFORE authentication middleware!
 // Telegram webhook endpoint for production (NO AUTH REQUIRED but SECRET VERIFIED)
 app.post('/api/telegram/webhook', telegramWebhookLimiter, express.json(), (req, res) => {
-  // Verify webhook secret token (Telegram sends this in header when configured)
-  if (TELEGRAM_WEBHOOK_SECRET) {
+  // The secret Telegram sends with every update: the bot module's (TELEGRAM_WEBHOOK_SECRET, or one
+  // derived from the bot token once Telegram has accepted it), else the environment's alone.
+  const expectedSecret = (telegramBot && typeof telegramBot.getWebhookSecret === 'function' && telegramBot.getWebhookSecret())
+    || TELEGRAM_WEBHOOK_SECRET;
+  if (expectedSecret) {
     const secretHeader = req.headers['x-telegram-bot-api-secret-token'];
-    if (secretHeader !== TELEGRAM_WEBHOOK_SECRET) {
+    if (secretHeader !== expectedSecret) {
       console.warn('⚠️ [WEBHOOK] Invalid or missing secret token - rejecting request');
       return res.status(403).send('Forbidden');
     }
@@ -238,11 +241,8 @@ app.post('/api/telegram/webhook', telegramWebhookLimiter, express.json(), (req, 
 
   try {
     const update = req.body;
+    // The update type only: never a user's name or message text: account-link tokens arrive as "/start link_..."
     console.log('📨 [WEBHOOK] Update type:', Object.keys(update).join(', '));
-
-    if (update.message) {
-      console.log('📨 [WEBHOOK] Message from:', update.message.from.first_name, '- Text:', update.message.text);
-    }
 
     if (telegramBot && typeof telegramBot.processUpdate === 'function') {
       telegramBot.processUpdate(update);
