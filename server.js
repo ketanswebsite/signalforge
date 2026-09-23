@@ -253,75 +253,6 @@ app.post('/api/telegram/webhook', telegramWebhookLimiter, express.json(), (req, 
   }
 });
 
-// ===== INTERNAL SERVICE ENDPOINTS (NO AUTH REQUIRED) =====
-
-// Store signals from scan (called by scanner)
-// NOTE: No authentication required - this is an internal service-to-service call
-// IMPORTANT: This route MUST be defined BEFORE the global /api authentication middleware
-app.post('/api/signals/from-scan', async (req, res) => {
-  try {
-    const { signals } = req.body;
-
-    if (!signals || !Array.isArray(signals)) {
-      return res.status(400).json({ error: 'Invalid signals data' });
-    }
-
-    const stored = [];
-    const duplicates = [];
-    const errors = [];
-
-    for (const signal of signals) {
-      try {
-        // Check if signal already exists
-        const existing = await TradeDB.getPendingSignal(signal.symbol, signal.signalDate);
-
-        if (existing) {
-          duplicates.push({
-            symbol: signal.symbol,
-            reason: 'Signal already exists for today'
-          });
-          continue;
-        }
-
-        // Note: Removed active position check here - let the 1 PM executor validate in real-time
-        // This allows signals to be stored even if position exists at 7 AM, because it might close before 1 PM
-        // The capital-manager.js validation will properly check limits and duplicates at execution time
-
-        // Store signal
-        const result = await TradeDB.storePendingSignal(signal);
-        stored.push({ id: result.id, symbol: signal.symbol });
-      } catch (error) {
-        // Actual errors (not duplicates) go into errors array
-        errors.push({
-          symbol: signal.symbol,
-          reason: error.message
-        });
-      }
-    }
-
-    // Log signal storage results for monitoring
-    console.log(`[7 AM Signal Storage] Stored: ${stored.length}, Duplicates: ${duplicates.length}, Errors: ${errors.length}`);
-    if (stored.length > 0) {
-      console.log(`[7 AM Signal Storage] Stored symbols: ${stored.map(s => s.symbol).join(', ')}`);
-    }
-
-    res.json({
-      success: true,
-      created: stored.length,
-      duplicates: duplicates.length,
-      errors: errors.length,
-      details: {
-        storedSignals: stored,
-        duplicateSignals: duplicates,
-        errorSignals: errors
-      }
-    });
-  } catch (error) {
-    console.error('Error storing signals:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // Auth status endpoint (public - no auth required) - MUST be before authentication middleware
 app.get('/api/auth/status', (req, res) => {
   // Check if user is authenticated via session
@@ -344,9 +275,9 @@ app.get('/api/auth/status', (req, res) => {
 });
 
 // Token-guarded read of today's screened signals — for the external AI-analysis
-// routine (cloud Claude Code). Registered before the blanket /api auth guard,
-// like /api/signals/from-scan: guarded by ANALYSIS_API_TOKEN instead of a
-// Google OAuth session so a headless cloud job can read. Read-only.
+// routine (cloud Claude Code). Registered before the blanket /api auth guard:
+// guarded by ANALYSIS_API_TOKEN instead of a Google OAuth session so a
+// headless cloud job can read. Read-only.
 app.get('/api/signals/screened-today', async (req, res) => {
   try {
     const token = req.query.token || req.get('x-analysis-token');
@@ -2862,7 +2793,7 @@ app.post('/api/portfolio/check-exits', ensureAuthenticatedAPI, async (req, res) 
 });
 
 // ===== SIGNALS ENDPOINTS =====
-// NOTE: /api/signals/from-scan is defined BEFORE the global auth middleware (see line ~209)
+// The 7 AM scan stores its signals in process (lib/scanner/signal-store.js).
 
 // Get pending signals
 app.get('/api/signals/pending', ensureAuthenticatedAPI, async (req, res) => {

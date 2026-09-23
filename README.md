@@ -46,7 +46,7 @@ Update it in the same commit as the change it describes. See rule 1.
 
 | Feature | Version | Last tested | Status |
 |---|---|---|---|
-| 7 AM scan → signals (07:00 UK, weekdays; `POST /api/scanner/run` token) | 1.0 | — | ⚠️ Faulty: `POST /api/signals/from-scan` is anonymous, so anyone can inject a signal that the 1 PM run books and broadcasts. Fix queued first. |
+| 7 AM scan → signals (07:00 UK, weekdays; `POST /api/scanner/run` token) | 1.1 | 2026-09-23 · unit | 🟢 Unit-tested (signal store). The anonymous `POST /api/signals/from-scan` is gone: the scan stores its signals in process. The scan itself has no endpoint test yet. |
 | 1 PM trade executor (13:00 local for IN, UK, US; `AUTO_EXECUTE` kill switch) | 1.0 | — | ⚠️ Faulty: `POST /api/executor/manual-execute/:market` is open to any signed-in account. |
 | Scanner page: signals feed & auto-trading opt-in (`/api/signals/recent`, `/api/user/auto-trading`) | 1.0 | — | 🟡 Untested |
 | Positions: trade journal (`/api/trades*`) | 1.0 | — | ⚠️ Faulty: a stale edit can reopen a closed trade, deletes don't release capital, and legacy trades re-import on every load. |
@@ -130,7 +130,8 @@ Update it in the same commit as the change it describes. See rule 1.
 Newest first. Each line is one commit on `main`; `git show <sha>` has the full reasoning.
 
 **2026-09-23**
-- *(this commit)* `README.md` becomes the single source of truth. `docs/GAPS.md` is folded into §1, `CLAUDE.md` now points here, and plan documents are retired.
+- *(this commit)* Close the anonymous signal injection: the 7 AM scan stores its signals in process, and `POST /api/signals/from-scan` is removed
+- `e24bcf3` `README.md` becomes the single source of truth. `docs/GAPS.md` is folded into §1, `CLAUDE.md` now points here, and plan documents are retired.
 - `e2774d5` Remove 12 dead one-off scripts from the repo root
 - `e1180fa` Say in the AI sweep report when Gemini failed; record how the 08-22 and 08-29 sweeps stopped (GAPS #21)
 - `45d0abf` Pick a dead AI sweep up after a restart, and tell the owner how each run ended (GAPS #21)
@@ -353,7 +354,7 @@ signalforge/
 ├── middleware/               subscription gate, admin auth, activity log, error handler, /lib allow-list
 ├── routes/                   auth.js, admin.js (/api/admin), subscription.js, stripe.js, gdpr.js (never mounted)
 ├── lib/
-│   ├── scanner/              scanner.js: the 7 AM scan and most cron jobs
+│   ├── scanner/              scanner.js: the 7 AM scan and most cron jobs; signal-store.js: stores its signals
 │   ├── scheduler/            trade-executor.js (1 PM runs), market-cap-updater.js
 │   ├── portfolio/            exit-monitor, capital-manager, high-conviction-manager, eod-summary, exit-check-retention, close-failure-alerts
 │   ├── shared/               backtest engines, DTI calculator, price-unit and stale-fill repairs, stock universe (stock-data.js)
