@@ -177,7 +177,6 @@ function ensureSubscriptionActive(req, res, next) {
     '/api/subscription/plans',
     '/api/subscription-plans',
     '/api/user/subscription/start-trial',
-    '/api/user/location',
     '/api/payment',
     '/api/admin',
     '/login',

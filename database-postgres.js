@@ -3254,34 +3254,6 @@ const TradeDB = {
     }
   },
 
-  // Store exit check
-  async storeExitCheck(checkData) {
-    checkConnection();
-    try {
-      const result = await pool.query(`
-        INSERT INTO trade_exit_checks
-        (trade_id, current_price, pl_percent, days_held, target_reached,
-         stop_loss_hit, max_days_reached, dti_exit_triggered, alert_sent, alert_type)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-        RETURNING *
-      `, [
-        checkData.tradeId,
-        checkData.currentPrice,
-        checkData.plPercent,
-        checkData.daysHeld,
-        checkData.targetReached || false,
-        checkData.stopLossHit || false,
-        checkData.maxDaysReached || false,
-        checkData.dtiExitTriggered || false,
-        checkData.alertSent || false,
-        checkData.alertType || null
-      ]);
-      return result.rows[0];
-    } catch (error) {
-      throw error;
-    }
-  },
-
   // Close trade (wrapper around updateTrade)
   async closeTrade(tradeId, exitData, userId = 'default') {
     checkConnection();

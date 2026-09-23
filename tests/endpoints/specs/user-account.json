@@ -1024,36 +1024,6 @@
   ]
  },
  {
-  "route": "GET /api/user/location",
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401,
-    "note": "commented \"public - no auth required\" (server.js:970) but registered after the /api sign-in gate; no anonymous page calls it"
-   },
-   {
-    "as": "token",
-    "status": 401
-   },
-   {
-    "as": "nosub",
-    "status": 200,
-    "check": "object"
-   },
-   {
-    "as": "user",
-    "status": 200,
-    "check": "object",
-    "note": "loopback caller -> the fixed US default, no geo lookup"
-   },
-   {
-    "as": "admin",
-    "status": 200,
-    "check": "object"
-   }
-  ]
- },
- {
   "route": "POST /api/user/generate-telegram-link",
   "cases": [
    {

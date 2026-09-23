@@ -366,48 +366,6 @@
   ]
  },
  {
-  "route": "POST /api/portfolio/initialize-capital",
-  "body": {
-   "india": 1000000,
-   "uk": 10000,
-   "us": 15000
-  },
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401
-   },
-   {
-    "as": "nosub",
-    "status": 400,
-    "body": {},
-    "note": "no subscription gate on this route; the validation answers first (nosub is never given a valid body)"
-   },
-   {
-    "as": "user",
-    "status": 400,
-    "body": {},
-    "note": "'Invalid capital amounts'"
-   },
-   {
-    "as": "delete",
-    "status": 200,
-    "check": "object",
-    "note": "the seeded baseline amounts again: an effective no-op on the throwaway persona"
-   },
-   {
-    "as": "user",
-    "status": 400,
-    "body": {
-     "india": "abc",
-     "uk": 10000,
-     "us": 15000
-    },
-    "bug": "amounts are not type-checked: a non-numeric string passes `!india || india < 0` (server.js:2479) and Postgres rejects it in updatePortfolioCapital (database-postgres.js:3123) -> 500; the first market fails so nothing is written"
-   }
-  ]
- },
- {
   "route": "GET /api/portfolio/capital",
   "cases": [
    {
@@ -419,32 +377,6 @@
     "status": 200,
     "check": "object",
     "note": "no subscription gate; nosub has no ledger rows so capital is {}"
-   },
-   {
-    "as": "user",
-    "status": 200,
-    "check": "object"
-   },
-   {
-    "as": "admin",
-    "status": 200,
-    "check": "object"
-   }
-  ]
- },
- {
-  "route": "POST /api/portfolio/check-exits",
-  "body": {},
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401
-   },
-   {
-    "as": "nosub",
-    "status": 200,
-    "check": "object",
-    "note": "a stub: counts the caller's own active trades and triggers nothing (server.js:2520-2551)"
    },
    {
     "as": "user",
@@ -486,97 +418,6 @@
     "as": "admin",
     "status": 200,
     "check": "object"
-   }
-  ]
- },
- {
-  "route": "GET /api/market-cap/:symbol",
-  "path": "/api/market-cap/HARNESS.L",
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401
-   },
-   {
-    "as": "nosub",
-    "status": 200,
-    "check": "object"
-   },
-   {
-    "as": "user",
-    "status": 200,
-    "check": "object"
-   },
-   {
-    "as": "user",
-    "path": "/api/market-cap/NOSUCH.L",
-    "status": 404
-   },
-   {
-    "as": "admin",
-    "status": 200,
-    "check": "object"
-   }
-  ]
- },
- {
-  "route": "POST /api/market-cap/bulk",
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401,
-    "body": {
-     "symbols": [
-      "HARNESS.L"
-     ]
-    }
-   },
-   {
-    "as": "nosub",
-    "status": 400,
-    "body": {},
-    "note": "no subscription gate: the validation answers"
-   },
-   {
-    "as": "user",
-    "status": 400,
-    "body": {},
-    "note": "'symbols array is required'"
-   },
-   {
-    "as": "user",
-    "status": 400,
-    "body": {
-     "symbols": "HARNESS.L"
-    },
-    "note": "a string is not an array"
-   },
-   {
-    "as": "user",
-    "status": 200,
-    "check": "object",
-    "body": {
-     "symbols": [
-      "HARNESS.L",
-      "NOSUCH.L"
-     ]
-    },
-    "note": "known symbols map to their cap, unknown ones are left out"
-   },
-   {
-    "as": "admin",
-    "status": 200,
-    "check": "object",
-    "body": {
-     "symbols": [
-      "HARNESS.L"
-     ]
-    }
-   },
-   {
-    "as": "user",
-    "status": 400,
-    "note": "no request body at all Fixed 2026-09-23: the Express 4 req.body default is restored (server.js)."
    }
   ]
  },

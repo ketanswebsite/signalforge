@@ -248,5 +248,276 @@
     "note": "signed in: no handler, the 404 fallback answers (server.js:3914)"
    }
   ]
+ },
+ {
+  "route": "POST /api/admin/remove-oauth-user",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I5 (\"Remove 14 dead routes\"): no caller; the Users tab deletes accounts through the admin router. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/stats",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I5 (\"Remove 14 dead routes\"): no caller; the dashboard reads the admin router. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/migrate-capital",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I5 (\"Remove 14 dead routes\"): a finished one-time migration to per-user capital. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/fix-position-count",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I5 (\"Remove 14 dead routes\"): an India-only counter fix, superseded by POST /api/ops/reconcile-capital. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/dismiss-old-signals",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I5 (\"Remove 14 dead routes\"): no caller, and it crashed on a missing body or a bad date. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/scanner/cron-status",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I5 (\"Remove 14 dead routes\"): no caller; /health reports the cron state. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "token",
+    "status": 401,
+    "note": "the ops token does not reopen it"
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: no handler, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/scanner/status",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I5 (\"Remove 14 dead routes\"): no caller. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "token",
+    "status": 401,
+    "note": "the ops token does not reopen it"
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: no handler, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/health/trading-automation",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I5 (\"Remove 14 dead routes\"): no caller; the executor logs are in the admin API. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "token",
+    "status": 401,
+    "note": "the ops token does not reopen it"
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: no handler, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /auth/debug",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 302,
+    "check": "redirectLogin",
+    "note": "removed in I5 (\"Remove 14 dead routes\"): it showed anyone the OAuth configuration. Not under /api: the page gate sends an anonymous caller to /login."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: no handler, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/portfolio/initialize-capital",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I5 (\"Remove 14 dead routes\"): no caller; capital rows are created on first use, and it crashed on a non-numeric amount. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: no handler, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/portfolio/check-exits",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I5 (\"Remove 14 dead routes\"): no caller; the exit monitor is the only closer. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: no handler, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/market-cap/:symbol",
+  "path": "/api/market-cap/HARNESS.L",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I5 (\"Remove 14 dead routes\"): no caller; market caps travel with the scan signals. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: no handler, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/market-cap/bulk",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I5 (\"Remove 14 dead routes\"): no caller. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: no handler, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/user/location",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I5 (\"Remove 14 dead routes\"): its only caller, public/js/pricing.js, was loaded by no page; geoip-lite goes with it. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "token",
+    "status": 401,
+    "note": "the ops token does not reopen it"
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: no handler, the 404 fallback answers"
+   }
+  ]
  }
 ]

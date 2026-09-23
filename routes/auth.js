@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { passport } = require('../config/auth');
+const { isAdmin } = require('../middleware/admin-auth');
 
 // Login route
 router.get('/login', (req, res) => {
@@ -22,9 +23,8 @@ router.get('/auth/google/callback',
         failureMessage: true
     }),
     async (req, res) => {
-        console.log('OAuth callback success handler called');
-        console.log('User authenticated:', req.user);
-        console.log('Session ID:', req.sessionID);
+        // Never log the session id or the whole user object: a session id in a log is a way into the account.
+        console.log('OAuth callback: signed in', req.user && req.user.email);
 
         try {
             // Check if user has a subscription
@@ -33,7 +33,7 @@ router.get('/auth/google/callback',
 
             // Admin bypass - admin always gets redirected to home
             const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'ketanjoshisahs@gmail.com';
-            const isAdmin = req.user.email === ADMIN_EMAIL;
+            const isAdminUser = req.user.email === ADMIN_EMAIL;
 
             // Save session explicitly before redirecting
             req.session.save((err) => {
@@ -45,7 +45,7 @@ router.get('/auth/google/callback',
                 let redirectTo;
 
                 // Determine redirect location based on subscription status
-                if (isAdmin) {
+                if (isAdminUser) {
                     // Admin always goes to home or intended page
                     redirectTo = req.session.returnTo || '/';
                 } else if (!subscription || !subscription.isActive) {
@@ -80,21 +80,15 @@ router.get('/auth/google/callback',
                 res.redirect(redirectTo);
             });
         }
+    },
+    // Any Google error other than "access denied" (which failureRedirect handles) reaches here instead of the
+    // global error handler, which answered the browser with a JSON 502.
+    (err, req, res, next) => {
+        if (res.headersSent) return next(err);
+        console.error('OAuth callback error:', err && err.message);
+        res.redirect('/login?error=auth_failed');
     }
 );
-
-// Debug route for OAuth issues
-router.get('/auth/debug', (req, res) => {
-    res.json({
-        nodeEnv: process.env.NODE_ENV,
-        hasGoogleClientId: !!process.env.GOOGLE_CLIENT_ID,
-        hasGoogleClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
-        callbackUrl: process.env.CALLBACK_URL,
-        sessionConfigured: !!req.session,
-        authenticated: req.isAuthenticated(),
-        allowedUsers: process.env.ALLOWED_USERS ? process.env.ALLOWED_USERS.split(',').length : 0
-    });
-});
 
 // Logout route
 router.get('/logout', (req, res) => {
@@ -114,7 +108,9 @@ router.get('/api/user', (req, res) => {
             user: {
                 name: req.user.name,
                 email: req.user.email,
-                picture: req.user.picture
+                picture: req.user.picture,
+                // The same check as the admin API guard, so the Admin link shows exactly when /api/admin lets you in.
+                isAdmin: isAdmin(req.user.email)
             }
         });
     } else {

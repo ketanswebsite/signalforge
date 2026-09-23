@@ -63,23 +63,7 @@
     "path": "/auth/google/callback?error=server_error",
     "status": 302,
     "check": "redirectLogin",
-    "bug": "any provider error other than access_denied becomes passport this.error() (next(err)), which the route's failureRedirect (routes/auth.js:21) does not cover: the global error handler (server.js:3904) answers the browser with a JSON 502 instead of /login?error=auth_failed"
-   }
-  ]
- },
- {
-  "route": "GET /auth/debug",
-  "cases": [
-   {
-    "as": "anon",
-    "status": 200,
-    "check": "object",
-    "note": "public OAuth debug probe (routes/auth.js:87): config booleans, NODE_ENV and the callback URL, no secrets"
-   },
-   {
-    "as": "user",
-    "status": 200,
-    "check": "object"
+    "note": "Fixed in I5: an error handler on the callback chain redirects to the login page."
    }
   ]
  },
@@ -116,7 +100,7 @@
     "as": "admin",
     "status": 200,
     "check": "isAdminTrue",
-    "bug": "routes/auth.js:110 (mounted first, server.js:168) shadows server.js:955 and never returns user.isAdmin, so public/js/app-shell.js:197 never unhides the Admin portal menu item for the admin"
+    "note": "Fixed in I5: routes/auth.js reports isAdmin with the admin guard's own check."
    }
   ]
  },
@@ -728,36 +712,6 @@
   ]
  },
  {
-  "route": "GET /api/scanner/cron-status",
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401
-   },
-   {
-    "as": "token",
-    "status": 401,
-    "note": "the ops token does not pass the /api sign-in gate"
-   },
-   {
-    "as": "nosub",
-    "status": 200,
-    "check": "object",
-    "note": "no subscription check on this route (server.js:3462)"
-   },
-   {
-    "as": "user",
-    "status": 200,
-    "check": "object"
-   },
-   {
-    "as": "admin",
-    "status": 200,
-    "check": "object"
-   }
-  ]
- },
- {
   "route": "GET /favicon.ico",
   "cases": [
    {
@@ -796,61 +750,6 @@
    {
     "as": "admin",
     "status": 302
-   }
-  ]
- },
- {
-  "route": "GET /api/scanner/status",
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401
-   },
-   {
-    "as": "token",
-    "status": 401
-   },
-   {
-    "as": "nosub",
-    "status": 403,
-    "note": "ensureSubscriptionActive"
-   },
-   {
-    "as": "user",
-    "status": 200,
-    "check": "object"
-   },
-   {
-    "as": "admin",
-    "status": 200,
-    "check": "object"
-   }
-  ]
- },
- {
-  "route": "GET /api/health/trading-automation",
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401
-   },
-   {
-    "as": "token",
-    "status": 401
-   },
-   {
-    "as": "nosub",
-    "status": 403,
-    "note": "inline admin check (server.js:3636)"
-   },
-   {
-    "as": "user",
-    "status": 403
-   },
-   {
-    "as": "admin",
-    "status": 200,
-    "check": "object"
    }
   ]
  },
