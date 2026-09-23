@@ -1,0 +1,252 @@
+[
+ {
+  "route": "POST /api/signals/from-scan",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed before 5ef1168: the 7 AM scan stores its signals in process (lib/scanner/signal-store.js). It used to answer anonymously in front of the sign-in gate; now an anonymous POST stops at the gate. Anonymous: 401 at the /api sign-in gate (server.js:885)."
+   },
+   {
+    "as": "token",
+    "status": 401,
+    "note": "the ops token does not reopen it"
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: no handler, the 404 fallback answers (server.js:3914)"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/debug/all-trades",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in 5ef1168 (\"Close the any-account holes\"): always failed. Anonymous: 401 at the /api sign-in gate (server.js:885)."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: no handler, the 404 fallback answers (server.js:3914)"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/test-admin",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in 5ef1168 (\"Close the any-account holes\"): exposed platform data. Anonymous: 401 at the /api sign-in gate (server.js:885)."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: no handler, the 404 fallback answers (server.js:3914)"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/user-analytics",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in 5ef1168 (\"Close the any-account holes\"): exposed platform data. Anonymous: 401 at the /api sign-in gate (server.js:885)."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: no handler, the 404 fallback answers (server.js:3914)"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/debug/users",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in 5ef1168 (\"Close the any-account holes\"): returned every user's email. Anonymous: 401 at the /api sign-in gate (server.js:885)."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: no handler, the 404 fallback answers (server.js:3914)"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/recover-users",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in 5ef1168 (\"Close the any-account holes\"): wrote users through a GET. Anonymous: 401 at the /api sign-in gate (server.js:885)."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: no handler, the 404 fallback answers (server.js:3914)"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/signals/add-to-portfolio/:signalId",
+  "absent": true,
+  "path": "/api/signals/add-to-portfolio/{pendingSignalId}",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in 5ef1168 (\"Close the any-account holes\"): changed a signal for every portfolio. Anonymous: 401 at the /api sign-in gate (server.js:885)."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: no handler, the 404 fallback answers (server.js:3914)"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/signals/dismiss/:signalId",
+  "absent": true,
+  "path": "/api/signals/dismiss/{pendingSignalId}",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in 5ef1168 (\"Close the any-account holes\"): changed a signal for every portfolio. Anonymous: 401 at the /api sign-in gate (server.js:885)."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: no handler, the 404 fallback answers (server.js:3914)"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/executor/manual-execute/:market",
+  "absent": true,
+  "path": "/api/executor/manual-execute/UK",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in 5ef1168 (\"Close the any-account holes\"): fired the 1 PM executor for any signed-in account. Anonymous: 401 at the /api sign-in gate (server.js:885)."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: no handler, the 404 fallback answers (server.js:3914)"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/executor/logs",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in 5ef1168 (\"Close the any-account holes\"): exposed platform data. Anonymous: 401 at the /api sign-in gate (server.js:885)."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: no handler, the 404 fallback answers (server.js:3914)"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/exit-monitor/check-exits",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in 5ef1168 (\"Close the any-account holes\"): ran the all-users exit pass. Anonymous: 401 at the /api sign-in gate (server.js:885)."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: no handler, the 404 fallback answers (server.js:3914)"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/exit-monitor/check-trade/:tradeId",
+  "absent": true,
+  "path": "/api/exit-monitor/check-trade/{userActiveTradeId}",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in 5ef1168 (\"Close the any-account holes\"): ran the exit check for any trade. Anonymous: 401 at the /api sign-in gate (server.js:885)."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: no handler, the 404 fallback answers (server.js:3914)"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/run-migration-trade-alerts",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in 5ef1168 (\"Close the any-account holes\"): ran DDL that boot already runs. Anonymous: 401 at the /api sign-in gate (server.js:885)."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: no handler, the 404 fallback answers (server.js:3914)"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/execute-signals/:market",
+  "absent": true,
+  "path": "/api/execute-signals/UK",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in 5ef1168 (\"Close the any-account holes\"): an admin-checked duplicate of POST /api/admin/test-execution. Anonymous: 401 at the /api sign-in gate (server.js:885)."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: no handler, the 404 fallback answers (server.js:3914)"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/force-cron-trigger",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in 5ef1168 (\"Close the any-account holes\"): an admin-checked duplicate of POST /api/admin/test-scan. Anonymous: 401 at the /api sign-in gate (server.js:885)."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: no handler, the 404 fallback answers (server.js:3914)"
+   }
+  ]
+ }
+]

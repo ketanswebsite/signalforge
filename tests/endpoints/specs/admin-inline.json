@@ -1,0 +1,849 @@
+[
+ {
+  "route": "GET /api/admin/subscribers",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/manual-link",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "body": {}
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "body": {}
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "body": {
+     "email": "harness-user@e2e.invalid",
+     "chatId": "-1000000000001"
+    },
+    "note": "a well-formed link request from a non-admin is refused before the handler"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {},
+    "note": "Email and Chat ID are required"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "bug": "no JSON body leaves req.body undefined (Express 5 / body-parser 2 no longer default it to {}); server.js:1580 destructures it unguarded and the catch at server.js:1598-1600 answers 500 'Failed to link accounts' instead of 400"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "email": "harness-victim@e2e.invalid",
+     "chatId": "-1999999999999"
+    },
+    "note": "unknown chat id: 'Telegram user not found or not subscribed', nothing written"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "email": "harness-victim@e2e.invalid",
+     "chatId": "not-a-chat-id"
+    },
+    "bug": "chatId is never validated: telegram_subscribers.chat_id is BIGINT in the harness schema (copied from the dev DB; the boot DDL's VARCHAR(100) never applies to an existing table), so manualLinkTelegramToUser's first SELECT (database-postgres.js:2477) raises 22P02 and the catch at server.js:1598-1600 answers 500 instead of 400. Schema-dependent: on a VARCHAR chat_id this request already gets 400"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "email": "harness-ghost@e2e.invalid",
+     "chatId": "-1000000000001"
+    },
+    "note": "unknown account: 'OAuth user not found', nothing written"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "email": "harness-victim@e2e.invalid",
+     "chatId": "-1000000000001"
+    },
+    "note": "links the victim to the seeded harness subscriber; the manual-unlink spec right after this one undoes it"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/manual-unlink",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "body": {}
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "body": {}
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "body": {
+     "email": "harness-victim@e2e.invalid"
+    }
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {},
+    "note": "Email is required"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "bug": "no JSON body leaves req.body undefined (Express 5 / body-parser 2); server.js:1612 destructures it unguarded and the catch at server.js:1623-1625 answers 500 'Failed to unlink account' instead of 400"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "email": "harness-victim@e2e.invalid"
+    },
+    "note": "restores the victim after the manual-link happy path (clears users.telegram_* and telegram_subscribers.user_id)"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/remove-telegram-user",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "body": {}
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "body": {}
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "body": {
+     "chatId": "-1999999999999"
+    }
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {},
+    "note": "Chat ID is required"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "bug": "no JSON body leaves req.body undefined (Express 5 / body-parser 2); server.js:1637 destructures it unguarded and the catch at server.js:1650-1652 answers 500 'Failed to remove user' instead of 400"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "chatId": "not-a-chat-id"
+    },
+    "bug": "chatId is never validated: telegram_subscribers.chat_id is BIGINT in the harness schema, so removeTelegramSubscriber's UPDATE ... WHERE chat_id = $1 (database-postgres.js:2327) raises 22P02 and the catch at server.js:1650-1652 answers 500 instead of 400 (on a VARCHAR chat_id it would be a 200 no-op, still not 400)"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "chatId": "-1999999999999"
+    },
+    "note": "unknown chat id: the soft-delete (is_active=false) matches no row and the handler reports success (idempotent removal); the seeded subscriber other specs read is never deactivated"
+   }
+  ],
+  "order": "last",
+  "note": "order last: a bulk-destructive admin handler. Its only writing case targets a row that does not exist, so it changes nothing today; running it last keeps any future regression from reaching data that other specs read."
+ },
+ {
+  "route": "POST /api/admin/remove-oauth-user",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "body": {}
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "body": {}
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "body": {
+     "email": "harness-ghost@e2e.invalid"
+    }
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {},
+    "note": "Email is required"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "bug": "no JSON body leaves req.body undefined (Express 5 / body-parser 2); server.js:1664 destructures it unguarded and the catch at server.js:1692-1694 answers 500 'Failed to remove user' instead of 400"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "email": "harness-ghost@e2e.invalid"
+    },
+    "note": "account that does not exist: runs the whole handler (own pg Pool, unlink, DELETE trades, DELETE users) and deletes nothing; no real persona is removed"
+   }
+  ],
+  "order": "last",
+  "note": "order last: a bulk-destructive admin handler. Its only writing case targets a row that does not exist, so it changes nothing today; running it last keeps any future regression from reaching data that other specs read."
+ },
+ {
+  "route": "GET /api/admin/stats",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/migrate-capital",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "note": "no user_id='system' rows in the harness ledger, so it returns 'Migration already completed' before any UPDATE or ALTER TABLE"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/fix-position-count",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "note": "touches only the admin's India portfolio_capital row; the admin has no India trades, so the counters already match 0/0"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/tests/database",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "probe-only: spawns tests/database.test.js, never called authorised"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/tests/performance",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "probe-only: spawns tests/performance.test.js, never called authorised"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/tests/verify-system",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "probe-only: spawns scripts/verify-system.js, never called authorised"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/check-subscription-setup",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/test-scan",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "probe-only: runs the 7 AM high-conviction scan, never called authorised"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/test-execution",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "probe-only: runs the 1 PM executor, never called authorised"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/market-cap/stats",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/refresh-market-caps",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "probe-only: refetches every market cap, never called authorised"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/pending-signals",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "path": "/api/admin/pending-signals?status=dismissed&market=UK",
+    "note": "status/market filters (HARNESSQ.L is the seeded dismissed UK signal)"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/execution-logs",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/signal-diagnostics",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/push/broadcast",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "probe-only: pushes to every subscribed device, never called authorised"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/dismiss-old-signals",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "body": {}
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "body": {}
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "body": {
+     "date": "2000-01-01"
+    }
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {},
+    "note": "Date parameter required (format: YYYY-MM-DD)"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "bug": "no JSON body leaves req.body undefined (Express 5 / body-parser 2); server.js:3579 destructures it unguarded and the catch at server.js:3626-3628 answers 500 instead of 400"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "date": "not-a-date"
+    },
+    "bug": "date is never validated: server.js:3588-3594 hands 'not-a-date' to 'signal_date = $1', Postgres rejects the date (22007) and the catch at server.js:3626-3628 answers 500 with the raw DB message instead of 400"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "date": "2000-01-01"
+    },
+    "note": "a date with no pending signals: dismissed 0; today's HARNESSP.L (read by other specs) is never touched"
+   }
+  ],
+  "order": "last",
+  "note": "order last: a bulk-destructive admin handler. Its only writing case targets a row that does not exist, so it changes nothing today; running it last keeps any future regression from reaching data that other specs read."
+ },
+ {
+  "route": "GET /api/portfolio/status",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "note": "body bug not visible to a status check: totalTrades is the STRING '10' for 1 active + 0 closed (high-conviction-manager.js getPortfolioStatus adds two COUNT(*) strings)"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/portfolio/trades/active",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/portfolio/trades/all",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "path": "/api/portfolio/trades/all?startDate=2000-01-01&endDate=2100-12-31"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "path": "/api/portfolio/trades/all?startDate=not-a-date",
+    "bug": "startDate/endDate are never validated: server.js:3757-3758 passes 'not-a-date' to getAllHighConvictionTrades (database-postgres.js:2650, 'signal_date >= $1'), Postgres rejects the date (22007) and the catch at server.js:3760-3761 answers 500 instead of 400"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/portfolio/pl-summary",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "path": "/api/portfolio/pl-summary?startDate=2000-01-01&endDate=2100-12-31"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "path": "/api/portfolio/pl-summary?startDate=not-a-date",
+    "bug": "startDate/endDate are never validated: server.js:3772-3773 passes 'not-a-date' to getHighConvictionPLSummary (database-postgres.js:2747, 'signal_date >= $1'), Postgres rejects the date (22007) and the catch at server.js:3775-3776 answers 500 instead of 400"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/portfolio/update-trades",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "probe-only: reprices and may close every high-conviction position, never called authorised"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/portfolio/send-weekly-report",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "probe-only: broadcasts the weekly report to every Telegram subscriber, never called authorised"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/portfolio/preview-report",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/portfolio/close-trade/:symbol",
+  "path": "/api/portfolio/close-trade/HARNESSH.L",
+  "order": "last",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "body": {
+     "exitPrice": 105,
+     "exitReason": "Harness manual close"
+    }
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "body": {
+     "exitPrice": 105,
+     "exitReason": "Harness manual close"
+    }
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "body": {
+     "exitPrice": 105,
+     "exitReason": "Harness manual close"
+    },
+    "note": "a well-formed close from a non-admin is refused before the handler"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {},
+    "note": "exitPrice and exitReason required"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "bug": "no JSON body leaves req.body undefined (Express 5 / body-parser 2); server.js:3842 destructures it unguarded and the catch at server.js:3898-3899 answers 500 instead of 400"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "exitPrice": "not-a-price",
+     "exitReason": "Harness manual close"
+    },
+    "bug": "server.js:3844 only checks exitPrice is truthy: 'not-a-price' (and a NaN P&L) reach the DECIMAL exit_price column in closeHighConvictionTrade (database-postgres.js:2712), Postgres rejects it (22P02) and the catch at server.js:3898-3899 answers 500 instead of 400; the UPDATE fails, so the position stays open"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "path": "/api/portfolio/close-trade/HARNESSZ.L",
+    "body": {
+     "exitPrice": 105,
+     "exitReason": "Harness manual close"
+    },
+    "note": "no active high-conviction position in that symbol"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "exitPrice": 105,
+     "exitReason": "Harness manual close"
+    },
+    "note": "closes the seeded HARNESSH.L position (order last: every other spec that reads it has run); no bot token, so the exit broadcast is a no-op"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "body": {
+     "exitPrice": 105,
+     "exitReason": "Harness manual close"
+    },
+    "note": "a second close finds no active position: 404, no second alert"
+   }
+  ]
+ }
+]

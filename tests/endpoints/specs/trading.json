@@ -1,0 +1,843 @@
+[
+ {
+  "route": "GET /api/user/auto-trading",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 200,
+    "check": "object",
+    "note": "reading your own auto-trading switch has no subscription gate (server.js:1094)"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/user/auto-trading",
+  "body": {
+   "enabled": false
+  },
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "body": {
+     "enabled": false
+    },
+    "note": "ensureSubscriptionActive: no subscription -> 403 before the handler (body is the default state, so nosub cannot change even if the gate broke)"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object",
+    "note": "user starts disabled, so this is a no-op write"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object",
+    "body": {},
+    "note": "fail-safe by design: anything but enabled === true turns auto-trading off (server.js:1110)"
+   },
+   {
+    "as": "delete",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "enabled": true
+    },
+    "note": "happy path on the throwaway persona"
+   },
+   {
+    "as": "delete",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "enabled": false
+    },
+    "note": "switch it back off"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "note": "admin bypasses the subscription gate; admin starts disabled so this is a no-op"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/signals/recent",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401,
+    "note": "the analysis token is not a session; only the pre-gate ops routes take it"
+   },
+   {
+    "as": "nosub",
+    "status": 200,
+    "check": "object",
+    "note": "the Scanner signals feed is visible to every signed-in account (no subscription gate by design)"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "user",
+    "path": "/api/signals/recent?days=abc",
+    "status": 200,
+    "check": "object",
+    "note": "unparsable days falls back to 7"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/trades",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "note": "ensureSubscriptionActive: 'Subscription expired'"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "array"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "array",
+    "note": "admin bypasses the subscription gate"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/trades/active",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "array"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "array"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/trades/closed",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "array"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "array"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/trades/:id",
+  "path": "/api/trades/{userActiveTradeId}",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "user",
+    "path": "/api/trades/{userClosedTradeId}",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "user",
+    "path": "/api/trades/{deleteTradeId}",
+    "status": 404,
+    "note": "another user's trade: the lookup is scoped to the caller"
+   },
+   {
+    "as": "user",
+    "path": "/api/trades/999999999",
+    "status": 404
+   },
+   {
+    "as": "user",
+    "path": "/api/trades/not-a-number",
+    "status": 404,
+    "note": "getTradeById swallows the bigint cast error and returns null"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "owner-scoped even for the admin"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/trades",
+  "body": {
+   "symbol": "HARNESS.L",
+   "name": "Harness plc",
+   "entryDate": "2026-09-21T08:00:00.000Z",
+   "entryPrice": 100,
+   "shares": 2,
+   "targetPrice": 108,
+   "stopLossPercent": 5,
+   "investmentAmount": 200,
+   "market": "UK",
+   "currencySymbol": "£"
+  },
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "body": {},
+    "note": "the subscription gate answers first (an empty body, so nosub cannot gain a trade even if the gate broke)"
+   },
+   {
+    "as": "delete",
+    "status": 201,
+    "check": "object",
+    "note": "valid manual trade on the throwaway persona"
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "body": {},
+    "bug": "no body validation: POST /api/trades hands {} straight to TradeDB.insertTrade (server.js:2369-2382) and Postgres rejects the NULL symbol (database-postgres.js:1752; trades.symbol is NOT NULL at database-postgres.js:31) -> 500 with the raw constraint message"
+   }
+  ]
+ },
+ {
+  "route": "PUT /api/trades/:id",
+  "path": "/api/trades/{deleteTradeId}",
+  "body": {
+   "notes": "harness note"
+  },
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "another user's trade: the lookup is scoped to the caller, nothing is written"
+   },
+   {
+    "as": "delete",
+    "status": 200,
+    "check": "object",
+    "note": "plain field update"
+   },
+   {
+    "as": "delete",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "status": "closed",
+     "exitPrice": 101,
+     "exitDate": "2026-09-22T15:00:00.000Z",
+     "exitReason": "Manual exit (harness)"
+    },
+    "note": "active -> closed goes through closeTradeAndRelease (manual trade: no capital release)"
+   },
+   {
+    "as": "user",
+    "path": "/api/trades/{userActiveTradeId}",
+    "status": 400,
+    "body": {},
+    "bug": "an update with no updatable field answers 404 'Trade not found' for a trade that exists (it was just loaded at server.js:2391): TradeDB.updateTrade returns null when nothing is set (database-postgres.js:1883) and server.js:2422-2425 maps that null to 404"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/trades/bulk",
+  "body": {
+   "trades": [
+    {
+     "symbol": "HARNESS.L",
+     "stockName": "Harness plc",
+     "entryDate": "2026-09-19T08:00:00.000Z",
+     "entryPrice": 100,
+     "shares": 1,
+     "status": "active"
+    }
+   ]
+  },
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "body": {},
+    "note": "the subscription gate answers first (an empty body, so nosub cannot gain a trade even if the gate broke)"
+   },
+   {
+    "as": "delete",
+    "status": 200,
+    "check": "object",
+    "note": "imports one trade for the throwaway persona"
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "body": {},
+    "bug": "no validation of body.trades: server.js:2459-2468 passes undefined to TradeDB.bulkInsertTrades, whose for...of throws 'trades is not iterable' (database-postgres.js:1946) -> 500"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/portfolio/initialize-capital",
+  "body": {
+   "india": 1000000,
+   "uk": 10000,
+   "us": 15000
+  },
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 400,
+    "body": {},
+    "note": "no subscription gate on this route; the validation answers first (nosub is never given a valid body)"
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "body": {},
+    "note": "'Invalid capital amounts'"
+   },
+   {
+    "as": "delete",
+    "status": 200,
+    "check": "object",
+    "note": "the seeded baseline amounts again: an effective no-op on the throwaway persona"
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "body": {
+     "india": "abc",
+     "uk": 10000,
+     "us": 15000
+    },
+    "bug": "amounts are not type-checked: a non-numeric string passes `!india || india < 0` (server.js:2479) and Postgres rejects it in updatePortfolioCapital (database-postgres.js:3123) -> 500; the first market fails so nothing is written"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/portfolio/capital",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 200,
+    "check": "object",
+    "note": "no subscription gate; nosub has no ledger rows so capital is {}"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/portfolio/check-exits",
+  "body": {},
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 200,
+    "check": "object",
+    "note": "a stub: counts the caller's own active trades and triggers nothing (server.js:2520-2551)"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/signals/pending",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 200,
+    "check": "object",
+    "note": "signals feed: no subscription gate by design"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "user",
+    "path": "/api/signals/pending?status=dismissed&market=UK",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/market-cap/:symbol",
+  "path": "/api/market-cap/HARNESS.L",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "user",
+    "path": "/api/market-cap/NOSUCH.L",
+    "status": 404
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/market-cap/bulk",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "body": {
+     "symbols": [
+      "HARNESS.L"
+     ]
+    }
+   },
+   {
+    "as": "nosub",
+    "status": 400,
+    "body": {},
+    "note": "no subscription gate: the validation answers"
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "body": {},
+    "note": "'symbols array is required'"
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "body": {
+     "symbols": "HARNESS.L"
+    },
+    "note": "a string is not an array"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "symbols": [
+      "HARNESS.L",
+      "NOSUCH.L"
+     ]
+    },
+    "note": "known symbols map to their cap, unknown ones are left out"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "symbols": [
+      "HARNESS.L"
+     ]
+    }
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "note": "no request body at all",
+    "bug": "a POST without a JSON body crashes instead of failing validation: under Express 5 / body-parser 2 req.body stays undefined when nothing is parsed, and server.js:2679 destructures it (`const { symbols } = req.body`) before the 400 check -> TypeError -> 500. Same pattern, same 500, in this slice's POST /api/trades (2374), PUT /api/trades/:id (2397), POST /api/trades/bulk (2461), POST /api/portfolio/initialize-capital (2476), POST /api/push/subscribe (3286) and POST /api/push/unsubscribe (3306)"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/alerts/preferences",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "note": "no row: the handler answers the defaults"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/alerts/preferences",
+  "body": {
+   "telegram_enabled": true,
+   "alert_on_buy": true,
+   "alert_on_target": true,
+   "alert_on_stoploss": true,
+   "alert_on_time_exit": true
+  },
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "body": {
+     "telegram_enabled": "banana"
+    },
+    "note": "the subscription gate answers first; the body could never be stored, so nosub cannot gain a row even if the gate broke"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object",
+    "note": "the same values the seed stored: an effective no-op"
+   },
+   {
+    "as": "delete",
+    "status": 200,
+    "check": "object",
+    "body": {},
+    "note": "an empty body upserts the defaults for the whitelisted columns"
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "body": {
+     "telegram_enabled": "banana"
+    },
+    "bug": "no type validation: a non-boolean telegram_enabled goes straight into the upsert (server.js:3255-3260, database-postgres.js:2058) and Postgres rejects it (invalid input syntax for type boolean) -> 500; nothing is written"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/push/vapid-public-key",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "registered after the /api sign-in gate"
+   },
+   {
+    "as": "nosub",
+    "status": 503,
+    "note": "the harness has no VAPID keys: 'Push notifications not configured'"
+   },
+   {
+    "as": "user",
+    "status": 503
+   },
+   {
+    "as": "admin",
+    "status": 503
+   }
+  ]
+ },
+ {
+  "route": "POST /api/push/subscribe",
+  "body": {
+   "subscription": {
+    "endpoint": "https://push.e2e.invalid/harness-delete-1",
+    "keys": {
+     "p256dh": "harness-p256dh",
+     "auth": "harness-auth"
+    }
+   },
+   "userAgent": "harness"
+  },
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 400,
+    "body": {},
+    "note": "no subscription gate; validation answers first (nosub is never given a valid body)"
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "body": {},
+    "note": "'Invalid subscription data'"
+   },
+   {
+    "as": "delete",
+    "status": 200,
+    "check": "object",
+    "note": "fake .invalid endpoint on the throwaway persona"
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "body": {
+     "subscription": {
+      "endpoint": "https://push.e2e.invalid/harness-user-nokeys",
+      "keys": {}
+     }
+    },
+    "bug": "keys are only checked for presence: an empty keys object passes server.js:3288 and the INSERT hits NOT NULL keys_p256dh (database-postgres.js:3603; keys_p256dh is NOT NULL at database-postgres.js:387) -> 500 'Failed to save subscription'"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/push/unsubscribe",
+  "body": {
+   "endpoint": "https://push.e2e.invalid/harness-delete-1"
+  },
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 400,
+    "body": {}
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "body": {},
+    "note": "'Endpoint required'"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object",
+    "note": "someone else's endpoint: scoped to the caller, deletes nothing"
+   },
+   {
+    "as": "delete",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/push/status",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/push/test",
+  "body": {},
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "probe-only: every signed-in account is authorised to call it, so no signed-in case"
+   }
+  ]
+ },
+ {
+  "route": "DELETE /api/trades/:id",
+  "path": "/api/trades/{deleteTradeId}",
+  "order": "last",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "another user's trade: scoped delete, the row survives"
+   },
+   {
+    "as": "delete",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "delete",
+    "status": 404,
+    "note": "already gone"
+   }
+  ]
+ },
+ {
+  "route": "DELETE /api/trades",
+  "order": "last",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "delete",
+    "status": 200,
+    "check": "object",
+    "note": "deletes the throwaway persona's remaining trades (the POST and bulk imports above)"
+   }
+  ]
+ }
+]

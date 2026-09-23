@@ -1,0 +1,2278 @@
+[
+ {
+  "route": "POST /api/admin/auth/token",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "note": "session admin gets a signed admin JWT (also set as the admin_token cookie)"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/auth/verify",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "body": {}
+   },
+   {
+    "as": "token",
+    "status": 401,
+    "body": {}
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "body": {}
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "body": {}
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {},
+    "bug": "no cookie-parser is mounted in server.js, so req.cookies is undefined and `req.body.token || req.cookies.admin_token` throws (\"Cannot read properties of undefined (reading 'admin_token')\") -> 500 SERVER_ERROR instead of 400 MISSING_TOKEN; middleware/admin-auth.js:286"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "bug": "Express 5 leaves req.body undefined without a JSON body, so `req.body.token` throws -> 500 SERVER_ERROR instead of 400 MISSING_TOKEN; middleware/admin-auth.js:286"
+   },
+   {
+    "as": "admin",
+    "status": 401,
+    "body": {
+     "token": "harness-not-a-jwt"
+    },
+    "note": "an unverifiable token is answered 401 INVALID_TOKEN by design"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/audit/logs",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "note": "placeholder handler: always { logs: [] }"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/events",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/dashboard/metrics",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/users",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "path": "/api/admin/users?page=2&limit=1",
+    "check": "object",
+    "note": "pagination parameters"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/users/complimentary",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/users/:email",
+  "path": "/api/admin/users/harness-victim@e2e.invalid",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "path": "/api/admin/users/nobody-writer-b@e2e.invalid",
+    "note": "USER_NOT_FOUND"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/users",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "body": {
+     "email": "harness-writer-b@e2e.invalid",
+     "name": "Harness Writer B"
+    }
+   },
+   {
+    "as": "token",
+    "status": 401,
+    "body": {
+     "email": "harness-writer-b@e2e.invalid",
+     "name": "Harness Writer B"
+    }
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "body": {
+     "email": "harness-writer-b@e2e.invalid",
+     "name": "Harness Writer B"
+    }
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "body": {
+     "email": "harness-writer-b@e2e.invalid",
+     "name": "Harness Writer B"
+    }
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {},
+    "note": "MISSING_REQUIRED_FIELD email, name"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "bug": "Express 5 leaves req.body undefined when no JSON body is sent, so the handler's destructuring of req.body throws a TypeError before its own field validation -> 500 (routes/admin.js:240); correct is 400 MISSING_REQUIRED_FIELD"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "body": {
+     "email": "harness-writer-b@e2e.invalid",
+     "name": "Harness Writer B"
+    },
+    "check": "object",
+    "note": "creates a writer-B-only user; DELETE /api/admin/users/:email removes it at the end"
+   },
+   {
+    "as": "admin",
+    "status": 409,
+    "body": {
+     "email": "harness-writer-b@e2e.invalid",
+     "name": "Harness Writer B"
+    },
+    "note": "same email again: users_email_key -> DUPLICATE_ENTRY"
+   }
+  ]
+ },
+ {
+  "route": "PUT /api/admin/users/:email",
+  "path": "/api/admin/users/harness-victim@e2e.invalid",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "body": {
+     "name": "Harness Victim"
+    }
+   },
+   {
+    "as": "token",
+    "status": 401,
+    "body": {
+     "name": "Harness Victim"
+    }
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "body": {
+     "name": "Harness Victim"
+    }
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "body": {
+     "name": "Harness Victim"
+    }
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {},
+    "note": "MISSING_REQUIRED_FIELD name"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "bug": "Express 5 leaves req.body undefined when no JSON body is sent, so the handler's destructuring of req.body throws a TypeError before its own field validation -> 500 (routes/admin.js:255); correct is 400 MISSING_REQUIRED_FIELD"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "body": {
+     "name": "Harness Victim"
+    },
+    "check": "object",
+    "note": "sets the victim's name to its seeded value (no other field changes)"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "path": "/api/admin/users/nobody-writer-b@e2e.invalid",
+    "body": {
+     "name": "Nobody"
+    },
+    "note": "USER_NOT_FOUND"
+   }
+  ]
+ },
+ {
+  "route": "DELETE /api/admin/users/:email",
+  "path": "/api/admin/users/harness-writer-b@e2e.invalid",
+  "order": "last",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "path": "/api/admin/users/nobody-writer-b@e2e.invalid",
+    "note": "USER_NOT_FOUND"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "note": "deletes the user POST /api/admin/users created earlier in this file"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "already deleted"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/subscription-plans",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/subscription-plans",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "body": {
+     "plan_name": "Harness Plan B",
+     "plan_code": "HARNESS_B",
+     "region": "UK",
+     "currency": "GBP",
+     "price_monthly": 1.5,
+     "trial_days": 7
+    }
+   },
+   {
+    "as": "token",
+    "status": 401,
+    "body": {
+     "plan_name": "Harness Plan B",
+     "plan_code": "HARNESS_B",
+     "region": "UK",
+     "currency": "GBP",
+     "price_monthly": 1.5,
+     "trial_days": 7
+    }
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "body": {
+     "plan_name": "Harness Plan B",
+     "plan_code": "HARNESS_B",
+     "region": "UK",
+     "currency": "GBP",
+     "price_monthly": 1.5,
+     "trial_days": 7
+    }
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "body": {
+     "plan_name": "Harness Plan B",
+     "plan_code": "HARNESS_B",
+     "region": "UK",
+     "currency": "GBP",
+     "price_monthly": 1.5,
+     "trial_days": 7
+    }
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {},
+    "note": "MISSING_REQUIRED_FIELD plan_name, plan_code, region, currency, price_monthly"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "bug": "Express 5 leaves req.body undefined when no JSON body is sent, so the handler's destructuring of req.body throws a TypeError before its own field validation -> 500 (routes/admin.js:308); correct is 400 MISSING_REQUIRED_FIELD"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "body": {
+     "plan_name": "Harness Plan B",
+     "plan_code": "HARNESS_B",
+     "region": "UK",
+     "currency": "GBP",
+     "price_monthly": 1.5,
+     "trial_days": 7
+    },
+    "check": "object",
+    "note": "creates a writer-B-only plan (code HARNESS_B)"
+   },
+   {
+    "as": "admin",
+    "status": 409,
+    "body": {
+     "plan_name": "Harness Dup B",
+     "plan_code": "FREE",
+     "region": "Global",
+     "currency": "USD",
+     "price_monthly": 0
+    },
+    "note": "plan_code FREE exists: subscription_plans_plan_code_key -> DUPLICATE_ENTRY"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "plan_name": "Harness Mars B",
+     "plan_code": "HARNESS_MB",
+     "region": "Mars",
+     "currency": "GBP",
+     "price_monthly": 1
+    },
+    "bug": "region/currency are never validated (routes/admin.js:310-318); the DB CHECK subscription_plans_region_check rejects 'Mars' with 23514 and adminErrorHandler maps every 23xxx other than 23505/23503 to 500 DATABASE_ERROR (middleware/admin-error-handler.js:171-176) - a client input error answered as a server error"
+   }
+  ]
+ },
+ {
+  "route": "PUT /api/admin/subscription-plans/:id",
+  "path": "/api/admin/subscription-plans/{freePlanId}",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "body": {
+     "is_active": true
+    }
+   },
+   {
+    "as": "token",
+    "status": 401,
+    "body": {
+     "is_active": true
+    }
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "body": {
+     "is_active": true
+    }
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "body": {
+     "is_active": true
+    }
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {},
+    "note": "VALIDATION_ERROR: no fields to update"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "bug": "Express 5 leaves req.body undefined when no JSON body is sent, so the handler's destructuring of req.body throws a TypeError before its own field validation -> 500 (routes/admin.js:326); correct is 400 MISSING_REQUIRED_FIELD"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "body": {
+     "is_active": true
+    },
+    "check": "object",
+    "note": "FREE plan is already active: a no-op write"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "path": "/api/admin/subscription-plans/999999",
+    "body": {
+     "is_active": true
+    },
+    "note": "NOT_FOUND"
+   }
+  ]
+ },
+ {
+  "route": "DELETE /api/admin/subscription-plans/:id",
+  "path": "/api/admin/subscription-plans/{freePlanId}",
+  "order": "last",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "path": "/api/admin/subscription-plans/999999",
+    "note": "NOT_FOUND"
+   },
+   {
+    "as": "admin",
+    "status": 409,
+    "bug": "the in-use guard counts only status='active' subscriptions (routes/admin.js:373-376), so a plan whose subscribers are on trial (FREE) goes on to the DELETE; the FK user_subscriptions_plan_id_fkey refuses it (23503) and adminErrorHandler reports that as 400 INVALID_INPUT 'Referenced resource does not exist' (middleware/admin-error-handler.js:165-169) - should be 409 CONFLICT, plan still has subscriptions",
+    "note": "safe: the FK makes the DELETE fail atomically, the FREE plan stays"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/subscriptions",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "path": "/api/admin/subscriptions?status=trial&page=1&limit=10",
+    "check": "object",
+    "note": "status filter"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/subscriptions/:id/cancel",
+  "path": "/api/admin/subscriptions/{victimSubscriptionId}/cancel",
+  "order": "last",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "path": "/api/admin/subscriptions/999999/cancel",
+    "note": "NOT_FOUND"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "note": "cancels the victim's trial (ends the victim's access, hence order last)"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/users/:email/grant-access",
+  "path": "/api/admin/users/harness-victim@e2e.invalid/grant-access",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "body": {
+     "type": "lifetime",
+     "reason": "harness"
+    }
+   },
+   {
+    "as": "token",
+    "status": 401,
+    "body": {
+     "type": "lifetime",
+     "reason": "harness"
+    }
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "body": {
+     "type": "lifetime",
+     "reason": "harness"
+    }
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "body": {
+     "type": "lifetime",
+     "reason": "harness"
+    }
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {},
+    "note": "MISSING_REQUIRED_FIELD type, reason"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "bug": "Express 5 leaves req.body undefined when no JSON body is sent, so the handler's destructuring of req.body throws a TypeError before its own field validation -> 500 (routes/admin.js:472); correct is 400 MISSING_REQUIRED_FIELD"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "type": "forever",
+     "reason": "harness"
+    },
+    "note": "VALIDATION_ERROR: type must be lifetime or temporary"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "type": "temporary",
+     "reason": "harness"
+    },
+    "note": "VALIDATION_ERROR: expiresAt required for temporary"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "type": "temporary",
+     "expiresAt": "not-a-date",
+     "reason": "harness"
+    },
+    "bug": "expiresAt is checked for presence but never parsed (routes/admin.js:481-483); Postgres rejects 'not-a-date' (22007) in the UPDATE and it surfaces as 500 INTERNAL_SERVER_ERROR instead of 400 VALIDATION_ERROR"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "path": "/api/admin/users/nobody-writer-b@e2e.invalid/grant-access",
+    "body": {
+     "type": "lifetime",
+     "reason": "harness"
+    },
+    "note": "NOT_FOUND"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "body": {
+     "type": "temporary",
+     "expiresAt": "2099-01-01",
+     "reason": "harness grant"
+    },
+    "check": "object",
+    "note": "victim already has a live trial, so access is unchanged; revoke-access below takes it back"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/users/:email/revoke-access",
+  "path": "/api/admin/users/harness-victim@e2e.invalid/revoke-access",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "body": {
+     "reason": "harness"
+    }
+   },
+   {
+    "as": "token",
+    "status": 401,
+    "body": {
+     "reason": "harness"
+    }
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "body": {
+     "reason": "harness"
+    }
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "body": {
+     "reason": "harness"
+    }
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {},
+    "note": "MISSING_REQUIRED_FIELD reason"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "bug": "Express 5 leaves req.body undefined when no JSON body is sent, so the handler's destructuring of req.body throws a TypeError before its own field validation -> 500 (routes/admin.js:520); correct is 400 MISSING_REQUIRED_FIELD"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "path": "/api/admin/users/nobody-writer-b@e2e.invalid/revoke-access",
+    "body": {
+     "reason": "harness"
+    },
+    "note": "NOT_FOUND"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "body": {
+     "reason": "harness revoke"
+    },
+    "check": "object",
+    "note": "undoes the grant above"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/subscriptions/:id/extend",
+  "path": "/api/admin/subscriptions/{victimSubscriptionId}/extend",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "body": {
+     "days": 7,
+     "reason": "harness"
+    }
+   },
+   {
+    "as": "token",
+    "status": 401,
+    "body": {
+     "days": 7,
+     "reason": "harness"
+    }
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "body": {
+     "days": 7,
+     "reason": "harness"
+    }
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "body": {
+     "days": 7,
+     "reason": "harness"
+    }
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {},
+    "note": "MISSING_REQUIRED_FIELD days, reason"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "bug": "Express 5 leaves req.body undefined when no JSON body is sent, so the handler's destructuring of req.body throws a TypeError before its own field validation -> 500 (routes/admin.js:551); correct is 400 MISSING_REQUIRED_FIELD"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "days": 0,
+     "reason": "harness"
+    },
+    "note": "VALIDATION_ERROR: days must be positive"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "days": "abc",
+     "reason": "harness"
+    },
+    "note": "VALIDATION_ERROR: days must be a number"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "path": "/api/admin/subscriptions/999999/extend",
+    "body": {
+     "days": 7,
+     "reason": "harness"
+    },
+    "note": "NOT_FOUND"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "body": {
+     "days": 7,
+     "reason": "harness extend"
+    },
+    "check": "object",
+    "note": "extends the victim's trial"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/subscription-analytics",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/payments",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "path": "/api/admin/payments?status=completed&provider=manual&page=1&limit=10",
+    "check": "object",
+    "note": "filters"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/payments/verification-queue",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/payments/refunds",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/payments/:transactionId",
+  "path": "/api/admin/payments/{paymentTxnId}",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "path": "/api/admin/payments/harness-no-such-txn-b",
+    "note": "NOT_FOUND"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/payments/:transactionId/verify",
+  "path": "/api/admin/payments/{paymentTxnId}/verify",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "body": {
+     "approved": true
+    }
+   },
+   {
+    "as": "token",
+    "status": 401,
+    "body": {
+     "approved": true
+    }
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "body": {
+     "approved": true
+    }
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "body": {
+     "approved": true
+    }
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {},
+    "note": "MISSING_REQUIRED_FIELD approved"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "bug": "Express 5 leaves req.body undefined when no JSON body is sent, so the handler's destructuring of req.body throws a TypeError before its own field validation -> 500 (routes/admin.js:736); correct is 400 MISSING_REQUIRED_FIELD"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "path": "/api/admin/payments/harness-no-such-txn-b/verify",
+    "body": {
+     "approved": true
+    },
+    "bug": "never checks the transaction exists: both UPDATEs match 0 rows and it answers 200 'Payment approved successfully' for a payment that does not exist (routes/admin.js:743-759); should be 404 PAYMENT_NOT_FOUND"
+   },
+   {
+    "as": "admin",
+    "status": 422,
+    "body": {
+     "approved": true
+    },
+    "bug": "never checks the payment is awaiting verification: it re-stamps any payment, so an already-completed payment is 'approved' again (and approved:false would flip it to failed, or a refunded one back to completed and refundable) - routes/admin.js:741-747; PAYMENT_ALREADY_VERIFIED (422, middleware/admin-error-handler.js:39) exists but is unused",
+    "note": "harness-txn-0001 is seeded completed with no verification-queue row; approved:true is a no-op write today"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/payments/:transactionId/refund",
+  "path": "/api/admin/payments/{paymentTxnId}/refund",
+  "order": "last",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "body": {
+     "reason": "harness"
+    }
+   },
+   {
+    "as": "token",
+    "status": 401,
+    "body": {
+     "reason": "harness"
+    }
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "body": {
+     "reason": "harness"
+    }
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "body": {
+     "reason": "harness"
+    }
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {},
+    "note": "MISSING_REQUIRED_FIELD reason"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "bug": "Express 5 leaves req.body undefined when no JSON body is sent, so the handler's destructuring of req.body throws a TypeError before its own field validation -> 500 (routes/admin.js:765); correct is 400 MISSING_REQUIRED_FIELD"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "path": "/api/admin/payments/harness-no-such-txn-b/refund",
+    "body": {
+     "reason": "harness"
+    },
+    "note": "NOT_FOUND"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "body": {
+     "reason": "harness refund"
+    },
+    "check": "object",
+    "bug": "the UPDATE sets refund_reason and refunded_at on payment_transactions (routes/admin.js:786-790), columns only payment_refunds has (database-postgres.js:135-137; migrations/003 never gave them to payment_transactions): Postgres 42703 -> 500, so no completed payment can ever be refunded",
+    "note": "order last: once fixed this refunds the seeded payment"
+   },
+   {
+    "as": "admin",
+    "status": 422,
+    "body": {
+     "reason": "harness refund again"
+    },
+    "bug": "same root cause as the case above: the first refund never lands, so this repeat 500s on the same UPDATE instead of reaching the 'Can only refund completed payments' INVALID_STATE check (routes/admin.js:781-783)",
+    "note": "discriminator: a 422 today would mean the first refund's UPDATE had gone through"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/payment-analytics",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/audit/unified",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401,
+    "note": "the ops token does not open the admin API"
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "path": "/api/admin/audit/unified?entity=trade&action=INSERT&user=harness&search=harness&dateFrom=2000-01-01&dateTo=2999-12-31&page=1&limit=5",
+    "note": "every filter at once: checks the $n placeholder numbering of the data and count queries"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "path": "/api/admin/audit/unified?dateFrom=not-a-date",
+    "bug": "routes/admin.js:916-919 passes an unvalidated dateFrom straight into the SQL (created_at >= $n); Postgres rejects it (22007) at admin.js:978 and adminErrorHandler turns it into 500 INTERNAL_SERVER_ERROR"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/audit/analytics",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/audit/export",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "note": "default format is CSV (text/csv attachment)"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "array",
+    "path": "/api/admin/audit/export?format=json&entity=trade&action=INSERT&user=harness&dateFrom=2000-01-01&dateTo=2999-12-31"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "path": "/api/admin/audit/export?dateFrom=not-a-date",
+    "bug": "routes/admin.js:1064-1067 passes an unvalidated dateFrom straight into the SQL; Postgres rejects it (22007) at admin.js:1076 and the admin error handler answers 500"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/audit/statistics",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "note": "always an empty list today: activity logging is switched off (routes/admin.js:55-56), so nothing writes admin_activity_log"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "path": "/api/admin/audit/statistics?startDate=2000-01-01T00:00:00Z&endDate=2999-12-31T00:00:00Z"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "path": "/api/admin/audit/statistics?startDate=not-a-date",
+    "bug": "routes/admin.js:1105-1108 passes startDate/endDate unvalidated to getActivityStatistics, which swallows the Postgres error (middleware/admin-activity-log.js:363-365) and returns [] -> 200 with empty statistics instead of 400 (same unvalidated-date fault as /audit/unified and /audit/export, minus the 500)"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/audit/:id",
+  "path": "/api/admin/audit/1",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "note": "trade_audit_log id 1 = the INSERT of the first seeded trade (the audit trigger fires during seed.sql; the scratch sequence starts at 1)"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "path": "/api/admin/audit/999999999"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "path": "/api/admin/audit/not-a-number",
+    "bug": "routes/admin.js:1117-1120 compares the raw :id with the BIGINT id column; a non-numeric id makes Postgres throw 22P02 and the admin error handler answers 500 instead of NOT_FOUND"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/audit/:id/export",
+  "path": "/api/admin/audit/1/export",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "path": "/api/admin/audit/999999999/export"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "path": "/api/admin/audit/not-a-number/export",
+    "bug": "routes/admin.js:1133-1136 compares the raw :id with the BIGINT id column; a non-numeric id makes Postgres throw 22P02 and the admin error handler answers 500 instead of NOT_FOUND"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/analytics/revenue",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/analytics/engagement",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/analytics/subscriptions",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/analytics/trades",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/analytics/reports",
+  "body": {},
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "note": "requireFields type, period, format"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "type": "revenue",
+     "period": "30d",
+     "format": "pdf"
+    },
+    "note": "placeholder (admin.js:1443): answers 'Report generation started' / status processing but generates nothing"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/analytics/overview",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "note": "legacy placeholder: 'Analytics coming soon'"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/database/health",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/database/status",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "bug": "routes/admin.js:1510-1518 selects tablename from pg_stat_user_tables, whose column is relname (the /database/health query at admin.js:1481 already aliases relname AS tablename) -> 500 'column \"tablename\" does not exist' on every call. No page calls this legacy route, so deleting it is the other fix (then mark the spec absent)"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/database/migrations",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/database/migrations/run",
+  "body": {},
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "note": "placeholder (admin.js:1573): runs nothing, but answers success:true, so public/js/admin-database.js:980 shows 'Migrations completed successfully'"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/database/migrations/run-single",
+  "body": {},
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "note": "requireField filename"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "filename": "harness-no-such-migration.sql"
+    },
+    "bug": "routes/admin.js:1582-1591 is a placeholder that answers 200 success:true for ANY filename, even one that is not in migrations/ (public/js/admin-database.js:1011 then says 'Migration completed'); a missing body-referenced resource is 400 INVALID_INPUT by this codebase's own convention (middleware/admin-error-handler.js:165-168)"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/database/backups",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "note": "placeholder: always an empty list"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/database/backups/create",
+  "body": {},
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "note": "placeholder (admin.js:1602): creates no backup but answers 'Backup created' with a filename (public/js/admin-database.js:1047 shows 'Backup created successfully'); GET /database/backups stays empty"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/database/backups/download/:filename",
+  "path": "/api/admin/database/backups/download/harness-no-such-backup.sql",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "bug": "routes/admin.js:1611-1617 is a placeholder that answers 200 JSON 'coming soon' for any filename; no backup exists (GET /database/backups is empty), so this must be 404"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/database/backups/restore",
+  "body": {},
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "note": "requireField filename"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "filename": "harness-no-such-backup.sql"
+    },
+    "bug": "routes/admin.js:1620-1628 is a placeholder that answers 200 success:true for a backup that does not exist (GET /database/backups is empty), so public/js/admin-database.js:1092 shows 'Backup restored successfully'; a missing body-referenced resource is 400 INVALID_INPUT by this codebase's own convention (middleware/admin-error-handler.js:165-168)"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/database/query",
+  "body": {},
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "PROBE-ONLY: arbitrary SQL runner, never called as admin"
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/database/maintenance-status",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/database/maintenance/vacuum",
+  "body": {},
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "note": "plain VACUUM on the scratch database: no data change"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/database/maintenance/analyze",
+  "body": {},
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/database/maintenance/reindex",
+  "body": {},
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "note": "REINDEX TABLE per public table; per-table failures are only logged"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/database/maintenance/analyze-table",
+  "body": {},
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "note": "requireField tableName"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "tableName": "trades"
+    }
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "tableName": "harness_no_such_table"
+    },
+    "bug": "routes/admin.js:1754 interpolates tableName unvalidated into `ANALYZE ${tableName}` (SQL injection); an unknown table makes Postgres throw 42P01 and the admin error handler answers 500 instead of 400 INVALID_INPUT (whitelist against pg_tables)"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/settings/general",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/settings/telegram",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/settings/telegram/test",
+  "body": {},
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "PROBE-ONLY: never called as admin"
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 403
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/settings/payment",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/settings/email-templates",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/settings/email-templates/:templateId",
+  "path": "/api/admin/settings/email-templates/welcome",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "path": "/api/admin/settings/email-templates/harness-no-such-template",
+    "bug": "routes/admin.js:1849-1858 is a placeholder that answers 200 with a sample template for ANY templateId, including ids that GET /settings/email-templates does not list"
+   }
+  ]
+ },
+ {
+  "route": "PUT /api/admin/settings/email-templates/:templateId",
+  "path": "/api/admin/settings/email-templates/welcome",
+  "body": {},
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "note": "requireFields subject, body"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "subject": "Harness subject",
+     "body": "<p>Harness body</p>"
+    },
+    "note": "placeholder (admin.js:1867): echoes the template back, persists nothing"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/settings/feature-flags",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/settings/feature-flags",
+  "body": {},
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "note": "requireField flags"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "flags": {
+      "newDashboard": {
+       "enabled": false
+      }
+     }
+    },
+    "note": "placeholder (admin.js:1897): persists nothing; GET keeps returning the hard-coded flags"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/settings/broadcast",
+  "body": {},
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "note": "requireFields title, message, audience"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "title": "Harness",
+     "message": "Harness broadcast",
+     "audience": "admins",
+     "viaEmail": false,
+     "viaTelegram": false,
+     "viaInApp": false
+    },
+    "note": "placeholder (admin.js:1909): sends nothing and reports a made-up sentCount (admins -> 5)"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/settings/maintenance",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/settings/maintenance-mode",
+  "body": {},
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "note": "no validation: an empty body reads as enabled=false ('Maintenance mode disabled')"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "enabled": false,
+     "message": "",
+     "eta": ""
+    },
+    "note": "placeholder (admin.js:1950): toggles nothing; GET /settings/maintenance reads MAINTENANCE_MODE from the environment"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/settings/clear-cache",
+  "body": {},
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "note": "requireField type"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "type": "all"
+    },
+    "note": "placeholder (admin.js:1964): clears nothing"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/settings",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/system/trigger-scan",
+  "body": {},
+  "order": "last",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "note": "placeholder (admin.js:1987): triggers nothing yet answers 'Stock scanner triggered', scheduled:true. If it is ever wired to the scanner, make this case probe-only"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/system/health",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "note": "answered by routes/admin.js:1996; the server.js:1724 handler for the same path is shadowed and never runs"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/sse/connections",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ }
+]

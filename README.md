@@ -24,7 +24,7 @@ Update it in the same commit as the change it describes. See rule 1.
 
 | Status | Meaning |
 |---|---|
-| ✅ Working | Its endpoint and unit tests pass. |
+| ✅ Working | Every route of the feature answers as specified (status, access rules, basic shape) in the endpoint harness on that commit, and its unit tests pass. |
 | 🟢 Unit-tested | The core logic is covered by unit tests; endpoint tests are pending. |
 | 🟡 Untested | No automated test yet. |
 | ⚠️ Faulty | Verified bug(s); a fix is queued. |
@@ -37,71 +37,71 @@ Update it in the same commit as the change it describes. See rule 1.
 
 | Feature | Version | Last tested | Status |
 |---|---|---|---|
-| Sign-in & session (Google OAuth: `/login`, `/auth/google*`, `/logout`, `GET /api/user`) | 1.0 | — | ⚠️ Faulty: `GET /api/user` omits `isAdmin`, so the Admin link never shows. Sessions live in memory, so every deploy signs everyone out. |
-| Free trial & subscription access (`/api/user/subscription/*`, `ensureSubscriptionActive`) | 1.0 | — | ❌ Broken: the trial page misreads its status (always day 0), and its trial route exists only when Stripe keys are set. Cancelling ends access at once. Re-trials are unlimited. Schema drift on `users`. |
-| Paid checkout (Stripe: `/api/stripe/*`) | 1.0 | — | ❌ Broken end to end: the envelope is misread, the billing period is missing, and the webhook sits behind the sign-in gate. ⏳ Owner: the advertised price (£24/$29/₹999) ≠ the billed price (£9.99/$12.99/₹799). |
-| Privacy & GDPR (data summary, download, delete account, consent) | 1.0 | — | ❌ Broken: delete-account returns 500 and deletes nothing for any user with a subscription row. The consent POST gets 404. `user_settings` is missing from the export and the delete. |
+| Sign-in & session (Google OAuth: `/login`, `/auth/google*`, `/logout`, `GET /api/user`) | 1.0 | 2026-09-23 · endpoint | ⚠️ Faulty: `GET /api/user` omits `isAdmin`, so the Admin link never shows; an OAuth error other than "access denied" returns a JSON 502 instead of the login page; sessions live in memory, so every deploy signs everyone out. 2 known bugs pinned in the harness. |
+| Free trial & subscription access (`/api/user/subscription/*`, `ensureSubscriptionActive`) | 1.1 | 2026-09-23 · endpoint | ❌ Broken: the trial page misreads its status (always day 0), and its trial route exists only with Stripe keys; cancelling ends access at once and reactivate never finds the cancelled row; re-trials are unlimited. Fixed on 2026-09-23: on a database built from the repo, the subscription check locked out every non-admin (four missing `users` columns); boot now adds them. 2 known bugs pinned in the harness. |
+| Paid checkout (Stripe: `/api/stripe/*`) | 1.0 | 2026-09-23 · endpoint (unmounted) | ❌ Broken end to end: the envelope is misread, the billing period is missing, and the webhook sits behind the sign-in gate (the harness pins it: Stripe would get 401). ⏳ Owner: the advertised price (£24/$29/₹999) ≠ the billed price (£9.99/$12.99/₹799). |
+| Privacy & GDPR (data summary, download, delete account, consent) | 1.0 | 2026-09-23 · endpoint | ❌ Broken: delete-account returns 500 and deletes nothing (a CHECK violation, swallowed, aborts the transaction). The consent POST gets 404; `user_settings` is missing from the export and the delete. 1 known bug pinned in the harness. |
 
 ### Signals & trading
 
 | Feature | Version | Last tested | Status |
 |---|---|---|---|
-| 7 AM scan → signals (07:00 UK, weekdays; `POST /api/scanner/run` token) | 1.1 | 2026-09-23 · unit | 🟢 Unit-tested (signal store). The anonymous `POST /api/signals/from-scan` is gone: the scan stores its signals in process. The scan itself has no endpoint test yet. |
-| 1 PM trade executor (13:00 local for IN, UK, US; `AUTO_EXECUTE` kill switch) | 1.1 | — | 🟡 Untested. The any-account manual-execute route and two duplicate triggers are gone; runs are the cron or the admin test-execution. |
-| Scanner page: signals feed & auto-trading opt-in (`/api/signals/recent`, `/api/user/auto-trading`) | 1.0 | — | 🟡 Untested |
-| Positions: trade journal (`/api/trades*`) | 1.0 | — | ⚠️ Faulty: a stale edit can reopen a closed trade, deletes don't release capital, and legacy trades re-import on every load. |
-| Positions: pending-signals panel (`GET /api/signals/pending`) | 1.1 | — | 🟡 Untested. The add and dismiss routes, which let any account change a signal for everyone, are gone; the panel only reads. |
-| Paper capital ledger (`/api/portfolio/capital`, `/api/ops/reconcile-capital`) | 1.0 | — | ⚠️ Faulty: deleting a trade leaks its capital, and nothing checks for drift nightly (GAPS #6). |
+| 7 AM scan → signals (07:00 UK, weekdays; `POST /api/scanner/run` token) | 1.1 | 2026-09-23 · unit + endpoint | 🟢 Unit-tested (signal store). The endpoint harness verifies only access rules: the scan triggers are never run there (probe-only). The anonymous `POST /api/signals/from-scan` is gone. |
+| 1 PM trade executor (13:00 local for IN, UK, US; `AUTO_EXECUTE` kill switch) | 1.1 | 2026-09-23 · endpoint | 🟡 The harness verifies access rules and the execution logs; the execution itself is never run there (probe-only). The any-account manual trigger and two duplicates are gone. |
+| Scanner page: signals feed & auto-trading opt-in (`/api/signals/recent`, `/api/user/auto-trading`) | 1.0 | 2026-09-23 · endpoint | ✅ Working |
+| Positions: trade journal (`/api/trades*`) | 1.0 | 2026-09-23 · endpoint | ⚠️ Faulty: a create or bulk import without a body crashes with 500 and an empty edit returns 404 instead of 400; a stale edit can reopen a closed trade; deletes don't release capital; legacy trades re-import on every load. 3 known bugs pinned in the harness. |
+| Positions: pending-signals panel (`GET /api/signals/pending`) | 1.1 | 2026-09-23 · endpoint | ✅ Working (read-only; the any-account add and dismiss routes are gone) |
+| Paper capital ledger (`/api/portfolio/capital`, `/api/ops/reconcile-capital`) | 1.0 | 2026-09-23 · endpoint | ⚠️ Faulty: deleting a trade leaks its capital, and nothing checks for drift nightly (GAPS #6); the dead `initialize-capital` route crashes on a non-numeric amount. 1 known bug pinned in the harness. |
 | Exit monitor & close-failure alerts (every minute in market hours) | 1.1 | 2026-09-23 · unit | 🟢 Unit-tested (same-day exit, close failure). The any-account exit-check routes are gone. ⚠️ The outer errors are only logged. |
-| Exit-check retention (23:20 UK; `/api/ops/exit-checks-stats`, GAPS #13 closed) | 1.0 | 2026-09-23 · unit | 🟢 Unit-tested; verified on prod 2026-09-19 |
-| High-conviction portfolio & weekly report (every 10 min; Sat 10:00 UK) | 1.0 | 2026-09-23 · unit | 🟢 Unit-tested (re-entry, close failure). ⚠️ Updates are keyed by symbol with no unique index; the exit alert is sent at most once. |
-| EOD AI summary (19:00 UK weekdays) | 1.0 | — | 🟡 Untested; a `-0.00%` cosmetic bug. |
-| AI conviction check, on demand (`/api/ml/conviction/*`) | 1.0 | — | ⚠️ Faulty: any trial account can spend Gemini calls on arbitrary symbols and seed the shared verdict. |
-| Monthly AI sweep (first Saturday 08:00 UK; boot resume; GAPS #20/#21 fixed) | 1.0 | 2026-09-23 · unit | 🟢 Unit-tested; first real run Sat 2026-10-03. ⏳ Owner: the fresh re-score (~5,029 Gemini calls a month) roughly doubles the actual AI spend. |
-| AI analysis routine feed (`GET /api/signals/screened-today`) | 1.0 | — | 🟡 Untested; the routine sends a write-capable token in the URL. |
-| Market data: Yahoo proxy & live prices (`/yahoo/*`, `POST /api/prices`) | 1.0 | — | ⚠️ Faulty: it is anonymous with a wildcard CORS header, so any site can use it as a proxy. `/api/prices` is unbounded. Volume is read from the wrong CSV column. |
+| Exit-check retention (23:20 UK; `/api/ops/exit-checks-stats`, GAPS #13 closed) | 1.0 | 2026-09-23 · unit + endpoint | ✅ Working: unit-tested, its stats probe answers in the harness (the prune trigger is probe-only), verified on prod 2026-09-19. |
+| High-conviction portfolio & weekly report (every 10 min; Sat 10:00 UK) | 1.0 | 2026-09-23 · unit + endpoint | 🟢 Unit-tested (re-entry, close failure). ⚠️ Its admin API crashes with 500 on a malformed date or price; updates are keyed by symbol with no unique index; the exit alert is sent at most once. 4 known bugs pinned in the harness. |
+| EOD AI summary (19:00 UK weekdays) | 1.0 | 2026-09-23 · endpoint | 🟡 The harness verifies access rules only; the summary is never run there (probe-only). A `-0.00%` cosmetic bug. |
+| AI conviction check, on demand (`/api/ml/conviction/*`) | 1.0 | 2026-09-23 · endpoint | ⚠️ Faulty: the routes answer as specified, but any trial account can spend Gemini calls on arbitrary symbols and seed the shared verdict. |
+| Monthly AI sweep (first Saturday 08:00 UK; boot resume; GAPS #20/#21 fixed) | 1.0 | 2026-09-23 · unit + endpoint | 🟢 Unit-tested; first real run Sat 2026-10-03. The stats probe crashes on an impossible date. 1 known bug pinned in the harness. ⏳ Owner: the fresh re-score (~5,029 Gemini calls a month) roughly doubles the actual AI spend. |
+| AI analysis routine feed (`GET /api/signals/screened-today`) | 1.0 | 2026-09-23 · endpoint | ✅ Working (the routine should send its token as a header, not in the URL) |
+| Market data: Yahoo proxy & live prices (`/yahoo/*`, `POST /api/prices`) | 1.0 | 2026-09-23 · endpoint | ⚠️ Faulty: anonymous, with a wildcard CORS header; `/api/prices` is unbounded and crashes on a non-string symbol; volume is read from the wrong CSV column. 1 known bug pinned in the harness. |
 | Data repairs: pence/pounds flips (GAPS #18), stale fills (GAPS #19) | 1.0 | 2026-09-23 · unit | 🧪 Detect-only. ⏳ Owner: `PRICE_UNIT_REPAIR=true` changes which UK stocks qualify. Stale fills stay off until GAPS #1. |
-| Market caps (06:00 UK weekdays + Sat 08:00) | 1.0 | — | 🟡 Untested; the Saturday refresh overlaps the monthly sweep. |
-| Simulator (`portfolio-backtest.html`) | 1.0 | — | ⚠️ Faulty: exit-reason colours are assigned by position; it uses a different engine from the live scan (GAPS #7); a missing close books a NaN P/L. |
-| Positions chart dialog | 1.0 | — | ⚠️ Faulty: dark-mode legend colours are hard-coded; a dead parameter path. |
+| Market caps (06:00 UK weekdays + Sat 08:00) | 1.0 | 2026-09-23 · endpoint | ⚠️ The dead `POST /api/market-cap/bulk` crashes without a body; the Saturday refresh overlaps the monthly sweep. 1 known bug pinned in the harness. |
+| Simulator (`portfolio-backtest.html`) | 1.0 | 2026-09-23 · endpoint | ⚠️ Faulty in the page (the harness only sees its routes, which pass): exit-reason colours are assigned by position; it uses a different engine from the live scan (GAPS #7); a missing close books a NaN P/L. |
+| Positions chart dialog | 1.0 | 2026-09-23 · endpoint | ⚠️ Faulty in the page (its routes pass): dark-mode legend colours are hard-coded; a dead parameter path. |
 | Trailing stop (−5% → break-even at +4% → +1% for each further +1%) | 0.9 | 2026-09-18 · unit (WIP) | ⏳ Owner: built, not shipped. The backtest shows expectancy +1.56 → +1.44 %/trade. |
 
 ### Notifications
 
 | Feature | Version | Last tested | Status |
 |---|---|---|---|
-| Telegram bot & account linking (`/api/telegram/webhook`, link/unlink) | 1.0 | — | ⚠️ Faulty: the webhook secret is optional, and a non-production boot with the real token deletes prod's webhook. |
-| Alerts preferences page (`/api/alerts/preferences`) | 1.1 | 2026-09-23 · unit | ⚠️ Faulty: the switches are decorative (the wiring is built but not shipped). The POST now takes only preference columns, and the row is always the caller's own. |
-| Web push notifications (`/api/push/*`) | 1.1 | — | ❌ Broken: every notification click opens `/account`, which is a 404. The manifest is not linked. Unsubscribe now removes only the caller's own subscription. |
+| Telegram bot & account linking (`/api/telegram/webhook`, link/unlink) | 1.0 | 2026-09-23 · endpoint | ⚠️ Faulty: the routes answer as specified, but the webhook secret is optional and a non-production boot with the real token deletes prod's webhook. |
+| Alerts preferences page (`/api/alerts/preferences`) | 1.1 | 2026-09-23 · endpoint | ⚠️ Faulty: the switches are decorative (the wiring is built but not shipped); a non-boolean switch value crashes the save. The row is always the caller's own. 1 known bug pinned in the harness. |
+| Web push notifications (`/api/push/*`) | 1.1 | 2026-09-23 · endpoint | ❌ Broken: every notification click opens `/account`, which is a 404 (in the service worker, outside the harness); the manifest is not linked; a subscription without keys crashes with 500. Unsubscribe removes only the caller's own subscription. 1 known bug pinned in the harness. |
 
 ### Admin portal (`/admin`)
 
 | Feature | Version | Last tested | Status |
 |---|---|---|---|
-| Dashboard & live events | 1.0 | — | ⚠️ Faulty: the audit log is always empty, the SSE stream has no producer, and payment figures are hard-coded. |
-| Users & complimentary access | 1.0 | — | ⚠️ Faulty: a deleted user is re-created by their next request. |
-| Plans & subscriptions | 1.0 | — | ⚠️ Faulty: counts and MRR miss Stripe rows; the trends are hard-coded. |
-| Payments | 1.0 | — | ❌ Broken: refunds always return 500 (wrong table), and "verify" never activates the subscription. |
-| Analytics | 1.0 | — | ⚠️ Faulty: invented numbers are shown as data. |
-| Database tools & system health | 1.0 | — | ⚠️ Faulty: `/database/status` always returns 500, stubs report false success, and the SQL console's read-only mode is bypassable. |
-| Settings | 1.0 | — | ⚠️ Faulty: 8 buttons report success without doing anything. |
-| Signal testing & diagnostics | 1.0 | — | ⚠️ Faulty: diagnostics show every signal as `MARKET_NOT_FOUND`, and test-scan reports success on errors. |
-| Telegram subscribers | 1.0 | — | 🟡 Untested |
-| "Run tests" buttons (`/api/admin/tests/*`) | 1.0 | — | ❌ Broken: they spawn scripts that write test rows into the prod DB and always fail. Removal queued. |
-| Audit log viewer, JWT token auth | 1.0 | — | 🗑️ Dead (no page loads them) |
+| Dashboard & live events | 1.0 | 2026-09-23 · endpoint | ⚠️ Faulty: the routes answer, but the audit log is always empty, the SSE stream has no producer, and payment figures are hard-coded. |
+| Users & complimentary access | 1.0 | 2026-09-23 · endpoint | ⚠️ Faulty: body-less or malformed requests crash with 500; a deleted user is re-created by their next request. 5 known bugs pinned in the harness. |
+| Plans & subscriptions | 1.0 | 2026-09-23 · endpoint | ⚠️ Faulty: missing or invalid input crashes with 500, and deleting a plan still in use reports a misleading 400; counts and MRR miss Stripe rows; the trends are hard-coded. 5 known bugs pinned in the harness. |
+| Payments | 1.0 | 2026-09-23 · endpoint | ❌ Broken: refunds always return 500 (wrong table); "verify" never activates the subscription and accepts missing or already-completed transactions. 6 known bugs pinned in the harness. |
+| Analytics | 1.0 | 2026-09-23 · endpoint | ⚠️ Faulty: the routes answer, but invented numbers are shown as data. |
+| Database tools & system health | 1.0 | 2026-09-23 · endpoint | ⚠️ Faulty: `/database/status` always returns 500; stubs report success for things they never do; `analyze-table` is unvalidated; the SQL console's read-only mode is bypassable. 5 known bugs pinned in the harness. |
+| Settings | 1.0 | 2026-09-23 · endpoint | ⚠️ Faulty: 8 buttons report success without doing anything; an unknown email template returns 200. 1 known bug pinned in the harness. |
+| Signal testing & diagnostics | 1.0 | 2026-09-23 · endpoint | ⚠️ Faulty: diagnostics show every signal as `MARKET_NOT_FOUND`; test-scan reports success on errors; dismiss-old-signals crashes on a missing body or a bad date. 2 known bugs pinned in the harness. |
+| Telegram subscribers | 1.0 | 2026-09-23 · endpoint | ⚠️ Faulty: missing bodies and malformed chat ids crash with 500. 5 known bugs pinned in the harness. |
+| "Run tests" buttons (`/api/admin/tests/*`) | 1.0 | 2026-09-23 · endpoint | ❌ Broken: they spawn scripts that write test rows into the prod DB and always fail (the harness only probes them). Removal queued. |
+| Audit log viewer, JWT token auth | 1.0 | 2026-09-23 · endpoint | 🗑️ Dead: no page loads them, and malformed input crashes them. 7 known bugs pinned in the harness. Removal queued. |
 
 ### Platform
 
 | Feature | Version | Last tested | Status |
 |---|---|---|---|
-| Ops probes & health (`/api/ops/*`, `/health`) | 1.1 | — | ⚠️ Faulty: `/health` shows UK time an hour ahead during BST and reports a "SQLite" session store. The subscription schema probe is admin-only. |
-| Access control: sign-in gate, subscription gate, one admin guard for all of `/api/admin` | 1.0 | 2026-09-23 · unit | 🟢 Unit-tested: the real admin guard, and tripwires on its wiring and on every removed route. |
-| Pages, static files & `/lib` allow-list (16 pages) | 1.0 | 2026-09-23 · unit | 🟢 Unit-tested (the `/lib` tripwire); page smoke tests pending. |
+| Ops probes & health (`/api/ops/*`, `/health`) | 1.1 | 2026-09-23 · endpoint | ⚠️ Faulty (cosmetic): `/health` shows UK time an hour ahead during BST and reports a "SQLite" session store. The subscription schema probe is admin-only. |
+| Access control: sign-in gate, subscription gate, one admin guard for all of `/api/admin` | 1.0 | 2026-09-23 · unit + endpoint | ✅ Working: the access matrix of every route (anonymous 401, non-subscriber 403, non-admin 403, token-only ops) passes in the harness; the admin guard is unit-tested. |
+| Pages, static files & `/lib` allow-list (16 pages) | 1.0 | 2026-09-23 · unit + endpoint | ✅ Working |
 | Process reliability (crash handlers, shutdown, sessions, DB pools) | 1.0 | — | ⚠️ Faulty: no `unhandledRejection` handler, SIGTERM is swallowed, sessions are in memory, there are 12 extra pg pools, and geoip preloads ~146 MB for a dead route. |
-| Diagnostics & legacy one-off routes | 1.1 | 2026-09-23 · unit | 🗑️ Dead: about 16 caller-less routes remain (legacy v1 admin, shadowed duplicates, stubs); removal queued. The 14 that any signed-in account could use (including `/api/debug/users`, which leaked every email) were removed on 2026-09-23. |
-| Legacy ML toolkit (`/api/ml/*` × 7, not the conviction routes) | 1.0 | — | 🗑️ Dead: it fabricates news headlines and loads its models at every boot. Removal queued. |
+| Diagnostics & legacy one-off routes | 1.1 | 2026-09-23 · endpoint | 🗑️ Dead: about 16 caller-less routes remain (legacy v1 admin, shadowed duplicates, stubs); removal queued. The 14 that any signed-in account could use were removed on 2026-09-23. |
+| Legacy ML toolkit (`/api/ml/*` × 7, not the conviction routes) | 1.0 | 2026-09-23 · endpoint | 🗑️ Dead: it crashes on missing or odd bodies, fabricates news headlines, loads its models at every boot, and any user can "train" it. 7 known bugs pinned in the harness. Removal queued. |
 | `routes/gdpr.js` (never mounted) | 1.0 | — | 🗑️ Dead |
-| Endpoint test harness (every route, every page contract) | — | — | 🟡 Being built |
+| Endpoint test harness (every route, every page contract) | 1.0 | 2026-09-23 · endpoint | ✅ Working: 203 specs (183 live routes, 5 unmounted Stripe routes, 15 removed routes), 901 cases; 839 pass and 62 known bugs fail as expected. Fresh scratch database and server per run, cron stubbed, no network. |
 
 ### Strategy & data quality: the GAPS register (from the 2026-08-07 audit; full evidence in `git show e2774d5:docs/GAPS.md`)
 
@@ -131,7 +131,8 @@ Update it in the same commit as the change it describes. See rule 1.
 Newest first. Each line is one commit on `main`; `git show <sha>` has the full reasoning.
 
 **2026-09-23**
-- *(this commit)* Close the any-account holes: remove 14 caller-less routes that any signed-in account could use (executor, exit checks, global signal add/dismiss, user email dump, DDL); guard all of `/api/admin` in one place; fix the Alerts IDOR; scope push unsubscribe to the caller
+- *(this commit)* Add the endpoint test harness: all 183 live routes (plus 5 unmounted Stripe routes and 15 removed ones) are specified and run against a real server on a scratch database; 839 of 901 cases pass and 62 known bugs are pinned as expected failures. Fix the four `users` columns whose absence locked every non-admin out on a database built from the repo
+- `5ef1168` Close the any-account holes: remove 14 caller-less routes that any signed-in account could use (executor, exit checks, global signal add/dismiss, user email dump, DDL); guard all of `/api/admin` in one place; fix the Alerts IDOR; scope push unsubscribe to the caller
 - `24b6aa2` Close the anonymous signal injection: the 7 AM scan stores its signals in process, and `POST /api/signals/from-scan` is removed
 - `e24bcf3` `README.md` becomes the single source of truth. `docs/GAPS.md` is folded into §1, `CLAUDE.md` now points here, and plan documents are retired.
 - `e2774d5` Remove 12 dead one-off scripts from the repo root
@@ -321,10 +322,11 @@ These rules bind every contributor and every Claude session; `CLAUDE.md` points 
     - `\x27` inside double quotes is not a quote;
     - `grep` is aliased to `ugrep`;
     - `grep -q` under `pipefail`.
-19. A commit message explains *why*, lists what was deliberately left alone, and states how the change was verified on that exact tree. Tests must be green on the exact tree before you push.
+19. **Test gate**: `npm test` (unit, including the route-spec coverage test) and `npm run test:endpoints` (the HTTP harness: every route, every persona, on a scratch database with no network) must be green on a `git archive` export of the exact commit before it is pushed. Every new route gets a spec in `tests/endpoints/specs/`; a removed route gets an `absent` spec; a known bug is a `bug` case that states the correct status.
+20. A commit message explains *why*, lists what was deliberately left alone, and states how the change was verified on that exact tree. Tests must be green on the exact tree before you push.
 
 ### 4.6 Front end
-20. CSS is the v3 "Poster" design system:
+21. CSS is the v3 "Poster" design system:
     - tokens and components live in `public/css/design-system/`;
     - every page loads `design-system/index.css` plus one page sheet:
       - `app.css`: index, trades, portfolio-backtest, account, telegram-subscribe (admin-v2 adds `admin.css` on top);
@@ -334,7 +336,7 @@ These rules bind every contributor and every Claude session; `CLAUDE.md` points 
     - reuse tokens and classes before adding CSS, and keep only one copy of anything duplicated;
     - never recreate `main.css`;
     - no inline CSS in HTML or JS.
-21. Use Google Fonts and Google Material Icons.
+22. Use Google Fonts and Google Material Icons.
 
 ---
 
@@ -348,7 +350,7 @@ signalforge/
 ├── CLAUDE.md                 pointer for Claude sessions to this file
 ├── package.json              npm start = node server.js; jest scripts
 ├── render.yaml               Render web service (npm install / npm start)
-├── jest.config.js            jest: tests/unit + tests/integration
+├── jest.config.js            jest unit config (tests/endpoints has its own)
 ├── fix-india-position-count.js   required by POST /api/admin/fix-position-count (removal queued)
 ├── run-single-migration.js   apply one migrations/*.sql file by hand (move to scripts/ queued)
 ├── setup-bot.sh              the Telegram bot's command menu (move to scripts/ queued)
@@ -367,7 +369,10 @@ signalforge/
 ├── ml/                       conviction-engine.js + conviction-sweep.js (AI gate), ml-routes.js; legacy toolkit (removal queued)
 ├── migrations/               NNN_*.sql, applied by hand (names are keys)
 ├── scripts/                  health-check.js, verify-system.js (removal queued with the admin Run-tests buttons)
-├── tests/                    unit/ (jest), integration/ (mock-only), database/performance scripts (removal queued)
+├── tests/
+│   ├── unit/                 jest unit suites (npm test), including the route-spec coverage test
+│   ├── endpoints/            HTTP harness (npm run test:endpoints): harness/ (preload, setup, seed), specs/*.json (one per route)
+│   └── (integration/, database/performance scripts: mock-only or spawned by admin buttons; removal queued)
 ├── public/                   16 pages (*.html), js/ (92 files), css/ (design-system + page sheets), images/brand/
 ├── design/handoff-v3/        v3 "Poster" design hand-off (tidy-up queued)
 └── docs/history/             three stale 2025 audits (removal queued)

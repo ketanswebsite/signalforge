@@ -82,6 +82,15 @@ async function initializeDatabase() {
       await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_linked_at TIMESTAMP`);
       await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS auto_trading_enabled BOOLEAN DEFAULT false`);
       await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS auto_trading_started_at TIMESTAMP`);
+      // middleware/subscription.js SELECTs these four and routes/subscription.js writes two of them, but
+      // no committed DDL has created them since 2025-06-04 (34b7bd4 deleted the migration). On a database
+      // built from the repo the subscription check threw ("column u.region does not exist") and every
+      // non-admin got 403 "No subscription found". Access never depends on them - it comes from
+      // user_subscriptions and the complimentary flags - so these defaults grant nothing.
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS region VARCHAR(10) DEFAULT 'IN'`);
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_status VARCHAR(20) DEFAULT 'trial'`);
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_end_date TIMESTAMP`);
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_premium BOOLEAN DEFAULT false`);
     } catch (err) {
       // Columns might already exist
     }

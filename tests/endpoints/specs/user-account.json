@@ -1,0 +1,1215 @@
+[
+ {
+  "route": "GET /api/ml/analysis/:symbol",
+  "path": "/api/ml/analysis/HARNESS.L",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401,
+    "note": "the ops token opens only the /api/ops routes, never the ML API"
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object",
+    "note": "history comes from the harness Yahoo fixture via the loopback /yahoo/history call; chartPatterns is always [] for 50+ bars - ss.rSquared gets the regression object instead of a line function (ml/pattern-recognition/pattern-ai-lite.js:574) and detectChartPatterns swallows the TypeError"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/ml/conviction/sweep-status",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/ml/conviction/:symbol",
+  "path": "/api/ml/conviction/HARNESS.L",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object",
+    "note": "served from the seeded conviction_daily row for today - no scoring, no network"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/ml/conviction/batch",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "body": {}
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "body": {}
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "body": {},
+    "note": "signals array is required"
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "note": "no body at all: the handler guards req.body, so this is a clean 400"
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "body": {
+     "signals": "HARNESS.L"
+    },
+    "note": "signals must be an array"
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "body": {
+     "signals": [
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      },
+      {
+       "symbol": "HARNESS.L"
+      }
+     ]
+    },
+    "note": "At most 100 signals per batch"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "signals": [
+      {
+       "symbol": "HARNESS.L",
+       "name": "Harness plc",
+       "winRate": 80
+      },
+      {
+       "symbol": "harnessp.l"
+      },
+      {
+       "symbol": "HARNESS.L"
+      }
+     ]
+    },
+    "note": "seeded verdicts only (hermetic); lower case and duplicates are normalised"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "signals": [
+      {
+       "symbol": "HARNESSP.L"
+      }
+     ]
+    }
+   }
+  ]
+ },
+ {
+  "route": "POST /api/ml/risk-params",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "body": {}
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "body": {}
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "body": {},
+    "note": "Market state required"
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "bug": "no JSON body -> req.body is undefined under Express 5 / body-parser 2, and `const { marketState } = req.body` (ml/ml-routes.js:183) throws a TypeError that the catch turns into 500; a missing body is a client error (400)"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "marketState": {
+      "priceChange": 1.2,
+      "volumeRatio": 1.1,
+      "volatility": 22,
+      "rsi": 55,
+      "holdingDays": 0
+     }
+    }
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {}
+   }
+  ]
+ },
+ {
+  "route": "POST /api/ml/detect-patterns",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "body": {}
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "body": {}
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "body": {},
+    "note": "Price data array required"
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "body": {
+     "priceData": "HARNESS.L"
+    },
+    "note": "priceData must be an array"
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "bug": "no JSON body -> req.body is undefined under Express 5 / body-parser 2, and `const { priceData } = req.body` (ml/ml-routes.js:204) throws a TypeError that the catch turns into 500; a missing body is a client error (400)"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "priceData": [
+      {
+       "date": "2026-09-14",
+       "open": 100,
+       "high": 101.2,
+       "low": 99.4,
+       "close": 100.8,
+       "volume": 100000
+      },
+      {
+       "date": "2026-09-15",
+       "open": 100.8,
+       "high": 102,
+       "low": 100.1,
+       "close": 101.6,
+       "volume": 104000
+      },
+      {
+       "date": "2026-09-16",
+       "open": 101.6,
+       "high": 101.9,
+       "low": 99.8,
+       "close": 100.2,
+       "volume": 98000
+      },
+      {
+       "date": "2026-09-17",
+       "open": 100.2,
+       "high": 100.9,
+       "low": 98.7,
+       "close": 99.1,
+       "volume": 121000
+      },
+      {
+       "date": "2026-09-18",
+       "open": 99.1,
+       "high": 100.4,
+       "low": 97.2,
+       "close": 99.9,
+       "volume": 133000
+      },
+      {
+       "date": "2026-09-21",
+       "open": 99.9,
+       "high": 101.5,
+       "low": 99.6,
+       "close": 101.3,
+       "volume": 109000
+      }
+     ]
+    }
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {}
+   }
+  ]
+ },
+ {
+  "route": "GET /api/ml/sentiment/:symbol",
+  "path": "/api/ml/sentiment/HARNESS.L",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 403
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object",
+    "note": "news and social inputs are hard-coded simulations in ml/sentiment-analysis/sentiment-ai.js - nothing leaves the machine"
+   },
+   {
+    "as": "user",
+    "path": "/api/ml/sentiment/HARNESS.L?sources=news",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/ml/portfolio-risk",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "body": {}
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "body": {}
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "body": {},
+    "note": "Portfolio array required"
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "bug": "no JSON body -> req.body is undefined under Express 5 / body-parser 2, and `const { portfolio, days = 30, iterations = 1000 } = req.body` (ml/ml-routes.js:246) throws a TypeError that the catch turns into 500; a missing body is a client error (400)"
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "body": {
+     "portfolio": [
+      {
+       "symbol": "HARNESS.L",
+       "value": 400,
+       "volatility": 20
+      },
+      {
+       "symbol": "HARNESSP.L",
+       "value": 250,
+       "volatility": 35
+      }
+     ],
+     "days": 5,
+     "iterations": 0
+    },
+    "bug": "iterations/days are passed to monteCarloRiskSimulation unvalidated (ml/ml-routes.js:246-256): iterations 0 leaves no results and analyzeSimulationResults calls ss.mean([]) (ml/risk-management/risk-ai-lite.js:303), which throws -> 500; the same missing bound lets one request ask for billions of iterations"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "portfolio": [
+      {
+       "symbol": "HARNESS.L",
+       "value": 400,
+       "volatility": 20
+      },
+      {
+       "symbol": "HARNESSP.L",
+       "value": 250,
+       "volatility": 35
+      }
+     ],
+     "days": 5,
+     "iterations": 50
+    }
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {}
+   }
+  ]
+ },
+ {
+  "route": "POST /api/ml/alerts",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "body": {}
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "body": {}
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "body": {},
+    "note": "Positions array required"
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "bug": "no JSON body -> req.body is undefined under Express 5 / body-parser 2, and `const { positions } = req.body` (ml/ml-routes.js:271) throws a TypeError that the catch turns into 500; a missing body is a client error (400)"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "array",
+    "body": {
+     "positions": [
+      {
+       "symbol": "HARNESS.L",
+       "entryPrice": 100,
+       "unrealizedPL": -4.5,
+       "stopLoss": 5,
+       "takeProfit": 8
+      }
+     ]
+    }
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {}
+   }
+  ]
+ },
+ {
+  "route": "POST /api/ml/train",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "body": {}
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "body": {}
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "body": {
+     "trainingData": {
+      "trades": []
+     }
+    },
+    "bug": "any subscriber can retrain the server-wide ML models: the route (ml/ml-routes.js:290) has only ensureSubscriptionActive, and mlIntegration.trainModels() appends caller-supplied trades to the RiskManagementAI singleton every user's /api/ml/analysis and /api/ml/risk-params answers come from - a shared-state write needs an admin check (empty trades here, so today's 200 retrains nothing)"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {},
+    "note": "Training data required"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "bug": "no JSON body -> req.body is undefined under Express 5 / body-parser 2, and `const { trainingData } = req.body` (ml/ml-routes.js:292) throws a TypeError that the catch turns into 500; a missing body is a client error (400)"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "trainingData": {
+      "trades": []
+     }
+    },
+    "note": "fewer than 5 trades: RiskManagementAI.train() returns without retraining, and saveModel() only logs - no shared state changes"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/subscription-plans",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "the handler is documented \"public\", but routes/subscription.js is mounted after the /api sign-in gate (server.js:885, 921); its only anonymous caller, public/js/pricing.js, is loaded by no page, so the gate is the policy"
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/subscription-plans/:planCode",
+  "path": "/api/subscription-plans/FREE",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "user",
+    "path": "/api/subscription-plans/HARNESS-NO-SUCH-PLAN",
+    "status": 404,
+    "check": "object",
+    "note": "Plan not found"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/user/subscription",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "trial",
+    "status": 200,
+    "check": "object",
+    "note": "before the lifecycle below starts"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/user/payments",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object",
+    "note": "lists the seeded harness-txn-0001"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/user/subscription/start-trial",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "check": "object",
+    "note": "ALREADY_SUBSCRIBED: the seeded live trial blocks a second one (no write)"
+   },
+   {
+    "as": "trial",
+    "status": 200,
+    "check": "object",
+    "note": "lifecycle 1/5: the trial persona starts its free trial"
+   },
+   {
+    "as": "trial",
+    "status": 400,
+    "check": "object",
+    "note": "lifecycle 2/5: a second start is refused (ALREADY_SUBSCRIBED)"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/user/subscription/cancel",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "body": {}
+   },
+   {
+    "as": "nosub",
+    "status": 404,
+    "body": {},
+    "check": "object",
+    "note": "No active subscription found (read-only for nosub)"
+   },
+   {
+    "as": "nosub",
+    "status": 404,
+    "bug": "no JSON body -> req.body is undefined under Express 5, and `const { reason } = req.body` (routes/subscription.js:251) throws before the lookup, so the catch answers 500 \"Failed to cancel subscription\"; reason is optional, so a body-less cancel must reach the lookup (404 here, nosub has no subscription)"
+   },
+   {
+    "as": "trial",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "reason": "harness lifecycle test"
+    },
+    "note": "lifecycle 3/5: cancels the trial started above"
+   },
+   {
+    "as": "trial",
+    "status": 404,
+    "check": "object",
+    "body": {},
+    "note": "lifecycle 4/5: nothing active is left to cancel"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/user/subscription/reactivate",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 404,
+    "check": "object",
+    "note": "nothing cancelled to reactivate (read-only)"
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "check": "object",
+    "note": "the user's live trial is not cancelled (read-only)"
+   },
+   {
+    "as": "trial",
+    "status": 200,
+    "check": "object",
+    "bug": "lifecycle 5/5: a cancelled trial can never be reactivated - the lookup requires subscription_end_date > NOW() (routes/subscription.js:329), but start-trial (routes/subscription.js:422-451) writes only trial_end_date, so the NULL end date never matches and the route answers 404, although the account page offers \"Reactivate my plan\" for every cancelled plan and the trial period has not ended"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/user/location",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "commented \"public - no auth required\" (server.js:970) but registered after the /api sign-in gate; no anonymous page calls it"
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object",
+    "note": "loopback caller -> the fixed US default, no geo lookup"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/user/generate-telegram-link",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object",
+    "note": "only writes a fresh users.linking_token on the caller's own row; no subscription needed (nosub not called: it would write to nosub)"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/user/telegram-status",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/user/unlink-telegram",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object",
+    "note": "no persona is linked, so this clears nothing"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/user/data-summary",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 200,
+    "check": "object",
+    "note": "GDPR access is not gated on a subscription"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/user/download-data",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "object"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/trades/export",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 200,
+    "note": "CSV header only; server.js:1324 answers before /api/trades/:id (server.js:2355) can take \"export\" as an id"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "note": "CSV with the user's 2 trades"
+   },
+   {
+    "as": "admin",
+    "status": 200
+   }
+  ]
+ },
+ {
+  "route": "DELETE /api/user/delete-account",
+  "order": "last",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "delete",
+    "status": 200,
+    "check": "object",
+    "bug": "server.js:1513-1519 sets user_subscriptions.status = 'deleted', which user_subscriptions_status_check does not allow; the try/catch swallows the error but Postgres has already aborted the transaction, so DELETE FROM users (server.js:1531) fails with \"current transaction is aborted\" and the route rolls back and answers 500 - every user who ever had a subscription row (trial included) cannot delete their account (the audit insert at server.js:1401-1421 has the same swallow-inside-a-transaction flaw)"
+   }
+  ],
+  "note": "This file is named user-account.json so that it sorts after trading.json. The delete persona is still used by trading.json's order-last DELETE /api/trades specs, and a fixed delete-account ends that persona's session and deletes its user row."
+ }
+]
