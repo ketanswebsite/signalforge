@@ -99,9 +99,8 @@ Update it in the same commit as the change it describes. See rule 1.
 | Pages, static files & `/lib` allow-list (16 pages) | 1.0 | 2026-09-23 · unit + endpoint | ✅ Working |
 | Process reliability (crash handlers, shutdown, sessions, DB pools) | 1.1 | — | ⚠️ Faulty: no `unhandledRejection` handler, SIGTERM is swallowed, sessions are in memory, and there are 12 extra pg pools. geoip-lite (146 MiB of memory at boot, for one dead route) is gone. |
 | Diagnostics & legacy one-off routes | 1.2 | 2026-09-23 · endpoint | 🗑️ Dead: only `GET /api/test` remains; it goes with the Run-tests buttons. Removed on 2026-09-23: the 14 routes any signed-in account could use, then 13 caller-less ones (legacy v1 admin, finished one-off migrations, stubs, duplicates of `/health`) and 2 shadowed duplicate handlers. The harness keeps all of them gone. |
-| Legacy ML toolkit (`/api/ml/*` × 7, not the conviction routes) | 1.0 | 2026-09-23 · endpoint | 🗑️ Dead: it crashes on odd input, fabricates news headlines, loads its models at every boot, and any user can "train" it. 2 known bugs pinned in the harness. Removal queued. |
 | `routes/gdpr.js` (never mounted) | 1.0 | — | 🗑️ Dead |
-| Endpoint test harness (every route, every page contract) | 1.0 | 2026-09-23 · endpoint | ✅ Working: 203 specs (169 live routes, 5 unmounted Stripe routes, 29 removed routes), 870 cases; 834 pass and 36 known bugs fail as expected. Fresh scratch database and server per run, cron stubbed, no network. |
+| Endpoint test harness (every route, every page contract) | 1.0 | 2026-09-23 · endpoint | ✅ Working: 203 specs (162 live routes, 5 unmounted Stripe routes, 36 removed routes), 841 cases; 807 pass and 34 known bugs fail as expected. Fresh scratch database and server per run, cron stubbed, no network. |
 
 ### Strategy & data quality: the GAPS register (from the 2026-08-07 audit; full evidence in `git show e2774d5:docs/GAPS.md`)
 
@@ -131,7 +130,8 @@ Update it in the same commit as the change it describes. See rule 1.
 Newest first. Each line is one commit on `main`; `git show <sha>` has the full reasoning.
 
 **2026-09-23**
-- *(this commit)* Fix four small correctness defects. `/health` showed UK time an hour ahead all summer, and the 7 AM scan as 08:00, and it named a "SQLite" session store that does not exist. The EOD summary printed `-0.00%`. The scanner and the Simulator read the Adj Close column as volume, which nothing consumed yet. The history proxy now reads the price-unit switch through the module's own `isRepairEnabled()`
+- *(this commit)* Remove the legacy ML toolkit: 7 caller-less `/api/ml` routes, `ml-integration.js` and its 6 analysers, which loaded models at every boot, fabricated news headlines and let any user "train" them. Also remove 6 packages that only it used or that nothing used (`natural`, `node-fetch`, `simple-statistics`, `technicalindicators`, `connect-sqlite3`, `@testing-library/jest-dom`). The conviction routes stay. The harness keeps all 36 removed routes gone
+- `3e884c3` Fix four small correctness defects. `/health` showed UK time an hour ahead all summer, and the 7 AM scan as 08:00, and it named a "SQLite" session store that does not exist. The EOD summary printed `-0.00%`. The scanner and the Simulator read the Adj Close column as volume, which nothing consumed yet. The history proxy now reads the price-unit switch through the module's own `isRepairEnabled()`
 - `ccbbd32` Remove 13 dead routes from server.js (legacy v1 admin, finished one-off migrations, stubs, duplicates of `/health`), 2 shadowed duplicate handlers, `/auth/debug`, and geoip-lite (146 MiB of memory at boot, for one dead route). Also gone: two orphaned helpers, a boot query that failed on every start, `public/js/pricing.js` and `fix-india-position-count.js`. Fix sign-in: `GET /api/user` reports `isAdmin`, an OAuth error returns to the login page, and the callback stops logging session ids. The harness keeps all 29 removed routes gone
 - `6990ee0` Restore the Express 4 `req.body = {}` default: 22 routes that crashed with 500 on a body-less POST or PUT now answer as specified (the harness flipped all 22 pinned cases)
 - `6c0c1ef` Add the endpoint test harness: all 183 live routes (plus 5 unmounted Stripe routes and 15 removed ones) are specified and run against a real server on a scratch database; 839 of 901 cases pass and 62 known bugs are pinned as expected failures. Fix the four `users` columns whose absence locked every non-admin out on a database built from the repo
@@ -368,7 +368,7 @@ signalforge/
 │   ├── telegram/             telegram-bot.js
 │   ├── push/                 push-service.js (web push)
 │   └── admin/                sse-handler.js (no producer, removal queued)
-├── ml/                       conviction-engine.js + conviction-sweep.js (AI gate), ml-routes.js; legacy toolkit (removal queued)
+├── ml/                       conviction-engine.js + conviction-sweep.js (the AI gate), ml-routes.js (/api/ml/conviction/*)
 ├── migrations/               NNN_*.sql, applied by hand (names are keys)
 ├── scripts/                  health-check.js, verify-system.js (removal queued with the admin Run-tests buttons)
 ├── tests/

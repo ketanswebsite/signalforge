@@ -519,5 +519,119 @@
     "note": "signed in: no handler, the 404 fallback answers"
    }
   ]
+ },
+ {
+  "route": "GET /api/ml/analysis/:symbol",
+  "path": "/api/ml/analysis/HARNESS.L",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I14 (\"Remove the legacy ML toolkit\"): nothing called it. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: the /api/ml router now holds only the conviction routes; the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/ml/risk-params",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I14 (\"Remove the legacy ML toolkit\"): nothing called it. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: the /api/ml router now holds only the conviction routes; the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/ml/detect-patterns",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I14 (\"Remove the legacy ML toolkit\"): nothing called it. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: the /api/ml router now holds only the conviction routes; the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/ml/sentiment/:symbol",
+  "path": "/api/ml/sentiment/HARNESS.L",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I14 (\"Remove the legacy ML toolkit\"): nothing called it. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: the /api/ml router now holds only the conviction routes; the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/ml/portfolio-risk",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I14 (\"Remove the legacy ML toolkit\"): nothing called it. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: the /api/ml router now holds only the conviction routes; the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/ml/alerts",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I14 (\"Remove the legacy ML toolkit\"): nothing called it. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: the /api/ml router now holds only the conviction routes; the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/ml/train",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I14 (\"Remove the legacy ML toolkit\"): nothing called it. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: the /api/ml router now holds only the conviction routes; the 404 fallback answers"
+   }
+  ]
  }
 ]
