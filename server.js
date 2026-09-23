@@ -892,6 +892,20 @@ try {
   console.error('\u2717 Failed to load ML routes:', error.message);
 }
 
+// Everything under /api/admin needs an admin, whether or not routes/admin.js
+// loads. The inline /api/admin/* routes further down used to rely on that
+// router's middleware alone: had it failed to load, they would have been open
+// to any signed-in account. If the admin check itself cannot load, the whole
+// admin API answers 503 - closed, never open.
+let requireAdmin;
+try {
+  requireAdmin = require('./middleware/admin-auth').ensureAdminAPI;
+} catch (error) {
+  console.error('✗ Failed to load admin auth - the admin API is closed:', error.message);
+  requireAdmin = (req, res) => res.status(503).json({ success: false, error: 'Admin API unavailable' });
+}
+app.use('/api/admin', requireAdmin);
+
 // Admin routes (with its own authentication middleware)
 try {
   const adminRoutes = require('./routes/admin');
@@ -1027,72 +1041,6 @@ app.get('/api/user/location', (req, res) => {
       detected: false,
       error: 'Location detection failed'
     });
-  }
-});
-
-// Debug endpoint to check all trades (admin only)
-app.get('/api/debug/all-trades', ensureAuthenticatedAPI, async (req, res) => {
-  // Check if user is admin
-  if (req.user.email !== ADMIN_EMAIL) {
-    return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
-  }
-  
-  try {
-    // For JSON database, get raw data
-    if (typeof TradeDB.getAllTradesNoFilter === 'function') {
-      const allTrades = await TradeDB.getAllTradesNoFilter();
-      res.json({
-        totalTrades: allTrades.length,
-        trades: allTrades,
-        database: 'Using getAllTradesNoFilter'
-      });
-    } else {
-      res.status(500).json({
-        error: 'Database method not available',
-        totalTrades: 0,
-        trades: []
-      });
-    }
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Debug endpoint for admin
-app.get('/api/test-admin', ensureAuthenticatedAPI, async (req, res) => {
-  try {
-    
-    // Test if database queries work
-    const testResults = {};
-    
-    try {
-      const trades = await TradeDB.getAllTrades(req.user?.email || 'default');
-      testResults.getAllTrades = { success: true, count: trades.length };
-    } catch (e) {
-      testResults.getAllTrades = { success: false, error: e.message };
-    }
-    
-    try {
-      const userStats = await TradeDB.getUserStatistics();
-      testResults.getUserStatistics = { success: true, count: userStats.length };
-    } catch (e) {
-      testResults.getUserStatistics = { success: false, error: e.message };
-    }
-    
-    try {
-      const systemStats = await TradeDB.getSystemStatistics();
-      testResults.getSystemStatistics = { success: true, data: systemStats };
-    } catch (e) {
-      testResults.getSystemStatistics = { success: false, error: e.message };
-    }
-    
-    res.json({
-      user: req.user?.email,
-      isAdmin: req.user?.email === ADMIN_EMAIL,
-      testResults
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message, stack: error.stack });
   }
 });
 
@@ -2158,196 +2106,6 @@ app.post('/api/admin/tests/verify-system', ensureAuthenticatedAPI, async (req, r
   }
 });
 
-// User analytics endpoint - basic user statistics (no admin required)
-app.get('/api/user-analytics', ensureAuthenticatedAPI, async (req, res) => {
-  try {
-    const systemStats = await TradeDB.getSystemStatistics();
-    
-    // Return basic user statistics without sensitive details
-    const userAnalytics = {
-      totalUsers: systemStats.total_users || 0,
-      usersWithTrades: systemStats.users_with_trades || 0,
-      usersWithoutTrades: (systemStats.total_users || 0) - (systemStats.users_with_trades || 0),
-      systemInfo: {
-        totalTrades: systemStats.total_trades || 0,
-        activeTrades: systemStats.active_trades || 0,
-        closedTrades: systemStats.closed_trades || 0
-      },
-      lastUpdated: new Date().toISOString()
-    };
-    
-    res.json(userAnalytics);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch user analytics' });
-  }
-});
-
-// Debug endpoint to check users table directly
-app.get('/api/debug/users', ensureAuthenticatedAPI, async (req, res) => {
-  try {
-    // Direct query to users table
-    const { Pool } = require('pg');
-    const pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-    });
-    
-    const result = await pool.query('SELECT id, email, name, first_login, last_login FROM users ORDER BY last_login DESC');
-    
-    res.json({
-      totalUsersInTable: result.rows.length,
-      users: result.rows,
-      currentUser: req.user.email,
-      debugInfo: {
-        tableExists: true,
-        queryExecuted: true
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      error: error.message,
-      debugInfo: {
-        tableExists: false,
-        queryExecuted: false
-      }
-    });
-  }
-});
-
-
-// User recovery endpoint - comprehensive recovery for all user types
-app.get('/api/recover-users', ensureAuthenticatedAPI, async (req, res) => {
-  try {
-    const { Pool } = require('pg');
-    const pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-    });
-    
-    let recoveredUsers = [];
-    let errors = [];
-    
-    // 1. Recover users from trades table
-    const missingUsersQuery = `
-      SELECT DISTINCT t.user_id, MIN(t.created_at) as first_trade_date, MAX(t.created_at) as last_trade_date, COUNT(*) as trade_count
-      FROM trades t
-      LEFT JOIN users u ON t.user_id = u.email
-      WHERE u.email IS NULL AND t.user_id IS NOT NULL AND t.user_id != '' AND t.user_id != 'default'
-      GROUP BY t.user_id
-      ORDER BY first_trade_date ASC
-    `;
-    
-    const missingUsers = await pool.query(missingUsersQuery);
-    
-    for (const user of missingUsers.rows) {
-      try {
-        await pool.query(`
-          INSERT INTO users (email, name, google_id, first_login, last_login, created_at)
-          VALUES ($1, $2, $3, $4, $5, $6)
-          ON CONFLICT (email) DO NOTHING
-        `, [
-          user.user_id,
-          user.user_id.split('@')[0],
-          null,
-          user.first_trade_date,
-          user.last_trade_date,
-          user.first_trade_date
-        ]);
-        
-        recoveredUsers.push({
-          email: user.user_id,
-          source: 'trades',
-          firstActivity: user.first_trade_date,
-          lastActivity: user.last_trade_date,
-          tradeCount: user.trade_count
-        });
-      } catch (err) {
-        errors.push({ email: user.user_id, error: err.message, source: 'trades' });
-      }
-    }
-    
-    // 2. Recover users from alert preferences
-    try {
-      const alertUsersQuery = `
-        SELECT DISTINCT a.user_email, COUNT(*) as alert_count
-        FROM alert_preferences a
-        LEFT JOIN users u ON a.user_email = u.email
-        WHERE u.email IS NULL AND a.user_email IS NOT NULL AND a.user_email != ''
-        GROUP BY a.user_email
-      `;
-      
-      const alertUsers = await pool.query(alertUsersQuery);
-      
-      for (const user of alertUsers.rows) {
-        try {
-          await pool.query(`
-            INSERT INTO users (email, name, google_id, first_login, last_login, created_at)
-            VALUES ($1, $2, null, CURRENT_TIMESTAMP - INTERVAL '30 days', CURRENT_TIMESTAMP - INTERVAL '7 days', CURRENT_TIMESTAMP - INTERVAL '30 days')
-            ON CONFLICT (email) DO NOTHING
-          `, [user.user_email, user.user_email.split('@')[0]]);
-          
-          recoveredUsers.push({
-            email: user.user_email,
-            source: 'alerts',
-            firstActivity: 'Estimated (30 days ago)',
-            lastActivity: 'Estimated (7 days ago)',
-            alertCount: user.alert_count
-          });
-        } catch (err) {
-          errors.push({ email: user.user_email, error: err.message, source: 'alerts' });
-        }
-      }
-    } catch (alertError) {
-    }
-    
-    // 3. Ensure admin user is tracked
-    try {
-      const adminEmail = process.env.ADMIN_EMAIL;
-      if (adminEmail) {
-        await pool.query(`
-          INSERT INTO users (email, name, google_id, first_login, last_login, created_at)
-          VALUES ($1, $2, null, CURRENT_TIMESTAMP - INTERVAL '90 days', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP - INTERVAL '90 days')
-          ON CONFLICT (email) DO UPDATE SET last_login = CURRENT_TIMESTAMP
-        `, [adminEmail, adminEmail.split('@')[0]]);
-        
-        recoveredUsers.push({
-          email: adminEmail,
-          source: 'admin',
-          firstActivity: 'System admin user',
-          lastActivity: 'Current',
-          role: 'admin'
-        });
-      }
-    } catch (adminError) {
-      errors.push({ email: process.env.ADMIN_EMAIL, error: adminError.message, source: 'admin' });
-    }
-    
-    // Get updated user count
-    const updatedCount = await pool.query('SELECT COUNT(*) as total FROM users');
-    
-    res.json({
-      success: true,
-      message: 'Comprehensive user recovery completed',
-      recoveredUsers: recoveredUsers,
-      totalRecovered: recoveredUsers.length,
-      breakdown: {
-        fromTrades: recoveredUsers.filter(u => u.source === 'trades').length,
-        fromAlerts: recoveredUsers.filter(u => u.source === 'alerts').length,
-        fromAdmin: recoveredUsers.filter(u => u.source === 'admin').length
-      },
-      errors: errors,
-      newTotalUsers: parseInt(updatedCount.rows[0].total),
-      executedBy: req.user.email
-    });
-    
-  } catch (error) {
-    res.status(500).json({ 
-      success: false,
-      error: error.message 
-    });
-  }
-});
-
 // Auto-recovery function that runs on server startup
 async function autoRecoverUsers() {
   try {
@@ -2457,7 +2215,7 @@ async function autoRecoverUsers() {
 }
 
 // Check subscription setup endpoint
-app.get('/api/check-subscription-setup', async (req, res) => {
+app.get('/api/check-subscription-setup', requireAdmin, async (req, res) => {
   try {
     const { Pool } = require('pg');
     const pool = new Pool({
@@ -2832,161 +2590,6 @@ app.get('/api/signals/pending', ensureAuthenticatedAPI, async (req, res) => {
   }
 });
 
-// Add signal to portfolio
-app.post('/api/signals/add-to-portfolio/:signalId', ensureAuthenticatedAPI, async (req, res) => {
-  try {
-    const { signalId } = req.params;
-    const { notes } = req.body;
-    const userId = req.user ? req.user.email : 'default';
-
-    // Get signal
-    const signal = await TradeDB.getPendingSignal(null, null);
-    const allSignals = await TradeDB.getPendingSignals('pending');
-    const selectedSignal = allSignals.find(s => s.id == signalId);
-
-    if (!selectedSignal) {
-      return res.status(404).json({ error: 'Signal not found' });
-    }
-
-    // Determine market and trade size
-    const marketSizes = {
-      'India': 50000,
-      'UK': 400,
-      'US': 500
-    };
-    const tradeSize = marketSizes[selectedSignal.market];
-
-    // Check if can add position
-    const canAdd = await TradeDB.canAddPosition(selectedSignal.market, tradeSize, userId);
-    if (!canAdd.canAdd) {
-      return res.status(400).json({
-        success: false,
-        error: canAdd.reason
-      });
-    }
-
-    // Get capital before
-    const capitalBefore = await TradeDB.getPortfolioCapital(selectedSignal.market, userId);
-    const marketCapBefore = capitalBefore[selectedSignal.market];
-
-    // Create trade
-    const trade = {
-      symbol: selectedSignal.symbol,
-      entryDate: new Date(),
-      entryPrice: selectedSignal.entry_price,
-      targetPrice: selectedSignal.target_price,
-      stopLossPercent: 5,
-      status: 'active',
-      notes: notes || `Auto-added from 7 AM signal - Win Rate: ${selectedSignal.win_rate}%`,
-      market: selectedSignal.market,
-      tradeSize: tradeSize,
-      signalDate: selectedSignal.signal_date,
-      winRate: selectedSignal.win_rate,
-      historicalSignalCount: selectedSignal.historical_signal_count,
-      autoAdded: true,
-      entryDTI: selectedSignal.entry_dti,
-      entry7DayDTI: selectedSignal.entry_7day_dti
-    };
-
-    const newTrade = await TradeDB.insertTrade(trade, userId);
-
-    // Allocate capital
-    await TradeDB.allocateCapital(selectedSignal.market, tradeSize, userId);
-
-    // Update signal status
-    await TradeDB.updateSignalStatus(signalId, 'added', newTrade.id);
-
-    // Get capital after
-    const capitalAfter = await TradeDB.getPortfolioCapital(selectedSignal.market, userId);
-    const marketCapAfter = capitalAfter[selectedSignal.market];
-
-    res.json({
-      success: true,
-      trade: newTrade,
-      capital: {
-        market: selectedSignal.market,
-        availableBefore: marketCapBefore.available,
-        allocated: tradeSize,
-        availableAfter: marketCapAfter.available,
-        positions: marketCapAfter.positions
-      }
-    });
-  } catch (error) {
-    console.error('Error adding signal to portfolio:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Dismiss signal
-app.post('/api/signals/dismiss/:signalId', ensureAuthenticatedAPI, async (req, res) => {
-  try {
-    const { signalId } = req.params;
-
-    const result = await TradeDB.updateSignalStatus(signalId, 'dismissed');
-
-    if (!result) {
-      return res.status(404).json({ error: 'Signal not found' });
-    }
-
-    res.json({
-      success: true,
-      signalId: parseInt(signalId),
-      status: 'dismissed'
-    });
-  } catch (error) {
-    console.error('Error dismissing signal:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Manual execution trigger (for testing)
-app.post('/api/executor/manual-execute/:market', ensureAuthenticatedAPI, async (req, res) => {
-  try {
-    const { market } = req.params;
-
-    // Validate market
-    if (!['India', 'UK', 'US'].includes(market)) {
-      return res.status(400).json({ error: 'Invalid market. Must be India, UK, or US' });
-    }
-
-    if (!tradeExecutor) {
-      return res.status(503).json({ error: 'Trade Executor not available' });
-    }
-
-    console.log(`🔧 Manual execution triggered for ${market} by ${req.user?.email || 'user'}`);
-
-    // Execute market signals
-    const result = await tradeExecutor.manualExecute(market);
-
-    res.json({
-      success: true,
-      ...result
-    });
-  } catch (error) {
-    console.error('Error in manual execution:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Get execution logs
-app.get('/api/executor/logs', ensureAuthenticatedAPI, async (req, res) => {
-  try {
-    if (!tradeExecutor) {
-      return res.status(503).json({ error: 'Trade Executor not available' });
-    }
-
-    const logs = tradeExecutor.getExecutionLogs();
-
-    res.json({
-      success: true,
-      logs
-    });
-  } catch (error) {
-    console.error('Error getting execution logs:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // ===== SIGNAL TESTING & DIAGNOSTICS ENDPOINTS =====
 
 // Test 7 AM scan manually
@@ -3330,57 +2933,6 @@ app.get('/api/admin/signal-diagnostics', ensureAuthenticatedAPI, async (req, res
   }
 });
 
-// Manual exit check trigger (for testing)
-app.post('/api/exit-monitor/check-exits', ensureAuthenticatedAPI, async (req, res) => {
-  try {
-    if (!exitMonitor) {
-      return res.status(503).json({ error: 'Exit Monitor not available' });
-    }
-
-    console.log(`🔧 Manual exit check triggered by ${req.user?.email || 'user'}`);
-
-    // Check all exits
-    const result = await exitMonitor.checkAllExits();
-
-    res.json({
-      success: true,
-      ...result
-    });
-  } catch (error) {
-    console.error('Error in manual exit check:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Check single trade for exit
-app.post('/api/exit-monitor/check-trade/:tradeId', ensureAuthenticatedAPI, async (req, res) => {
-  try {
-    if (!exitMonitor) {
-      return res.status(503).json({ error: 'Exit Monitor not available' });
-    }
-
-    const { tradeId } = req.params;
-    const userId = req.user?.email || 'default';
-    const trade = await TradeDB.getTradeById(tradeId, userId);
-
-    if (!trade) {
-      return res.status(404).json({ error: 'Trade not found' });
-    }
-
-    console.log(`🔧 Manual exit check for trade ${tradeId} (${trade.symbol})`);
-
-    const result = await exitMonitor.checkTradeExit(trade);
-
-    res.json({
-      success: true,
-      ...result
-    });
-  } catch (error) {
-    console.error('Error checking trade exit:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
 const { repairYahooChartResult, describeReport } = require('./lib/shared/price-unit-repair');
 const unitRepairsLogged = new Set();
 const staleFillRepair = require('./lib/shared/stale-fill-repair');
@@ -3688,13 +3240,24 @@ app.get('/api/alerts/preferences', ensureAuthenticatedAPI, ensureSubscriptionAct
   }
 });
 
+// The columns TradeDB.saveAlertPreferences writes, besides user_id.
+const ALERT_PREFERENCE_FIELDS = [
+  'telegram_enabled', 'telegram_chat_id', 'email_enabled', 'email_address',
+  'alert_on_buy', 'alert_on_sell', 'alert_on_target', 'alert_on_stoploss',
+  'alert_on_time_exit', 'market_open_alert', 'market_close_alert'
+];
 app.post('/api/alerts/preferences', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
     const userId = req.user ? req.user.email : 'default';
-    const saved = await TradeDB.saveAlertPreferences({
-      user_id: userId,
-      ...req.body
-    });
+    // Only the preference columns come from the body, and user_id comes from
+    // the session and is applied last. The body used to be spread after
+    // user_id, so a body user_id overwrote another user's row.
+    const body = req.body || {};
+    const prefs = {};
+    for (const key of ALERT_PREFERENCE_FIELDS) {
+      if (key in body) prefs[key] = body[key];
+    }
+    const saved = await TradeDB.saveAlertPreferences({ ...prefs, user_id: userId });
     
     if (saved) {
       res.json({ message: 'Alert preferences saved successfully' });
@@ -3746,7 +3309,12 @@ app.post('/api/push/unsubscribe', ensureAuthenticatedAPI, async (req, res) => {
       return res.status(400).json({ error: 'Endpoint required' });
     }
 
-    await TradeDB.removePushSubscription(endpoint);
+    // Only the caller's own subscription: an endpoint alone used to be enough
+    // to remove anyone's.
+    await TradeDB.pool.query(
+      'DELETE FROM push_subscriptions WHERE endpoint = $1 AND user_email = $2',
+      [endpoint, req.user.email]
+    );
 
     console.log(`[PUSH] User ${req.user.email} unsubscribed from push notifications`);
     res.json({ success: true, message: 'Unsubscribed successfully' });
@@ -4000,64 +3568,6 @@ app.get('/api/scanner/status', ensureAuthenticatedAPI, ensureSubscriptionActive,
   }
 });
 
-// Run migration for trade_alerts_sent table
-app.post('/api/run-migration-trade-alerts', ensureAuthenticatedAPI, async (req, res) => {
-  try {
-    console.log('🔧 [MIGRATION] Running trade_alerts_sent table migration...');
-
-    // Create table
-    await TradeDB.pool.query(`
-      CREATE TABLE IF NOT EXISTS trade_alerts_sent (
-        id SERIAL PRIMARY KEY,
-        trade_id INTEGER NOT NULL,
-        user_id VARCHAR(255) NOT NULL,
-        alert_type VARCHAR(50) NOT NULL,
-        current_price DECIMAL(15, 2),
-        pl_percent DECIMAL(10, 2),
-        sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT unique_trade_alert UNIQUE(trade_id, user_id, alert_type)
-      )
-    `);
-    console.log('✅ [MIGRATION] Table created');
-
-    // Create indexes
-    await TradeDB.pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_trade_alerts_trade_user
-      ON trade_alerts_sent(trade_id, user_id, alert_type)
-    `);
-    await TradeDB.pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_trade_alerts_sent_at
-      ON trade_alerts_sent(sent_at DESC)
-    `);
-    console.log('✅ [MIGRATION] Indexes created');
-
-    // Add comments
-    await TradeDB.pool.query(`
-      COMMENT ON TABLE trade_alerts_sent IS 'Tracks sent Telegram alerts to prevent duplicates from checkTradeAlerts() function'
-    `);
-    console.log('✅ [MIGRATION] Comments added');
-
-    // Verify table exists
-    const result = await TradeDB.pool.query(`
-      SELECT table_name
-      FROM information_schema.tables
-      WHERE table_name = 'trade_alerts_sent'
-    `);
-
-    res.json({
-      success: true,
-      message: 'Migration completed successfully',
-      tableExists: result.rows.length > 0
-    });
-  } catch (error) {
-    console.error('❌ [MIGRATION] Failed:', error.message);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
 // Dismiss old pending signals - admin endpoint
 app.post('/api/admin/dismiss-old-signals', ensureAuthenticatedAPI, async (req, res) => {
   try {
@@ -4116,39 +3626,6 @@ app.post('/api/admin/dismiss-old-signals', ensureAuthenticatedAPI, async (req, r
   } catch (error) {
     console.error('❌ [ADMIN] Error dismissing old signals:', error);
     res.status(500).json({ error: error.message });
-  }
-});
-
-// Manual execution endpoint - execute pending signals for a market NOW
-app.post('/api/execute-signals/:market', ensureAuthenticatedAPI, async (req, res) => {
-  try {
-    const { market } = req.params;
-
-    // Validate market
-    if (!['India', 'UK', 'US'].includes(market)) {
-      return res.status(400).json({ error: 'Invalid market. Must be India, UK, or US' });
-    }
-
-    // Check if user is admin
-    if (req.user.email !== ADMIN_EMAIL) {
-      return res.status(403).json({ error: 'Admin privileges required' });
-    }
-
-    if (!tradeExecutor) {
-      return res.status(503).json({ error: 'Trade executor not available' });
-    }
-
-    console.log(`🔧 [MANUAL] Manual execution triggered for ${market} by ${req.user.email}`);
-    const result = await tradeExecutor.manualExecute(market);
-
-    res.json({
-      success: true,
-      message: `Manual execution completed for ${market}`,
-      result
-    });
-  } catch (error) {
-    console.error(`❌ [MANUAL] Manual execution failed:`, error.message);
-    res.status(500).json({ error: 'Failed to execute signals', details: error.message });
   }
 });
 
@@ -4233,37 +3710,6 @@ app.get('/api/health/trading-automation', ensureAuthenticatedAPI, async (req, re
   } catch (error) {
     console.error('❌ [HEALTH] Health check failed:', error.message);
     res.status(500).json({ error: 'Failed to get health status', details: error.message });
-  }
-});
-
-// Force trigger cron job (admin only) - useful for debugging on Render
-app.post('/api/force-cron-trigger', ensureAuthenticatedAPI, async (req, res) => {
-  try {
-    // Check if user is admin
-    if (req.user.email !== ADMIN_EMAIL) {
-      return res.status(403).json({ error: 'Admin privileges required' });
-    }
-
-    if (!stockScanner) {
-      return res.status(503).json({ error: 'Stock scanner not available' });
-    }
-
-    console.log('⚡ [FORCE TRIGGER] Admin manually triggered cron job');
-    console.log('⚡ [FORCE TRIGGER] User:', req.user.email);
-    console.log('⚡ [FORCE TRIGGER] UK Time:', new Date().toLocaleString("en-GB", {timeZone: "Europe/London"}));
-
-    // Run the scan without chatId to trigger broadcast to all subscribers
-    const result = await stockScanner.runHighConvictionScan();
-
-    res.json({
-      success: true,
-      message: 'Cron job triggered successfully. Messages sent to all subscribers.',
-      result: result,
-      ukTime: new Date().toLocaleString("en-GB", {timeZone: "Europe/London"})
-    });
-  } catch (error) {
-    console.error('⚡ [FORCE TRIGGER] Failed:', error.message);
-    res.status(500).json({ error: 'Failed to trigger cron job', details: error.message });
   }
 });
 

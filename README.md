@@ -47,12 +47,12 @@ Update it in the same commit as the change it describes. See rule 1.
 | Feature | Version | Last tested | Status |
 |---|---|---|---|
 | 7 AM scan → signals (07:00 UK, weekdays; `POST /api/scanner/run` token) | 1.1 | 2026-09-23 · unit | 🟢 Unit-tested (signal store). The anonymous `POST /api/signals/from-scan` is gone: the scan stores its signals in process. The scan itself has no endpoint test yet. |
-| 1 PM trade executor (13:00 local for IN, UK, US; `AUTO_EXECUTE` kill switch) | 1.0 | — | ⚠️ Faulty: `POST /api/executor/manual-execute/:market` is open to any signed-in account. |
+| 1 PM trade executor (13:00 local for IN, UK, US; `AUTO_EXECUTE` kill switch) | 1.1 | — | 🟡 Untested. The any-account manual-execute route and two duplicate triggers are gone; runs are the cron or the admin test-execution. |
 | Scanner page: signals feed & auto-trading opt-in (`/api/signals/recent`, `/api/user/auto-trading`) | 1.0 | — | 🟡 Untested |
 | Positions: trade journal (`/api/trades*`) | 1.0 | — | ⚠️ Faulty: a stale edit can reopen a closed trade, deletes don't release capital, and legacy trades re-import on every load. |
-| Positions: pending-signals panel (`/api/signals/pending`, add/dismiss) | 1.0 | — | ⚠️ Faulty: the add and dismiss routes let any account change a signal for everyone. |
+| Positions: pending-signals panel (`GET /api/signals/pending`) | 1.1 | — | 🟡 Untested. The add and dismiss routes, which let any account change a signal for everyone, are gone; the panel only reads. |
 | Paper capital ledger (`/api/portfolio/capital`, `/api/ops/reconcile-capital`) | 1.0 | — | ⚠️ Faulty: deleting a trade leaks its capital, and nothing checks for drift nightly (GAPS #6). |
-| Exit monitor & close-failure alerts (every minute in market hours) | 1.0 | 2026-09-23 · unit | 🟢 Unit-tested (same-day exit, close failure). ⚠️ `POST /api/exit-monitor/*` is open to any account; the outer errors are only logged. |
+| Exit monitor & close-failure alerts (every minute in market hours) | 1.1 | 2026-09-23 · unit | 🟢 Unit-tested (same-day exit, close failure). The any-account exit-check routes are gone. ⚠️ The outer errors are only logged. |
 | Exit-check retention (23:20 UK; `/api/ops/exit-checks-stats`, GAPS #13 closed) | 1.0 | 2026-09-23 · unit | 🟢 Unit-tested; verified on prod 2026-09-19 |
 | High-conviction portfolio & weekly report (every 10 min; Sat 10:00 UK) | 1.0 | 2026-09-23 · unit | 🟢 Unit-tested (re-entry, close failure). ⚠️ Updates are keyed by symbol with no unique index; the exit alert is sent at most once. |
 | EOD AI summary (19:00 UK weekdays) | 1.0 | — | 🟡 Untested; a `-0.00%` cosmetic bug. |
@@ -71,8 +71,8 @@ Update it in the same commit as the change it describes. See rule 1.
 | Feature | Version | Last tested | Status |
 |---|---|---|---|
 | Telegram bot & account linking (`/api/telegram/webhook`, link/unlink) | 1.0 | — | ⚠️ Faulty: the webhook secret is optional, and a non-production boot with the real token deletes prod's webhook. |
-| Alerts preferences page (`/api/alerts/preferences`) | 1.0 | — | ⚠️ Faulty: the switches are decorative (the wiring is built but not shipped), and the POST lets a body `user_id` overwrite another user's row. |
-| Web push notifications (`/api/push/*`) | 1.0 | — | ❌ Broken: every notification click opens `/account`, which is a 404. The manifest is not linked. |
+| Alerts preferences page (`/api/alerts/preferences`) | 1.1 | 2026-09-23 · unit | ⚠️ Faulty: the switches are decorative (the wiring is built but not shipped). The POST now takes only preference columns, and the row is always the caller's own. |
+| Web push notifications (`/api/push/*`) | 1.1 | — | ❌ Broken: every notification click opens `/account`, which is a 404. The manifest is not linked. Unsubscribe now removes only the caller's own subscription. |
 
 ### Admin portal (`/admin`)
 
@@ -94,10 +94,11 @@ Update it in the same commit as the change it describes. See rule 1.
 
 | Feature | Version | Last tested | Status |
 |---|---|---|---|
-| Ops probes & health (`/api/ops/*`, `/health`) | 1.0 | — | ⚠️ Faulty: `/health` shows UK time an hour ahead during BST and reports a "SQLite" session store. |
+| Ops probes & health (`/api/ops/*`, `/health`) | 1.1 | — | ⚠️ Faulty: `/health` shows UK time an hour ahead during BST and reports a "SQLite" session store. The subscription schema probe is admin-only. |
+| Access control: sign-in gate, subscription gate, one admin guard for all of `/api/admin` | 1.0 | 2026-09-23 · unit | 🟢 Unit-tested: the real admin guard, and tripwires on its wiring and on every removed route. |
 | Pages, static files & `/lib` allow-list (16 pages) | 1.0 | 2026-09-23 · unit | 🟢 Unit-tested (the `/lib` tripwire); page smoke tests pending. |
 | Process reliability (crash handlers, shutdown, sessions, DB pools) | 1.0 | — | ⚠️ Faulty: no `unhandledRejection` handler, SIGTERM is swallowed, sessions are in memory, there are 12 extra pg pools, and geoip preloads ~146 MB for a dead route. |
-| Diagnostics & legacy one-off routes (11, e.g. `/api/debug/users`) | 1.0 | — | 🗑️ Dead: `/api/debug/users` leaks every email to any account. Removal queued. |
+| Diagnostics & legacy one-off routes | 1.1 | 2026-09-23 · unit | 🗑️ Dead: about 16 caller-less routes remain (legacy v1 admin, shadowed duplicates, stubs); removal queued. The 14 that any signed-in account could use (including `/api/debug/users`, which leaked every email) were removed on 2026-09-23. |
 | Legacy ML toolkit (`/api/ml/*` × 7, not the conviction routes) | 1.0 | — | 🗑️ Dead: it fabricates news headlines and loads its models at every boot. Removal queued. |
 | `routes/gdpr.js` (never mounted) | 1.0 | — | 🗑️ Dead |
 | Endpoint test harness (every route, every page contract) | — | — | 🟡 Being built |
@@ -130,7 +131,8 @@ Update it in the same commit as the change it describes. See rule 1.
 Newest first. Each line is one commit on `main`; `git show <sha>` has the full reasoning.
 
 **2026-09-23**
-- *(this commit)* Close the anonymous signal injection: the 7 AM scan stores its signals in process, and `POST /api/signals/from-scan` is removed
+- *(this commit)* Close the any-account holes: remove 14 caller-less routes that any signed-in account could use (executor, exit checks, global signal add/dismiss, user email dump, DDL); guard all of `/api/admin` in one place; fix the Alerts IDOR; scope push unsubscribe to the caller
+- `24b6aa2` Close the anonymous signal injection: the 7 AM scan stores its signals in process, and `POST /api/signals/from-scan` is removed
 - `e24bcf3` `README.md` becomes the single source of truth. `docs/GAPS.md` is folded into §1, `CLAUDE.md` now points here, and plan documents are retired.
 - `e2774d5` Remove 12 dead one-off scripts from the repo root
 - `e1180fa` Say in the AI sweep report when Gemini failed; record how the 08-22 and 08-29 sweeps stopped (GAPS #21)
@@ -308,20 +310,21 @@ These rules bind every contributor and every Claude session; `CLAUDE.md` points 
 
 ### 4.4 Safety
 14. Never run a script, route or handler that touches production data, messages users or spends paid-API budget just to see what it does. Scan triggers, broadcasts, the sweep and admin test runners are off-limits for probing.
-15. Probe the database read-only. Schema changes are idempotent SQL: boot DDL in `database-postgres.js`, or a file in `migrations/` (file names are migration keys, so never rename them). Verify the result on the target database.
-16. Local runs use the local Postgres and stub `node-cron`. On weekdays 02:00–22:00 UK, an unstubbed boot runs the exit monitor every minute.
+15. **Signed in is not an authorisation boundary**: anyone can start a free trial. Anything that acts on other users, the whole system or paid services is either admin-only (`requireAdmin` guards all of `/api/admin`) or token-guarded (`/api/ops/*`, header `x-analysis-token`). A user may only ever touch their own rows, and the session decides whose, never the body.
+16. Probe the database read-only. Schema changes are idempotent SQL: boot DDL in `database-postgres.js`, or a file in `migrations/` (file names are migration keys, so never rename them). Verify the result on the target database.
+17. Local runs use the local Postgres and stub `node-cron`. On weekdays 02:00–22:00 UK, an unstubbed boot runs the exit monitor every minute.
 
 ### 4.5 Evidence & commits
-17. Every "nothing uses X" claim needs a positive control through the same command, and every search runs from a bash script file. Known traps on the dev Mac:
+18. Every "nothing uses X" claim needs a positive control through the same command, and every search runs from a bash script file. Known traps on the dev Mac:
     - zsh globbing and the `$VAR:x` modifiers;
     - `git grep -E` has no `\b`;
     - `\x27` inside double quotes is not a quote;
     - `grep` is aliased to `ugrep`;
     - `grep -q` under `pipefail`.
-18. A commit message explains *why*, lists what was deliberately left alone, and states how the change was verified on that exact tree. Tests must be green on the exact tree before you push.
+19. A commit message explains *why*, lists what was deliberately left alone, and states how the change was verified on that exact tree. Tests must be green on the exact tree before you push.
 
 ### 4.6 Front end
-19. CSS is the v3 "Poster" design system:
+20. CSS is the v3 "Poster" design system:
     - tokens and components live in `public/css/design-system/`;
     - every page loads `design-system/index.css` plus one page sheet:
       - `app.css`: index, trades, portfolio-backtest, account, telegram-subscribe (admin-v2 adds `admin.css` on top);
@@ -331,7 +334,7 @@ These rules bind every contributor and every Claude session; `CLAUDE.md` points 
     - reuse tokens and classes before adding CSS, and keep only one copy of anything duplicated;
     - never recreate `main.css`;
     - no inline CSS in HTML or JS.
-20. Use Google Fonts and Google Material Icons.
+21. Use Google Fonts and Google Material Icons.
 
 ---
 
