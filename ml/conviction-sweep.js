@@ -56,8 +56,8 @@ const DELAY_MS = parseInt(process.env.CONVICTION_SWEEP_DELAY_MS, 10) || 300;
 // keep the two in step
 const SWEEP_HOUR_UK = 8;
 // A restart looks for an unfinished run this long after boot: the server has
-// settled, and the process it replaced is gone — on a deploy that one keeps
-// sweeping until Render kills it (the SIGTERM handler does not exit)
+// settled, and the process it replaced is gone - on a deploy it stops within
+// 20 s of SIGTERM (lib/shared/process-guards.js)
 const RESUME_CHECK_DELAY_MS = 3 * 60 * 1000;
 // A running sweep writes several verdicts a minute, so one written this
 // recently means a run is still going somewhere; look again a little later

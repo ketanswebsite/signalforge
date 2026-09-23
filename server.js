@@ -3120,9 +3120,9 @@ app.post('/api/portfolio/close-trade/:symbol', ensureAuthenticatedAPI, async (re
       entryDate: trade.entry_date,
       exitData: exitData
     };
-    await stockScanner.portfolioManager.sendExitAlert(closure);
+    const alert = await stockScanner.portfolioManager.sendExitAlert(closure);
 
-    res.json({ success: true, trade: result, alertSent: true });
+    res.json({ success: true, trade: result, alertSent: Boolean(alert && alert.success), alertDeliveredTo: alert ? alert.subscribers : 0 });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -3147,7 +3147,7 @@ app.use((req, res) => {
 });
 
 // Start server
-app.listen(PORT, async () => {
+const server = app.listen(PORT, async () => {
 
   // Run migration for trade_alerts_sent table on startup
   try {
@@ -3332,4 +3332,15 @@ app.listen(PORT, async () => {
     console.error('🧹 [STARTUP] Error cleaning up old signals:', error.message);
   }
   
+});
+
+// Process rails (lib/shared/process-guards.js): an unhandled rejection is reported to the owner
+// instead of crashing the server (sessions are in memory, so a crash signs everyone out), a crash
+// reports before it exits, and a deploy's SIGTERM closes the server and exits within 20 s
+require('./lib/shared/process-guards').installProcessGuards({
+  server,
+  notifyOwner: text => require('./lib/portfolio/close-failure-alerts').notifyOwner(text, {
+    TradeDB,
+    telegramBot: require('./lib/telegram/telegram-bot')
+  })
 });

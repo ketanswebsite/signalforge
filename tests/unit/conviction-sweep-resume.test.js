@@ -504,7 +504,8 @@ describe('the owner report', () => {
 
         expect(result).toMatchObject({ started: true, scored: 1, remaining: 0 });
         expect(table.today('TGDOWN1.L')).toBeDefined();
-        expect(console.error).toHaveBeenCalledWith('❌ [AI SWEEP] Owner report failed:', 'ETIMEDOUT');
+        // The owner-alert sender catches the failure itself now (it never rejects) and logs it
+        expect(console.error).toHaveBeenCalledWith('❌ [OWNER ALERT] Sending failed:', 'ETIMEDOUT');
     });
 
     test('CONVICTION_SWEEP_ALERTS=false: no messages at all', async () => {

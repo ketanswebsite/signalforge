@@ -171,7 +171,8 @@ beforeEach(() => {
     CloseFailures.reset();
     TradeDB.getUserChatId.mockImplementation(async email => (email === OWNER ? OWNER_CHAT : null));
     telegramBot.sendTelegramAlert.mockResolvedValue(true);
-    telegramBot.broadcastToSubscribers.mockResolvedValue([{ chatId: 1 }, { chatId: 2 }]);
+    // The shape broadcastToSubscribers() really returns: one { chatId, success } per send
+    telegramBot.broadcastToSubscribers.mockResolvedValue([{ chatId: 1, success: true }, { chatId: 2, success: true }]);
 });
 
 afterEach(() => {
@@ -308,6 +309,18 @@ describe('Subscribers hear nothing until the close really happens', () => {
         expect(result.closed).toBe(1);
         expect(telegramBot.broadcastToSubscribers).toHaveBeenCalledTimes(1);
         expect(telegramBot.sendTelegramAlert).not.toHaveBeenCalled();
+    });
+
+    test('an exit alert that reached nobody is reported to the owner', async () => {
+        fakeDatabase([position()]);
+        telegramBot.broadcastToSubscribers.mockResolvedValue([{ chatId: 1, success: false }, { chatId: 2, success: false }]);
+
+        const result = await managerWithPrices({ AAPL: 108 }).updateAllActiveTrades();
+
+        expect(result.closed).toBe(1);
+        const messages = messagesTo(OWNER_CHAT);
+        expect(messages).toHaveLength(1);
+        expect(messages[0]).toMatch(/exit alert reached nobody[\s\S]*AAPL[\s\S]*2 sends attempted/);
     });
 });
 
