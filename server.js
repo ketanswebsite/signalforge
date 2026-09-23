@@ -3824,41 +3824,6 @@ app.post('/api/alerts/preferences', ensureAuthenticatedAPI, ensureSubscriptionAc
   }
 });
 
-// Test Telegram connection
-app.post('/api/alerts/test-telegram', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
-  try {
-    const { chatId } = req.body;
-    
-    if (!telegramBot) {
-      return res.status(400).json({ error: 'Telegram bot not initialized' });
-    }
-    
-    const success = await telegramBot.testConnection(chatId);
-    
-    if (success) {
-      res.json({ message: 'Test message sent successfully' });
-    } else {
-      res.status(400).json({ error: 'Failed to send test message' });
-    }
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Get bot info
-app.get('/api/alerts/bot-info', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
-  try {
-    if (!telegramBot) {
-      return res.status(400).json({ error: 'Telegram bot not initialized' });
-    }
-    
-    const info = await telegramBot.getBotInfo();
-    res.json(info);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // ==================== Push Notification Endpoints ====================
 
 // Get VAPID public key for client
