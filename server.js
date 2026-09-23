@@ -2367,7 +2367,7 @@ app.get('/api/admin/signal-diagnostics', ensureAuthenticatedAPI, async (req, res
   }
 });
 
-const { repairYahooChartResult, describeReport } = require('./lib/shared/price-unit-repair');
+const { repairYahooChartResult, describeReport, isRepairEnabled: isPriceUnitRepairEnabled } = require('./lib/shared/price-unit-repair');
 const unitRepairsLogged = new Set();
 const staleFillRepair = require('./lib/shared/stale-fill-repair');
 const staleFillsLogged = new Set();
@@ -2419,7 +2419,7 @@ app.get('/yahoo/history', async (req, res) => {
     try {
       const unitRepair = repairYahooChartResult(result);
       if (unitRepair.report.status !== 'clean') {
-        const enabled = String(process.env.PRICE_UNIT_REPAIR || '').trim().toLowerCase() === 'true';
+        const enabled = isPriceUnitRepairEnabled();
         const applied = enabled && unitRepair.report.status === 'repaired';
         if (unitRepair.report.status === 'repaired') {
           unitView = { quote: unitRepair.quote, adjclose: unitRepair.adjclose, served: applied };
@@ -2845,6 +2845,8 @@ app.post('/api/admin/push/broadcast', ensureAuthenticatedAPI, async (req, res) =
   }
 });
 
+const { formatUKClock, nextUKWeekdayRun } = require('./lib/shared/date-format');
+
 // Health check with detailed info including cron status
 app.get('/health', (req, res) => {
   const healthInfo = {
@@ -2853,7 +2855,8 @@ app.get('/health', (req, res) => {
     auth: authEnabled ? 'enabled' : 'disabled',
     environment: process.env.NODE_ENV || 'development',
     render: !!process.env.RENDER,
-    sessionStore: authEnabled ? 'SQLite' : 'none',
+    // The store express-session really uses. None is configured, so it is the in-memory default.
+    sessionStore: authEnabled ? (sessionConfig && sessionConfig.store ? sessionConfig.store.constructor.name : 'memory') : 'none',
     timestamp: new Date().toISOString()
   };
 
@@ -2861,25 +2864,14 @@ app.get('/health', (req, res) => {
   if (stockScanner) {
     try {
       const scannerStatus = stockScanner.getStatus();
-      const ukNow = new Date(new Date().toLocaleString("en-US", {timeZone: "Europe/London"}));
-
-      // Calculate next 7 AM weekday
-      const next7am = new Date(ukNow);
-      next7am.setHours(7, 0, 0, 0);
-      if (next7am <= ukNow) {
-        next7am.setDate(next7am.getDate() + 1);
-      }
-      // Skip to next weekday if weekend
-      while (next7am.getDay() === 0 || next7am.getDay() === 6) {
-        next7am.setDate(next7am.getDate() + 1);
-      }
+      const now = new Date();
 
       healthInfo.cron = {
         active: true,
         scheduledJobs: scannerStatus.scheduledJobs,
         telegramConfigured: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
-        currentUKTime: ukNow.toLocaleString("en-GB", {timeZone: "Europe/London"}),
-        nextScheduledRun: next7am.toLocaleString("en-GB", {timeZone: "Europe/London"}),
+        currentUKTime: formatUKClock(now),
+        nextScheduledRun: nextUKWeekdayRun(now, 7), // the 7 AM scan
         serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone
       };
     } catch (error) {

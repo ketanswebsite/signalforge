@@ -510,7 +510,7 @@ const PortfolioSimulator = (function() {
                 data.high.push(parseFloat(values[2]));
                 data.low.push(parseFloat(values[3]));
                 data.close.push(parseFloat(values[4]));
-                data.volume.push(parseFloat(values[5]));
+                data.volume.push(parseFloat(values[6])); // column 5 is Adj Close
             }
         }
 
