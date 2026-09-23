@@ -79,6 +79,7 @@ const status = {
     total: 0,
     done: 0,
     scored: 0,
+    withoutGemini: 0,       // of `scored`: stored on the rule-based scores alone
     reused: 0,
     blind: 0,
     skipped: 0,
@@ -137,7 +138,7 @@ function bootResumeEnabled() {
 }
 
 function tally() {
-    return `${status.scored} scored, ${status.reused} reused, ${status.blind} blind, ${status.skipped} skipped, ${status.failed} failed`;
+    return `${status.scored} scored (${status.withoutGemini} without Gemini), ${status.reused} reused, ${status.blind} blind, ${status.skipped} skipped, ${status.failed} failed`;
 }
 
 /**
@@ -286,6 +287,12 @@ function formatEndMessage(run, universe) {
     if (run.stoppedEarly) {
         message += '⏹ Stopped before the end of its queue.\n';
     }
+    // With a key configured, a rule-based verdict means Gemini failed. On 2026-08-29 it failed
+    // mid-run and the sweep raced on at ten times the pace, rule-based, until it stored nothing
+    if (run.withoutGemini > 0 && process.env.GEMINI_API_KEY) {
+        message += `🤖 *Gemini failed for ${symbolCount(run.withoutGemini)}:* their stored verdicts are rule-based, ` +
+            `and a re-fire within ${resumeWindowDays()} days skips them.\n`;
+    }
     if (run.lastError) {
         message += `❌ *Last error:* ${markdownSafe(String(run.lastError).slice(0, MAX_ERROR_LENGTH))}\n`;
     }
@@ -322,6 +329,7 @@ async function runConvictionSweep({ trigger = 'manual' } = {}) {
     status.total = 0;
     status.done = 0;
     status.scored = 0;
+    status.withoutGemini = 0;
     status.reused = 0;
     status.blind = 0;
     status.skipped = 0;
@@ -371,7 +379,11 @@ async function runConvictionSweep({ trigger = 'manual' } = {}) {
                 // source was down is never stored — neither refreshed anything
                 if (!(Date.parse(payload.generatedAt) >= askedAt)) status.reused++;
                 else if (isAllNeutral(payload)) status.blind++;
-                else status.scored++;
+                else {
+                    status.scored++;
+                    // Gemini failed (or has no key): the rule-based scores were stored
+                    if (payload.engine === 'rule-based') status.withoutGemini++;
+                }
             } catch (error) {
                 status.failed++;
                 status.lastError = `${stock.symbol}: ${error.message}`;

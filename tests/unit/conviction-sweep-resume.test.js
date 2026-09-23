@@ -21,9 +21,10 @@
  *        process sweeps on until Render kills it), and scheduleResumeCheck() looks again.
  *   3. runConvictionSweep() refuses to start without its skip list - and says so.
  *   4. The owner report: a start message and an end message with the tally, the duration
- *      and the coverage read back from the TABLE (SHORT when symbols are left), sent to
- *      ADMIN_EMAIL's linked chat only, retried as plain text, never fatal to the sweep,
- *      and off with CONVICTION_SWEEP_ALERTS=false.
+ *      and the coverage read back from the TABLE (SHORT when symbols are left), plus a
+ *      line when Gemini failed and verdicts were stored rule-based (what 2026-08-29 did);
+ *      sent to ADMIN_EMAIL's linked chat only, retried as plain text, never fatal to the
+ *      sweep, and off with CONVICTION_SWEEP_ALERTS=false.
  *   5. The rails around the owner's shouldResumeSweep() policy.
  *   6. getVerdictStats(days, { day }) adds one date's writes per 10 minutes.
  *
@@ -390,6 +391,45 @@ describe('the owner report', () => {
         expect(end).toMatch(/\*Covered:\* 1 of 2 symbols/);
         expect(end).toMatch(/1 symbol left without a verdict this recent/);
         expect(end).toMatch(/re-fire POST \/api\/ops\/conviction-sweep, which skips what is done/);
+    });
+
+    test('a Gemini outage shows: the verdicts stored were rule-based, and a re-fire would skip them', async () => {
+        jest.spyOn(console, 'error').mockImplementation(() => {});      // the engine logs each fallback
+        process.env.GEMINI_API_KEY = 'test-key';
+        const table = verdictTable();
+        universe('NOGEM1.L', 'NOGEM2.L');
+        sourcesUp();
+        axios.post.mockRejectedValue(new Error('429 RESOURCE_EXHAUSTED'));
+        ownerLinked();
+
+        const result = await Sweep.runConvictionSweep();
+        const end = sentMessages()[1];
+
+        expect(result).toMatchObject({ scored: 2, withoutGemini: 2, remaining: 0 });
+        expect(table.today('NOGEM1.L').engine).toBe('rule-based');
+        expect(end).toMatch(/✅ \*AI SWEEP FINISHED\*/);                   // covered, so not SHORT
+        expect(end).toMatch(/🤖 \*Gemini failed for 2 symbols:\* their stored verdicts are rule-based, and a re-fire within 14 days skips them/);
+    });
+
+    test('no Gemini warning while Gemini answers - nor without a key, when rule-based is the design', async () => {
+        process.env.GEMINI_API_KEY = 'test-key';
+        verdictTable();
+        universe('GEMOK1.L');
+        sourcesUp();
+        const pillar = score => ({ score, evidence: [`${score} from the test`] });
+        axios.post.mockResolvedValue({ data: { candidates: [{ content: { parts: [{ text: JSON.stringify({
+            technical: pillar(7), fundamental: pillar(6), information: pillar(6), summary: 'fine'
+        }) }] } }] } });
+        ownerLinked();
+
+        const answered = await Sweep.runConvictionSweep();
+        delete process.env.GEMINI_API_KEY;
+        universe('NOKEY1.L');
+        const keyless = await Sweep.runConvictionSweep();
+
+        expect(answered).toMatchObject({ scored: 1, withoutGemini: 0 });
+        expect(keyless).toMatchObject({ scored: 1, withoutGemini: 1 });
+        expect(sentMessages().filter(message => /Gemini failed/.test(message))).toEqual([]);
     });
 
     test('a picked-up run says so', async () => {
