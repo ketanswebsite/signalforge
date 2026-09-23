@@ -28,7 +28,7 @@
  },
  {
   "route": "GET /api/ml/conviction/:symbol",
-  "path": "/api/ml/conviction/HARNESS.L",
+  "path": "/api/ml/conviction/HSBA.L",
   "cases": [
    {
     "as": "anon",
@@ -46,12 +46,49 @@
     "as": "user",
     "status": 200,
     "check": "object",
-    "note": "served from the seeded conviction_daily row for today - no scoring, no network"
+    "note": "served from the seeded conviction_daily row for today (HSBA.L, a real universe symbol) - no scoring, no network"
    },
    {
     "as": "admin",
     "status": 200,
     "check": "object"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object",
+    "path": "/api/ml/conviction/hsba.l",
+    "note": "lower case is normalised"
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "path": "/api/ml/conviction/HARNESS.L",
+    "note": "not in the scan universe: nothing is scored (and no verdict is seeded for everyone)"
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "path": "/api/ml/conviction/NOTASTOCK",
+    "note": "not in the scan universe"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/ml/conviction/batch",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 405,
+    "note": "a batch is a POST; before this route a GET was scored as a stock called \"BATCH\""
+   },
+   {
+    "as": "user",
+    "status": 405
    }
   ]
  },
@@ -406,19 +443,22 @@
     "body": {
      "signals": [
       {
-       "symbol": "HARNESS.L",
-       "name": "Harness plc",
+       "symbol": "HSBA.L",
+       "name": "Ignored plc",
        "winRate": 80
       },
       {
-       "symbol": "harnessp.l"
+       "symbol": "vod.l"
+      },
+      {
+       "symbol": "HSBA.L"
       },
       {
        "symbol": "HARNESS.L"
       }
      ]
     },
-    "note": "seeded verdicts only (hermetic); lower case and duplicates are normalised"
+    "note": "seeded verdicts only (hermetic); lower case and duplicates are normalised, the caller's name is ignored, and HARNESS.L (not in the universe) comes back as a fail-closed error marker"
    },
    {
     "as": "admin",
@@ -427,7 +467,7 @@
     "body": {
      "signals": [
       {
-       "symbol": "HARNESSP.L"
+       "symbol": "VOD.L"
       }
      ]
     }

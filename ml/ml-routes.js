@@ -28,6 +28,18 @@ try {
 // ---------------------------------------------------------------------------
 
 const { getConviction } = require('./conviction-engine');
+const { getAllStocks } = require('../lib/shared/stock-data');
+
+// Only symbols in the scan universe are scored, and always under the universe's own name. A verdict
+// is stored and shared for up to 37 days - the 7 AM gate, the 1 PM executor and the Simulator all
+// read it - so a caller must not be able to spend Gemini calls on arbitrary symbols, or steer the
+// news search (and with it everyone's verdict) with a company name of its own choosing.
+let universe = null;                          // symbol -> name, built on first use
+function universeEntry(symbol) {
+    if (!universe) universe = new Map(getAllStocks().map(s => [String(s.symbol).toUpperCase(), s.name]));
+    const key = String(symbol).trim().toUpperCase();
+    return universe.has(key) ? { symbol: key, name: universe.get(key) } : null;
+}
 
 /**
  * GET /api/ml/conviction/:symbol?name=&winRate=
@@ -52,13 +64,20 @@ router.get('/conviction/sweep-status', ensureSubscriptionActive, async (req, res
     }
 });
 
+// A GET on the batch path would otherwise be scored as a stock called "BATCH"
+router.get('/conviction/batch', (req, res) => {
+    res.set('Allow', 'POST').status(405).json({ success: false, error: 'Use POST for a batch' });
+});
+
 router.get('/conviction/:symbol', ensureSubscriptionActive, async (req, res) => {
     try {
-        const symbol = req.params.symbol.toUpperCase();
-        const { name } = req.query;
+        const stock = universeEntry(req.params.symbol);
+        if (!stock) {
+            return res.status(400).json({ success: false, error: 'Only symbols in the scan universe can be checked' });
+        }
         const winRate = req.query.winRate !== undefined ? parseFloat(req.query.winRate) : null;
 
-        const payload = await getConviction({ symbol, name, winRate });
+        const payload = await getConviction({ symbol: stock.symbol, name: stock.name, winRate });
         res.json(payload);
     } catch (error) {
         console.error('Conviction check error:', error.message);
@@ -83,22 +102,28 @@ router.post('/conviction/batch', ensureSubscriptionActive, async (req, res) => {
             return res.status(400).json({ success: false, error: 'At most 100 signals per batch' });
         }
 
-        // Dedup by symbol, keep the first name/winRate seen
+        // Dedup by symbol, keep the first winRate seen; the name always comes from the universe
         const bySymbol = new Map();
+        const results = {};
         for (const s of signals) {
             if (!s || typeof s.symbol !== 'string' || !s.symbol.trim()) continue;
-            const symbol = s.symbol.trim().toUpperCase();
-            if (!bySymbol.has(symbol)) {
-                bySymbol.set(symbol, {
-                    symbol,
-                    name: typeof s.name === 'string' ? s.name : undefined,
+            const stock = universeEntry(s.symbol);
+            if (!stock) {
+                // Fail-closed marker, as for a scoring error: the caller treats it as no-trade
+                const symbol = s.symbol.trim().toUpperCase();
+                results[symbol] = { symbol, error: true, reason: 'not in the scan universe' };
+                continue;
+            }
+            if (!bySymbol.has(stock.symbol)) {
+                bySymbol.set(stock.symbol, {
+                    symbol: stock.symbol,
+                    name: stock.name,
                     winRate: s.winRate != null && !isNaN(parseFloat(s.winRate)) ? parseFloat(s.winRate) : null
                 });
             }
         }
 
         const queue = [...bySymbol.values()];
-        const results = {};
         const CONCURRENCY = 5;
 
         async function worker() {

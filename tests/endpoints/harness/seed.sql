@@ -90,7 +90,8 @@ SELECT s, CURRENT_DATE, 6.5, 'GO', 'rule-based',
                              'information', jsonb_build_object('score', 6, 'weight', 25, 'evidence', jsonb_build_array('fixture'))),
                           'context', jsonb_build_object('winRate', null),
                           'generatedAt', to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'))
-FROM (VALUES ('HARNESS.L'), ('HARNESSP.L')) AS v(s)
+-- HSBA.L and VOD.L are real universe symbols: the on-demand routes score nothing outside the universe
+FROM (VALUES ('HARNESS.L'), ('HARNESSP.L'), ('HSBA.L'), ('VOD.L')) AS v(s)
 ON CONFLICT (symbol, score_date) DO NOTHING;
 
 -- ---------------------------------------------------------------- high-conviction portfolio (admin /api/portfolio/*)
