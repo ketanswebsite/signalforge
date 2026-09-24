@@ -24,6 +24,7 @@ const TradeDB = require('../database-postgres');
 const Input = require('../lib/shared/input');
 const AccountDeletion = require('../lib/shared/account-deletion');
 const SqlConsole = require('../lib/shared/sql-console');
+const StripeBilling = require('../lib/shared/stripe-billing');
 
 // What the subscription_plans CHECK constraints allow (migrations/003_create_subscription_tables.sql)
 const PLAN_REGIONS = ['UK', 'US', 'India', 'Global'];
@@ -320,6 +321,9 @@ router.delete('/users/:email', asyncHandler(async (req, res) => {
     });
   } catch (error) {
     console.error('Admin account deletion failed:', error.message);
+    if (error.code === 'PAYMENT_PROVIDER') {
+      throw new AdminAPIError('PAYMENT_PROVIDER_ERROR', `The account's paid plan could not be ended in Stripe (${error.message}), and nothing was deleted`);
+    }
     throw new AdminAPIError('DATABASE_ERROR', 'Deleting the account failed, and nothing was deleted');
   }
 
@@ -531,6 +535,14 @@ router.get('/subscriptions', asyncHandler(async (req, res) => {
 // Cancel subscription
 router.post('/subscriptions/:id/cancel', asyncHandler(async (req, res) => {
   const subscriptionId = req.params.id;
+
+  // A plan Stripe bills is ended in Stripe first, or the card would go on being charged for a plan cancelled here
+  try {
+    await StripeBilling.syncStripeForRow(TradeDB.pool, subscriptionId, 'end-now');
+  } catch (error) {
+    if (error.code !== 'PAYMENT_PROVIDER') throw error;
+    throw new AdminAPIError('PAYMENT_PROVIDER_ERROR', `${error.message}. Nothing was changed.`);
+  }
 
   const result = await TradeDB.pool.query(`
     UPDATE user_subscriptions

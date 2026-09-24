@@ -66,9 +66,13 @@ const isWrite = sql => /^\s*(INSERT|UPDATE|DELETE)\b/i.test(sql);
  * Answers every statement by its SQL. `status` is the access check's row (null = no users row);
  * the rest are the rows each route-level SELECT gets.
  */
-function serve({ status = neverSubscribed(), running = [], latest = [], pastTrial = [], cancelReturning = [], reactivateReturning = [{ id: 7 }] } = {}) {
+function serve({ status = neverSubscribed(), running = [], latest = [], pastTrial = [], cancelReturning = [], reactivateReturning = [{ id: 7 }], stripeSubscription = null } = {}) {
     mockQuery.mockImplementation(async (sql) => {
         if (isStatusSelect(sql)) return { rows: status ? [status] : [] };
+        // lib/shared/stripe-billing.js: the Stripe subscription behind a row (none unless the test says)
+        if (/^\s*SELECT stripe_subscription_id FROM user_subscriptions WHERE id = \$1/.test(sql)) {
+            return { rows: [{ stripe_subscription_id: stripeSubscription }] };
+        }
         if (/FROM subscription_plans/.test(sql)) {
             return { rows: [{ id: 1, plan_code: 'FREE', plan_name: 'Explorer', region: 'Global', currency: 'USD', trial_days: 90 }] };
         }
@@ -313,6 +317,60 @@ describe('routes/subscription.js', () => {
             expect(writes().filter(([sql]) => /subscription_history/.test(sql))).toEqual([]);
         });
 
+        describe('a plan Stripe bills', () => {
+            const StripeConfig = require('../../config/stripe');
+            function fakeStripe({ fails = false } = {}) {
+                const calls = [];
+                const stripe = { subscriptions: {
+                    retrieve: async id => { calls.push(['retrieve', id]); return { id, status: 'active' }; },
+                    update: async (id, params) => {
+                        calls.push(['update', id, params]);
+                        if (fails) throw new Error('Stripe is down');
+                        return { id };
+                    },
+                    cancel: async id => { calls.push(['cancel', id]); return { id }; }
+                } };
+                jest.spyOn(StripeConfig, 'getStripeClient').mockReturnValue(stripe);
+                return calls;
+            }
+
+            test('stops renewing in Stripe first, then the row is cancelled as any other', async () => {
+                const calls = fakeStripe();
+                serve({ running: [{ id: 7, status: 'active' }], cancelReturning: [{ end_date: inDays(20) }], stripeSubscription: 'sub_unit' });
+                const r = await call('POST', '/api/user/subscription/cancel', { reason: 'unit' });
+                expect(r.status).toBe(200);
+                expect(calls).toEqual([['retrieve', 'sub_unit'], ['update', 'sub_unit', { cancel_at_period_end: true }]]);
+                expect(writes().filter(([sql]) => /UPDATE user_subscriptions/.test(sql))).toHaveLength(1);
+            });
+
+            test('when Stripe cannot be told, nothing changes here: 502', async () => {
+                fakeStripe({ fails: true });
+                serve({ running: [{ id: 7, status: 'active' }], cancelReturning: [{ end_date: inDays(20) }], stripeSubscription: 'sub_unit' });
+                const r = await call('POST', '/api/user/subscription/cancel', { reason: 'unit' });
+                expect(r.status).toBe(502);
+                expect(r.json.error.code).toBe('PAYMENT_PROVIDER');
+                expect(writes()).toEqual([]);
+            });
+
+            test('a legacy checkout row (a PaymentIntent id) is never sent to Stripe', async () => {
+                const calls = fakeStripe();
+                serve({ running: [{ id: 7, status: 'active' }], cancelReturning: [{ end_date: inDays(20) }], stripeSubscription: 'pi_legacy' });
+                expect((await call('POST', '/api/user/subscription/cancel', {})).status).toBe(200);
+                expect(calls).toEqual([]);
+            });
+
+            test('reactivating renews in Stripe first, and the end its cancel wrote goes: the paid-up end decides again', async () => {
+                const calls = fakeStripe();
+                serve({ latest: [{ id: 8, status: 'cancelled', plan_name: 'Trader - UK', trial_end_date: null, amount_paid: '9.99', access_until: inDays(9) }], stripeSubscription: 'sub_unit' });
+                const r = await call('POST', '/api/user/subscription/reactivate');
+                expect(r.status).toBe(200);
+                expect(calls).toEqual([['retrieve', 'sub_unit'], ['update', 'sub_unit', { cancel_at_period_end: false }]]);
+                const [update, params] = writes().find(([sql]) => /UPDATE user_subscriptions/.test(sql));
+                expect(update).toMatch(/end_date = CASE WHEN left\(stripe_subscription_id, 4\) = 'sub_' THEN NULL ELSE end_date END/);
+                expect(params).toEqual([8, 'active']);
+            });
+        });
+
         test('only a row that is still running can be cancelled', async () => {
             serve({ running: [] });
             const r = await call('POST', '/api/user/subscription/cancel', {});
@@ -395,10 +453,10 @@ describe('one database pool', () => {
             expect(src).not.toMatch(/require\('pg'\)/);
         });
 
-    test('the Stripe router still loads (the harness never mounts it: it has no Stripe keys)', () => {
+    test('the Stripe router loads: the checkout routes, and the webhook server.js mounts before the JSON parser', () => {
         const stripeRouter = require('../../routes/stripe');
         const paths = stripeRouter.stack.filter(l => l.route).map(l => l.route.path);
-        expect(paths).toEqual(expect.arrayContaining(['/config', '/create-subscription', '/webhook']));
-        expect(paths).not.toContain('/start-free-trial');
+        expect(paths.sort()).toEqual(['/config', '/create-subscription']);
+        expect(typeof stripeRouter.webhook).toBe('function');
     });
 });

@@ -84,8 +84,14 @@
         if (sr.ok) {
             var s = await sr.json();
             var sub = (s && s.data && s.data.subscription) || {};
-            // A receipt names the paid plan in force, never the free trial it follows
-            if (sub.status === 'active' && sub.plan_name) document.getElementById('r-plan').textContent = sub.plan_name + ' — monthly';
+            // A receipt names the paid plan in force, with its billing period and paid-up date, never the free trial
+            // it follows (until Stripe's webhook has recorded the payment, the text above stays)
+            if (sub.status === 'active' && sub.plan_name) {
+                document.getElementById('r-plan').textContent = sub.plan_name + ' — ' + (sub.billing_period || 'monthly');
+                if (sub.subscription_end_date) {
+                    document.getElementById('r-next').textContent = new Date(sub.subscription_end_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+                }
+            }
         }
     } catch (e) { /* receipt falls back to static text */ }
 })();

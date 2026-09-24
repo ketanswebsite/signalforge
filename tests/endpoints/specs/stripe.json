@@ -2,21 +2,22 @@
   {
     "route": "GET /api/stripe/config",
     "cases": [
-      { "as": "anon", "status": 401, "note": "server.js mounts routes/stripe.js only when Stripe keys are set; the harness has none, so these specs pin the unmounted behaviour. A Stripe test-mode tier comes with the checkout fix (owner decision E6)." },
-      { "as": "user", "status": 404, "note": "not mounted in the harness" }
+      { "as": "anon", "status": 401, "note": "the paid checkout is off here, as on prod until the owner switches it on (STRIPE_CHECKOUT=true with STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET, config/stripe.js): nothing under /api/stripe is mounted, so the /api sign-in gate answers. tests/endpoints/stripe-webhook.test.js runs the switched-on checkout on a second server." },
+      { "as": "user", "status": 404, "note": "switched off: no handler, which the checkout page reads as 'payments are not open yet'" }
     ]
   },
   {
     "route": "POST /api/stripe/create-subscription",
     "cases": [
       { "as": "anon", "status": 401 },
-      { "as": "user", "status": 404, "note": "not mounted in the harness; never called authorised (creates Stripe objects)" }
+      { "as": "user", "status": 404, "note": "switched off: no handler. Switched on, it is never called with a valid plan here: that would call Stripe" }
     ]
   },
   {
     "route": "POST /api/stripe/webhook",
     "cases": [
-      { "as": "anon", "status": 401, "note": "mounted after the /api sign-in gate, so Stripe itself would get 401 here too - the paid-checkout bug (owner decision E6)" }
+      { "as": "anon", "status": 401, "note": "switched off: no webhook, so the sign-in gate answers. Switched on, it sits before the gate and the JSON parser and answers Stripe's signature alone (stripe-webhook.test.js)" },
+      { "as": "user", "status": 404, "note": "switched off: no handler" }
     ]
   }
 ]

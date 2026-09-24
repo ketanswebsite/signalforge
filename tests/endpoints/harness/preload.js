@@ -4,7 +4,8 @@
  * Runs before server.js, only in the harness process that global-setup.js starts from a git-archive export
  * of the commit under test. It guarantees:
  *   1. The environment is the harness one, or it refuses to start (exit 97): a local sf_harness_* database,
- *      no bot token, Gemini, Stripe or VAPID keys, AUTO_EXECUTE=false, CONVICTION_SWEEP=false, no .env in cwd,
+ *      no bot token, Gemini or VAPID keys, no Stripe secret but the harness's own made-up test values,
+ *      AUTO_EXECUTE=false, CONVICTION_SWEEP=false, no .env in cwd,
  *      not production, and ADMIN_EMAIL a harness persona (.invalid), so the admin is never a real account.
  *   2. node-cron is inert: every schedule() returns a no-op task, so no job ever fires. That includes the
  *      every-minute exit monitor, the 7 AM scan and the monthly sweep.
@@ -34,9 +35,15 @@ let dbUrl;
 try { dbUrl = new URL(process.env.DATABASE_URL || ''); } catch (e) { fatal('DATABASE_URL missing or unparsable'); }
 if (!['127.0.0.1', 'localhost', '[::1]', '::1'].includes(dbUrl.hostname)) fatal('DATABASE_URL must point at the local Postgres');
 if (!/^\/sf_harness_[a-z0-9_]+$/.test(dbUrl.pathname)) fatal('DATABASE_URL must name a scratch sf_harness_* database');
-for (const k of ['TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID', 'GEMINI_API_KEY', 'STRIPE_SECRET_KEY', 'STRIPE_PUBLISHABLE_KEY',
-  'STRIPE_WEBHOOK_SECRET', 'VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'ADMIN_EMAILS', 'RENDER_GIT_COMMIT']) {
+for (const k of ['TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID', 'GEMINI_API_KEY', 'STRIPE_PUBLISHABLE_KEY',
+  'VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'ADMIN_EMAILS', 'RENDER_GIT_COMMIT']) {
   if (process.env[k]) fatal(k + ' must be empty in the harness');
+}
+// Stripe secrets: empty, or the made-up test values tests/endpoints/stripe-webhook.test.js gives the second server it
+// starts with the paid checkout switched on. Any other value could be a real key. Egress is blocked either way (3.).
+const HARNESS_STRIPE = { STRIPE_SECRET_KEY: /^sk_test_harness_[0-9a-f]{32}$/, STRIPE_WEBHOOK_SECRET: /^whsec_harness_[0-9a-f]{32}$/ };
+for (const [k, shape] of Object.entries(HARNESS_STRIPE)) {
+  if (process.env[k] && !shape.test(process.env[k])) fatal(k + ' must be empty or a harness test value in the harness');
 }
 if (process.env.AUTO_EXECUTE !== 'false') fatal('AUTO_EXECUTE must be false');
 if (process.env.CONVICTION_SWEEP !== 'false') fatal('CONVICTION_SWEEP must be false');

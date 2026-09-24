@@ -44,13 +44,16 @@ const CHECKS = {
     isAdminTrue: r => expect((r.json && (r.json.isAdmin ?? (r.json.user && r.json.user.isAdmin)))).toBe(true),
     isAdminFalse: r => expect(Boolean(r.json && (r.json.isAdmin ?? (r.json.user && r.json.user.isAdmin)))).toBe(false),
     commitSha: r => expect(String(r.json && r.json.commit)).toMatch(/^([0-9a-f]{7,40}|unknown|null|undefined)$/),
-    // GET /api/ops/version: the commit, and whether ADMIN_EMAIL is set (the harness sets it) - never the address itself
+    // GET /api/ops/version: the commit, whether ADMIN_EMAIL is set (the harness sets it) - never the address itself - and
+    // the paid checkout's switch
     versionProbe: r => {
         expect(String(r.json && r.json.commit)).toMatch(/^([0-9a-f]{7,40}|unknown|null|undefined)$/);
         expect(r.json.adminEmailConfigured).toBe(true);
         // the harness's ADMIN_EMAIL is a .invalid account, not the built-in one
         expect(r.json.adminEmailMatchesFallback).toBe(false);
         expect(r.text.includes(h.state().personas.admin)).toBe(false);
+        // the paid checkout is off here, as on prod until the owner switches it on: every part reads false
+        expect(r.json.stripeCheckout).toEqual({ enabled: false, switchedOn: false, secretKey: false, webhookSecret: false, keyMode: null });
     },
     // { success: true, count: <whole number> }: the bulk import and delete-all answers
     successCount: r => {

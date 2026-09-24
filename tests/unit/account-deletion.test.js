@@ -158,6 +158,56 @@ describe('isProtectedAccount', () => {
     });
 });
 
+describe('a paid plan Stripe bills', () => {
+    function fakeStripe({ cancelFails = false } = {}) {
+        const calls = [];
+        return {
+            calls,
+            subscriptions: {
+                retrieve: async id => { calls.push(['retrieve', id]); return { id, status: 'active' }; },
+                cancel: async id => {
+                    calls.push(['cancel', id]);
+                    if (cancelFails) throw new Error('Stripe is down');
+                    return { id, status: 'canceled' };
+                },
+                update: async id => { calls.push(['update', id]); return { id }; }
+            }
+        };
+    }
+
+    test('one Stripe still renews is ended in Stripe, then the account goes as any other', async () => {
+        const stripe = fakeStripe();
+        const { statements, pool } = fakePool({ subscriptions: [{ id: 3, status: 'active', amount_paid: '9.99', stripe_subscription_id: 'sub_unit' }] });
+        const result = await AccountDeletion.deleteAccount({ pool, email: 'gone@e2e.invalid', requestedBy: 'gone@e2e.invalid', stripe });
+
+        expect(result).toEqual({ found: true, financialRecordsRetained: true });
+        expect(stripe.calls).toEqual([['retrieve', 'sub_unit'], ['cancel', 'sub_unit']]);
+        expect(index(statements, 'DELETE FROM users')).toBeGreaterThan(-1);
+        expect(texts(statements).pop()).toBe('COMMIT');
+    });
+
+    test('when Stripe cannot end it, nothing is deleted and the caller hears PAYMENT_PROVIDER', async () => {
+        const stripe = fakeStripe({ cancelFails: true });
+        const { statements, client, pool } = fakePool({ subscriptions: [{ id: 3, status: 'active', amount_paid: '9.99', stripe_subscription_id: 'sub_unit' }] });
+        await expect(AccountDeletion.deleteAccount({ pool, email: 'gone@e2e.invalid', requestedBy: 'gone@e2e.invalid', stripe }))
+            .rejects.toMatchObject({ code: 'PAYMENT_PROVIDER' });
+
+        expect(texts(statements).filter(t => t.startsWith('DELETE FROM'))).toEqual([]);
+        expect(texts(statements).pop()).toBe('ROLLBACK');
+        expect(client.released).toEqual([undefined]);
+    });
+
+    test('a plan already set to end, and a legacy checkout row (a PaymentIntent id), are not sent to Stripe', async () => {
+        const stripe = fakeStripe();
+        const { pool } = fakePool({ subscriptions: [
+            { id: 3, status: 'cancelled', amount_paid: '9.99', stripe_subscription_id: 'sub_ends' },
+            { id: 4, status: 'active', amount_paid: '9.99', stripe_subscription_id: 'pi_legacy' }
+        ] });
+        await AccountDeletion.deleteAccount({ pool, email: 'gone@e2e.invalid', requestedBy: 'gone@e2e.invalid', stripe });
+        expect(stripe.calls).toEqual([]);
+    });
+});
+
 describe('endAccountSessions', () => {
     test('the Postgres store ends every session of the account in one call and says how many', async () => {
         const calls = [];

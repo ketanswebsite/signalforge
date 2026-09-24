@@ -7,6 +7,8 @@ const express = require('express');
 const router = express.Router();
 const TradeDB = require('../database-postgres');
 const AdminIdentity = require('../config/admin');
+// A plan Stripe bills is changed in Stripe first (lib/shared/stripe-billing.js)
+const StripeBilling = require('../lib/shared/stripe-billing');
 
 // The app's one database pool (database-postgres.js), null when DATABASE_URL is unset. This
 // router used to open a pool of its own.
@@ -268,6 +270,16 @@ router.post('/user/subscription/cancel', ensureAuthenticated, async (req, res) =
 
     const subscription = subResult.rows[0];
 
+    // A plan Stripe bills stops renewing in Stripe first, keeping its paid-up period. When Stripe cannot be told,
+    // nothing changes here: the page must never show a cancel while the card goes on being charged.
+    try {
+      await StripeBilling.syncStripeForRow(db, subscription.id, 'stop-renewal');
+    } catch (error) {
+      if (error.code !== 'PAYMENT_PROVIDER') throw error;
+      console.error('[STRIPE] Cancel not applied:', error.message);
+      return res.status(502).json(errorResponse('Your plan could not be cancelled with the payment provider just now, so nothing was changed. Try again in a few minutes.', 'PAYMENT_PROVIDER'));
+    }
+
     // Cancel it but keep the access already given: end_date becomes the end the row already had
     // (the trial end, or the paid-up period), and middleware/subscription.js keeps a cancelled row
     // active until then. SET expressions read the row as it was, so `status` is still 'trial' or 'active'.
@@ -354,11 +366,22 @@ router.post('/user/subscription/reactivate', ensureAuthenticated, async (req, re
     // 'active' row. Only a paid plan comes back as 'active'.
     const restoredStatus = subscription.trial_end_date && !(Number(subscription.amount_paid) > 0) ? 'trial' : 'active';
 
-    // Reactivate subscription (a second request that raced this one finds the row no longer cancelled)
+    // A plan Stripe bills renews again in Stripe first; when Stripe cannot be told, nothing changes here
+    try {
+      await StripeBilling.syncStripeForRow(db, subscription.id, 'renew');
+    } catch (error) {
+      if (error.code !== 'PAYMENT_PROVIDER') throw error;
+      console.error('[STRIPE] Reactivate not applied:', error.message);
+      return res.status(502).json(errorResponse('Your plan could not be reactivated with the payment provider just now, so nothing was changed. Try again in a few minutes.', 'PAYMENT_PROVIDER'));
+    }
+
+    // Reactivate subscription (a second request that raced this one finds the row no longer cancelled). A plan
+    // Stripe bills drops the end its cancel wrote: the paid-up end, which every paid renewal moves on, decides again.
     const reactivated = await db.query(`
       UPDATE user_subscriptions
       SET
         status = $2,
+        end_date = CASE WHEN left(stripe_subscription_id, 4) = 'sub_' THEN NULL ELSE end_date END,
         cancellation_date = NULL,
         cancellation_reason = NULL,
         updated_at = NOW()

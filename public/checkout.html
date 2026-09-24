@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="/css/design-system/index.css">
     <link rel="stylesheet" href="/css/commerce.css">
     <script>try{if(localStorage.getItem('sa-theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
-    <script src="https://js.stripe.com/v3/"></script>
     <script src="/js/checkout-v31.js" defer></script>
 </head>
 <body>
@@ -28,7 +27,7 @@
     <div class="sa-spread cm-mb-5">
         <div>
             <h1 class="cm-page-title">Checkout</h1>
-            <p class="cm-mt-6px">Trader plan, billed monthly. This is the only screen with a card form in it.</p>
+            <p class="cm-mt-6px">Trader plan, billed monthly. You pay on Stripe's own secure page.</p>
         </div>
     </div>
 
@@ -37,13 +36,8 @@
             <div id="card-errors" hidden>
                 <div class="sa-callout sa-callout--loss">
                     <span class="material-symbols-rounded" aria-hidden="true">error</span>
-                    <div><strong>The payment didn't go through</strong><span id="card-errors-text">Your bank declined the card and nothing was charged. Trying a different card usually fixes it — or see <a href="/checkout-failure.html">why payments fail</a>.</span></div>
+                    <div><strong id="card-errors-title">The payment didn't go through</strong><span id="card-errors-text">Your bank declined the card and nothing was charged. Trying a different card usually fixes it — or see <a href="/checkout-failure.html">why payments fail</a>.</span></div>
                 </div>
-            </div>
-
-            <div class="sa-field">
-                <label class="sa-field__label" for="card-holder-name">Name on card</label>
-                <input class="sa-input" id="card-holder-name" autocomplete="cc-name" placeholder="As it appears on the card">
             </div>
 
             <div class="sa-payframe" id="payframe">
@@ -51,9 +45,9 @@
                     <span class="cm-paylabel">Card details</span>
                     <span class="sa-badge sa-badge--neutral"><span class="material-symbols-rounded" aria-hidden="true">lock</span>Handled by Stripe</span>
                 </div>
-                <div class="sa-payframe__slot" id="card-element" aria-label="Stripe payment element">
+                <div class="sa-payframe__slot" id="card-element" aria-label="Stripe payment page">
                     <span class="material-symbols-rounded" aria-hidden="true">credit_card</span>
-                    <span>Stripe's own card element loads here —<br>number, expiry and CVC never touch SutrAlgo.</span>
+                    <span>Stripe's own page takes your card when you pay —<br>number, expiry and CVC never touch SutrAlgo.</span>
                 </div>
             </div>
 

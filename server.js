@@ -149,6 +149,25 @@ try {
   ensurePremiumSubscription = (req, res, next) => next();
 }
 
+// The paid checkout (Stripe) and its one switch, off unless STRIPE_CHECKOUT=true, STRIPE_SECRET_KEY and
+// STRIPE_WEBHOOK_SECRET are all set (config/stripe.js). Off, nothing under /api/stripe exists. On, Stripe's webhook
+// comes first: before the JSON parser, because Stripe signs the raw bytes, and before the /api sign-in gate, because
+// Stripe has no session and its signature is its only credential. The checkout routes are mounted behind the gate
+// further down.
+const StripeConfig = require('./config/stripe');
+let stripeRoutes = null;
+if (StripeConfig.checkoutEnabled()) {
+  try {
+    stripeRoutes = require('./routes/stripe');
+    app.post('/api/stripe/webhook', express.raw({ type: () => true, limit: '1mb' }), stripeRoutes.webhook);
+  } catch (error) {
+    stripeRoutes = null;
+    console.error('✗ The paid checkout is switched on, but its routes failed to load:', error.message);
+  }
+} else {
+  console.log('Paid checkout off: it needs STRIPE_CHECKOUT=true, STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET');
+}
+
 // Middleware
 // No cors(): every page is served from this origin, and nothing calls this server from a browser
 // on another one (the AI routine, Telegram and Stripe call it server to server, where CORS does
@@ -485,6 +504,7 @@ app.post('/api/ops/reconcile-capital', requireOpsToken({ query: true }), async (
 // token opens it too. adminEmailConfigured says whether ADMIN_EMAIL is set (while it
 // is not, config/admin.js falls back to a built-in address), adminEmailMatchesFallback
 // whether it names that same account (then the fallback can go); never the address.
+// stripeCheckout: the paid checkout's switch and what it needs, as booleans and the key's mode; never a key.
 app.get('/api/ops/version', requireOpsToken({ query: true, read: true }), (req, res) => {
   res.json({
     success: true,
@@ -492,7 +512,8 @@ app.get('/api/ops/version', requireOpsToken({ query: true, read: true }), (req, 
     node: process.version,
     uptimeSeconds: Math.round(process.uptime()),
     adminEmailConfigured: AdminIdentity.adminEmailConfigured(),
-    adminEmailMatchesFallback: AdminIdentity.adminEmailMatchesFallback()
+    adminEmailMatchesFallback: AdminIdentity.adminEmailMatchesFallback(),
+    stripeCheckout: StripeConfig.checkoutStatus()
   });
 });
 
@@ -984,22 +1005,11 @@ try {
   console.error('✗ Failed to load subscription routes:', error.message);
 }
 
-// Stripe payment routes
-try {
-  const { initializeStripe, isStripeConfigured } = require('./config/stripe');
-
-  // Initialize Stripe if configured
-  initializeStripe();
-
-  if (isStripeConfigured()) {
-    const stripeRoutes = require('./routes/stripe');
-    app.use('/api/stripe', stripeRoutes);
-    console.log('✓ Stripe payment routes loaded successfully');
-  } else {
-    console.warn('⚠️  Stripe not configured. Payment routes will not be available.');
-  }
-} catch (error) {
-  console.error('✗ Failed to load Stripe routes:', error.message);
+// The paid checkout's routes (GET /api/stripe/config, POST /api/stripe/create-subscription), behind the sign-in
+// gate: mounted with the webhook near the top of this file, by the same switch
+if (stripeRoutes) {
+  app.use('/api/stripe', stripeRoutes);
+  console.log(`✓ Paid checkout on (Stripe ${StripeConfig.checkoutStatus().keyMode} mode)`);
 }
 
 // Admin routes - restricted to specific admin email
@@ -1385,6 +1395,13 @@ app.delete('/api/user/delete-account', ensureAuthenticatedAPI, async (req, res) 
       ipAddress: AccountDeletion.clientAddress(req)
     });
   } catch (error) {
+    // A paid plan Stripe still renews is ended there first; when Stripe cannot be told, nothing is deleted
+    if (error.code === 'PAYMENT_PROVIDER') {
+      console.error('Account deletion stopped:', error.message);
+      return res.status(502).json({
+        error: 'Your paid plan could not be ended with the payment provider, so nothing was deleted. Try again in a few minutes.'
+      });
+    }
     console.error('Error deleting account:', error);
     return res.status(500).json({
       error: 'Failed to delete account',
