@@ -1,6 +1,6 @@
 /**
- * Jest Configuration
- * Admin Portal V2 - Phase 6: Testing & Polish
+ * Jest configuration for the unit suites (npm test). The endpoint harness has its own:
+ * tests/endpoints/jest.config.js (npm run test:endpoints).
  */
 
 module.exports = {
@@ -12,8 +12,7 @@ module.exports = {
 
     // Test match patterns
     testMatch: [
-        '**/tests/unit/**/*.test.js',
-        '**/tests/integration/**/*.test.js'
+        '**/tests/unit/**/*.test.js'
     ],
 
     // Coverage configuration
@@ -23,15 +22,6 @@ module.exports = {
         '!**/node_modules/**',
         '!**/vendor/**'
     ],
-
-    coverageThresholds: {
-        global: {
-            branches: 70,
-            functions: 70,
-            lines: 70,
-            statements: 70
-        }
-    },
 
     coverageDirectory: 'coverage',
 

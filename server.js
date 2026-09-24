@@ -887,42 +887,6 @@ app.post('/api/ops/eod-summary', (req, res) => {
   res.json({ success: true, started: true, note: 'EOD summary running in background — watch logs/Telegram.' });
 });
 
-// What the removed admin "Run tests" buttons (2026-09-24) left in the live database.
-// tests/database.test.js wrote a user_settings row per click under test_user_<Date.now()> and one
-// TEST.NS signal, dismissed a few ms later; tests/performance.test.js wrote ten settings under
-// perf_test_<Date.now()> and deleted them again unless a run died midway. Nothing else writes those
-// ids or that symbol (TEST.NS is not in the universe). Token-guarded (header only) and READ-ONLY:
-// deleting the rows is the owner's call. Remove this probe once it reads clean on prod.
-app.get('/api/ops/test-residue-stats', async (req, res) => {
-  if (!process.env.ANALYSIS_API_TOKEN || req.get('x-analysis-token') !== process.env.ANALYSIS_API_TOKEN) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-  try {
-    const { rows: [settings] } = await TradeDB.pool.query(`
-      SELECT count(*) FILTER (WHERE user_id ~ '^test_user_[0-9]+$')::int AS "testUserRows",
-             count(*) FILTER (WHERE user_id ~ '^perf_test_[0-9]+$')::int AS "perfTestRows",
-             count(DISTINCT user_id) FILTER (WHERE user_id ~ '^(test_user|perf_test)_[0-9]+$')::int AS "runs",
-             min(created_at) FILTER (WHERE user_id ~ '^(test_user|perf_test)_[0-9]+$') AS "oldest",
-             max(created_at) FILTER (WHERE user_id ~ '^(test_user|perf_test)_[0-9]+$') AS "newest"
-      FROM user_settings
-    `);
-    const { rows: testSignals } = await TradeDB.pool.query(`
-      SELECT id, status, to_char(signal_date, 'YYYY-MM-DD') AS "signalDate", dismissed_at AS "dismissedAt"
-      FROM pending_signals
-      WHERE symbol = 'TEST.NS'
-      ORDER BY id
-    `);
-    res.json({
-      success: true,
-      clean: settings.testUserRows + settings.perfTestRows === 0 && testSignals.length === 0,
-      userSettings: settings,
-      testSignals
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
 // Protect all API routes except auth routes and telegram webhook
 app.use('/api', ensureAuthenticatedAPI);
 

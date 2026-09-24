@@ -2,17 +2,14 @@
   "name": "stock-proxy",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "test": "jest",
     "test:unit": "jest tests/unit",
-    "test:integration": "jest tests/integration",
     "test:endpoints": "jest -c tests/endpoints/jest.config.js",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "benchmark": "node tests/performance/benchmark.js",
-    "diagnose": "node server-diagnostic.js"
+    "test:coverage": "jest --coverage"
   },
   "keywords": [],
   "author": "",

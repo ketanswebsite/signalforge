@@ -93,12 +93,12 @@ Update it in the same commit as the change it describes. See rule 1.
 
 | Feature | Version | Last tested | Status |
 |---|---|---|---|
-| Ops probes & health (`/api/ops/*`, `/health`) | 1.3 | 2026-09-24 · unit + endpoint | ✅ Working: `/health` shows the right UK time and next scan all year (unit-tested on both sides of the clock change) and names the real session store. The subscription schema probe is admin-only. One-off: `GET /api/ops/test-residue-stats` (read-only, header token) counts the rows the removed Run-tests buttons left in the database; it goes once prod reads clean. |
+| Ops probes & health (`/api/ops/*`, `/health`) | 1.3 | 2026-09-24 · unit + endpoint | ✅ Working: `/health` shows the right UK time and next scan all year (unit-tested on both sides of the clock change) and names the real session store. The subscription schema probe is admin-only. |
 | Access control: sign-in gate, subscription gate, one admin guard for all of `/api/admin` | 1.0 | 2026-09-23 · unit + endpoint | ✅ Working: the access matrix of every route (anonymous 401, non-subscriber 403, non-admin 403, token-only ops) passes in the harness; the admin guard is unit-tested. |
 | Pages, static files & `/lib` allow-list (16 pages) | 1.0 | 2026-09-23 · unit + endpoint | ✅ Working |
 | Process reliability (crash handlers, shutdown, sessions, DB pools) | 1.2 | 2026-09-24 · unit | ⚠️ Faulty: sessions are in memory (every deploy signs everyone out) and there are 12 extra pg pools. Fixed on 2026-09-24: an unhandled rejection is reported to the owner instead of crashing the server, a crash reports before it exits, and a deploy's SIGTERM closes the server and exits within 20 s (`lib/shared/process-guards.js`). geoip-lite (146 MiB of memory at boot) is gone. |
 | `routes/gdpr.js` (never mounted) | 1.0 | — | 🗑️ Dead |
-| Endpoint test harness (every route, every page contract) | 1.0 | 2026-09-24 · endpoint | ✅ Working: 205 specs (160 live routes, 5 unmounted Stripe routes, 40 removed routes), 850 cases; 816 pass and 34 known bugs fail as expected. Fresh scratch database and server per run, cron stubbed, no network. |
+| Endpoint test harness (every route, every page contract) | 1.0 | 2026-09-24 · endpoint | ✅ Working: 204 specs (159 live routes, 5 unmounted Stripe routes, 40 removed routes), 845 cases; 811 pass and 34 known bugs fail as expected. Fresh scratch database and server per run, cron stubbed, no network. |
 
 ### Strategy & data quality: the GAPS register (from the 2026-08-07 audit; full evidence in `git show e2774d5:docs/GAPS.md`)
 
@@ -128,7 +128,8 @@ Update it in the same commit as the change it describes. See rule 1.
 Newest first. Each line is one commit on `main`; `git show <sha>` has the full reasoning.
 
 **2026-09-24**
-- *(this commit)* Remove the admin Run-tests feature: the Database tab's button and runner, its 3 routes (they spawned test scripts against the live database, wrote rows there and always failed), `GET /api/test` and the 4 scripts behind them. A read-only token probe, `GET /api/ops/test-residue-stats`, counts the rows they left. The harness keeps all 40 removed routes gone
+- *(this commit)* Remove the one-off residue probe: prod read clean, so the Run-tests buttons left no rows to delete. Tidy the test set-up: the integration "suite" only asserted its own fetch mock and the benchmark file ran nothing; both go with their npm scripts, as does a `diagnose` script whose file was deleted earlier. `package.json` named a missing `main`, and jest warned about an unknown option on every run
+- `ab35b5f` Remove the admin Run-tests feature: the Database tab's button and runner, its 3 routes (they spawned test scripts against the live database, wrote rows there and always failed), `GET /api/test` and the 4 scripts behind them. A read-only token probe, `GET /api/ops/test-residue-stats`, counts the rows they left. The harness keeps all 40 removed routes gone
 - `e5a3e6d` Reliability rails: an unhandled promise rejection is logged and reported to the owner (throttled) instead of crashing the server and signing everyone out; an uncaught exception reports before it exits; a deploy's SIGTERM closes the HTTP server and exits within 20 s (the old instance used to keep sweeping until Render killed it). The owner also hears when an exit-monitor pass fails outright (hourly at most) and when a high-conviction exit alert or weekly report reaches nobody. The owner-alert sender never rejects
 - `cceab88` On-demand AI conviction checks score only symbols in the scan universe, under the universe's own name. Any trial account could spend Gemini calls on arbitrary symbols, or pass a misleading company name that steered the news search behind a verdict the 7 AM gate, the executor and the Simulator share for up to 37 days. A GET on the batch path answers 405 instead of scoring a stock called "BATCH"
 - `49b7b62` Telegram safety: a non-production boot no longer polls or deletes the webhook (with the real token it deleted prod's, and prod stopped receiving bot commands until its next boot); polling is opt-in with `TELEGRAM_POLLING=true`. Production always registers the webhook with a secret, derived from the bot token when `TELEGRAM_WEBHOOK_SECRET` is unset, and enforces a derived one only after Telegram accepts it. The webhook log no longer records users' names, message text or account-link tokens
@@ -377,7 +378,7 @@ signalforge/
 ├── tests/
 │   ├── unit/                 jest unit suites (npm test), including the route-spec coverage test
 │   ├── endpoints/            HTTP harness (npm run test:endpoints): harness/ (preload, setup, seed), specs/*.json (one per route)
-│   └── (integration/, performance/: a jest suite that only calls its own fetch mock, and an inert benchmark file; removal queued)
+│   └── setup.js, __mocks__/  jest set-up for the unit suites (browser globals, style and image stubs)
 ├── public/                   16 pages (*.html), js/ (91 files), css/ (design-system + page sheets), images/brand/
 ├── design/handoff-v3/        v3 "Poster" design hand-off (tidy-up queued)
 └── docs/history/             three stale 2025 audits (removal queued)

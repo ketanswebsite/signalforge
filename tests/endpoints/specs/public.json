@@ -475,35 +475,6 @@
   ]
  },
  {
-  "route": "GET /api/ops/test-residue-stats",
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401
-   },
-   {
-    "as": "anon",
-    "path": "/api/ops/test-residue-stats?token=harness-wrong-token",
-    "status": 401
-   },
-   {
-    "as": "user",
-    "status": 401,
-    "note": "a session is not the ops token"
-   },
-   {
-    "as": "admin",
-    "status": 401
-   },
-   {
-    "as": "token",
-    "status": 200,
-    "check": "object",
-    "note": "read-only; the scratch database holds no residue, so this runs both SELECTs on real Postgres"
-   }
-  ]
- },
- {
   "route": "GET /admin",
   "cases": [
    {
