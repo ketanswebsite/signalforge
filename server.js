@@ -905,6 +905,20 @@ app.get('/api/ops/exit-checks-stats', requireOpsToken({ query: true, read: true 
   }
 });
 
+// Token-guarded (header only), READ-ONLY: the dead-ticker record (GAPS #10, lib/shared/ticker-health.js). The 7 AM
+// scan and the 06:00 market-cap refresh note what Yahoo answered for every symbol they already ask about; this lists
+// the symbols Yahoo has stopped serving (dead: 5 "not found" or "no bars" answers in a row over at least 7 days),
+// those whose newest bar is over 14 days old (stale) and those failing for another reason, each with its evidence.
+// It never calls Yahoo. The scan leaves the dead out only with SKIP_DEAD_TICKERS=true, which is the owner's call.
+app.get('/api/ops/dead-tickers', requireOpsToken({ read: true }), async (req, res) => {
+  try {
+    const report = await require('./lib/shared/ticker-health').report();
+    res.json({ success: true, measuredAt: new Date().toISOString(), ...report });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Token-guarded manual run of the exit-check retention job — the same job the
 // 11:20 PM UK cron runs: roll complete days up into trade_exit_checks_daily,
 // then prune minute rows older than the window (never alert rows). Pass

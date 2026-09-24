@@ -91,6 +91,17 @@ const CHECKS = {
     },
     // ... for another UK day and window: ?day=2026-09-23&days=90
     telegramStatsWindow: r => expect(r.json).toMatchObject({ success: true, table: true, day: '2026-09-23', days: 90, kinds: [], daily: [] }),
+    // GET /api/ops/dead-tickers: the harness never scans (node-cron is stubbed), so no symbol reads dead; the rule is
+    // stated, the switch reads off (SKIP_DEAD_TICKERS is not set) and the universe is counted by market
+    deadTickers: r => {
+        expect(r.json && r.json.success).toBe(true);
+        expect(r.json.rule).toMatchObject({ deadMinAnswers: 5, deadMinDays: 7, staleBarDays: 14, recheckDays: 7, maxSkipShare: 0.2 });
+        expect(r.json.skip).toEqual({ switch: 'SKIP_DEAD_TICKERS', enabled: false, refusedMarkets: [] });
+        expect(r.json.universe.total).toBe(r.json.universe.India + r.json.universe.UK + r.json.universe.US);
+        expect(r.json.universe.total).toBeGreaterThan(0);
+        expect(r.json.dead).toEqual([]);
+        expect(Array.isArray(r.json.stale) && Array.isArray(r.json.failing)).toBe(true);
+    },
 
     // ---- the admin portal shows only what the database holds (I12b). seed.sql has one paid subscription stored as the
     // Stripe checkout stores it: plan_code HARNESS_PAID and no plan_id, GBP 29.97 a quarter, so 9.99 a month.

@@ -2,7 +2,7 @@
  * @jest-environment node
  *
  * lib/shared/ops-auth.js: the ops tokens. ANALYSIS_API_TOKEN opens every token-guarded route (the /api/ops
- * probes and triggers, the manual scan, the AI routine's feed). ANALYSIS_READ_TOKEN opens the seven read-only
+ * probes and triggers, the manual scan, the AI routine's feed). ANALYSIS_READ_TOKEN opens the eight read-only
  * GET /api/ops probes and nothing else: never a POST, never a route that did not ask for it, never from the
  * URL. Until 2026-09-24 thirteen routes compared the one token by hand, eleven of them also from the URL.
  * The endpoint harness runs both tokens against every ops route; these tests pin the guard and the wiring.
@@ -161,7 +161,7 @@ describe('server.js wiring', () => {
     const names = list => list.map(r => r.route).sort();
 
     test('control: the routes are found', () => {
-        expect(TOKEN_ROUTES.length).toBe(14);
+        expect(TOKEN_ROUTES.length).toBe(15);
         expect(names(TOKEN_ROUTES)).toEqual(expect.arrayContaining(['GET /api/ops/version', 'POST /api/ops/eod-summary', 'GET /api/signals/screened-today']));
     });
 
@@ -169,9 +169,9 @@ describe('server.js wiring', () => {
         expect(TOKEN_ROUTES.filter(r => !/^ requireOpsToken\(/.test(r.rest)).map(r => r.route)).toEqual([]);
     });
 
-    test('the read token opens exactly the seven read-only GET /api/ops probes', () => {
+    test('the read token opens exactly the eight read-only GET /api/ops probes', () => {
         expect(names(TOKEN_ROUTES.filter(r => /read: true/.test(r.rest)))).toEqual([
-            'GET /api/ops/alert-prefs-stats', 'GET /api/ops/conviction-stats', 'GET /api/ops/exit-checks-stats',
+            'GET /api/ops/alert-prefs-stats', 'GET /api/ops/conviction-stats', 'GET /api/ops/dead-tickers', 'GET /api/ops/exit-checks-stats',
             'GET /api/ops/schedule-stats', 'GET /api/ops/sessions-stats', 'GET /api/ops/telegram-stats', 'GET /api/ops/version'
         ]);
     });

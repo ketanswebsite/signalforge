@@ -1373,5 +1373,52 @@
     "note": "the read token is never read from the URL"
    }
   ]
+ },
+ {
+  "route": "GET /api/ops/dead-tickers",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "anon",
+    "path": "/api/ops/dead-tickers?token=harness-wrong-token",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 401,
+    "note": "a signed-in session is not the ops token"
+   },
+   {
+    "as": "admin",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 200,
+    "check": "deadTickers",
+    "note": "read-only: the dead-ticker record (GAPS #10). Nothing is recorded here (the scan and the market-cap refresh never run), so no symbol reads dead; the rule, the switch (off) and the universe by market are stated"
+   },
+   {
+    "as": "readtoken",
+    "status": 200,
+    "check": "deadTickers",
+    "note": "read-only probe: the read token opens it (header)"
+   },
+   {
+    "as": "anon",
+    "path": "/api/ops/dead-tickers?token={fullToken}",
+    "status": 401,
+    "note": "header only: a new token route never reads ?token= (README rule 15)"
+   },
+   {
+    "as": "anon",
+    "path": "/api/ops/dead-tickers?token={readToken}",
+    "status": 401,
+    "note": "the read token is never read from the URL"
+   }
+  ]
  }
 ]
