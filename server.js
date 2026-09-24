@@ -1,6 +1,4 @@
 const express = require('express');
-const cors = require('cors');
-const axios = require('axios');
 const path = require('path');
 const session = require('express-session');
 const rateLimit = require('express-rate-limit');
@@ -151,7 +149,10 @@ try {
 }
 
 // Middleware
-app.use(cors());
+// No cors(): every page is served from this origin, and nothing calls this server from a browser
+// on another one (the AI routine, Telegram and Stripe call it server to server, where CORS does
+// not apply). It answered every response with Access-Control-Allow-Origin: *, so any website's
+// scripts could read the anonymous routes - the Yahoo proxy among them - through their visitors.
 app.use(express.json());
 // Express 5 leaves req.body undefined when a request has no body (Express 4 gave {}). Handlers
 // that destructure it crashed with 500 instead of answering 400: 22 routes, pinned by the
@@ -2313,144 +2314,45 @@ app.get('/api/admin/signal-diagnostics', ensureAuthenticatedAPI, async (req, res
   }
 });
 
-const { repairYahooChartResult, describeReport, isRepairEnabled: isPriceUnitRepairEnabled } = require('./lib/shared/price-unit-repair');
-const unitRepairsLogged = new Set();
-const staleFillRepair = require('./lib/shared/stale-fill-repair');
-const staleFillsLogged = new Set();
+// Yahoo Finance for the signed-in pages: the Positions chart (dti-data.js) and the Simulator
+// (portfolio-simulator.js, portfolio-ui.js). The server's own modules - the scanner, the
+// high-conviction manager, the exit monitor - read Yahoo in process (lib/shared/yahoo-client.js),
+// so these routes no longer answer anonymous callers: signed out, they get 401 like the API.
+const YahooClient = require('./lib/shared/yahoo-client');
 
-// Yahoo Finance proxy - Historical data
-app.get('/yahoo/history', async (req, res) => {
+// Yahoo Finance proxy - Historical data (CSV, through the price-unit and stale-fill repairs)
+app.get('/yahoo/history', ensureAuthenticatedAPI, async (req, res) => {
   try {
     const { symbol, period1, period2, interval } = req.query;
-    
+
     if (!symbol) {
       return res.status(400).send('Symbol is required');
     }
-    
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}`;
-    const params = {
-      period1: period1 || Math.floor(Date.now() / 1000) - (365 * 24 * 60 * 60),
-      period2: period2 || Math.floor(Date.now() / 1000),
-      interval: interval || '1d',
-      includeAdjustedClose: true
-    };
 
-    const response = await axios.get(url, {
-      params,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'application/json'
-      },
-      timeout: 45000
-    });
-    
-    const jsonData = response.data;
-    
-    if (!jsonData.chart || !jsonData.chart.result || jsonData.chart.result.length === 0) {
+    const history = await YahooClient.fetchHistoryCsv(symbol, { period1, period2, interval });
+    if (!history) {
       return res.status(404).send('No data found for this symbol');
     }
-    
-    const result = jsonData.chart.result[0];
-    const timestamps = result.timestamp || [];
-    let quotes = result.indicators.quote[0] || {};
-    let adjclose = result.indicators.adjclose ? result.indicators.adjclose[0].adjclose : null;
-    // The series in ONE unit, whether or not that repair is the one being served
-    let unitView = null;
+    if (history.priceUnitRepair) res.set('X-Price-Unit-Repair', history.priceUnitRepair);
+    if (history.staleFillRepair) res.set('X-Stale-Fill-Repair', history.staleFillRepair);
 
-    // Yahoo steps some lines (mostly London) between pence and pounds inside one series,
-    // which a backtest reads as -99% / +9900% days. Every history consumer - scanner,
-    // simulator, charts, ML - reads this route, so it is the one place to repair it.
-    // Detect-only until PRICE_UNIT_REPAIR=true: applying it changes which stocks clear
-    // the scanner's >75% win-rate bar, and that is the owner's call.
-    try {
-      const unitRepair = repairYahooChartResult(result);
-      if (unitRepair.report.status !== 'clean') {
-        const enabled = isPriceUnitRepairEnabled();
-        const applied = enabled && unitRepair.report.status === 'repaired';
-        if (unitRepair.report.status === 'repaired') {
-          unitView = { quote: unitRepair.quote, adjclose: unitRepair.adjclose, served: applied };
-        }
-        if (applied) {
-          quotes = unitRepair.quote;
-          adjclose = unitRepair.adjclose;
-        }
-        const summary = `${describeReport(unitRepair.report)}; applied=${applied}`;
-        res.set('X-Price-Unit-Repair', summary);
-        if (!unitRepairsLogged.has(symbol)) {
-          unitRepairsLogged.add(symbol);
-          console.log(`[yahoo/history] ${symbol} price units: ${summary}`);
-        }
-      }
-    } catch (repairError) {
-      console.warn(`[yahoo/history] ${symbol} price-unit repair failed, serving raw data: ${repairError.message}`);
-    }
-
-    // A rarer artefact the unit repair cannot see: no-trade days filled with a price no
-    // trade ever printed (HOME.L shows its 38.05p suspension price between trades at 10p).
-    // It is judged on the one-unit view so the two repairs never claim the same bar, which
-    // also means it can only be served on top of that view. Detect-only until
-    // STALE_FILL_REPAIR=true, for the same reason: it changes what the scanner selects.
-    try {
-      const staleFills = staleFillRepair.repairYahooChartStaleFills(result, unitView);
-      if (staleFills.report.status !== 'clean') {
-        const onServedView = !unitView || unitView.served;
-        const applied = staleFillRepair.isRepairEnabled() && staleFills.report.status === 'repaired' && onServedView;
-        if (applied) {
-          quotes = staleFills.quote;
-          adjclose = staleFills.adjclose;
-        }
-        const summary = `${staleFillRepair.describeReport(staleFills.report)}; applied=${applied}`;
-        res.set('X-Stale-Fill-Repair', summary);
-        if (!staleFillsLogged.has(symbol)) {
-          staleFillsLogged.add(symbol);
-          console.log(`[yahoo/history] ${symbol} stale fills: ${summary}`);
-        }
-      }
-    } catch (repairError) {
-      console.warn(`[yahoo/history] ${symbol} stale-fill repair failed, serving data without it: ${repairError.message}`);
-    }
-
-    let csvData = 'Date,Open,High,Low,Close,Adj Close,Volume\n';
-    
-    for (let i = 0; i < timestamps.length; i++) {
-      const date = new Date(timestamps[i] * 1000).toISOString().split('T')[0];
-      const open = quotes.open ? quotes.open[i] || '' : '';
-      const high = quotes.high ? quotes.high[i] || '' : '';
-      const low = quotes.low ? quotes.low[i] || '' : '';
-      const close = quotes.close ? quotes.close[i] || '' : '';
-      const adjClose = adjclose ? adjclose[i] || close : close;
-      const volume = quotes.volume ? quotes.volume[i] || '' : '';
-      
-      csvData += `${date},${open},${high},${low},${close},${adjClose},${volume}\n`;
-    }
-    
     res.set('Content-Type', 'text/csv');
-    res.send(csvData);
+    res.send(history.csv);
   } catch (error) {
     res.status(500).send(`Proxy error: ${error.message}`);
   }
 });
 
-// Yahoo Finance proxy - Quote
-app.get('/yahoo/quote', async (req, res) => {
+// Yahoo Finance proxy - Quote (the one-day chart, as Yahoo sent it)
+app.get('/yahoo/quote', ensureAuthenticatedAPI, async (req, res) => {
   try {
     const { symbol } = req.query;
-    
+
     if (!symbol) {
       return res.status(400).send('Symbol is required');
     }
-    
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
 
-    const response = await axios.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'application/json'
-      },
-      timeout: 45000
-    });
-    
-    res.json(response.data);
+    res.json(await YahooClient.fetchQuoteChart(symbol));
   } catch (error) {
     res.status(500).send(`Proxy error: ${error.message}`);
   }
@@ -2517,13 +2419,20 @@ function setCachedPrice(symbol, data) {
   }
 }
 
-// Get real-time prices for multiple symbols
+// Get real-time prices for multiple symbols. Every symbol the one-second cache does not hold is a
+// Yahoo request, so one call takes at most 100 (the Positions page sends its open positions'
+// symbols 100 at a time: trade-core.js).
+const MAX_PRICE_SYMBOLS = 100;
+
 app.post('/api/prices', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
     const { symbols } = req.body;
 
     if (!symbols || !Array.isArray(symbols) || symbols.length === 0) {
       return res.status(400).json({ error: 'Symbols array is required' });
+    }
+    if (symbols.length > MAX_PRICE_SYMBOLS) {
+      return res.status(400).json({ error: `At most ${MAX_PRICE_SYMBOLS} symbols a request` });
     }
     // A number crashed isMarketOpen() (symbol.endsWith) and the whole request answered 500
     if (!symbols.every(s => typeof s === 'string' && s.trim() !== '')) {
@@ -2532,8 +2441,8 @@ app.post('/api/prices', ensureAuthenticatedAPI, ensureSubscriptionActive, async 
 
     const priceData = {};
 
-    // Fetch prices for each symbol
-    const promises = symbols.map(async (symbol) => {
+    // Fetch prices for each symbol, once each
+    const promises = [...new Set(symbols)].map(async (symbol) => {
       try {
         const cached = getCachedPrice(symbol);
         if (cached) {
@@ -2544,18 +2453,9 @@ app.post('/api/prices', ensureAuthenticatedAPI, ensureSubscriptionActive, async 
         // Check if market is open for this symbol
         const marketOpen = isMarketOpen(symbol);
 
-        // Add market status to response
-        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
-
-        const response = await axios.get(url, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Accept': 'application/json'
-          },
-          timeout: 5000
-        });
-
-        const data = response.data;
+        // The one-day chart. The symbol is URL-encoded into Yahoo's path (it went in raw, so a
+        // "/" or "../" in it steered the request to another Yahoo path)
+        const data = await YahooClient.fetchQuoteChart(symbol, { timeout: 5000 });
         if (data.chart && data.chart.result && data.chart.result.length > 0) {
           const result = data.chart.result[0];
           const meta = result.meta;

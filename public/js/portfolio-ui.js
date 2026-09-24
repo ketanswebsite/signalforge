@@ -323,7 +323,7 @@ const PortfolioUI = (function() {
             const start = Math.floor(startDate.getTime() / 1000);
             const end = Math.floor(endDate.getTime() / 1000);
 
-            const url = `/yahoo/history?symbol=${symbol}&period1=${start}&period2=${end}&interval=1d`;
+            const url = `/yahoo/history?symbol=${encodeURIComponent(symbol)}&period1=${start}&period2=${end}&interval=1d`;
             const response = await fetch(url);
 
             if (!response.ok) {

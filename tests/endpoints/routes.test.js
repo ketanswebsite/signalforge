@@ -30,6 +30,10 @@ const CHECKS = {
     array: r => expect(Array.isArray(r.json)).toBe(true),
     object: r => expect(r.json && typeof r.json === 'object' && !Array.isArray(r.json)).toBe(true),
     html: r => expect(String(r.headers['content-type'] || '')).toMatch(/text\/html/),
+    csv: r => expect(String(r.headers['content-type'] || '')).toMatch(/text\/csv/),
+    // cors() is gone (I24): no answer carries Access-Control-Allow-Origin, so no other website's
+    // scripts can read one through a visitor's browser
+    noCors: r => expect(r.headers['access-control-allow-origin']).toBeUndefined(),
     redirectLogin: r => expect(String(r.headers.location || '')).toMatch(/\/login/),
     redirectAccount: r => expect(String(r.headers.location || '')).toBe('/account.html'),
     authenticatedTrue: r => expect(r.json && r.json.authenticated).toBe(true),

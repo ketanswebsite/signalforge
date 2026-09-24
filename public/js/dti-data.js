@@ -76,7 +76,7 @@ if (period === '5y') {
 }
         
         // Local proxy URL for historical data
-        const proxyUrl = `/yahoo/history?symbol=${symbol}&period1=${startDate}&period2=${endDate}&interval=${interval}`;
+        const proxyUrl = `/yahoo/history?symbol=${encodeURIComponent(symbol)}&period1=${startDate}&period2=${endDate}&interval=${interval}`;
 
         // Status messages disabled - they cluttered the UI during batch scans
         // const statusElement = document.getElementById('data-fetch-status');
@@ -204,7 +204,7 @@ if (period === '5y') {
  */
 async function fetchCurrentQuote(symbol) {
     try {
-        const proxyUrl = `/yahoo/quote?symbol=${symbol}`;
+        const proxyUrl = `/yahoo/quote?symbol=${encodeURIComponent(symbol)}`;
 
         // Use AbortManager for cancellable requests
         const operationId = `fetch-quote-${symbol}`;
@@ -429,7 +429,7 @@ async function fetchCurrentQuote(symbol) {
      */
     async function validateStockSymbol(symbol) {
         try {
-            const proxyUrl = `/yahoo/quote?symbol=${symbol}`;
+            const proxyUrl = `/yahoo/quote?symbol=${encodeURIComponent(symbol)}`;
 
             // Use AbortManager for cancellable requests
             const operationId = `validate-symbol-${symbol}`;

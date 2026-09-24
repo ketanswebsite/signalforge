@@ -23,6 +23,9 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const Sentiment = require('sentiment');
 const { repairYahooChartResult, describeReport, isRepairEnabled } = require('../lib/shared/price-unit-repair');
+// Yahoo in process: the chart, and the cookie + crumb quoteSummary needs (one session, shared with
+// the market-cap refresh)
+const { getSession: getYahooSession, fetchChart: fetchYahooChart } = require('../lib/shared/yahoo-client');
 const headlineSentiment = new Sentiment();
 
 // Verdicts are scored by the MONTHLY SWEEP (first Saturday of the month,
@@ -131,29 +134,7 @@ async function writeDailyVerdict(symbol, payload, { replace = false } = {}) {
     }
 }
 
-let yahooSession = null;                    // {cookie, crumb, expires}
-
 const YAHOO_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
-
-async function getYahooSession() {
-    if (yahooSession && yahooSession.expires > Date.now()) return yahooSession;
-    const probe = await axios.get('https://fc.yahoo.com', {
-        headers: { 'User-Agent': YAHOO_UA },
-        validateStatus: () => true,
-        timeout: 15000
-    });
-    const setCookie = probe.headers['set-cookie'] || [];
-    const cookie = setCookie.map(c => c.split(';')[0]).join('; ');
-    if (!cookie) throw new Error('No Yahoo cookie');
-    const crumbRes = await axios.get('https://query1.finance.yahoo.com/v1/test/getcrumb', {
-        headers: { 'User-Agent': YAHOO_UA, 'Cookie': cookie },
-        timeout: 15000
-    });
-    const crumb = typeof crumbRes.data === 'string' ? crumbRes.data.trim() : '';
-    if (!crumb || crumb.includes('<')) throw new Error('No Yahoo crumb');
-    yahooSession = { cookie, crumb, expires: Date.now() + 30 * 60 * 1000 };
-    return yahooSession;
-}
 
 const clampScore = v => Math.round(Math.max(1, Math.min(10, v)) * 10) / 10;
 const pct = v => (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
@@ -188,12 +169,8 @@ function technicalQuote(result, symbol) {
 }
 
 async function scoreTechnical(symbol) {
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}`;
-    const { data } = await axios.get(url, {
-        params: { range: '6mo', interval: '1d' },
-        headers: { 'User-Agent': YAHOO_UA, 'Accept': 'application/json' },
-        timeout: 20000
-    });
+    // Six months of daily bars, 20 s: the same request as ever, from lib/shared/yahoo-client.js
+    const data = await fetchYahooChart(symbol, { range: '6mo', interval: '1d' }, { timeout: 20000 });
     const result = data && data.chart && data.chart.result && data.chart.result[0];
     if (!result || !result.indicators.quote[0]) throw new Error('No price history');
     const q = technicalQuote(result, symbol);

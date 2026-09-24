@@ -945,9 +945,12 @@ const TradeCore = (function() {
         }
     }
 
+    // POST /api/prices takes at most 100 symbols a request
+    const PRICE_BATCH_SIZE = 100;
+
     /**
-     * Fetch live prices for the given trades in ONE batched request and apply
-     * them to the trade objects. The DOM is updated by TradeUI listening for
+     * Fetch live prices for the given trades, one request per 100 symbols, and
+     * apply them to the trade objects. The DOM is updated by TradeUI listening for
      * the 'tradesUpdated' (silent) event — this module never writes the DOM,
      * so there is exactly one writer and the animations always reflect data
      * that actually changed.
@@ -957,18 +960,26 @@ const TradeCore = (function() {
         if (symbols.length === 0) return;
 
         try {
-            const response = await fetch('/api/prices', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ symbols }),
-                signal: AbortSignal.timeout(4000)
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+            const batches = [];
+            for (let i = 0; i < symbols.length; i += PRICE_BATCH_SIZE) {
+                batches.push(symbols.slice(i, i + PRICE_BATCH_SIZE));
             }
+            const answers = await Promise.all(batches.map(async batch => {
+                const response = await fetch('/api/prices', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ symbols: batch }),
+                    signal: AbortSignal.timeout(4000)
+                });
 
-            const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                return response.json();
+            }));
+
+            const data = Object.assign({}, ...answers);
             let anyChanged = false;
 
             trades.forEach(trade => {
