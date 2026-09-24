@@ -555,41 +555,6 @@ body.positions-page #advanced-metrics-container .metric-card{padding:var(--s-3)}
 .trade-detail-modal .trade-details{border:0}
 .trade-chart-mini{padding:var(--s-4) var(--s-5);height:220px;position:relative}
 
-/* AI check modal (ml-insights-ui.js) — three-pillar conviction report */
-.ai-check{max-width:640px}
-.ai-check .dialog-body{gap:var(--s-4)}
-.ai-head__name{font-family:var(--font-display);font-weight:var(--w-display);font-size:var(--size-h4);text-transform:uppercase;letter-spacing:.02em}
-.ai-head__sym{font-size:var(--size-xs);color:var(--text-3);font-weight:var(--w-bold);margin-top:2px}
-.ai-verdict{display:flex;align-items:center;justify-content:space-between;gap:var(--s-4);border:2px solid var(--frame);padding:var(--s-4) var(--s-5)}
-.ai-verdict--go{background:var(--gain-soft)}
-.ai-verdict--watch{background:var(--warn-soft)}
-.ai-verdict--pass{background:var(--loss-soft)}
-.ai-verdict__word{font-family:var(--font-display);font-weight:var(--w-display);font-size:var(--size-h3);text-transform:uppercase;letter-spacing:.03em;line-height:1}
-.ai-verdict--go .ai-verdict__word{color:var(--gain)}
-.ai-verdict--pass .ai-verdict__word{color:var(--loss)}
-.ai-verdict__meaning{font-size:var(--size-sm);color:var(--text-2);margin-top:4px}
-.ai-verdict__score{display:flex;align-items:baseline;gap:4px;white-space:nowrap}
-.ai-verdict__num{font-family:var(--font-display);font-weight:var(--w-display);font-size:var(--size-stat-sm);font-variant-numeric:tabular-nums}
-.ai-verdict__den{font-size:var(--size-xs);color:var(--text-3);font-weight:var(--w-bold)}
-.ai-pillar{border:1.5px solid var(--line-strong);background:var(--surface);padding:var(--s-4);display:grid;gap:var(--s-2)}
-.ai-pillar__top{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--s-3)}
-.ai-pillar__name{font-weight:var(--w-bold);font-size:var(--size-sm);display:flex;align-items:center;gap:8px}
-.ai-pillar__weight{display:inline-block;padding:1px 8px;border:1.5px solid var(--line-strong);background:var(--surface-2);font-size:11px;font-variant-numeric:tabular-nums;color:var(--text-2)}
-.ai-pillar__hint{font-size:var(--size-xs);color:var(--text-3);margin-top:2px}
-.ai-pillar__score{font-family:var(--font-display);font-weight:var(--w-display);font-size:var(--size-h4);font-variant-numeric:tabular-nums}
-.ai-pillar__evidence{margin:0;padding-left:18px;display:grid;gap:4px;font-size:var(--size-xs);color:var(--text-2)}
-.ai-news{border-top:1.5px solid var(--line);padding-top:var(--s-3);display:grid;gap:8px}
-.ai-news__item{display:flex;gap:var(--s-3);align-items:baseline;font-size:var(--size-xs)}
-.ai-news__date{color:var(--text-3);font-variant-numeric:tabular-nums;white-space:nowrap}
-.ai-news__title--pos{color:var(--gain)}
-.ai-news__title--neg{color:var(--loss)}
-.ai-summary{margin:0;font-size:var(--size-sm);line-height:1.6;color:var(--text-2);border-left:3px solid var(--accent);padding-left:var(--s-3)}
-.ai-context{border:1.5px solid var(--line-strong);background:var(--surface-2);padding:var(--s-3) var(--s-4);font-size:var(--size-xs);color:var(--text-2);display:grid;gap:6px}
-.ai-context__engine,.ai-context__legal{color:var(--text-3)}
-.ai-loading,.ai-error{display:grid;justify-items:center;gap:var(--s-3);padding:var(--s-8) var(--s-4);text-align:center;color:var(--text-2)}
-.ai-loading .spinner{font-size:32px;animation:sa-spin .8s linear infinite}
-.ai-loading-hint{font-size:var(--size-xs);color:var(--text-3)}
-
 /* "How the formula works" modal (app-shell.js) */
 .fm-modal{max-width:620px}
 .fm-section{border:1.5px solid var(--line-strong);background:var(--surface-2);padding:var(--s-4) var(--s-5)}
@@ -634,13 +599,6 @@ body.positions-page #advanced-metrics-container .metric-card{padding:var(--s-3)}
 .cookie-consent-links{font-size:var(--size-xs);color:var(--text-3)}
 .cookie-category h4{font-size:var(--size-xs)}
 .cookie-category p{font-size:var(--size-xs);color:var(--text-3)}
-
-/* ---------- legacy bridge: global loading overlay (loading-states.js) ---------- */
-.global-loading-overlay{position:fixed;inset:0;background:var(--scrim);z-index:var(--z-modal);display:none;align-items:center;justify-content:center}
-.global-loading-overlay.active,.global-loading-overlay.visible{display:flex}
-.global-loading-content{background:var(--surface);border:2.5px solid var(--frame);box-shadow:var(--shadow-pop);padding:var(--s-5) var(--s-6);display:flex;align-items:center;gap:var(--s-3);font-weight:600}
-.spinner-large,.loading-spinner{animation:sa-spin .8s linear infinite}
-.loading-text{font-size:var(--size-sm)}
 
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}

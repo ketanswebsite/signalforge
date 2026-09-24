@@ -2,7 +2,7 @@
  * Conviction Engine — the three-pillar AI check for screened stocks.
  *
  * Extracted from ml-routes.js so the same engine serves three consumers:
- *   - GET /api/ml/conviction/:symbol (the UI insights panel)
+ *   - GET /api/ml/conviction/:symbol and POST /api/ml/conviction/batch (the Simulator)
  *   - the 7 AM scanner gate (signals must score GO before they are stored
  *     as pending / booked to the high-conviction portfolio)
  *   - the 1 PM trade executor safety net (signals without a stored verdict
@@ -27,7 +27,7 @@ const headlineSentiment = new Sentiment();
 
 // Verdicts are scored by the MONTHLY SWEEP (first Saturday of the month,
 // full universe) and reused for the whole following month — by the 7 AM
-// scanner, the 1 PM executor, the insights panel and the simulator alike,
+// scanner, the 1 PM executor and the simulator alike,
 // so every surface sees the same verdict and the engine (and Gemini) runs
 // at most once per symbol per month. A symbol the sweep missed is scored on
 // demand and then sticks for the same window. CONVICTION_MAX_AGE_DAYS

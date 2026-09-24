@@ -4,7 +4,7 @@
  * Scores the FULL stock universe (~5,000 symbols) once a month and persists
  * the verdicts to conviction_daily, where the engine's month-long read
  * window (CONVICTION_MAX_AGE_DAYS) serves them to the 7 AM scanner, the
- * 1 PM executor, the insights panel and the simulator until the next sweep.
+ * 1 PM executor and the simulator until the next sweep.
  *
  * The sweep asks the engine for FRESH verdicts. It has to: the read window
  * (37 days) outlasts the gap between sweeps (28 or 35), so on sweep morning

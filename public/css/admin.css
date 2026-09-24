@@ -43,7 +43,7 @@
 .admin-portal .chart-container,.admin-portal .activity-container,.admin-portal .analytics-card,
 .admin-portal .test-card,.admin-portal .settings-card,.admin-portal .form-card,
 .admin-portal .table-card,.admin-portal .tool-section,.admin-portal .admin-card,
-.admin-portal .channel-card,.admin-portal .diagnostic-card,.admin-portal .log-card,
+.admin-portal .diagnostic-card,.admin-portal .log-card,
 .admin-portal .execution-logs{border:2px solid var(--frame);background:var(--surface);padding:var(--s-5);margin-bottom:var(--s-4);box-shadow:var(--shadow-1)}
 .admin-portal .chart-container h3,.admin-portal .activity-container h3,.admin-portal .analytics-card h3,
 .admin-portal .test-card h3,.admin-portal .settings-card h3,.admin-portal .tool-section h3,
@@ -95,13 +95,12 @@
 .admin-portal .tab-btn.active{background:var(--text);color:var(--bg)}
 
 /* ---------- tables ---------- */
-.admin-portal .data-table-wrapper,.admin-portal .cohort-table-container,.admin-portal .table-responsive{width:100%;overflow-x:auto}
+.admin-portal .data-table-wrapper,.admin-portal .table-responsive{width:100%;overflow-x:auto}
 .admin-portal table{width:100%;border-collapse:collapse;font-size:var(--size-sm)}
 .admin-portal table th{text-align:left;font-weight:var(--w-bold);color:var(--text);padding:12px var(--s-3);border-bottom:2px solid var(--frame);white-space:nowrap;font-size:11px;text-transform:uppercase;letter-spacing:var(--track-label)}
 .admin-portal table td{padding:12px var(--s-3);border-bottom:1.5px solid var(--line);color:var(--text);vertical-align:middle}
 .admin-portal table tbody tr:hover{background:var(--accent-soft)}
 .admin-portal table tbody tr:last-child td{border-bottom:0}
-.admin-portal th.sortable,.admin-portal .col.sortable{cursor:pointer}
 .admin-portal .actions-column{white-space:nowrap}
 
 /* ---------- badges & status ---------- */
@@ -135,7 +134,7 @@
 
 /* ---------- empty / loading ---------- */
 .admin-portal .empty-state{display:grid;justify-items:center;gap:var(--s-2);padding:var(--s-8) var(--s-4);text-align:center;color:var(--text-3)}
-.admin-portal .empty-state-icon,.admin-portal .empty-icon{font-size:34px;color:var(--text-3)}
+.admin-portal .empty-icon{font-size:34px;color:var(--text-3)}
 .admin-portal .spinner-container{display:grid;justify-items:center;padding:var(--s-6)}
 /* Spinner elements sometimes carry loading text — spin a pseudo circle, never the text */
 .admin-portal .spinner,.admin-portal .spinner-medium{display:grid;justify-items:center;gap:10px;color:var(--text-3);font-size:var(--size-xs);animation:none}
@@ -159,9 +158,6 @@
 .admin-portal .scroll-reveal{opacity:1;transform:none}
 .admin-portal .admin-section-spaced{margin-top:var(--s-6)}
 .admin-portal .table-card-spaced{margin-top:var(--s-4)}
-.admin-portal .editable-cell{cursor:text;border-bottom:1px dashed var(--line-strong)}
-.admin-portal .funnel-metrics{display:grid;gap:var(--s-3)}
-.admin-portal .cohort-cell-empty{color:var(--text-3)}
 
 /* ---------- structures the self-rendering tab modules emit ---------- */
 .admin-portal .tab-navigation{display:flex;gap:var(--s-2);flex-wrap:wrap;border-bottom:2px solid var(--frame);padding-bottom:var(--s-3);margin-bottom:var(--s-4)}
