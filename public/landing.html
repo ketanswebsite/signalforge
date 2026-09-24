@@ -15,8 +15,8 @@
 <body>
 
 <header class="sa-appbar">
-    <div class="sa-appbar__in" style="max-width:var(--page-max)">
-        <a class="sa-appbar__brand" href="/"><span class="sa-wordmark" style="font-size:19px"><b>Sutr</b><i>Algo</i></span></a>
+    <div class="sa-appbar__in sa-appbar__in--page">
+        <a class="sa-appbar__brand" href="/"><span class="sa-wordmark"><b>Sutr</b><i>Algo</i></span></a>
         <nav class="sa-appbar__nav" aria-label="Main">
             <a class="sa-appbar__link" href="/" aria-current="page">How it works</a>
             <a class="sa-appbar__link" href="/pricing.html">Pricing</a>
@@ -42,7 +42,7 @@
                 <span class="mk-hero__badge">Educational tool · your capital is at risk</span>
                 <h1>One rule. Held in <em>your head.</em></h1>
                 <p class="mk-hero__lede">SutrAlgo watches the market for one specific setup. When it finds one, it tells you what to pay, what to sell at, and when to give up. Then it gets out of the way.</p>
-                <div class="sa-row" style="gap:var(--s-3);margin-bottom:var(--s-5)">
+                <div class="sa-row mk-mb-5">
                     <a class="sa-btn sa-btn--lg sa-btn--onband" href="/login.html">Try it free for 90 days</a>
                     <a class="sa-btn sa-btn--lg sa-btn--ghostband" href="/pricing.html">See what it costs <span class="material-symbols-rounded" aria-hidden="true">arrow_forward</span></a>
                 </div>
@@ -50,54 +50,54 @@
             </div>
 
             <div class="sa-card sa-card--raised mk-hero__card">
-                <div class="sa-row" style="justify-content:space-between;margin-bottom:var(--s-4)">
-                    <strong style="font-family:var(--font-display);font-weight:400;font-size:14px;text-transform:uppercase;letter-spacing:.02em">This morning's scan</strong>
-                    <span class="sa-badge sa-badge--gain"><span class="material-symbols-rounded" style="font-size:14px" aria-hidden="true">check</span>3 setups</span>
+                <div class="sa-row sa-row--between mk-mb-4">
+                    <strong class="mk-scanlabel mk-scanlabel--caps">This morning's scan</strong>
+                    <span class="sa-badge sa-badge--gain"><span class="material-symbols-rounded" aria-hidden="true">check</span>3 setups</span>
                 </div>
-                <div class="sa-stack" style="gap:var(--s-3)">
+                <div class="sa-stack sa-stack--tight">
                     <div class="mk-scanrow">
-                        <div class="sa-row" style="justify-content:space-between">
-                            <div><strong style="font-family:var(--font-display);font-weight:400;font-size:14px">BAJFINANCE.NS</strong>
-                                <div style="font-size:var(--size-xs);color:var(--text-3)">Bajaj Finance</div></div>
+                        <div class="sa-row sa-row--between">
+                            <div><strong class="mk-scanlabel">BAJFINANCE.NS</strong>
+                                <div class="sa-pos__name">Bajaj Finance</div></div>
                         </div>
                         <div class="mk-scanrow__grid">
                             <div><span class="sa-pos__k">Buy around</span><span class="sa-pos__v">₹7,215.40</span></div>
-                            <div><span class="sa-pos__k">Sells at</span><span class="sa-pos__v" style="color:var(--gain)">₹7,792.63</span></div>
-                            <div><span class="sa-pos__k">Stops at</span><span class="sa-pos__v" style="color:var(--loss)">₹6,854.63</span></div>
+                            <div><span class="sa-pos__k">Sells at</span><span class="sa-pos__v mk-gain">₹7,792.63</span></div>
+                            <div><span class="sa-pos__k">Stops at</span><span class="sa-pos__v mk-loss">₹6,854.63</span></div>
                         </div>
                     </div>
                     <div class="mk-scanrow">
-                        <div class="sa-row" style="justify-content:space-between">
-                            <div><strong style="font-family:var(--font-display);font-weight:400;font-size:14px">GSK.L</strong>
-                                <div style="font-size:var(--size-xs);color:var(--text-3)">GSK plc</div></div>
+                        <div class="sa-row sa-row--between">
+                            <div><strong class="mk-scanlabel">GSK.L</strong>
+                                <div class="sa-pos__name">GSK plc</div></div>
                         </div>
                         <div class="mk-scanrow__grid">
                             <div><span class="sa-pos__k">Buy around</span><span class="sa-pos__v">1,412.50p</span></div>
-                            <div><span class="sa-pos__k">Sells at</span><span class="sa-pos__v" style="color:var(--gain)">1,525.50p</span></div>
-                            <div><span class="sa-pos__k">Stops at</span><span class="sa-pos__v" style="color:var(--loss)">1,341.88p</span></div>
+                            <div><span class="sa-pos__k">Sells at</span><span class="sa-pos__v mk-gain">1,525.50p</span></div>
+                            <div><span class="sa-pos__k">Stops at</span><span class="sa-pos__v mk-loss">1,341.88p</span></div>
                         </div>
                     </div>
                 </div>
-                <p style="font-size:var(--size-xs);color:var(--text-3);margin-top:var(--s-3)">Illustration of a real scan output. Not a recommendation.</p>
+                <p class="mk-fineprint mk-fineprint--gap">Illustration of a real scan output. Not a recommendation.</p>
             </div>
         </div>
     </section>
 
     <section class="mk-section mk-after-hero">
-        <div class="sa-sectionhead" style="margin-bottom:var(--s-5)">
+        <div class="sa-sectionhead mk-mb-5">
             <span class="sa-eyebrow">The whole system</span>
             <h2>Buy on one signal. Sell on one of three rules.</h2>
             <p>There is nothing else to learn. The exit is decided before you buy, which is the part most people get wrong.</p>
         </div>
         <div class="mk-rulechips">
-            <div class="mk-rulechip"><div class="mk-rulechip__n" style="color:var(--gain)">+8%</div><div class="mk-rulechip__label">It reaches the target and sells.</div></div>
-            <div class="mk-rulechip"><div class="mk-rulechip__n" style="color:var(--loss)">−5%</div><div class="mk-rulechip__label">It goes the wrong way and sells to cap the loss.</div></div>
-            <div class="mk-rulechip"><div class="mk-rulechip__n" style="color:var(--text)">30 days</div><div class="mk-rulechip__label">Neither happened, so it sells anyway and frees up the money.</div></div>
+            <div class="mk-rulechip"><div class="mk-rulechip__n mk-gain">+8%</div><div class="mk-rulechip__label">It reaches the target and sells.</div></div>
+            <div class="mk-rulechip"><div class="mk-rulechip__n mk-loss">−5%</div><div class="mk-rulechip__label">It goes the wrong way and sells to cap the loss.</div></div>
+            <div class="mk-rulechip"><div class="mk-rulechip__n">30 days</div><div class="mk-rulechip__label">Neither happened, so it sells anyway and frees up the money.</div></div>
         </div>
     </section>
 
     <section class="mk-section">
-        <div class="sa-sectionhead" style="margin-bottom:var(--s-5)">
+        <div class="sa-sectionhead mk-mb-5">
             <span class="sa-eyebrow">What you get</span>
             <h2>Four things, and no dashboard to learn</h2>
         </div>
@@ -105,25 +105,25 @@
             <div class="sa-feature">
                 <div class="sa-feature__icon"><span class="material-symbols-rounded" aria-hidden="true">notifications</span></div>
                 <h3>It tells you, you don't check</h3>
-                <p style="font-size:var(--size-sm)">A message lands on your phone with the price to pay, the price to sell at and the stop, already worked out.</p>
-                <p style="font-size:var(--size-xs);color:var(--text-3)">07:00 UK, every weekday.</p>
+                <p class="mk-body-sm">A message lands on your phone with the price to pay, the price to sell at and the stop, already worked out.</p>
+                <p class="mk-fineprint">07:00 UK, every weekday.</p>
             </div>
             <div class="sa-feature">
                 <div class="sa-feature__icon"><span class="material-symbols-rounded" aria-hidden="true">account_balance_wallet</span></div>
                 <h3>See where every position stands</h3>
-                <p style="font-size:var(--size-sm)">One screen shows how far each holding is from its target and its stop, and how many days it has left.</p>
+                <p class="mk-body-sm">One screen shows how far each holding is from its target and its stop, and how many days it has left.</p>
             </div>
             <div class="sa-feature">
                 <div class="sa-feature__icon"><span class="material-symbols-rounded" aria-hidden="true">science</span></div>
                 <h3>Check it against the past</h3>
-                <p style="font-size:var(--size-sm)">Replay the rule over years of real prices and see every trade it would have made, good and bad.</p>
-                <p style="font-size:var(--size-xs);color:var(--text-3)">Cash markets only — no leverage.</p>
+                <p class="mk-body-sm">Replay the rule over years of real prices and see every trade it would have made, good and bad.</p>
+                <p class="mk-fineprint">Cash markets only — no leverage.</p>
             </div>
             <div class="sa-feature">
                 <div class="sa-feature__icon"><span class="material-symbols-rounded" aria-hidden="true">public</span></div>
                 <h3>Three markets, one rule</h3>
-                <p style="font-size:var(--size-sm)">The same formula runs everywhere, so you are not learning a different system per market.</p>
-                <p style="font-size:var(--size-xs);color:var(--text-3)">India, the UK and the United States.</p>
+                <p class="mk-body-sm">The same formula runs everywhere, so you are not learning a different system per market.</p>
+                <p class="mk-fineprint">India, the UK and the United States.</p>
             </div>
         </div>
     </section>
@@ -134,7 +134,7 @@
                 <div class="sa-stat">
                     <span class="sa-stat__label">How often it worked</span>
                     <span class="sa-stat__value sa-stat__value--gain">63.4%</span>
-                    <div class="sa-stat__bar"><i class="is-gain" style="width:63.4%"></i></div>
+                    <div class="sa-stat__bar"><i class="is-gain mk-stat-hit"></i></div>
                     <span class="sa-stat__context">Of 248 closed trades this year. Not a promise about the next one.</span>
                 </div>
                 <div class="sa-stat">
@@ -153,13 +153,13 @@
                     <span class="sa-stat__context">The deepest fall from a high, recovered in 21 days.</span>
                 </div>
             </div>
-            <p class="mk-fineprint">Figures are from the simulator over the last 12 months and exclude dealing costs. Past performance is not a reliable indicator of future results.</p>
+            <p class="mk-fineprint mk-fineprint--push">Figures are from the simulator over the last 12 months and exclude dealing costs. Past performance is not a reliable indicator of future results.</p>
         </div>
     </section>
 
-    <section class="mk-section" style="padding-bottom:var(--s-9);text-align:center">
-        <h2 style="margin-bottom:var(--s-3)">Ninety days is long enough to judge it</h2>
-        <p style="max-width:52ch;margin:0 auto var(--s-5)">Watch it work, or watch it fail, on real signals in real markets. Then decide.</p>
+    <section class="mk-section mk-cta">
+        <h2 class="mk-mb-3">Ninety days is long enough to judge it</h2>
+        <p class="mk-cta__lede">Watch it work, or watch it fail, on real signals in real markets. Then decide.</p>
         <a class="sa-btn sa-btn--primary sa-btn--lg" href="/login.html">Start free</a>
     </section>
 </main>
@@ -168,8 +168,8 @@
     <div class="mk-foot__in">
         <div class="mk-foot__grid">
             <div>
-                <span class="sa-wordmark" style="font-size:20px"><b>Sutr</b><i>Algo</i></span>
-                <p style="margin-top:10px;font-size:var(--size-sm);max-width:34ch">One formula, three exit rules, and a message when something turns up.</p>
+                <span class="sa-wordmark"><b>Sutr</b><i>Algo</i></span>
+                <p class="mk-foot__tag">One formula, three exit rules, and a message when something turns up.</p>
             </div>
             <div class="mk-foot__col">
                 <h4>Product</h4>
@@ -190,7 +190,7 @@
                 <span>United States</span>
             </div>
         </div>
-        <div style="margin-top:var(--s-6)">
+        <div class="mk-foot__legal">
             <div class="sa-legal">
                 <button class="sa-legal__btn" type="button" aria-expanded="false">Educational tool, not investment advice. Your capital is at risk.<span class="material-symbols-rounded" aria-hidden="true">expand_more</span></button>
                 <div class="sa-legal__body" hidden>

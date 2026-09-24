@@ -1,7 +1,8 @@
 /* Marketing surface — page-level composition for landing / pricing / login.
    Everything component-shaped lives in design-system/components.css; this file
-   only carries the poster hero band, rule chips, footer grid, and FAQ rows
-   that the marketing specs express as one-off layout. */
+   only carries the poster hero band, rule chips, footer grid, FAQ rows, the
+   auth column and small page helpers that the marketing specs express as
+   one-off layout. */
 
 .mk-hero{background:var(--text);border-bottom:3px solid var(--frame);padding-bottom:72px}
 .mk-hero__in{max-width:var(--page-max);margin:0 auto;padding:var(--s-8) var(--gutter) 0;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:var(--s-8);align-items:center}
@@ -28,7 +29,13 @@
 .mk-rulechip__label{font-size:var(--size-sm);color:var(--text-2);margin-top:4px}
 
 .mk-h1-as-h2{font-size:var(--size-h2) !important;letter-spacing:var(--track-head)}
-.mk-fineprint{font-size:var(--size-xs);color:var(--text-3);margin-top:var(--s-4)}
+.mk-fineprint{font-size:var(--size-xs);color:var(--text-3)}
+.mk-fineprint--gap{margin-top:var(--s-3)}
+.mk-fineprint--push{margin-top:var(--s-4)}
+.mk-fineprint--center{text-align:center}
+.mk-fineprint--tuck{margin-top:-6px} /* pulls plan fineprint up against the flex gap above it */
+.mk-seg-row{display:flex;justify-content:center;margin-bottom:var(--s-6)}
+.mk-narrow{max-width:780px;margin:0 auto}
 
 .mk-faq{border-bottom:1px solid var(--line)}
 .mk-faq__q{width:100%;display:flex;justify-content:space-between;align-items:center;gap:12px;background:none;border:0;padding:var(--s-4) 0;cursor:pointer;text-align:left;font-family:var(--font-sans);font-size:var(--size-body);font-weight:var(--w-medium);color:var(--text);min-height:var(--tap-min)}
@@ -43,11 +50,52 @@
 .mk-foot__col h4{font-size:var(--size-sm);margin-bottom:10px}
 .mk-foot__col a,.mk-foot__col span{display:block;font-size:var(--size-sm);color:var(--text-2);margin-bottom:8px}
 .mk-foot__copy{margin-top:var(--s-4);font-size:var(--size-xs);color:var(--text-3)}
+.mk-foot__legal{margin-top:var(--s-6)}
+.sa-legal__body[hidden]{display:none}
 
 .mk-menu{display:none;position:absolute;top:var(--appbar-h);left:0;right:0;background:var(--text);border-bottom:2.5px solid var(--frame);padding:var(--s-3) var(--gutter) var(--s-4);z-index:var(--z-appbar)}
 .mk-menu.is-open{display:grid;gap:6px}
 .mk-menu a{color:var(--bg);font-size:var(--size-sm);font-weight:var(--w-bold);padding:10px 0;text-decoration:none;opacity:.85}
 .mk-menu a:hover{opacity:1;color:var(--gold-on-band);text-decoration:none}
+
+/* Auth (login) column */
+.mk-auth{min-height:72vh;display:flex;align-items:center;justify-content:center;padding:var(--s-7) var(--gutter)}
+.mk-auth__col{width:100%;max-width:420px}
+.mk-auth__brand{text-align:center;margin-bottom:var(--s-5)}
+.mk-auth__note{margin-top:var(--s-4)}
+.mk-auth__back{text-align:center;margin-top:var(--s-4)}
+
+/* Inline-style extraction (landing/pricing/login). Wordmark sizes and icon
+   sizes are contextual so the HTML carries no size classes; sa-* modifiers
+   follow the .sa-btn--onband precedent of marketing-scoped variants. */
+.sa-appbar__in--page{max-width:var(--page-max)}
+.sa-appbar__brand .sa-wordmark{font-size:19px}
+.mk-foot .sa-wordmark{font-size:20px}
+.mk-auth__brand .sa-wordmark{font-size:28px}
+.mk-auth__brand a{text-decoration:none} /* also outranks a:hover underline by source order */
+.sa-row--between{justify-content:space-between}
+.sa-stack--tight{gap:var(--s-3)}
+.sa-badge .material-symbols-rounded{font-size:14px}
+.sa-btn--sm .material-symbols-rounded{font-size:16px}
+.mk-scanlabel{font-family:var(--font-display);font-weight:var(--w-display);font-size:14px}
+.mk-scanlabel--caps{text-transform:uppercase;letter-spacing:.02em}
+.mk-gain{color:var(--gain)}
+.mk-loss{color:var(--loss)}
+.mk-body-sm{font-size:var(--size-sm)}
+.mk-mb-3{margin-bottom:var(--s-3)}
+.mk-mb-4{margin-bottom:var(--s-4)}
+.mk-mb-5{margin-bottom:var(--s-5)}
+.mk-mb-8{margin-bottom:var(--s-8)}
+.mk-stat-hit{width:63.4%} /* static illustration: hit-rate bar fill on landing */
+.mk-cta{padding-bottom:var(--s-9);text-align:center}
+.mk-cta__lede{max-width:52ch;margin:0 auto var(--s-5)}
+.mk-foot__tag{margin-top:10px;font-size:var(--size-sm);max-width:34ch}
+.mk-plangrid{max-width:780px;margin:0 auto var(--s-8);align-items:start}
+.sa-plan__sub{font-size:var(--size-sm);margin-top:6px}
+.sa-plan__cur{font-size:var(--size-h3)}
+.sa-plan__per{font-family:var(--font-sans);font-weight:var(--w-regular);font-size:var(--size-sm);color:var(--text-3)}
+.mk-auth__title{font-size:var(--size-h3);margin-bottom:6px;text-align:center}
+.mk-auth__sub{text-align:center;font-size:var(--size-sm);margin-bottom:var(--s-5)}
 
 @media (max-width:960px){
   .mk-hero__in{grid-template-columns:1fr;padding-top:var(--s-6)}
