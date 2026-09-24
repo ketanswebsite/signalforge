@@ -18,9 +18,9 @@
  *
  * Deletes. deleteTrade and deleteAllTrades take the trade out of the ledger in the
  * same statement, using the amounts POST /api/ops/reconcile-capital derives from the
- * trades table (pinned against server.js below). What that SQL does on a real Postgres
- * is checked by the endpoint harness: trading.json ends with a reconcile dry run after
- * the trade deletes and requires zero drift.
+ * trades table (CapitalManager.reconcileReport, pinned below). What that SQL does on a
+ * real Postgres is checked by the endpoint harness: trading.json ends with a reconcile
+ * dry run after the trade deletes and requires zero drift.
  */
 const fs = require('fs');
 const path = require('path');
@@ -34,6 +34,7 @@ jest.mock('pg', () => {
 const USER = 'owner@e2e.invalid';
 const squash = sql => sql.replace(/\s+/g, ' ').trim();
 const SERVER = squash(fs.readFileSync(path.join(__dirname, '../../server.js'), 'utf8'));
+const CAPITAL_MANAGER = squash(fs.readFileSync(path.join(__dirname, '../../lib/portfolio/capital-manager.js'), 'utf8'));
 
 let TradeDB;
 let pgQuery;
@@ -279,6 +280,7 @@ describe('an edit of an active trade', () => {
 
 describe("a delete takes the trade out of the ledger in the same statement", () => {
     // The amounts POST /api/ops/reconcile-capital derives the ledger from
+    // (CapitalManager.reconcileReport, which the nightly drift check runs too)
     const RECONCILE = [
         "SUM(CASE WHEN status = 'active' THEN COALESCE(investment_amount, trade_size, 0) ELSE 0 END)",
         "COUNT(*) FILTER (WHERE status = 'active')",
@@ -295,8 +297,14 @@ describe("a delete takes the trade out of the ledger in the same statement", () 
     // (the source checks below compare booleans and lists: a failing toContain on
     // server.js would print the whole file)
     test('control: the reconcile endpoint derives the ledger with exactly these expressions', () => {
-        expect(SERVER.includes("app.post('/api/ops/reconcile-capital'")).toBe(true);
-        expect(RECONCILE.filter(expression => !SERVER.includes(expression))).toEqual([]);
+        // The route asks CapitalManager.reconcileReport() and holds no SQL of its own:
+        // the nightly drift check (ledger-drift-check.js) runs the same computation
+        const start = SERVER.indexOf("app.post('/api/ops/reconcile-capital'");
+        const route = start < 0 ? '' : SERVER.slice(start, SERVER.indexOf("app.get('/api/ops/version'", start));
+        expect(route.includes('const report = await CapitalManager.reconcileReport();')).toBe(true);
+        expect(route.includes('FROM portfolio_capital')).toBe(false);
+        expect(CAPITAL_MANAGER.includes('async reconcileReport() {')).toBe(true);
+        expect(RECONCILE.filter(expression => !CAPITAL_MANAGER.includes(expression))).toEqual([]);
     });
 
     test('deleteTrade: one statement deletes the row and settles its ledger with those amounts', async () => {

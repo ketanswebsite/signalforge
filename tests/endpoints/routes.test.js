@@ -44,11 +44,14 @@ const CHECKS = {
     },
     // A trade the body tried to make automatic was stored as a manual one
     autoAddedFalse: r => expect(r.json && r.json.autoAdded).toBe(false),
-    // POST /api/ops/reconcile-capital dry run: every ledger row matches the trades table
+    // POST /api/ops/reconcile-capital dry run: every ledger row matches the trades table, available
+    // capital included, and the nightly drift check it reports on never ran (node-cron is stubbed)
     zeroDrift: r => {
         expect(r.json && r.json.applied).toBe(false);
         expect(Array.isArray(r.json.markets) && r.json.markets.length > 0).toBe(true);
-        expect(r.json.markets.filter(m => m.drift.realized !== 0 || m.drift.allocated !== 0 || m.drift.positions !== 0)).toEqual([]);
+        expect(r.json.markets.filter(m => m.drift.realized !== 0 || m.drift.allocated !== 0
+            || m.drift.available !== 0 || m.drift.positions !== 0)).toEqual([]);
+        expect(r.json.nightlyCheck).toMatchObject({ enabled: true, lastRun: null });
     }
 };
 

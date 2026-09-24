@@ -857,7 +857,7 @@
     "as": "token",
     "status": 200,
     "check": "zeroDrift",
-    "note": "dry run (no ?apply). After every trade write in this run (creates, a bulk import, the close of a manual and of an automatic trade, a stale save, the deletes of an open and of closed automatic trades) every ledger row still matches the trades table. The boot position recount must agree too: it used to count manual trades, which put 3 rows 1 position out before the first request"
+    "note": "dry run (no ?apply). After every trade write in this run (creates, a bulk import, the close of a manual and of an automatic trade, a stale save, the deletes of an open and of closed automatic trades) every ledger row still matches the trades table, available capital included. The boot position recount must agree too: it used to count manual trades, which put 3 rows 1 position out before the first request. The answer's nightlyCheck is the 22:30 UK drift check (lib/portfolio/ledger-drift-check.js); it never runs here (node-cron is stubbed), so its lastRun is null"
    }
   ],
   "note": "Lives in trading.json with order last, after the order-last DELETE /api/trades specs above (order-last specs run in file order), and before user-account.json deletes the delete persona."

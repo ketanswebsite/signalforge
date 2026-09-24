@@ -462,6 +462,9 @@ app.post('/api/ops/reset-day-trades', async (req, res) => {
 // Token-guarded capital-ledger reconciliation. Recomputes portfolio_capital
 // from the trades table (auto trades only — manual trades never allocate) and
 // reports the drift. Dry-run by default; pass ?apply=true to write.
+// The computation is CapitalManager.reconcileReport(), which the nightly drift
+// check (lib/portfolio/ledger-drift-check.js, 22:30 UK on weekdays) runs too.
+// That check only reports; `nightlyCheck` in the answer is its last run.
 app.post('/api/ops/reconcile-capital', async (req, res) => {
   const token = req.query.token || req.get('x-analysis-token');
   if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {
@@ -470,58 +473,7 @@ app.post('/api/ops/reconcile-capital', async (req, res) => {
   try {
     const apply = req.query.apply === 'true';
 
-    const { rows } = await TradeDB.pool.query(`
-      SELECT pc.user_id, pc.market, pc.currency,
-             pc.initial_capital::float,
-             pc.realized_pl::float        AS ledger_realized,
-             pc.allocated_capital::float  AS ledger_allocated,
-             pc.available_capital::float  AS ledger_available,
-             pc.active_positions          AS ledger_positions,
-             COALESCE(t.realized, 0)::float  AS trades_realized,
-             COALESCE(t.allocated, 0)::float AS trades_allocated,
-             COALESCE(t.open_count, 0)::int  AS trades_positions
-      FROM portfolio_capital pc
-      LEFT JOIN (
-        SELECT user_id, market,
-               SUM(CASE WHEN status = 'closed' THEN COALESCE(
-                     profit_loss,
-                     (exit_price - entry_price) * shares,
-                     COALESCE(investment_amount, trade_size) * profit_loss_percentage / 100,
-                     0) ELSE 0 END) AS realized,
-               SUM(CASE WHEN status = 'active' THEN COALESCE(investment_amount, trade_size, 0) ELSE 0 END) AS allocated,
-               COUNT(*) FILTER (WHERE status = 'active') AS open_count
-        FROM trades
-        WHERE auto_added = true AND market IS NOT NULL
-        GROUP BY user_id, market
-      ) t ON t.user_id = pc.user_id AND t.market = pc.market
-      ORDER BY pc.user_id, pc.market
-    `);
-
-    const report = rows.map(r => {
-      const targetAvailable = r.initial_capital + r.trades_realized - r.trades_allocated;
-      return {
-        user_id: r.user_id,
-        market: r.market,
-        currency: r.currency,
-        before: {
-          realized: r.ledger_realized,
-          allocated: r.ledger_allocated,
-          available: r.ledger_available,
-          positions: r.ledger_positions
-        },
-        after: {
-          realized: r.trades_realized,
-          allocated: r.trades_allocated,
-          available: targetAvailable,
-          positions: r.trades_positions
-        },
-        drift: {
-          realized: +(r.trades_realized - r.ledger_realized).toFixed(2),
-          allocated: +(r.trades_allocated - r.ledger_allocated).toFixed(2),
-          positions: r.trades_positions - r.ledger_positions
-        }
-      };
-    });
+    const report = await CapitalManager.reconcileReport();
 
     if (apply) {
       for (const r of report) {
@@ -538,7 +490,12 @@ app.post('/api/ops/reconcile-capital', async (req, res) => {
       }
     }
 
-    res.json({ success: true, applied: apply, markets: report });
+    res.json({
+      success: true,
+      applied: apply,
+      markets: report,
+      nightlyCheck: require('./lib/portfolio/ledger-drift-check').getStatus()
+    });
   } catch (error) {
     console.error('[RECONCILE] Error:', error);
     res.status(500).json({ success: false, error: error.message });
