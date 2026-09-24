@@ -582,7 +582,13 @@ app.get('/api/ops/schedule-stats', async (req, res) => {
                    count(*) FILTER (WHERE status = 'active')::int AS open, ${clock('max(updated_at)')} AS "lastUpdateAt"
             FROM high_conviction_portfolio`)
     ]);
-    res.json({ success: true, day, scan, executor: { opened, ...bookings }, exitMonitor: { ...exitChecks, closed }, marketCaps, highConviction });
+    // Every named scheduled job's runs that day (lib/shared/job-runs.js); the table appears with the first run
+    const { rows: [jobTable] } = await TradeDB.pool.query("SELECT to_regclass('public.job_runs') IS NOT NULL AS present");
+    const jobRuns = jobTable.present ? await rows(`
+      SELECT job, to_char(started_at AT TIME ZONE 'Europe/London', 'YYYY-MM-DD HH24:MI:SS') AS "startedAt",
+             to_char(finished_at AT TIME ZONE 'Europe/London', 'YYYY-MM-DD HH24:MI:SS') AS "finishedAt", ok, summary
+      FROM job_runs WHERE (started_at AT TIME ZONE 'Europe/London')::date = $1 ORDER BY started_at`) : [];
+    res.json({ success: true, day, scan, executor: { opened, ...bookings }, exitMonitor: { ...exitChecks, closed }, marketCaps, highConviction, jobRuns });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -774,6 +780,10 @@ app.get('/api/ops/exit-checks-stats', async (req, res) => {
       HAVING count(*) > 1
       ORDER BY symbol
     `);
+    // The unique indexes on open positions (database-postgres.js, built at boot unless duplicates exist)
+    const { rows: uniqueIndexRows } = await pool.query(
+      "SELECT indexname FROM pg_indexes WHERE indexname IN ('uq_high_conviction_active_symbol', 'uq_trades_active_auto_symbol')");
+    const uniqueIndexNames = uniqueIndexRows.map(r => r.indexname);
     // Open positions in a symbol containing "&" (M&M.NS, J&KBANK.NS, ...). The server's own Yahoo calls sent
     // "?symbol=M&M.NS" unencoded, which parses as "M", so these were priced on another company's chart. Public
     // tickers and row ids only.
@@ -903,6 +913,10 @@ app.get('/api/ops/exit-checks-stats', async (req, res) => {
         highConviction: duplicateSummary(hcDuplicates.map(g => ({ symbol: g.symbol, ids: g.ids.map(Number) })))
       },
       ampersandOpen: ampersandOpen.map(r => ({ ...r, id: Number(r.id) })),
+      uniqueIndexes: {
+        highConvictionActiveSymbol: uniqueIndexNames.includes('uq_high_conviction_active_symbol'),
+        tradesActiveAutoSymbol: uniqueIndexNames.includes('uq_trades_active_auto_symbol')
+      },
       closeFailureAlerts,
       tradeExitChecks: tradeChecks
     });
