@@ -68,8 +68,6 @@ function mockDatabase({ missing = [], prunable = 0, batches = [], rolledUp = 0, 
     });
 }
 
-const PROD_LIKE = { missing: ['high_conviction_exit_checks'] };
-
 function statements(pattern) {
     return TradeDB.pool.query.mock.calls.filter(([sql]) => pattern.test(sql));
 }
@@ -129,20 +127,34 @@ describe('Duplicate-alert guard — checkAlertSent() is untouched', () => {
         }
     });
 
-    test('the job deletes from the two exit-check tables and nothing else', async () => {
-        mockDatabase({ batches: [5, 5] });
+    test('the job deletes from trade_exit_checks and nothing else', async () => {
+        mockDatabase({ batches: [5] });
 
         await retention.pruneExitChecks();
 
         const targets = deletes().map(([sql]) => sql.match(/DELETE FROM (\w+)/)[1]);
-        expect(targets).toEqual(['trade_exit_checks', 'high_conviction_exit_checks']);
-        expect(retention.TABLES).toEqual(['trade_exit_checks', 'high_conviction_exit_checks']);
+        expect(targets).toEqual(['trade_exit_checks']);
+        expect(retention.TABLES).toEqual(['trade_exit_checks']);
+    });
+
+    test('the only tables the job names are trade_exit_checks and its rollup', async () => {
+        mockDatabase({ batches: [5] });
+
+        await retention.pruneExitChecks();
+        await retention.pruneExitChecks({ dryRun: true });
+
+        const named = new Set();
+        for (const [sql, params] of TradeDB.pool.query.mock.calls) {
+            if (/to_regclass/.test(sql)) named.add(params[0]);
+            for (const [, table] of sql.matchAll(/\b(?:FROM|INTO|EXISTS)\s+([a-z_]+)/gi)) named.add(table);
+        }
+        expect([...named].sort()).toEqual(['trade_exit_checks', ROLLUP_TABLE].sort());
     });
 });
 
 describe('History is rolled up before it is pruned', () => {
     test('the rollup runs before the first DELETE', async () => {
-        mockDatabase({ ...PROD_LIKE, rolledUp: 281, batches: [33166 % BATCH_SIZE] });
+        mockDatabase({ rolledUp: 281, batches: [33166 % BATCH_SIZE] });
 
         const result = await retention.pruneExitChecks();
 
@@ -155,7 +167,7 @@ describe('History is rolled up before it is pruned', () => {
     });
 
     test('a failed rollup means nothing is deleted', async () => {
-        mockDatabase({ ...PROD_LIKE, rollupFails: true, batches: [BATCH_SIZE] });
+        mockDatabase({ rollupFails: true, batches: [BATCH_SIZE] });
 
         const result = await retention.pruneExitChecks();
 
@@ -164,21 +176,19 @@ describe('History is rolled up before it is pruned', () => {
     });
 
     test('the DELETE itself refuses a day that is not in the rollup', async () => {
-        mockDatabase({ batches: [4, 4] });
+        mockDatabase({ batches: [4] });
 
         await retention.pruneExitChecks();
 
-        const [[tradeChecksSql], [highConvictionSql]] = deletes();
+        const [[tradeChecksSql]] = deletes();
         const gate = new RegExp(`EXISTS \\(SELECT 1 FROM ${ROLLUP_TABLE} d`, 'g');
         // On the id subquery and on the DELETE, like the alert-row protection
         expect(tradeChecksSql.match(gate)).toHaveLength(2);
         expect(tradeChecksSql).toMatch(/d\.trade_id = c\.trade_id AND d\.day = c\.check_time::date/);
-        // Pruned without a rollup by design: keyed by symbol, absent on production
-        expect(highConvictionSql).not.toMatch(gate);
     });
 
     test('only complete days are rolled up, and a rolled-up day is never rewritten', async () => {
-        mockDatabase({ ...PROD_LIKE, batches: [1] });
+        mockDatabase({ batches: [1] });
 
         await retention.pruneExitChecks();
 
@@ -193,7 +203,7 @@ describe('History is rolled up before it is pruned', () => {
 
     test('whole days only: the cutoff is a date, not a moment', async () => {
         process.env.EXIT_CHECK_RETENTION_DAYS = '14';
-        mockDatabase({ ...PROD_LIKE, batches: [9] });
+        mockDatabase({ batches: [9] });
 
         await retention.pruneExitChecks();
 
@@ -204,7 +214,7 @@ describe('History is rolled up before it is pruned', () => {
 
 describe('Kill switch and dry run write nothing', () => {
     test('pruning is on by default — the owner approved it on 2026-09-19', async () => {
-        mockDatabase({ ...PROD_LIKE, batches: [3] });
+        mockDatabase({ batches: [3] });
 
         const result = await retention.pruneExitChecks();
 
@@ -214,7 +224,7 @@ describe('Kill switch and dry run write nothing', () => {
 
     test.each(['false', 'FALSE', ' False ', '0', 'no', 'off'])('EXIT_CHECK_PRUNE=%p stops it: no table, no rollup, no delete', async (value) => {
         process.env.EXIT_CHECK_PRUNE = value;
-        mockDatabase({ ...PROD_LIKE, prunable: 33166 });
+        mockDatabase({ prunable: 33166 });
 
         const result = await retention.pruneExitChecks();
 
@@ -225,7 +235,7 @@ describe('Kill switch and dry run write nothing', () => {
 
     test('with the kill switch on, a caller asking for a real run still gets a dry run', async () => {
         process.env.EXIT_CHECK_PRUNE = 'false';
-        mockDatabase({ ...PROD_LIKE, prunable: 33166 });
+        mockDatabase({ prunable: 33166 });
 
         const result = await retention.pruneExitChecks({ dryRun: false });
 
@@ -234,7 +244,7 @@ describe('Kill switch and dry run write nothing', () => {
     });
 
     test('dryRun: true writes nothing even though pruning is enabled', async () => {
-        mockDatabase({ ...PROD_LIKE, prunable: 33166 });
+        mockDatabase({ prunable: 33166 });
 
         const result = await retention.pruneExitChecks({ dryRun: true });
 
@@ -243,7 +253,7 @@ describe('Kill switch and dry run write nothing', () => {
     });
 
     test('a dry run before the first real run copes with the rollup table not existing yet', async () => {
-        mockDatabase({ missing: ['high_conviction_exit_checks', ROLLUP_TABLE], prunable: 10 });
+        mockDatabase({ missing: [ROLLUP_TABLE], prunable: 10 });
 
         const result = await retention.pruneExitChecks({ dryRun: true });
 
@@ -256,7 +266,7 @@ describe('Kill switch and dry run write nothing', () => {
 
 describe('Pruning', () => {
     test('deletes in batches until a batch comes back short', async () => {
-        mockDatabase({ ...PROD_LIKE, batches: [BATCH_SIZE, BATCH_SIZE, 3166] });
+        mockDatabase({ batches: [BATCH_SIZE, BATCH_SIZE, 3166] });
 
         const result = await retention.pruneExitChecks();
 
@@ -266,7 +276,7 @@ describe('Pruning', () => {
     });
 
     test('a final batch that is exactly full costs one more, empty, round', async () => {
-        mockDatabase({ ...PROD_LIKE, batches: [BATCH_SIZE, 0] });
+        mockDatabase({ batches: [BATCH_SIZE, 0] });
 
         const result = await retention.pruneExitChecks();
 
@@ -275,7 +285,7 @@ describe('Pruning', () => {
     });
 
     test('stops at the batch cap and says so — the rest goes on the next run', async () => {
-        mockDatabase({ ...PROD_LIKE, batches: Array(MAX_BATCHES + 10).fill(BATCH_SIZE) });
+        mockDatabase({ batches: Array(MAX_BATCHES + 10).fill(BATCH_SIZE) });
 
         const result = await retention.pruneExitChecks();
 
@@ -284,15 +294,13 @@ describe('Pruning', () => {
     });
 
     test('a table that does not exist is skipped, never queried', async () => {
-        mockDatabase({ ...PROD_LIKE, batches: [40] });
+        mockDatabase({ missing: ['trade_exit_checks'], batches: [40] });
 
         const result = await retention.pruneExitChecks();
 
-        expect(result.tables[1]).toEqual({ table: 'high_conviction_exit_checks', exists: false });
-        const touchedMissingTable = TradeDB.pool.query.mock.calls
-            .filter(([sql]) => !/to_regclass/.test(sql))
-            .some(([sql]) => /high_conviction_exit_checks/.test(sql));
-        expect(touchedMissingTable).toBe(false);
+        expect(result.error).toBeUndefined();
+        expect(result.tables).toEqual([{ table: 'trade_exit_checks', exists: false }]);
+        expect(TradeDB.pool.query.mock.calls.filter(([sql]) => !/to_regclass/.test(sql))).toEqual([]);
     });
 
     test('never throws, and a failed run does not block the next one', async () => {
@@ -301,7 +309,7 @@ describe('Pruning', () => {
         const failed = await retention.pruneExitChecks();
         expect(failed.error).toBe('db down');
 
-        mockDatabase({ ...PROD_LIKE, batches: [3] });
+        mockDatabase({ batches: [3] });
         const next = await retention.pruneExitChecks();
         expect(next.skipped).toBeUndefined();
         expect(next.tables[0].deleted).toBe(3);

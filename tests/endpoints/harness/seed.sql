@@ -79,6 +79,13 @@ INSERT INTO trades (symbol, name, entry_date, entry_price, exit_date, exit_price
 VALUES ('HARNESSB.L', 'Harness B plc', now() - interval '20 days', 50, now() - interval '10 days', 54, 8, 'closed', 32,
         8, 'Target reached', 54, 5, 400, 400, '£', 'UK', 'harness-user@e2e.invalid', false);
 
+-- A duplicate open position, on purpose: the auth-disabled 'default' user holds HARNESSD.L twice (a manual trade may
+-- repeat a symbol, and nothing in the schema forbids it). GET /api/ops/exit-checks-stats must count it, and must not
+-- count HARNESS.L, which the user and delete personas hold once each. Manual, so the capital ledger never sees it.
+INSERT INTO trades (symbol, name, entry_date, entry_price, shares, status, target_price, stop_loss_percent,
+                    investment_amount, trade_size, currency_symbol, market, user_id, auto_added)
+VALUES ('HARNESSD.L', 'Harness D plc', now() - interval '2 days', 100, 4, 'active', 108, 5, 400, 400, '£', 'UK', 'default', false);
+
 -- ---------------------------------------------------------------- automatic trades (they hold capital)
 -- The delete persona's UK ledger holds exactly their effect: 1000 allocated and 2 slots for the two open ones, 40
 -- realized for the closed one. PUT /api/trades/:id sells HARNESSE.L (its 500 goes back and its P/L is realized),

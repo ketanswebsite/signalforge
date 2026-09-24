@@ -1,24 +1,17 @@
 /**
  * High-conviction exits: a re-entered symbol still closes, and alerts exactly once
- * (lib/portfolio/high-conviction-manager.js, TradeDB.closeHighConvictionTrade)
+ * (lib/portfolio/high-conviction-manager.js, TradeDB.closeHighConvictionTrade and
+ *  TradeDB.updateHighConvictionTrade)
  *
  * high_conviction_portfolio.symbol is not unique — a symbol can be booked again
- * after its earlier position has closed. The manager used to guard against
- * duplicate exit alerts with a lookup in high_conviction_exit_checks keyed by
- * SYMBOL. That table never existed on production, so the lookup always failed
- * open; had the table been created, the alert row left by an earlier position
- * would have matched every later position in the same symbol, which could then
- * never be closed by that exit type again.
+ * after its earlier position has closed, and nothing in the schema stops two
+ * ACTIVE rows in one symbol (GET /api/ops/exit-checks-stats counts them). A
+ * symbol does not identify a position, so every write the pass makes — the
+ * price refresh and the close — is keyed by the portfolio ROW.
  *
- * The guard that actually prevents duplicates is the close itself: one UPDATE,
- * keyed by the portfolio ROW, that only matches a row still 'active'. Whoever
+ * The guard that prevents duplicate exit alerts is the close itself: one
+ * UPDATE, keyed by the row, that only matches a row still 'active'. Whoever
  * gets the row back sends the alert; everybody else gets nothing and stays quiet.
- *
- * The fake database below models the dangerous world on purpose: the
- * high_conviction_exit_checks table EXISTS and already holds the earlier
- * position's alert row. Against the old symbol-keyed lookup the first test
- * fails (the position is skipped for ever); it passes because nothing consults
- * that table any more.
  */
 
 jest.mock('axios', () => ({ get: jest.fn() }));
@@ -68,26 +61,16 @@ function position(overrides) {
 }
 
 /**
- * An in-memory stand-in for the two tables involved.
- *   portfolio   high_conviction_portfolio rows
- *   exitChecks  high_conviction_exit_checks rows — the table is PRESENT here
+ * high_conviction_portfolio in memory.
+ *   portfolio   its rows
  *   statements  every SQL string sent through pool.query
  *   beforeClose runs just before a close is applied (lets a test lose a race)
  */
-function fakeDatabase(portfolio, exitChecks = []) {
-    const db = { portfolio, exitChecks, statements: [], beforeClose: null };
+function fakeDatabase(portfolio) {
+    const db = { portfolio, statements: [], beforeClose: null };
 
-    TradeDB.pool.query.mockImplementation(async (sql, params = []) => {
+    TradeDB.pool.query.mockImplementation(async sql => {
         db.statements.push(sql);
-        if (/INSERT INTO high_conviction_exit_checks/.test(sql)) {
-            db.exitChecks.push({ symbol: params[0], alert_sent: params[7], alert_type: params[8] });
-            return { rows: [], rowCount: 1 };
-        }
-        if (/FROM high_conviction_exit_checks/.test(sql)) {
-            const rows = db.exitChecks.filter(c =>
-                c.symbol === params[0] && c.alert_sent === true && c.alert_type === params[1]);
-            return { rows };
-        }
         // pending_signals verdict lookup: no AI-rejected signal for any of these
         return { rows: [] };
     });
@@ -95,11 +78,18 @@ function fakeDatabase(portfolio, exitChecks = []) {
     TradeDB.getActiveHighConvictionTrades.mockImplementation(async () =>
         db.portfolio.filter(row => row.status === 'active').map(row => ({ ...row })));
 
-    // Still keyed by symbol in the real module (a price refresh, not an exit)
-    TradeDB.updateHighConvictionTrade.mockImplementation(async (symbol, update) => {
-        db.portfolio
-            .filter(row => row.symbol === symbol && row.status === 'active')
-            .forEach(row => { row.current_price = update.currentPrice; row.pl_percent = update.plPercent; });
+    // WHERE id = $6 AND status = 'active' RETURNING *, like the close below
+    TradeDB.updateHighConvictionTrade.mockImplementation(async (tradeId, update) => {
+        const row = db.portfolio.find(r => r.id === tradeId && r.status === 'active');
+        if (!row) return undefined;
+        Object.assign(row, {
+            current_price: update.currentPrice,
+            pl_percent: update.plPercent,
+            pl_amount_gbp: update.plAmountGBP,
+            pl_amount_inr: update.plAmountINR,
+            pl_amount_usd: update.plAmountUSD
+        });
+        return { ...row };
     });
 
     // WHERE id = $8 AND status = 'active' RETURNING * (the SQL itself is pinned
@@ -129,8 +119,7 @@ function managerWithPrices(prices) {
     return manager;
 }
 
-// The earlier, finished position in the same symbol and the alert row it would
-// have left behind had high_conviction_exit_checks existed
+// The earlier, finished position in the same symbol
 const EARLIER_AAPL = () => position({
     id: 1,
     signal_date: daysFromNow(-60),
@@ -142,7 +131,6 @@ const EARLIER_AAPL = () => position({
     exit_reason: 'Take Profit (8%)',
     pl_percent: '8.0000'
 });
-const EARLIER_AAPL_ALERT = () => ({ symbol: 'AAPL', alert_sent: true, alert_type: 'take_profit' });
 
 beforeEach(() => {
     jest.spyOn(console, 'log').mockImplementation(() => {});
@@ -151,11 +139,8 @@ beforeEach(() => {
 });
 
 describe('A re-entered symbol', () => {
-    test('the second position closes and alerts exactly once, despite the alert row of the first', async () => {
-        const db = fakeDatabase(
-            [EARLIER_AAPL(), position({ id: 2, entry_price: '100.0000' })],
-            [EARLIER_AAPL_ALERT()]
-        );
+    test('the second position closes and alerts exactly once', async () => {
+        const db = fakeDatabase([EARLIER_AAPL(), position({ id: 2, entry_price: '100.0000' })]);
         const manager = managerWithPrices({ AAPL: 108 });
 
         const firstPass = await manager.updateAllActiveTrades();
@@ -179,21 +164,15 @@ describe('A re-entered symbol', () => {
     });
 
     test('the earlier position is left exactly as it was closed', async () => {
-        const db = fakeDatabase(
-            [EARLIER_AAPL(), position({ id: 2 })],
-            [EARLIER_AAPL_ALERT()]
-        );
+        const db = fakeDatabase([EARLIER_AAPL(), position({ id: 2 })]);
 
         await managerWithPrices({ AAPL: 108 }).updateAllActiveTrades();
 
         expect(db.portfolio[0]).toEqual(EARLIER_AAPL());
     });
 
-    test('a stop-loss exit on the re-entry is not blocked either', async () => {
-        fakeDatabase(
-            [EARLIER_AAPL(), position({ id: 2 })],
-            [{ symbol: 'AAPL', alert_sent: true, alert_type: 'stop_loss' }]
-        );
+    test('a stop-loss exit on the re-entry closes too', async () => {
+        fakeDatabase([EARLIER_AAPL(), position({ id: 2 })]);
 
         const result = await managerWithPrices({ AAPL: 94 }).updateAllActiveTrades();
 
@@ -202,11 +181,8 @@ describe('A re-entered symbol', () => {
         expect(broadcastToSubscribers.mock.calls[0][0].message).toMatch(/STOP LOSS HIT/);
     });
 
-    test('nor is a max-days exit', async () => {
-        fakeDatabase(
-            [EARLIER_AAPL(), position({ id: 2, entry_date: daysFromNow(-31), square_off_date: daysFromNow(-1) })],
-            [{ symbol: 'AAPL', alert_sent: true, alert_type: 'max_days' }]
-        );
+    test('and so does a max-days exit', async () => {
+        fakeDatabase([EARLIER_AAPL(), position({ id: 2, entry_date: daysFromNow(-31), square_off_date: daysFromNow(-1) })]);
 
         const result = await managerWithPrices({ AAPL: 101 }).updateAllActiveTrades();
 
@@ -280,37 +256,61 @@ describe('The close is the duplicate-alert guard', () => {
     });
 });
 
-describe('high_conviction_exit_checks is out of the exit path', () => {
-    test('no pass reads it or writes to it — holding, exiting, or losing a race', async () => {
-        const db = fakeDatabase(
-            [
-                EARLIER_AAPL(),
-                position({ id: 2 }),
-                position({ id: 4, symbol: 'DIXON.NS', name: 'Dixon', market: 'India', currency_symbol: '₹' }),
-                position({ id: 5, symbol: 'MER.L', name: 'Mears', market: 'UK', currency_symbol: '£' })
-            ],
-            [EARLIER_AAPL_ALERT()]
-        );
-        db.beforeClose = tradeId => { if (tradeId === 5) db.portfolio.find(r => r.id === 5).status = 'closed'; };
-        const manager = managerWithPrices({ AAPL: 108, 'DIXON.NS': 101, 'MER.L': 94 });
+describe('A price refresh is keyed by the portfolio row too', () => {
+    // Two ACTIVE rows in one symbol, neither at an exit at 104: row 2 is up 4%,
+    // row 3 (bought at 107 a day later) is down 2.8%. Keyed by symbol, each
+    // refresh rewrote both rows, and both ended the pass showing row 3's P&L.
+    const twoOpenRows = () => [
+        position({ id: 2, entry_price: '100.0000' }),
+        position({ id: 3, entry_price: '107.0000', signal_date: daysFromNow(-1), entry_date: daysFromNow(-1) })
+    ];
 
-        await manager.updateAllActiveTrades();
-        await manager.updateAllActiveTrades();
+    test('two open rows in one symbol each keep their own price and P&L', async () => {
+        const db = fakeDatabase(twoOpenRows());
 
-        expect(db.statements.length).toBeGreaterThan(0);
-        expect(db.statements.filter(sql => /high_conviction_exit_checks/.test(sql))).toEqual([]);
-        expect(db.exitChecks).toEqual([EARLIER_AAPL_ALERT()]);
+        const result = await managerWithPrices({ AAPL: 104 }).updateAllActiveTrades();
+
+        expect(result).toMatchObject({ updated: 2, closed: 0 });
+        expect(TradeDB.updateHighConvictionTrade.mock.calls.map(([tradeId]) => tradeId)).toEqual([2, 3]);
+        const [first, second] = db.portfolio;
+        expect(first).toMatchObject({ id: 2, status: 'active', current_price: 104 });
+        expect(first.pl_percent).toBeCloseTo(4, 6);
+        expect(second).toMatchObject({ id: 3, status: 'active', current_price: 104 });
+        expect(second.pl_percent).toBeCloseTo((104 - 107) / 107 * 100, 6);
+        expect(broadcastToSubscribers).not.toHaveBeenCalled();
     });
 
-    test('the symbol-keyed guard and its writer are gone from the manager', () => {
-        const manager = new HighConvictionPortfolioManager();
+    test('and each keeps its own money P&L', async () => {
+        const db = fakeDatabase(twoOpenRows());
 
-        expect(manager.checkAlertSent).toBeUndefined();
-        expect(manager.recordExitCheck).toBeUndefined();
+        await managerWithPrices({ AAPL: 104 }).updateAllActiveTrades();
+
+        // 3 shares each: +$12 on row 2, -$9 on row 3
+        expect(db.portfolio[0].pl_amount_usd).toBeCloseTo(12, 6);
+        expect(db.portfolio[1].pl_amount_usd).toBeCloseTo(-9, 6);
+    });
+
+    test('a pass sends no SQL of its own but the verdict lookup: every write is a row-keyed TradeDB call', async () => {
+        const db = fakeDatabase([
+            EARLIER_AAPL(),
+            ...twoOpenRows(),
+            position({ id: 4, symbol: 'DIXON.NS', name: 'Dixon', market: 'India', currency_symbol: '₹' }),
+            position({ id: 5, symbol: 'MER.L', name: 'Mears', market: 'UK', currency_symbol: '£' })
+        ]);
+        // MER.L is closed elsewhere just before this pass closes it: the pass loses the race
+        db.beforeClose = tradeId => { if (tradeId === 5) db.portfolio.find(r => r.id === 5).status = 'closed'; };
+
+        await managerWithPrices({ AAPL: 104, 'DIXON.NS': 101, 'MER.L': 94 }).updateAllActiveTrades();
+        await managerWithPrices({ AAPL: 108, 'DIXON.NS': 101, 'MER.L': 94 }).updateAllActiveTrades();
+
+        expect(db.portfolio.map(r => [r.id, r.status])).toEqual([[1, 'closed'], [2, 'closed'], [3, 'active'], [4, 'active'], [5, 'closed']]);
+        expect(broadcastToSubscribers).toHaveBeenCalledTimes(1);
+        expect(db.statements.length).toBeGreaterThan(0);
+        expect(db.statements.filter(sql => !/FROM pending_signals/.test(sql))).toEqual([]);
     });
 });
 
-describe('TradeDB.closeHighConvictionTrade — the SQL behind the guard', () => {
+describe('TradeDB — the SQL behind the pass', () => {
     // The real module, over a mocked pg driver
     let RealTradeDB;
     let pgQuery;
@@ -365,5 +365,27 @@ describe('TradeDB.closeHighConvictionTrade — the SQL behind the guard', () => 
         pgQuery.mockResolvedValue({ rows: [] });
 
         expect(await RealTradeDB.closeHighConvictionTrade(2, exitData)).toBeUndefined();
+    });
+
+    const refresh = { currentPrice: 104, plPercent: 4, plAmountGBP: 9.48, plAmountINR: 996, plAmountUSD: 12 };
+
+    test('a price refresh updates one row by id, and only while it is still active', async () => {
+        pgQuery.mockResolvedValue({ rows: [{ id: 3, symbol: 'AAPL', status: 'active' }] });
+
+        const refreshedRow = await RealTradeDB.updateHighConvictionTrade(3, refresh);
+
+        expect(refreshedRow).toEqual({ id: 3, symbol: 'AAPL', status: 'active' });
+        expect(pgQuery).toHaveBeenCalledTimes(1);
+        const [sql, params] = pgQuery.mock.calls[0];
+        expect(sql).toMatch(/UPDATE high_conviction_portfolio/);
+        expect(sql).toMatch(/WHERE id = \$6 AND status = 'active'/);
+        expect(sql).not.toMatch(/symbol/);
+        expect(params).toEqual([104, 4, 9.48, 996, 12, 3]);
+    });
+
+    test('a refresh of a row closed in the meantime changes nothing and reports nothing', async () => {
+        pgQuery.mockResolvedValue({ rows: [] });
+
+        expect(await RealTradeDB.updateHighConvictionTrade(3, refresh)).toBeUndefined();
     });
 });

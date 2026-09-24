@@ -281,8 +281,11 @@ describe('Subscribers are told nothing — no exit happened', () => {
 
         TradeDB.closeTradeAndRelease.mockResolvedValue({ closed: false, released: false, trade: null });
         minutesLater(1);
-        await passAtStop(trade);
+        const result = await passAtStop(trade);
 
+        // Nothing left to close is not a failed close: no error line, and no alert from this pass
+        expect(result).toEqual({ shouldExit: false, closedElsewhere: true });
+        expect(console.error.mock.calls.filter(([line]) => /Failed to close/.test(line))).toEqual([]);
         expect(messagesTo(OWNER_CHAT)[1]).toMatch(/CLOSE RECOVERED[\s\S]*closed elsewhere/);
         expect(messagesTo(SUBSCRIBER_CHAT)).toHaveLength(0);
         expect(CloseFailures.resolveEpisode(42)).toBeNull();

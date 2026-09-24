@@ -472,7 +472,8 @@
    {
     "as": "token",
     "status": 200,
-    "check": "object"
+    "check": "duplicateActive",
+    "note": "read-only. The seed holds one duplicate open position (the 'default' user's HARNESSD.L, twice), which duplicateActive.trades must count, and HARNESS.L once each in two users' portfolios, which it must not; the high-conviction book holds HARNESSH.L once"
    }
   ]
  },

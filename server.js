@@ -656,11 +656,12 @@ app.get('/api/ops/alert-prefs-stats', async (req, res) => {
   }
 });
 
-// Token-guarded, READ-ONLY size probe for the two exit-check tables (GAPS #13).
-// The exit monitor writes one row per open position per minute and the HC
-// manager one per position per 10 minutes, so these are the tables that grow
-// with subscriber count. Fixed queries only — nothing here takes SQL from the
-// caller. Measures before/after any retention change.
+// Token-guarded, READ-ONLY size probe for trade_exit_checks (GAPS #13): the exit
+// monitor writes one row per open position per minute, so it is the table that
+// grows with subscriber count. Fixed queries only — nothing here takes SQL from
+// the caller. Measures before/after any retention change. It also counts
+// duplicate open positions (duplicateActive), which must read 0 on production
+// before a unique index can make one open row per position a database rule.
 app.get('/api/ops/exit-checks-stats', async (req, res) => {
   const token = req.query.token || req.get('x-analysis-token');
   if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {
@@ -669,10 +670,9 @@ app.get('/api/ops/exit-checks-stats', async (req, res) => {
   try {
     const pool = TradeDB.pool;
 
-    // keyColumn is what each table's duplicate-alert guard looks rows up by
+    // keyColumn is what the table's duplicate-alert guard looks rows up by
     const tableStats = async (table, keyColumn) => {
-      // high_conviction_exit_checks comes from a standalone migration, not the
-      // boot-time schema, so it may legitimately be absent
+      // Created at boot; a database the server has never initialised has none
       const { rows: [found] } = await pool.query('SELECT to_regclass($1) AS oid', [table]);
       if (!found.oid) {
         return { exists: false };
@@ -737,7 +737,6 @@ app.get('/api/ops/exit-checks-stats', async (req, res) => {
     };
 
     const tradeChecks = await tableStats('trade_exit_checks', 'trade_id');
-    const hcChecks = await tableStats('high_conviction_exit_checks', 'symbol');
 
     const { rows: [db] } = await pool.query(`
       SELECT pg_database_size(current_database()) AS bytes,
@@ -751,25 +750,35 @@ app.get('/api/ops/exit-checks-stats', async (req, res) => {
       SELECT count(*) AS active FROM high_conviction_portfolio WHERE status = 'active'
     `);
 
-    // The HC guard is keyed by SYMBOL, so an alert row left by an earlier trade
-    // also matches a later re-entry of the same symbol. List open HC positions
-    // that already carry such a row from before they were entered.
-    let hcStaleGuards = [];
-    if (hcChecks.exists) {
-      const { rows } = await pool.query(`
-        SELECT p.symbol,
-               to_char(p.entry_date, 'YYYY-MM-DD') AS entry_date,
-               c.alert_type,
-               to_char(max(c.check_time), 'YYYY-MM-DD') AS alerted_on
-        FROM high_conviction_portfolio p
-        JOIN high_conviction_exit_checks c
-          ON c.symbol = p.symbol AND c.alert_sent = true AND c.check_time < p.entry_date
-        WHERE p.status = 'active'
-        GROUP BY p.symbol, p.entry_date, c.alert_type
-        ORDER BY p.symbol
-      `);
-      hcStaleGuards = rows;
-    }
+    // Duplicate open positions: two or more ACTIVE rows for one symbol in one
+    // portfolio. In trades that is one user's portfolio: the automatic booking
+    // refuses a symbol the user already holds, a manual trade does not. The
+    // high-conviction book is a single portfolio with no user column. Nothing in
+    // the schema forbids a pair yet; a unique partial index is the follow-up once
+    // this reads 0 on production. Row ids only, never whose they are.
+    const { rows: tradeDuplicates } = await pool.query(`
+      SELECT symbol, array_agg(id ORDER BY id) AS ids,
+             count(*) FILTER (WHERE auto_added) AS automatic
+      FROM trades
+      WHERE status = 'active'
+      GROUP BY user_id, symbol
+      HAVING count(*) > 1
+      ORDER BY symbol, min(id)
+    `);
+    const { rows: hcDuplicates } = await pool.query(`
+      SELECT symbol, array_agg(id ORDER BY id) AS ids
+      FROM high_conviction_portfolio
+      WHERE status = 'active'
+      GROUP BY symbol
+      HAVING count(*) > 1
+      ORDER BY symbol
+    `);
+    // count = duplicated positions; surplusRows = the rows beyond the first of each
+    const duplicateSummary = groups => ({
+      count: groups.length,
+      surplusRows: groups.reduce((sum, g) => sum + g.ids.length - 1, 0),
+      groups
+    });
 
     // Closes the database refused (exit-monitor.js handleCloseFailure). Every
     // failed pass leaves a row with an exit type and alert_sent = false. On a
@@ -877,10 +886,12 @@ app.get('/api/ops/exit-checks-stats', async (req, res) => {
         tradeSymbols: Number(openTrades.symbols),
         highConviction: Number(openHC.active)
       },
+      duplicateActive: {
+        trades: duplicateSummary(tradeDuplicates.map(g => ({ symbol: g.symbol, ids: g.ids.map(Number), automatic: Number(g.automatic) }))),
+        highConviction: duplicateSummary(hcDuplicates.map(g => ({ symbol: g.symbol, ids: g.ids.map(Number) })))
+      },
       closeFailureAlerts,
-      tradeExitChecks: tradeChecks,
-      highConvictionExitChecks: hcChecks,
-      hcStaleGuards
+      tradeExitChecks: tradeChecks
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

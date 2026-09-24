@@ -52,6 +52,18 @@ const CHECKS = {
         expect(r.json.markets.filter(m => m.drift.realized !== 0 || m.drift.allocated !== 0
             || m.drift.available !== 0 || m.drift.positions !== 0)).toEqual([]);
         expect(r.json.nightlyCheck).toMatchObject({ enabled: true, lastRun: null });
+    },
+    // GET /api/ops/exit-checks-stats on the seed: the 'default' user holds HARNESSD.L twice, a duplicate open position,
+    // while HARNESS.L is held once each by two users, which is not one; the high-conviction book holds HARNESSH.L once
+    duplicateActive: r => {
+        expect(r.json && r.json.success).toBe(true);
+        const { trades, highConviction } = r.json.duplicateActive;
+        expect(trades).toMatchObject({ count: 1, surplusRows: 1 });
+        expect(trades.groups).toHaveLength(1);
+        expect(trades.groups[0]).toMatchObject({ symbol: 'HARNESSD.L', automatic: 0 });
+        expect(trades.groups[0].ids).toHaveLength(2);
+        expect(trades.groups[0].ids.every(Number.isInteger)).toBe(true);
+        expect(highConviction).toEqual({ count: 0, surplusRows: 0, groups: [] });
     }
 };
 

@@ -2686,8 +2686,12 @@ const TradeDB = {
     }
   },
 
-  // Update high conviction trade (daily price update)
-  async updateHighConvictionTrade(symbol, updateData) {
+  // Refresh ONE high conviction position's price and P&L, by its portfolio row
+  // id, like closeHighConvictionTrade below. Keyed by symbol it rewrote every
+  // active row in that symbol, so two open rows in one symbol both ended the
+  // pass showing the last one's P&L. Only an active row is touched: a position
+  // closed since the pass read it keeps its exit numbers.
+  async updateHighConvictionTrade(tradeId, updateData) {
     checkConnection();
     try {
       const result = await pool.query(`
@@ -2699,7 +2703,7 @@ const TradeDB = {
           pl_amount_inr = $4,
           pl_amount_usd = $5,
           updated_at = CURRENT_TIMESTAMP
-        WHERE symbol = $6 AND status = 'active'
+        WHERE id = $6 AND status = 'active'
         RETURNING *
       `, [
         updateData.currentPrice,
@@ -2707,7 +2711,7 @@ const TradeDB = {
         updateData.plAmountGBP,
         updateData.plAmountINR,
         updateData.plAmountUSD,
-        symbol
+        tradeId
       ]);
       return result.rows[0];
     } catch (error) {

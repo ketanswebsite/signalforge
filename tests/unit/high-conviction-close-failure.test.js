@@ -17,8 +17,8 @@
  *      broadcast goes out once and the owner hears that the close recovered.
  *   3. High-conviction row 2 and `trades` row 2 are different positions: their
  *      episodes never mix.
- *   4. No evidence is written — high_conviction_exit_checks does not exist on
- *      production — so the log line is the record, on every failed pass.
+ *   4. No evidence is written — high-conviction positions have no exit-check
+ *      table — so the log line is the record, on every failed pass.
  *   5. Reporting never breaks the pass; the kill switch stops messages only.
  */
 
@@ -357,14 +357,13 @@ describe('A high-conviction row is not a trade', () => {
 });
 
 describe('No evidence table — the log line is the record', () => {
-    test('failing passes write nothing, and never name high_conviction_exit_checks', async () => {
+    test('failing passes write nothing', async () => {
         const db = fakeDatabase([position()]);
         db.refuse = () => constraintViolation();
 
         await passes(managerWithPrices({ AAPL: 108 }), 3);
 
         expect(db.statements.length).toBeGreaterThan(0); // the verdict lookups did run
-        expect(db.statements.filter(sql => /high_conviction_exit_checks/.test(sql))).toEqual([]);
         expect(db.statements.filter(sql => /\b(INSERT|UPDATE|DELETE)\b/i.test(sql))).toEqual([]);
     });
 
