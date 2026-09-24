@@ -38,6 +38,18 @@ describe('capRows', () => {
         expect(SqlConsole.capRows('SELECT * FROM users LIMIT 5')).toBe('SELECT * FROM users LIMIT 5');
         expect(SqlConsole.capRows('WITH x AS (SELECT 1) SELECT * FROM x;')).toBe('WITH x AS (SELECT 1) SELECT * FROM x');
         expect(SqlConsole.capRows('EXPLAIN SELECT 1')).toBe('EXPLAIN SELECT 1');
+        // a second statement: no LIMIT, so Postgres refuses the text as multiple commands
+        expect(SqlConsole.capRows('SELECT 1; DELETE FROM users')).toBe('SELECT 1; DELETE FROM users');
+    });
+
+    test('quoted strings, quoted names and comments are not read as a second statement or a LIMIT', () => {
+        expect(SqlConsole.capRows("SELECT * FROM t WHERE note = 'a;b'")).toBe("SELECT * FROM t WHERE note = 'a;b'\nLIMIT 1000");
+        expect(SqlConsole.capRows("SELECT * FROM t WHERE note = 'it''s; over'")).toBe("SELECT * FROM t WHERE note = 'it''s; over'\nLIMIT 1000");
+        expect(SqlConsole.capRows('SELECT "a;b" FROM t')).toBe('SELECT "a;b" FROM t\nLIMIT 1000');
+        expect(SqlConsole.capRows('SELECT * FROM users -- newest; first')).toBe('SELECT * FROM users -- newest; first\nLIMIT 1000');
+        expect(SqlConsole.capRows("SELECT * FROM t WHERE reason = 'limit'")).toBe("SELECT * FROM t WHERE reason = 'limit'\nLIMIT 1000");
+        expect(SqlConsole.capRows('/* recent */ SELECT 1')).toBe('/* recent */ SELECT 1\nLIMIT 1000');
+        expect(SqlConsole.capRows("SELECT 'x'; DELETE FROM users")).toBe("SELECT 'x'; DELETE FROM users");
     });
 });
 

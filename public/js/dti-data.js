@@ -23,9 +23,6 @@ const DTIData = (function() {
         'SESHAPAPER.NS'
     ]);
 
-    // Track failed stocks for better reporting
-    const failedStocks = new Map();
-    
 /**
  * Fetch historical data from Yahoo Finance API through our proxy server
  * @param {string} symbol - Stock symbol
@@ -35,10 +32,8 @@ const DTIData = (function() {
  * @returns {Promise<Array>} - Array of price data
  */
 async function fetchStockData(symbol, period = '5y', interval = '1d', retryCount = 0) {
-    // Check if stock is in blocklist
+    // Check if stock is in blocklist (likely delisted, renamed, or data unavailable)
     if (STOCK_BLOCKLIST.has(symbol)) {
-        const reason = 'Stock is in blocklist (likely delisted, renamed, or data unavailable)';
-        failedStocks.set(symbol, { reason, error: 'BLOCKLISTED', timestamp: new Date() });
         return null;
     }
 
@@ -106,15 +101,7 @@ if (period === '5y') {
             : await fetch(proxyUrl);
 
         if (!response.ok) {
-            const errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-
-            // Handle 500 errors specially - likely indicates delisted/invalid stock
-            if (response.status === 500) {
-                const reason = 'Data source returned 500 error - stock may be delisted, renamed, or data unavailable';
-                failedStocks.set(symbol, { reason, error: `HTTP_${response.status}`, timestamp: new Date() });
-            }
-
-            throw new Error(errorMessage);
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
         // Our proxy now returns CSV data directly
@@ -138,12 +125,6 @@ if (period === '5y') {
         
         return csvData;
     } catch (error) {
-        // Track failed stock
-        const reason = error.message.includes('500') ?
-            'Data source error - stock may be delisted or renamed' :
-            error.message;
-        failedStocks.set(symbol, { reason, error: error.message, timestamp: new Date() });
-
         // Status messages disabled - they cluttered the UI during batch scans
         // const statusElement = document.getElementById('data-fetch-status');
         // if (statusElement) {
@@ -196,81 +177,7 @@ if (period === '5y') {
         return null;
     }
 }
-    
-/**
- * Fetch current stock quote data
- * @param {string} symbol - Stock symbol
- * @returns {Promise<Object>} - Current stock data
- */
-async function fetchCurrentQuote(symbol) {
-    try {
-        const proxyUrl = `/yahoo/quote?symbol=${encodeURIComponent(symbol)}`;
 
-        // Use AbortManager for cancellable requests
-        const operationId = `fetch-quote-${symbol}`;
-        const response = typeof AbortManager !== 'undefined'
-            ? await AbortManager.fetch(operationId, proxyUrl, {}, 45000) // 45s timeout to match server
-            : await fetch(proxyUrl);
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        
-        return await response.json();
-    } catch (error) {
-        DTIBacktester.utils.showNotification(`Failed to fetch quote for ${symbol}: ${error.message}`, 'error');
-        return null;
-    }
-}
-
-
-    /**
-     * Process Yahoo Finance data into CSV format
-     * @param {Object} yahooData - Yahoo Finance API response
-     * @returns {Array} - Array of price data
-     */
-    function processYahooFinanceData(yahooData) {
-        const result = yahooData.chart.result[0];
-        const quotes = result.indicators.quote[0];
-        const timestamps = result.timestamp;
-        
-        // Create CSV data
-        let csvData = [
-            ['date', 'open', 'high', 'low', 'close', 'volume']
-        ];
-        
-        for (let i = 0; i < timestamps.length; i++) {
-            const date = new Date(timestamps[i] * 1000);
-            const dateString = date.toISOString().split('T')[0];
-            
-            // Skip points with null/undefined values
-            if (quotes.open[i] === null || quotes.high[i] === null || 
-                quotes.low[i] === null || quotes.close[i] === null) {
-                continue;
-            }
-            
-            csvData.push([
-                dateString,
-                quotes.open[i],
-                quotes.high[i],
-                quotes.low[i],
-                quotes.close[i],
-                quotes.volume[i]
-            ]);
-        }
-        
-        return csvData;
-    }
-    
-    /**
-     * Convert array data to CSV string
-     * @param {Array} data - Array of data
-     * @returns {string} - CSV string
-     */
-    function arrayToCSV(data) {
-        return data.map(row => row.join(',')).join('\n');
-    }
-    
     /**
      * Process CSV data for a single stock
      * @param {Array} data - CSV data
@@ -368,230 +275,10 @@ async function fetchCurrentQuote(symbol) {
         }
     }
     
-    /**
-     * Clear data cache
-     * Useful for freeing memory after large scans
-     */
-    function clearDataCache() {
-        dataCache.clear();
-        DTIBacktester.utils.showNotification("Data cache cleared", "info");
-    }
-
-    /**
-     * Get failed stocks report
-     * @returns {Object} Report of failed stocks with reasons
-     */
-    function getFailedStocksReport() {
-        const failed = Array.from(failedStocks.entries()).map(([symbol, info]) => ({
-            symbol,
-            ...info
-        }));
-
-        return {
-            count: failed.length,
-            stocks: failed,
-            blocklisted: Array.from(STOCK_BLOCKLIST),
-            summary: {
-                blocklisted: Array.from(STOCK_BLOCKLIST).length,
-                failed_500: failed.filter(s => s.error.includes('500')).length,
-                failed_other: failed.filter(s => !s.error.includes('500') && s.error !== 'BLOCKLISTED').length
-            }
-        };
-    }
-
-    /**
-     * Clear failed stocks tracking
-     */
-    function clearFailedStocks() {
-        failedStocks.clear();
-    }
-
-    /**
-     * Add stock to blocklist
-     * @param {string} symbol - Stock symbol to add
-     */
-    function addToBlocklist(symbol) {
-        STOCK_BLOCKLIST.add(symbol);
-    }
-
-    /**
-     * Remove stock from blocklist
-     * @param {string} symbol - Stock symbol to remove
-     */
-    function removeFromBlocklist(symbol) {
-        STOCK_BLOCKLIST.delete(symbol);
-    }
-
-    /**
-     * Validate a stock symbol by attempting to fetch a quote
-     * @param {string} symbol - Stock symbol to validate
-     * @returns {Promise<Object>} Validation result with isValid and error info
-     */
-    async function validateStockSymbol(symbol) {
-        try {
-            const proxyUrl = `/yahoo/quote?symbol=${encodeURIComponent(symbol)}`;
-
-            // Use AbortManager for cancellable requests
-            const operationId = `validate-symbol-${symbol}`;
-            const response = typeof AbortManager !== 'undefined'
-                ? await AbortManager.fetch(operationId, proxyUrl, {}, 45000) // 45s timeout to match server
-                : await fetch(proxyUrl);
-
-            if (response.ok) {
-                const data = await response.json();
-                return {
-                    isValid: true,
-                    symbol,
-                    data: data.quoteResponse?.result?.[0] || null
-                };
-            } else {
-                return {
-                    isValid: false,
-                    symbol,
-                    error: `HTTP ${response.status}: ${response.statusText}`,
-                    reason: response.status === 500 ? 'likely_delisted' : 'api_error'
-                };
-            }
-        } catch (error) {
-            return {
-                isValid: false,
-                symbol,
-                error: error.message,
-                reason: 'network_error'
-            };
-        }
-    }
-
-    /**
-     * Attempt to find alternative symbols for a failed stock
-     * @param {Object} stock - Stock object with name and symbol
-     * @returns {Promise<Array>} Array of potential alternative symbols
-     */
-    async function findAlternativeSymbols(stock) {
-        const alternatives = [];
-        const baseName = stock.name.toLowerCase();
-
-        // Known symbol mappings for common renamings/mergers
-        const symbolMappings = {
-            // All problematic stocks have been removed from source data
-            // This mapping system is maintained for future symbol changes or alternatives
-
-            // Example format for future use:
-            // 'old company name': ['NEW.SYMBOL'], // Alternative or updated symbol
-        };
-
-        const mapping = symbolMappings[baseName];
-        if (mapping) {
-            for (const altSymbol of mapping) {
-                const validation = await validateStockSymbol(altSymbol);
-                if (validation.isValid) {
-                    alternatives.push({
-                        symbol: altSymbol,
-                        reason: 'Known alternative symbol',
-                        confidence: 'high'
-                    });
-                }
-            }
-        }
-
-        return alternatives;
-    }
-
-    /**
-     * Check and update problematic stocks in stock lists
-     * @param {Array} stockList - List of stocks to check
-     * @returns {Promise<Object>} Report of validation results
-     */
-    async function validateStockList(stockList) {
-        const results = {
-            valid: [],
-            invalid: [],
-            alternatives: [],
-            total: stockList.length
-        };
-
-        for (const stock of stockList.slice(0, 10)) { // Limit to first 10 for testing
-            const validation = await validateStockSymbol(stock.symbol);
-
-            if (validation.isValid) {
-                results.valid.push({ stock, validation });
-            } else {
-                results.invalid.push({ stock, validation });
-
-                // Try to find alternatives for invalid stocks
-                const alternatives = await findAlternativeSymbols(stock);
-                if (alternatives.length > 0) {
-                    results.alternatives.push({ stock, alternatives });
-                }
-            }
-
-            // Add delay to avoid overwhelming the API
-            await new Promise(resolve => setTimeout(resolve, 200));
-        }
-
-        return results;
-    }
-
-    /**
-     * Console helper function for debugging stock issues
-     * Available globally as DTIData.debugStocks()
-     */
-    function debugStocks() {
-
-        // Show failed stocks report
-        const failedReport = getFailedStocksReport();
-
-        if (failedReport.stocks.length > 0) {
-            failedReport.stocks.slice(0, 10).forEach(stock => {
-            });
-        }
-
-
-    }
-
-    /**
-     * Export current configuration for backup/sharing
-     */
-    function exportConfiguration() {
-        return {
-            timestamp: new Date().toISOString(),
-            blocklist: Array.from(STOCK_BLOCKLIST),
-            failedStocks: Array.from(failedStocks.entries()),
-            version: '1.0'
-        };
-    }
-
-    /**
-     * Import configuration from backup
-     * @param {Object} config - Configuration object from exportConfiguration()
-     */
-    function importConfiguration(config) {
-        if (config.blocklist) {
-            config.blocklist.forEach(symbol => STOCK_BLOCKLIST.add(symbol));
-        }
-
-        if (config.failedStocks) {
-            config.failedStocks.forEach(([symbol, info]) => failedStocks.set(symbol, info));
-        }
-    }
-
-    // Return public API
+    // Return public API: the Positions chart dialog (positions-page.js) uses both
     return {
         fetchStockData,
-	fetchCurrentQuote,
-        arrayToCSV,
-        processStockCSV,
-        clearDataCache,
-        getFailedStocksReport,
-        clearFailedStocks,
-        addToBlocklist,
-        removeFromBlocklist,
-        validateStockSymbol,
-        findAlternativeSymbols,
-        validateStockList,
-        debugStocks,
-        exportConfiguration,
-        importConfiguration
+        processStockCSV
     };
 })();
 

@@ -636,40 +636,6 @@
   ]
  },
  {
-  "route": "GET /yahoo/quote",
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401,
-    "note": "signed in only since I24: the exit monitor reads Yahoo in process (lib/shared/yahoo-client.js)"
-   },
-   {
-    "as": "anon",
-    "path": "/yahoo/quote?symbol=HARNESS.L",
-    "status": 401,
-    "check": "json"
-   },
-   {
-    "as": "user",
-    "status": 400,
-    "note": "no ?symbol"
-   },
-   {
-    "as": "user",
-    "path": "/yahoo/quote?symbol=HARNESSP.L",
-    "status": 200,
-    "check": "object",
-    "note": "Yahoo chart JSON from the harness fixture"
-   },
-   {
-    "as": "nosub",
-    "path": "/yahoo/quote?symbol=HARNESS.L",
-    "status": 200,
-    "check": "object"
-   }
-  ]
- },
- {
   "route": "POST /api/prices",
   "body": {
    "symbols": [

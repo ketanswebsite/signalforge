@@ -39,43 +39,6 @@ function formatChartPrice(value, symbolOrMarket) {
 
 // Create DTIUI module
 const DTIUI = (function() {
-    /**
-     * Calculate win rates for all stocks based on historical trades
-     * @returns {Object} - Object mapping stock symbols to win rates
-     */
-    function calculateStockWinRates() {
-        const winRates = {};
-        
-        // Go through allStocksData to calculate win rates
-        if (DTIBacktester.allStocksData && DTIBacktester.allStocksData.length > 0) {
-            DTIBacktester.allStocksData.forEach(data => {
-                if (data && data.stock && data.trades && data.trades.length > 0) {
-                    const symbol = data.stock.symbol;
-                    const completedTrades = data.trades;
-                    
-                    // Calculate win rate
-                    let winningTrades = 0;
-                    let totalTrades = completedTrades.length;
-                    
-                    if (totalTrades > 0) {
-                        completedTrades.forEach(trade => {
-                            if (trade.plPercent > 0) {
-                                winningTrades++;
-                            }
-                        });
-                        
-                        const winRate = (winningTrades / totalTrades) * 100;
-                        winRates[symbol] = winRate;
-                    } else {
-                        winRates[symbol] = 0;
-                    }
-                }
-            });
-        }
-        
-        return winRates;
-    }
-
     // Initialize module references for delayed loading
     function initializeModules() {
         // Hook into DTIBacktester initialization
@@ -93,18 +56,10 @@ const DTIUI = (function() {
         // Add properties for chart interactivity
         DTIBacktester.tradeData = []; // Stores trade data for interactions
         DTIBacktester.annotations = {}; // Stores chart annotations
-
-        // Initialize parameter change listeners when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            if (typeof DTIUI.Charts !== 'undefined') {
-                DTIUI.Charts.initParameterChangeListeners();
-            }
-        });
     }
 
     // Export public API for core functions
     return {
-        calculateStockWinRates,
         initializeModules
     };
 })();

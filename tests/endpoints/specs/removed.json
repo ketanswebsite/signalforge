@@ -1448,5 +1448,25 @@
     "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
    }
   ]
+ },
+ {
+  "route": "GET /yahoo/quote",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "path": "/yahoo/quote?symbol=HARNESS.L",
+    "status": 302,
+    "check": "redirectLogin",
+    "note": "removed in I17 (the chart stack): no page asked for it once dti-data.js lost fetchCurrentQuote and validateStockSymbol, which nothing called; the server reads Yahoo in process (lib/shared/yahoo-client.js). Not under /api: the page gate sends an anonymous caller to /login."
+   },
+   {
+    "as": "user",
+    "path": "/yahoo/quote?symbol=HARNESSP.L",
+    "status": 404,
+    "check": "json",
+    "note": "signed in: no handler, the 404 fallback answers"
+   }
+  ]
  }
 ]

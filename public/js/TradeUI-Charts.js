@@ -365,10 +365,9 @@ window.TradeUIModules.charts = (function() {
      * Initialize the charts module
      */
     function init() {
-        // Listen for theme changes to re-render charts
-        window.addEventListener('themechange', function() {
-            renderAllCharts();
-        });
+        // The series colours are read from the theme when a chart is drawn, so a theme
+        // toggle draws them again (chart-theme.js repaints axes, legends and tooltips)
+        if (window.ChartTheme) window.ChartTheme.onThemeChange(renderAllCharts);
     }
     
     /**
@@ -813,7 +812,7 @@ window.TradeUIModules.charts = (function() {
                             text: 'Number of trades'
                         },
                         grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
+                            color: themeColors.gridColor
                         },
                         ticks: {
                             stepSize: 1,
@@ -1042,11 +1041,11 @@ window.TradeUIModules.charts = (function() {
             if (val > 0) {
                 // Green gradient for positive values
                 const intensity = Math.min(0.9, 0.4 + (val / maxValue) * 0.5);
-                return `rgba(34, 197, 94, ${intensity})`;
+                return window.ChartTheme.withAlpha(colors.success, intensity);
             } else {
                 // Red gradient for negative values
                 const intensity = Math.min(0.9, 0.4 + (Math.abs(val) / Math.abs(minValue)) * 0.5);
-                return `rgba(220, 38, 38, ${intensity})`;
+                return window.ChartTheme.withAlpha(colors.error, intensity);
             }
         });
 
@@ -1348,8 +1347,8 @@ window.TradeUIModules.charts = (function() {
                         label: 'Trades',
                         data: tradeCountData,
                         type: 'bar',
-                        backgroundColor: 'rgba(168, 162, 158, 0.2)',
-                        borderColor: 'rgba(168, 162, 158, 0.8)',
+                        backgroundColor: window.ChartTheme.withAlpha(colors.textMuted, 0.2),
+                        borderColor: window.ChartTheme.withAlpha(colors.textMuted, 0.8),
                         borderWidth: 1,
                         borderRadius: 4,
                         yAxisID: 'y2',
@@ -1468,7 +1467,7 @@ window.TradeUIModules.charts = (function() {
                         min: -Math.ceil(absMaxPL * 1.1),
                         max: Math.ceil(absMaxPL * 1.1),
                         grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
+                            color: colors.gridColor
                         },
                         border: {
                             dash: [4, 4]
@@ -1775,7 +1774,7 @@ window.TradeUIModules.charts = (function() {
                             }
                         },
                         grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
+                            color: colors.gridColor
                         },
                         ticks: {
                             callback: function(value) {

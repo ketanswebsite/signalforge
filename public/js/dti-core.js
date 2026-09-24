@@ -6,8 +6,6 @@
 // Global state for the application
 const DTIBacktester = {
     // Core state
-    allStocksData: [],
-    activeTradeOpportunities: [],
     currentStockIndex: 'nifty50', // Default to Nifty 50
 
     // Charts

@@ -483,13 +483,17 @@ DTIUI.Controls = (function() {
         if (!annotationText) return;
         
         // Add annotation to chart
-        addChartAnnotation(chart, dataIndex, dateValue, annotationText);
-        
+        const added = addChartAnnotation(chart, dataIndex, dateValue, annotationText);
+
         // Exit annotation mode
         document.body.classList.remove('annotation-mode');
         removeAnnotationListeners();
-        
-        DTIBacktester.utils.showNotification('Annotation added', 'success');
+
+        if (added) {
+            DTIBacktester.utils.showNotification('Annotation added', 'success');
+        } else {
+            DTIBacktester.utils.showNotification('That day has no value to pin a note to', 'info');
+        }
     }
 
     /**
@@ -509,48 +513,32 @@ DTIUI.Controls = (function() {
         
         // Generate unique ID for the annotation
         const id = 'annotation_' + Date.now();
-        
-        // Get y value for positioning
-        const yValue = chart.data.datasets[0].data[dataIndex];
-        
-        // Create annotation object
-        chart.options.plugins.annotation.annotations[id] = {
-            type: 'point',
-            xValue: dateValue,
-            yValue: yValue,
-            backgroundColor: 'rgba(255, 99, 132, 1)',
-            borderColor: 'white',
-            borderWidth: 2,
-            radius: 6,
-            content: text,
-            label: {
-                display: true,
-                content: text,
-                position: 'top',
-                backgroundColor: 'rgba(255, 99, 132, 0.8)',
-                color: 'white',
-                padding: 6,
-                font: {
-                    size: 12,
-                    weight: 'bold'
-                }
-            }
-        };
-        
+
+        // Get y value for positioning. In candlestick mode a point is a candle object: pin the
+        // note to its close (the object itself made every later chart build throw)
+        const point = chart.data.datasets[0].data[dataIndex];
+        const yValue = point !== null && typeof point === 'object' ? point.close : point;
+        if (!Number.isFinite(yValue)) return false;
+
+        // Create annotation object (theme colours, shared with restoreAnnotations)
+        chart.options.plugins.annotation.annotations[id] = DTIUI.Charts.noteAnnotation(dateValue, yValue, text);
+
         // Save annotations for persistence
         if (!DTIBacktester.annotations) {
             DTIBacktester.annotations = {};
         }
-        
+
         DTIBacktester.annotations[id] = {
             chartId: chart.canvas.id,
+            symbol: DTIBacktester.currentStockIndex, // a note belongs to this stock's chart only
             xValue: dateValue,
             yValue: yValue,
             text: text
         };
-        
+
         // Update the chart
         chart.update();
+        return true;
     }
 
     /**
@@ -667,9 +655,10 @@ DTIUI.Controls = (function() {
             exitMarker[exitIndex - startIndex] = prices[exitIndex - startIndex];
         }
         
-        // Create chart
+        // Create chart (colours from the page's theme, like the charts behind it)
         const ctx = document.getElementById('trade-detail-chart').getContext('2d');
-        
+        const colors = window.ChartTheme.colors();
+
         tradeDetailChart = new Chart(ctx, {
             type: 'line',
             data: {
@@ -677,15 +666,15 @@ DTIUI.Controls = (function() {
                 datasets: [{
                     label: 'Price',
                     data: prices,
-                    borderColor: 'rgba(37, 99, 235, 1)',
-                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    borderColor: colors.accent,
+                    backgroundColor: window.ChartTheme.withAlpha(colors.accent, 0.1),
                     borderWidth: 2,
                     fill: true
                 }, {
                     label: 'Entry',
                     data: entryMarker,
-                    backgroundColor: 'rgba(16, 185, 129, 1)',
-                    borderColor: 'white',
+                    backgroundColor: colors.gain,
+                    borderColor: colors.backgroundColor,
                     borderWidth: 2,
                     pointRadius: 6,
                     pointStyle: 'circle',
@@ -693,8 +682,8 @@ DTIUI.Controls = (function() {
                 }, {
                     label: 'Exit',
                     data: exitMarker,
-                    backgroundColor: 'rgba(239, 68, 68, 1)',
-                    borderColor: 'white',
+                    backgroundColor: colors.loss,
+                    borderColor: colors.backgroundColor,
                     borderWidth: 2,
                     pointRadius: 6,
                     pointStyle: 'circle',
@@ -715,9 +704,6 @@ DTIUI.Controls = (function() {
                         }
                     },
                     y: {
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
-                        },
                         ticks: {
                             callback: function(value) {
                                 // Get currency symbol

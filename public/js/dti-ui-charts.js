@@ -9,6 +9,15 @@ DTIUI.Charts = (function() {
     let chartCreationTimer = null;
     let isCreatingCharts = false;
 
+    // Fills under the lines: one theme colour fading towards the axis, as [offset, alpha] stops
+    const PRICE_FADE = [[0, 0.01], [0.3, 0.1], [0.6, 0.18], [1, 0.25]];
+    const DTI_FADE = [[0, 0], [0.5, 0.08], [1, 0.15]];
+
+    function fadeFill(gradient, color, stops) {
+        stops.forEach(([offset, opacity]) => gradient.addColorStop(offset, window.ChartTheme.withAlpha(color, opacity)));
+        return gradient;
+    }
+
     /**
      * Create and update charts with enhanced interactive features
      * @param {Array} dates - Array of date strings
@@ -137,6 +146,12 @@ DTIUI.Charts = (function() {
         console.log('[CHART FIX] Starting chart creation');
         console.log('[CHART FIX] Chart.js version:', Chart.version);
 
+        // Every colour comes from the page's theme (chart-theme.js): the axes, grid, legends
+        // and tooltips through Chart.defaults, the series from these tokens. They are read at
+        // each build, so the Line/Candlestick switch and every reopen follow a theme change.
+        const colors = window.ChartTheme.colors();
+        const alpha = window.ChartTheme.withAlpha;
+
         const daily7DayDTI = sevenDayDTIData.daily7DayDTI;
         
         // Get trades for chart markers
@@ -210,13 +225,42 @@ DTIUI.Charts = (function() {
         if (!DTIBacktester.chartType) {
             DTIBacktester.chartType = 'candlestick';
         }
-        DTIBacktester.hasLoadedOnce = true;
 
         // Add chart type toggle button
         setTimeout(() => {
             addChartTypeToggle();
         }, 100);
         
+        // Each chart's own annotation list, starting with the warm-up box. One list shared
+        // by the three charts put a note pinned to the price chart on the DTI charts too,
+        // at its price
+        const chartAnnotations = () => ({
+            annotations: (warmupInfo && warmupInfo.enabled && warmupInfo.endDate) ? {
+                warmupBox: {
+                    type: 'box',
+                    xMin: 0,
+                    xMax: dates.findIndex(d => new Date(d) >= warmupInfo.endDate),
+                    backgroundColor: alpha(colors.muted, 0.12),
+                    borderColor: alpha(colors.muted, 0.5),
+                    borderWidth: 1,
+                    borderDash: [4, 4],
+                    label: {
+                        display: true,
+                        content: 'Warm-up Period (6 months)',
+                        position: 'start',
+                        // A box's label has no background of its own (the plugin
+                        // forces it transparent): the text sits on the chart
+                        color: colors.textColor,
+                        padding: 6,
+                        font: {
+                            size: 11,
+                            weight: 'bold'
+                        }
+                    }
+                }
+            } : {}
+        });
+
         // Common chart options with enhanced styling and interactive features
         const commonOptions = {
             responsive: true,
@@ -243,7 +287,6 @@ DTIUI.Charts = (function() {
                     ticks: {
                         maxTicksLimit: window.innerWidth <= 768 ? 6 : 10,
                         maxRotation: 0,
-                        color: '#64748b',
                         font: {
                             size: window.innerWidth <= 768 ? 8 : 10,
                             weight: '500'
@@ -256,7 +299,6 @@ DTIUI.Charts = (function() {
                     type: 'linear',
                     position: 'left',
                     grid: {
-                        color: 'rgba(0, 0, 0, 0.03)',
                         drawBorder: false,
                         lineWidth: 1
                     },
@@ -264,7 +306,6 @@ DTIUI.Charts = (function() {
                         display: false
                     },
                     ticks: {
-                        color: '#64748b',
                         font: {
                             size: window.innerWidth <= 768 ? 8 : 10,
                             weight: '500'
@@ -298,8 +339,8 @@ DTIUI.Charts = (function() {
                         mode: 'x',
                         drag: {
                             enabled: true,
-                            backgroundColor: 'rgba(212, 175, 55, 0.2)',
-                            borderColor: 'rgba(212, 175, 55, 0.4)',
+                            backgroundColor: alpha(colors.accent, 0.2),
+                            borderColor: alpha(colors.accent, 0.4),
                             borderWidth: 1
                         }
                     },
@@ -309,9 +350,6 @@ DTIUI.Charts = (function() {
                 },
                 tooltip: {
                     enabled: true,
-                    backgroundColor: 'rgba(17, 24, 39, 0.85)',
-                    titleColor: '#fff',
-                    bodyColor: '#fff',
                     titleFont: {
                         size: 14,
                         weight: 'bold'
@@ -322,7 +360,6 @@ DTIUI.Charts = (function() {
                     padding: 12,
                     cornerRadius: 6,
                     displayColors: true,
-                    borderColor: 'rgba(255, 255, 255, 0.15)',
                     borderWidth: 1,
                     boxPadding: 5,
                     usePointStyle: true,
@@ -479,32 +516,6 @@ DTIUI.Charts = (function() {
                             weight: '500'
                         }
                     }
-                },
-                // Enhanced annotation plugin configuration
-                annotation: {
-                    annotations: (warmupInfo && warmupInfo.enabled && warmupInfo.endDate) ? {
-                        warmupBox: {
-                            type: 'box',
-                            xMin: 0,
-                            xMax: dates.findIndex(d => new Date(d) >= warmupInfo.endDate),
-                            backgroundColor: 'rgba(203, 213, 225, 0.15)',
-                            borderColor: 'rgba(148, 163, 184, 0.5)',
-                            borderWidth: 1,
-                            borderDash: [4, 4],
-                            label: {
-                                display: true,
-                                content: 'Warm-up Period (6 months)',
-                                position: 'start',
-                                backgroundColor: 'rgba(148, 163, 184, 0.7)',
-                                color: '#1e293b',
-                                padding: 6,
-                                font: {
-                                    size: 11,
-                                    weight: 'bold'
-                                }
-                            }
-                        }
-                    } : {}
                 }
             },
             animation: {
@@ -523,12 +534,8 @@ DTIUI.Charts = (function() {
         const priceCtx = priceCanvasElement.getContext('2d');
         
         // Create gradient for price chart fill
-        const priceGradientFill = priceCtx.createLinearGradient(0, 300, 0, 0);
-        priceGradientFill.addColorStop(0, 'rgba(212, 175, 55, 0.01)');
-        priceGradientFill.addColorStop(0.3, 'rgba(212, 175, 55, 0.1)');
-        priceGradientFill.addColorStop(0.6, 'rgba(212, 175, 55, 0.18)');
-        priceGradientFill.addColorStop(1, 'rgba(212, 175, 55, 0.25)');
-        
+        const priceGradientFill = fadeFill(priceCtx.createLinearGradient(0, 300, 0, 0), colors.accent, PRICE_FADE);
+
         // Check if we should use candlestick chart
         const useCandlestick = ohlcData && ohlcData.open && ohlcData.high && ohlcData.low &&
                                ohlcData.open.length === dates.length &&
@@ -568,8 +575,8 @@ DTIUI.Charts = (function() {
                 candleData.push({
                     x: i,
                     y: [bodyBottom, bodyTop],
-                    backgroundColor: close >= open ? 'rgba(34, 197, 94, 0.9)' : 'rgba(239, 68, 68, 0.9)',
-                    borderColor: close >= open ? 'rgba(34, 197, 94, 1)' : 'rgba(239, 68, 68, 1)',
+                    backgroundColor: alpha(close >= open ? colors.gain : colors.loss, 0.9),
+                    borderColor: close >= open ? colors.gain : colors.loss,
                     open: open,
                     close: close,
                     high: high,
@@ -592,7 +599,9 @@ DTIUI.Charts = (function() {
                     order: 1,
                     // The wick plugin reads OHLC from here — per chart, so a
                     // reopened dialog on another stock never uses stale data
-                    _candleSource: candleData
+                    _candleSource: candleData,
+                    // ...and this build's theme colours, for the fill and the wicks
+                    _themeColors: colors
                 });
                 
                 // Add custom plugin to draw wicks
@@ -641,11 +650,7 @@ DTIUI.Charts = (function() {
                             }
 
                             if (started) {
-                                const gradient = ctx.createLinearGradient(0, area.bottom, 0, area.top);
-                                gradient.addColorStop(0, 'rgba(212, 175, 55, 0.01)');
-                                gradient.addColorStop(0.3, 'rgba(212, 175, 55, 0.1)');
-                                gradient.addColorStop(0.6, 'rgba(212, 175, 55, 0.18)');
-                                gradient.addColorStop(1, 'rgba(212, 175, 55, 0.25)');
+                                const gradient = fadeFill(ctx.createLinearGradient(0, area.bottom, 0, area.top), ds._themeColors.accent, PRICE_FADE);
                                 ctx.lineTo(lastX, area.bottom);
                                 ctx.lineTo(firstX, area.bottom);
                                 ctx.closePath();
@@ -674,7 +679,7 @@ DTIUI.Charts = (function() {
                             }
 
                             ctx.save();
-                            ctx.strokeStyle = 'rgba(71, 85, 105, 1)';
+                            ctx.strokeStyle = chart.data.datasets[dsIndex]._themeColors.textColor;
                             ctx.lineWidth = 1;
 
                             meta.data.forEach((bar, index) => {
@@ -717,13 +722,13 @@ DTIUI.Charts = (function() {
             priceDatasets.push({
                 label: 'Price',
                 data: prices,
-                borderColor: 'rgba(212, 175, 55, 1)',
+                borderColor: colors.accent,
                 backgroundColor: priceGradientFill,
                 borderWidth: window.innerWidth <= 768 ? 1.5 : 2.5,
                 pointRadius: 0,
                 pointHoverRadius: window.innerWidth <= 768 ? 4 : 6,
-                pointHoverBackgroundColor: 'rgba(212, 175, 55, 1)',
-                pointHoverBorderColor: 'white',
+                pointHoverBackgroundColor: colors.accent,
+                pointHoverBorderColor: colors.backgroundColor,
                 pointHoverBorderWidth: window.innerWidth <= 768 ? 1 : 2,
                 fill: true,
                 tension: 0.3,
@@ -736,12 +741,12 @@ DTIUI.Charts = (function() {
             label: 'Entry Point',
             type: 'line',
             data: entryMarkers,
-            backgroundColor: 'rgba(16, 185, 129, 1)',
-            borderColor: 'rgba(16, 185, 129, 0)',
+            backgroundColor: colors.gain,
+            borderColor: 'transparent',
             borderWidth: 0,
             pointRadius: window.innerWidth <= 768 ? 6 : 8,
             pointStyle: DTIBacktest.customEntryPointStyle || 'circle',
-            pointBorderColor: 'white',
+            pointBorderColor: colors.backgroundColor,
             pointBorderWidth: window.innerWidth <= 768 ? 2 : 3,
             showLine: false,
             pointHoverRadius: window.innerWidth <= 768 ? 8 : 10,
@@ -750,12 +755,12 @@ DTIUI.Charts = (function() {
             label: 'Exit Point',
             type: 'line',
             data: exitMarkers,
-            backgroundColor: 'rgba(239, 68, 68, 1)',
-            borderColor: 'rgba(239, 68, 68, 0)',
+            backgroundColor: colors.loss,
+            borderColor: 'transparent',
             borderWidth: 0,
             pointRadius: window.innerWidth <= 768 ? 6 : 8,
             pointStyle: DTIBacktest.customExitPointStyle || 'triangle',
-            pointBorderColor: 'white',
+            pointBorderColor: colors.backgroundColor,
             pointBorderWidth: window.innerWidth <= 768 ? 2 : 3,
             showLine: false,
             pointHoverRadius: window.innerWidth <= 768 ? 8 : 10,
@@ -764,12 +769,12 @@ DTIUI.Charts = (function() {
             label: 'Active Entry',
             type: 'line',
             data: activeEntryMarkers,
-            backgroundColor: 'rgba(249, 115, 22, 1)',
-            borderColor: 'rgba(249, 115, 22, 0)',
+            backgroundColor: colors.warn,
+            borderColor: 'transparent',
             borderWidth: 0,
             pointRadius: window.innerWidth <= 768 ? 6 : 8,
             pointStyle: DTIBacktest.customActiveEntryPointStyle || 'rectRounded',
-            pointBorderColor: 'white',
+            pointBorderColor: colors.backgroundColor,
             pointBorderWidth: window.innerWidth <= 768 ? 2 : 3,
             showLine: false,
             pointHoverRadius: window.innerWidth <= 768 ? 8 : 10,
@@ -796,7 +801,6 @@ DTIUI.Charts = (function() {
                     y: {
                         beginAtZero: false,
                         grid: {
-                            color: 'rgba(0, 0, 0, 0.03)',
                             drawBorder: false,
                             lineWidth: 1
                         },
@@ -810,7 +814,6 @@ DTIUI.Charts = (function() {
                                 
                                 return formatChartPrice(value);
                             },
-                            color: '#64748b',
                             font: {
                                 size: window.innerWidth <= 768 ? 8 : 10,
                                 weight: '500'
@@ -828,6 +831,7 @@ DTIUI.Charts = (function() {
                 },
                 plugins: {
                     ...commonOptions.plugins,
+                    annotation: chartAnnotations(),
                     legend: {
                         ...commonOptions.plugins.legend,
                         position: 'top',
@@ -835,7 +839,6 @@ DTIUI.Charts = (function() {
                         labels: {
                             ...commonOptions.plugins.legend.labels,
                             padding: 15,
-                            color: '#334155',
                             usePointStyle: true,
                             pointStyle: 'circle',
                             filter: function(legendItem, chartData) {
@@ -866,11 +869,8 @@ DTIUI.Charts = (function() {
         const dtiCtx = dtiCanvasElement.getContext('2d');
         
         // Create gradient for DTI chart
-        const dtiGradientFill = dtiCtx.createLinearGradient(0, 300, 0, 0);
-        dtiGradientFill.addColorStop(0, 'rgba(139, 92, 246, 0)');
-        dtiGradientFill.addColorStop(0.5, 'rgba(139, 92, 246, 0.08)');
-        dtiGradientFill.addColorStop(1, 'rgba(139, 92, 246, 0.15)');
-        
+        const dtiGradientFill = fadeFill(dtiCtx.createLinearGradient(0, 300, 0, 0), colors.info, DTI_FADE);
+
         DTIBacktester.dtiChart = new Chart(dtiCtx, {
             type: 'line',
             data: {
@@ -878,20 +878,20 @@ DTIUI.Charts = (function() {
                 datasets: [{
                     label: 'Daily DTI',
                     data: dti,
-                    borderColor: 'rgba(139, 92, 246, 1)',
+                    borderColor: colors.info,
                     backgroundColor: dtiGradientFill,
                     borderWidth: window.innerWidth <= 768 ? 1.5 : 2.5,
                     pointRadius: 0,
                     pointHoverRadius: window.innerWidth <= 768 ? 4 : 6,
-                    pointHoverBackgroundColor: 'rgba(139, 92, 246, 1)',
-                    pointHoverBorderColor: 'white',
+                    pointHoverBackgroundColor: colors.info,
+                    pointHoverBorderColor: colors.backgroundColor,
                     pointHoverBorderWidth: window.innerWidth <= 768 ? 1 : 2,
                     fill: true,
                     tension: 0.3
                 }, {
                     label: 'Zero Line',
                     data: zeroLine,
-                    borderColor: 'rgba(14, 165, 233, 0.7)',
+                    borderColor: alpha(colors.muted, 0.8),
                     borderWidth: window.innerWidth <= 768 ? 1 : 1.5,
                     borderDash: [5, 5],
                     pointRadius: 0,
@@ -899,7 +899,7 @@ DTIUI.Charts = (function() {
                 }, {
                     label: 'Entry Threshold',
                     data: entryThresholdLine,
-                    borderColor: 'rgba(245, 158, 11, 0.7)',
+                    borderColor: alpha(colors.warn, 0.7),
                     borderWidth: window.innerWidth <= 768 ? 1 : 1.5,
                     borderDash: [3, 3],
                     pointRadius: 0,
@@ -908,11 +908,14 @@ DTIUI.Charts = (function() {
             },
             options: {
                 ...commonOptions,
+                plugins: {
+                    ...commonOptions.plugins,
+                    annotation: chartAnnotations()
+                },
                 scales: {
                     ...commonOptions.scales,
                     y: {
                         grid: {
-                            color: 'rgba(0, 0, 0, 0.03)',
                             drawBorder: false,
                             lineWidth: 1
                         },
@@ -923,7 +926,6 @@ DTIUI.Charts = (function() {
                             callback: function(value) {
                                 return value.toFixed(0);
                             },
-                            color: '#64748b',
                             font: {
                                 size: 10,
                                 weight: '500'
@@ -945,11 +947,8 @@ DTIUI.Charts = (function() {
         const sevenDayDTICtx = weeklyCanvasElement.getContext('2d');
         
         // Create gradient for 7-day DTI chart
-        const sevenDayDTIGradientFill = sevenDayDTICtx.createLinearGradient(0, 300, 0, 0);
-        sevenDayDTIGradientFill.addColorStop(0, 'rgba(14, 165, 233, 0)');
-        sevenDayDTIGradientFill.addColorStop(0.5, 'rgba(14, 165, 233, 0.08)');
-        sevenDayDTIGradientFill.addColorStop(1, 'rgba(14, 165, 233, 0.15)');
-        
+        const sevenDayDTIGradientFill = fadeFill(sevenDayDTICtx.createLinearGradient(0, 300, 0, 0), colors.accent, DTI_FADE);
+
         DTIBacktester.sevenDayDTIChart = new Chart(sevenDayDTICtx, {
             type: 'line',
             data: {
@@ -957,20 +956,20 @@ DTIUI.Charts = (function() {
                 datasets: [{
                     label: '7-Day DTI',
                     data: daily7DayDTI,
-                    borderColor: 'rgba(14, 165, 233, 1)',
+                    borderColor: colors.accent,
                     backgroundColor: sevenDayDTIGradientFill,
                     borderWidth: window.innerWidth <= 768 ? 1.5 : 2.5,
                     pointRadius: 0,
                     pointHoverRadius: window.innerWidth <= 768 ? 4 : 6,
-                    pointHoverBackgroundColor: 'rgba(14, 165, 233, 1)',
-                    pointHoverBorderColor: 'white',
+                    pointHoverBackgroundColor: colors.accent,
+                    pointHoverBorderColor: colors.backgroundColor,
                     pointHoverBorderWidth: window.innerWidth <= 768 ? 1 : 2,
                     fill: true,
                     stepped: 'middle'  // Enhanced step visualization
                 }, {
                     label: 'Zero Line',
                     data: zeroLine,
-                    borderColor: 'rgba(16, 185, 129, 0.7)',
+                    borderColor: alpha(colors.muted, 0.8),
                     borderWidth: window.innerWidth <= 768 ? 1 : 1.5,
                     borderDash: [5, 5],
                     pointRadius: 0,
@@ -978,7 +977,7 @@ DTIUI.Charts = (function() {
                 }, {
                     label: 'Entry Threshold',
                     data: entryThresholdLine,
-                    borderColor: 'rgba(245, 158, 11, 0.7)',
+                    borderColor: alpha(colors.warn, 0.7),
                     borderWidth: window.innerWidth <= 768 ? 1 : 1.5,
                     borderDash: [3, 3],
                     pointRadius: 0,
@@ -987,11 +986,14 @@ DTIUI.Charts = (function() {
             },
             options: {
                 ...commonOptions,
+                plugins: {
+                    ...commonOptions.plugins,
+                    annotation: chartAnnotations()
+                },
                 scales: {
                     ...commonOptions.scales,
                     y: {
                         grid: {
-                            color: 'rgba(0, 0, 0, 0.03)',
                             drawBorder: false,
                             lineWidth: 1
                         },
@@ -1002,7 +1004,6 @@ DTIUI.Charts = (function() {
                             callback: function(value) {
                                 return value.toFixed(0);
                             },
-                            color: '#64748b',
                             font: {
                                 size: 10,
                                 weight: '500'
@@ -1076,52 +1077,29 @@ DTIUI.Charts = (function() {
      */
     function syncChartsZoom(charts) {
         if (!charts || charts.length <= 1) return;
-        
-        // For each chart, attach zoom and pan events
-        charts.forEach(mainChart => {
-            if (!mainChart || !mainChart.options || !mainChart.options.plugins || !mainChart.options.plugins.zoom) {
+
+        // Follow the chart the plugin zoomed or panned (context.chart). The three charts share
+        // one zoom options object, so callbacks set per chart overwrote each other, and a zoom
+        // on either DTI chart was put back to the price chart's range.
+        const follow = function(context) {
+            const source = context.chart;
+            charts.forEach(otherChart => {
+                if (otherChart && otherChart !== source) {
+                    otherChart.zoomScale('x', {
+                        min: source.scales.x.min,
+                        max: source.scales.x.max
+                    }, 'none');
+                    otherChart.update('none');
+                }
+            });
+        };
+
+        charts.forEach(chart => {
+            if (!chart || !chart.options || !chart.options.plugins || !chart.options.plugins.zoom) {
                 return;
             }
-            
-            // Override the zoom callback to sync all charts
-            const originalZoom = mainChart.options.plugins.zoom.zoom.onZoom;
-            mainChart.options.plugins.zoom.zoom.onZoom = function(context) {
-                if (originalZoom) originalZoom(context);
-                
-                // Get the new scale
-                const newScale = mainChart.scales.x;
-                
-                // Apply the same scale to all other charts
-                charts.forEach(otherChart => {
-                    if (otherChart !== mainChart) {
-                        otherChart.zoomScale('x', {
-                            min: newScale.min,
-                            max: newScale.max
-                        }, 'none');
-                        otherChart.update('none');
-                    }
-                });
-            };
-            
-            // Override the pan callback to sync all charts
-            const originalPan = mainChart.options.plugins.zoom.pan.onPan;
-            mainChart.options.plugins.zoom.pan.onPan = function(context) {
-                if (originalPan) originalPan(context);
-                
-                // Get the new scale
-                const newScale = mainChart.scales.x;
-                
-                // Apply the same scale to all other charts
-                charts.forEach(otherChart => {
-                    if (otherChart !== mainChart) {
-                        otherChart.zoomScale('x', {
-                            min: newScale.min,
-                            max: newScale.max
-                        }, 'none');
-                        otherChart.update('none');
-                    }
-                });
-            };
+            chart.options.plugins.zoom.zoom.onZoom = follow;
+            chart.options.plugins.zoom.pan.onPan = follow;
         });
     }
     
@@ -1179,7 +1157,10 @@ DTIUI.Charts = (function() {
         for (const id in DTIBacktester.annotations) {
             const annotation = DTIBacktester.annotations[id];
             let chart;
-            
+
+            // A note belongs to the stock it was made on, not to every chart with that date
+            if (annotation.symbol !== DTIBacktester.currentStockIndex) continue;
+
             // Find the matching chart
             switch (annotation.chartId) {
                 case 'price-chart':
@@ -1217,133 +1198,43 @@ DTIUI.Charts = (function() {
             }
             
             // Add annotation
-            chart.options.plugins.annotation.annotations[id] = {
-                type: 'point',
-                xValue: annotation.xValue,
-                yValue: annotation.yValue,
-                backgroundColor: 'rgba(255, 99, 132, 1)',
-                borderColor: 'white',
-                borderWidth: 2,
-                radius: 6,
-                content: annotation.text,
-                label: {
-                    display: true,
-                    content: annotation.text,
-                    position: 'top',
-                    backgroundColor: 'rgba(255, 99, 132, 0.8)',
-                    color: 'white',
-                    padding: 6,
-                    font: {
-                        size: 12,
-                        weight: 'bold'
-                    }
-                }
-            };
+            chart.options.plugins.annotation.annotations[id] = noteAnnotation(annotation.xValue, annotation.yValue, annotation.text);
         }
-        
+
         // Update charts
         if (DTIBacktester.priceChart) DTIBacktester.priceChart.update();
         if (DTIBacktester.dtiChart) DTIBacktester.dtiChart.update();
         if (DTIBacktester.sevenDayDTIChart) DTIBacktester.sevenDayDTIChart.update();
     }
-    
-    /**
-     * Update all charts after parameter changes
-     */
-    function updateChartsAfterParameterChange() {
-        // Check if we have charts and data to update
-        if (!DTIBacktester.priceChart || !DTIBacktester.dtiChart || !DTIBacktester.sevenDayDTIChart) {
-            return;
-        }
-        
-        // Get the current data
-        const dates = DTIBacktester.priceChart.data.labels;
-        const prices = DTIBacktester.priceChart.data.datasets[0].data;
-        
-        // Get parameters for DTI calculation
-        const r = parseInt(document.getElementById('r').value);
-        const s = parseInt(document.getElementById('s').value);
-        const u = 5; // Fixed value
-        
-        // Calculate new DTI values
-        const high = prices; // We don't have separate high values, use price as approximation
-        const low = prices;  // We don't have separate low values, use price as approximation
-        const dti = DTIIndicators.calculateDTI(high, low, r, s, u);
-        const sevenDayDTIData = DTIIndicators.calculate7DayDTI(dates, high, low, r, s, u);
-        
-        // Run backtest with new parameters
-        const daily7DayDTI = sevenDayDTIData.daily7DayDTI;
-        const trades = DTIBacktest.backtest(dates, prices, dti, sevenDayDTIData);
-        
-        // Generate new trade markers
-        const {
-            entryMarkers,
-            exitMarkers,
-            activeEntryMarkers,
-            tradeConnections,
-            tradeProfitLoss,
-            tradeMetadata
-        } = DTIBacktest.generateTradeMarkers(dates, prices, trades);
-        
-        // Calculate new threshold line based on the entry threshold parameter
-        const entryThresholdLine = Array(dates.length).fill(parseFloat(document.getElementById('entry-threshold').value));
-        
-        // Update price chart
-        if (DTIBacktester.priceChart) {
-            // Update entry/exit/active markers
-            DTIBacktester.priceChart.data.datasets[1].data = entryMarkers;
-            DTIBacktester.priceChart.data.datasets[2].data = exitMarkers;
-            DTIBacktester.priceChart.data.datasets[3].data = activeEntryMarkers;
-            DTIBacktester.priceChart.update();
-        }
-        
-        // Update DTI chart
-        if (DTIBacktester.dtiChart) {
-            // Update DTI values
-            DTIBacktester.dtiChart.data.datasets[0].data = dti;
-            // Update threshold line
-            DTIBacktester.dtiChart.data.datasets[2].data = entryThresholdLine;
-            DTIBacktester.dtiChart.update();
-        }
-        
-        // Update 7-day DTI chart
-        if (DTIBacktester.sevenDayDTIChart) {
-            // Update 7-day DTI values
-            DTIBacktester.sevenDayDTIChart.data.datasets[0].data = daily7DayDTI;
-            // Update threshold line
-            DTIBacktester.sevenDayDTIChart.data.datasets[2].data = entryThresholdLine;
-            DTIBacktester.sevenDayDTIChart.update();
-        }
-        
-        // Store updated trade data for interactions
-        DTIBacktester.tradeData = trades;
-    }
 
     /**
-     * Initialize parameter change listeners
+     * A note the Annotate button puts on a chart: its text on a label coloured like the
+     * tooltips, with a callout in the theme's accent down to the day it was pinned to.
+     * (A 'point' annotation draws no label in chartjs-plugin-annotation 2.x, so the old
+     * notes showed a dot and never their text.)
      */
-    function initParameterChangeListeners() {
-        // Get all parameter input elements
-        const parameterInputs = document.querySelectorAll('#r, #s, #u, #entry-threshold, #take-profit, #stop-loss, #max-days, #enable-weekly-dti');
-        
-        // Add change event listeners
-        parameterInputs.forEach(input => {
-            input.addEventListener('change', function() {
-                // Validate parameters first
-                const validation = DTIBacktest.validateParameters();
-                if (!validation.isValid) {
-                    // Show error message
-                    DTIBacktester.utils.showNotification('Invalid parameters: ' + validation.errors.join(', '), 'error');
-                    return;
-                }
-                
-                // Update charts with new parameters
-                updateChartsAfterParameterChange();
-                
-                // Show success message
-                DTIBacktester.utils.showNotification('Charts updated with new parameters', 'success');
-            });
-        });
+    function noteAnnotation(xValue, yValue, text) {
+        const colors = window.ChartTheme.colors();
+        return {
+            type: 'label',
+            drawTime: 'afterDraw', // above the candles' wicks
+            xValue: xValue,
+            yValue: yValue,
+            yAdjust: -28,
+            content: text,
+            backgroundColor: colors.tooltipBg,
+            color: colors.tooltipText,
+            padding: 6,
+            font: {
+                size: 12,
+                weight: 'bold'
+            },
+            callout: {
+                display: true,
+                position: 'bottom',
+                borderColor: colors.accent
+            }
+        };
     }
 
     // IMPORTANT: Create these wrapper functions to expose on the DTIUI object
@@ -1436,15 +1327,8 @@ DTIUI.Charts = (function() {
     // Export functions for external use
     return {
         createCharts,
-        updateChartsAfterParameterChange,
-        initParameterChangeListeners,
         restoreAnnotations,
+        noteAnnotation,
         addChartTypeToggle
     };
 })();
-
-// Make chart functions available globally
-window.DTIChartHelpers = {
-    updateChartsAfterParameterChange: DTIUI.Charts.updateChartsAfterParameterChange,
-    initParameterChangeListeners: DTIUI.Charts.initParameterChangeListeners
-};

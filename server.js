@@ -2331,7 +2331,7 @@ app.get('/api/admin/signal-diagnostics', ensureAuthenticatedAPI, async (req, res
 // Yahoo Finance for the signed-in pages: the Positions chart (dti-data.js) and the Simulator
 // (portfolio-simulator.js, portfolio-ui.js). The server's own modules - the scanner, the
 // high-conviction manager, the exit monitor - read Yahoo in process (lib/shared/yahoo-client.js),
-// so these routes no longer answer anonymous callers: signed out, they get 401 like the API.
+// so this route no longer answers anonymous callers: signed out, it gets 401 like the API.
 const YahooClient = require('./lib/shared/yahoo-client');
 
 // Yahoo Finance proxy - Historical data (CSV, through the price-unit and stale-fill repairs)
@@ -2352,21 +2352,6 @@ app.get('/yahoo/history', ensureAuthenticatedAPI, async (req, res) => {
 
     res.set('Content-Type', 'text/csv');
     res.send(history.csv);
-  } catch (error) {
-    res.status(500).send(`Proxy error: ${error.message}`);
-  }
-});
-
-// Yahoo Finance proxy - Quote (the one-day chart, as Yahoo sent it)
-app.get('/yahoo/quote', ensureAuthenticatedAPI, async (req, res) => {
-  try {
-    const { symbol } = req.query;
-
-    if (!symbol) {
-      return res.status(400).send('Symbol is required');
-    }
-
-    res.json(await YahooClient.fetchQuoteChart(symbol));
   } catch (error) {
     res.status(500).send(`Proxy error: ${error.message}`);
   }

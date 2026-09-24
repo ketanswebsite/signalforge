@@ -656,37 +656,6 @@ const DTIBacktest = (function() {
     }
     
     /**
-     * Validate trading parameters
-     * @returns {Object} - Validation results
-     */
-    function validateParameters() {
-        const paramDefinitions = [
-            { id: 'r', name: 'EMA Period (r)', validate: val => !isNaN(val) && val > 0, type: 'positive number' },
-            { id: 's', name: 'EMA Period (s)', validate: val => !isNaN(val) && val > 0, type: 'positive number' },
-            { id: 'u', name: 'EMA Period (u)', validate: val => !isNaN(val) && val > 0, type: 'positive number' },
-            { id: 'entry-threshold', name: 'Entry Threshold', validate: val => !isNaN(val), type: 'number' },
-            { id: 'take-profit', name: 'Take Profit', validate: val => !isNaN(val) && val > 0, type: 'positive number' },
-            { id: 'stop-loss', name: 'Stop Loss', validate: val => !isNaN(val) && val > 0, type: 'positive number' },
-            { id: 'max-days', name: 'Max Holding Period', validate: val => !isNaN(val) && val > 0, type: 'positive number' }
-        ];
-        
-        const errors = [];
-        
-        // Validate each parameter
-        paramDefinitions.forEach(param => {
-            const value = parseFloat(document.getElementById(param.id).value);
-            if (!param.validate(value)) {
-                errors.push(`${param.name} must be a ${param.type}`);
-            }
-        });
-        
-        return {
-            isValid: errors.length === 0,
-            errors
-        };
-    }
-    
-    /**
      * Execute a backtest with specific parameters
      * @param {Array} dates - Array of date strings
      * @param {Array} high - High prices
@@ -822,7 +791,6 @@ const DTIBacktest = (function() {
         customExitPointStyle,
         customActiveEntryPointStyle,
         generateTradeMarkers,
-        validateParameters,
         findOptimalParameters,
         
         // Add getter for warmupInfo

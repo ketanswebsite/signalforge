@@ -13,11 +13,32 @@ const PortfolioCharts = (function() {
     }
 
     let charts = {}; // Store chart instances
+    let lastRender = null; // initializeCharts' arguments, to build the charts again in the other theme
+
+    // The series colours come from the design tokens when a chart is built, so a theme
+    // toggle builds the charts again (chart-theme.js repaints axes, legends and tooltips)
+    if (window.ChartTheme) {
+        window.ChartTheme.onThemeChange(function() {
+            if (lastRender && Object.keys(charts).length) initializeCharts.apply(null, lastRender);
+        });
+    }
+
+    // Each exit-reason slice takes its reason's colour, never its position: the chart
+    // leaves out the reasons with no trades, which shifted a positional list
+    const exitReasonColors = {
+        id: 'exitReasonColors',
+        beforeUpdate: function(chart) {
+            const dataset = chart.data.datasets[0];
+            if (dataset) dataset.backgroundColor = chart.data.labels.map(reason => window.ChartTheme.exitReasonColor(reason));
+        }
+    };
 
     /**
      * Initialize all charts with portfolio data
      */
     function initializeCharts(portfolio, analytics, currency) {
+        lastRender = [portfolio, analytics, currency];
+
         // Destroy existing charts
         destroyAllCharts();
 
@@ -380,7 +401,9 @@ const PortfolioCharts = (function() {
                         }
                     }
                 }
-            }
+            },
+            // Replaces the dataset's colour list with each reason's own colour before every draw
+            plugins: [exitReasonColors]
         });
     }
 
