@@ -113,6 +113,13 @@ const CapitalDisplay = (function() {
 
         const { capital, totals } = capitalData;
 
+        // Only an account on its own trading signals has a paper ledger (a row per market). This threw on every
+        // other account, so the page said "Failed to refresh capital data" every 30 seconds.
+        if (!capital || Object.keys(capital).length === 0) {
+            renderNoLedger();
+            return;
+        }
+
         // Render market cards
         const gridHtml = `
             ${renderMarketCard('India', capital.India, '₹')}
@@ -143,9 +150,36 @@ const CapitalDisplay = (function() {
     }
 
     /**
-     * Render individual market card
+     * No paper ledger (GET /api/portfolio/capital answers capital {}): say why, and where to switch it on
+     */
+    function renderNoLedger() {
+        const make = (tag, className, text) => {
+            const node = document.createElement(tag);
+            if (className) node.className = className;
+            if (text) node.textContent = text;
+            return node;
+        };
+        const empty = make('div', 'sa-empty');
+        const icon = make('div', 'sa-empty__icon');
+        const glyph = make('span', 'material-symbols-rounded', 'account_balance');
+        glyph.setAttribute('aria-hidden', 'true');
+        icon.appendChild(glyph);
+        empty.appendChild(icon);
+        empty.appendChild(make('div', 'sa-empty__title', 'No paper capital yet'));
+        empty.appendChild(make('p', null, 'Switch on your own trading signals on the Scanner, and every GO signal is booked to a paper portfolio of your own, sized to its capital.'));
+        const link = make('a', 'sa-btn sa-btn--sm sa-btn--secondary', 'Open the Scanner');
+        link.href = '/index.html';
+        empty.appendChild(link);
+        // The grid's auto-fit track gives a single item the whole width
+        document.getElementById('capital-grid').replaceChildren(empty);
+        document.getElementById('capital-totals').replaceChildren();
+    }
+
+    /**
+     * Render individual market card (a ledger holds only the markets it trades: none for a missing one)
      */
     function renderMarketCard(marketName, marketData, currencySymbol) {
+        if (!marketData) return '';
         const utilization = (marketData.positions / marketData.maxPositions) * 100;
         const utilizationClass = utilization > 80 ? 'warning' : utilization > 50 ? 'info' : 'success';
 
