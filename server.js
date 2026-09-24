@@ -773,6 +773,17 @@ app.get('/api/ops/exit-checks-stats', async (req, res) => {
       HAVING count(*) > 1
       ORDER BY symbol
     `);
+    // Open positions in a symbol containing "&" (M&M.NS, J&KBANK.NS, ...). The server's own Yahoo calls sent
+    // "?symbol=M&M.NS" unencoded, which parses as "M", so these were priced on another company's chart. Public
+    // tickers and row ids only.
+    const { rows: ampersandOpen } = await pool.query(`
+      SELECT 'trades' AS book, id, symbol, market, entry_price::float AS "entryPrice", auto_added AS automatic
+      FROM trades WHERE status = 'active' AND symbol LIKE '%&%'
+      UNION ALL
+      SELECT 'highConviction', id, symbol, market, entry_price::float, true
+      FROM high_conviction_portfolio WHERE status = 'active' AND symbol LIKE '%&%'
+      ORDER BY 1, 3, 2
+    `);
     // count = duplicated positions; surplusRows = the rows beyond the first of each
     const duplicateSummary = groups => ({
       count: groups.length,
@@ -890,6 +901,7 @@ app.get('/api/ops/exit-checks-stats', async (req, res) => {
         trades: duplicateSummary(tradeDuplicates.map(g => ({ symbol: g.symbol, ids: g.ids.map(Number), automatic: Number(g.automatic) }))),
         highConviction: duplicateSummary(hcDuplicates.map(g => ({ symbol: g.symbol, ids: g.ids.map(Number) })))
       },
+      ampersandOpen: ampersandOpen.map(r => ({ ...r, id: Number(r.id) })),
       closeFailureAlerts,
       tradeExitChecks: tradeChecks
     });
