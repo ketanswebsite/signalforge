@@ -126,7 +126,8 @@ router.post('/create-subscription', ensureAuthenticated, async (req, res) => {
             // Both reach the webhook: the session's on checkout.session.completed, the subscription's on its invoices
             metadata: planMetadata,
             subscription_data: { metadata: planMetadata },
-            success_url: `${origin}/checkout-success.html`,
+            // {CHECKOUT_SESSION_ID} is filled in by Stripe: the receipt page then knows the buyer came back from paying
+            success_url: `${origin}/checkout-success.html?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${origin}/checkout.html?plan=${encodeURIComponent(plan.plan_code)}&cancelled=1`
         });
 

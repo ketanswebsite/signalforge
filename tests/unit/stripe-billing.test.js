@@ -592,7 +592,7 @@ describe('POST /api/stripe/create-subscription: a Stripe Checkout page for the p
             metadata: { plan_code: 'BASIC_UK', billing_period: 'monthly' },
             subscription_data: { metadata: { plan_code: 'BASIC_UK', billing_period: 'monthly' } }
         });
-        expect(params.success_url).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/checkout-success\.html$/);
+        expect(params.success_url).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/checkout-success\.html\?session_id=\{CHECKOUT_SESSION_ID\}$/);
         expect(params.cancel_url).toMatch(/\/checkout\.html\?plan=BASIC_UK&cancelled=1$/);
     });
 

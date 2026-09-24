@@ -22,21 +22,26 @@
 </header>
 
 <main class="sa-page sa-page--narrow cm-narrow">
-    <div class="co-center">
-        <span class="sa-empty__icon"><span class="material-symbols-rounded" aria-hidden="true">check</span></span>
-        <h1 class="cm-page-title">You're on Trader</h1>
-        <p class="cm-mt-6px">A copy of this receipt is on its way to your email.</p>
+    <div class="co-center" aria-live="polite">
+        <span class="sa-empty__icon"><span class="material-symbols-rounded" aria-hidden="true" id="r-icon">hourglass_top</span></span>
+        <h1 class="cm-page-title" id="r-title">Checking your payment</h1>
+        <p class="cm-mt-6px" id="r-lede">One moment.</p>
     </div>
 
-    <div class="sa-receipt" aria-label="Receipt">
-        <div class="sa-receipt__row"><span class="sa-receipt__k">Plan</span><span class="sa-receipt__v" id="r-plan">Trader — monthly</span></div>
-        <div class="sa-receipt__row"><span class="sa-receipt__k">Paid</span><span class="sa-receipt__v" id="r-paid">Today</span></div>
-        <div class="sa-receipt__row"><span class="sa-receipt__k">Payment method</span><span class="sa-receipt__v" id="r-method">Card</span></div>
-        <div class="sa-receipt__row"><span class="sa-receipt__k">Next billing</span><span class="sa-receipt__v" id="r-next">In one month</span></div>
-        <div class="sa-receipt__row sa-receipt__row--total"><span class="sa-receipt__k">Paid today</span><span class="sa-receipt__v" id="r-amount">—</span></div>
+    <div class="sa-receipt" aria-label="Receipt" id="r-receipt" hidden>
+        <div class="sa-receipt__row"><span class="sa-receipt__k">Plan</span><span class="sa-receipt__v" id="r-plan">—</span></div>
+        <div class="sa-receipt__row"><span class="sa-receipt__k">Paid</span><span class="sa-receipt__v" id="r-paid">—</span></div>
+        <div class="sa-receipt__row"><span class="sa-receipt__k">Payment method</span><span class="sa-receipt__v" id="r-method">Card, through Stripe</span></div>
+        <div class="sa-receipt__row"><span class="sa-receipt__k">Next billing</span><span class="sa-receipt__v" id="r-next">—</span></div>
+        <div class="sa-receipt__row sa-receipt__row--total"><span class="sa-receipt__k">Amount paid</span><span class="sa-receipt__v" id="r-amount">—</span></div>
     </div>
 
-    <div class="sa-card cm-mt-4">
+    <div class="sa-row cm-mt-4" id="r-links" hidden>
+        <a class="sa-btn sa-btn--primary" href="/pricing.html"><span class="material-symbols-rounded" aria-hidden="true">sell</span>See the plans</a>
+        <a class="sa-btn sa-btn--secondary" href="/account.html"><span class="material-symbols-rounded" aria-hidden="true">person</span>Your account</a>
+    </div>
+
+    <div class="sa-card cm-mt-4" id="r-next-steps" hidden>
         <h3 class="sa-card__title cm-mb-3">What happens next</h3>
         <div class="sa-stack cm-gap-3">
             <span class="co-next"><span class="material-symbols-rounded" aria-hidden="true">schedule</span>Signals resume with tomorrow's 07:00 UK scan — nothing to set up.</span>
@@ -61,39 +66,72 @@
 </main>
 
 <script>
+// The receipt shows only what the account's own records say. After Stripe's page (?session_id=) the payment
+// can take a moment to be recorded (Stripe's webhook), so the page checks again for a while; opened any other
+// way, an account with no paid plan is told so. Nothing here is example data.
 (async function () {
+    var DATE = { day: 'numeric', month: 'long', year: 'numeric' };
+    var fromStripe = new URLSearchParams(location.search).has('session_id');
+    function $(id) { return document.getElementById(id); }
+    function state(icon, title, lede) {
+        $('r-icon').textContent = icon;
+        $('r-title').textContent = title;
+        $('r-lede').textContent = lede;
+    }
+    function money(amount, currency) {
+        var sym = { GBP: '£', USD: '$', INR: '₹' }[String(currency || '').toUpperCase()];
+        var n = Number(amount);
+        return (sym || '') + n.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + (sym ? '' : ' ' + String(currency || '').toUpperCase());
+    }
+    // Both answers are envelopes: {success, message, data}
+    async function read(url) {
+        var r = await fetch(url);
+        if (r.status === 401) { location.href = '/login.html'; throw new Error('signed out'); }
+        var body = await r.json().catch(function () { return null; });
+        return (r.ok && body && body.data) || null;
+    }
+    // A paid plan in force and the payment that paid for it, or null
+    async function receipt() {
+        var s = await read('/api/user/subscription');
+        var sub = s && s.subscription;
+        if (!sub || sub.status !== 'active') return null;
+        var p = await read('/api/user/payments');
+        var list = (p && p.payments) || [];
+        var paid = list.filter(function (x) { return x.status === 'completed'; })[0];
+        return paid ? { sub: sub, payment: paid } : null;
+    }
+    function show(found) {
+        var sub = found.sub, pay = found.payment;
+        state('check', "You're on " + (sub.plan_name || 'your plan'), 'Your payment went through.');
+        $('r-plan').textContent = (sub.plan_name || 'Plan') + ' — ' + (sub.billing_period || 'monthly');
+        if (pay.payment_date) $('r-paid').textContent = new Date(pay.payment_date).toLocaleDateString('en-GB', DATE);
+        if (sub.subscription_end_date) $('r-next').textContent = new Date(sub.subscription_end_date).toLocaleDateString('en-GB', DATE);
+        if (pay.amount != null) $('r-amount').textContent = money(pay.amount, pay.currency);
+        $('r-receipt').hidden = false;
+        $('r-next-steps').hidden = false;
+        $('r-links').hidden = true;
+    }
     try {
-        var d = new Date();
-        document.getElementById('r-paid').textContent = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-        var nb = new Date(d); nb.setMonth(nb.getMonth() + 1);
-        document.getElementById('r-next').textContent = nb.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-
-        // Both answers are envelopes: {success, message, data}
-        var pr = await fetch('/api/user/payments');
-        if (pr.ok) {
-            var pays = await pr.json();
-            var list = pays && pays.data && pays.data.payments;
-            if (Array.isArray(list) && list.length) {
-                var p = list[0];
-                var sym = { GBP: '£', USD: '$', INR: '₹' }[(p.currency || '').toUpperCase()] || '';
-                if (p.amount != null) document.getElementById('r-amount').textContent = sym + Number(p.amount).toLocaleString();
-                if (p.card_brand || p.cardBrand) document.getElementById('r-method').textContent = (p.card_brand || p.cardBrand) + (p.card_last4 || p.cardLast4 ? ' ···· ' + (p.card_last4 || p.cardLast4) : '');
-            }
+        var found = await receipt();
+        if (found) return show(found);
+        if (!fromStripe) {
+            state('receipt_long', 'No paid plan on this account', 'This page shows your receipt once a plan is paid for.');
+            $('r-links').hidden = false;
+            return;
         }
-        var sr = await fetch('/api/user/subscription');
-        if (sr.ok) {
-            var s = await sr.json();
-            var sub = (s && s.data && s.data.subscription) || {};
-            // A receipt names the paid plan in force, with its billing period and paid-up date, never the free trial
-            // it follows (until Stripe's webhook has recorded the payment, the text above stays)
-            if (sub.status === 'active' && sub.plan_name) {
-                document.getElementById('r-plan').textContent = sub.plan_name + ' — ' + (sub.billing_period || 'monthly');
-                if (sub.subscription_end_date) {
-                    document.getElementById('r-next').textContent = new Date(sub.subscription_end_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-                }
-            }
+        state('hourglass_top', 'Confirming your payment', 'Stripe has sent you back here. The payment usually shows within a minute; this page checks again every few seconds.');
+        for (var i = 0; i < 30; i++) {
+            await new Promise(function (resolve) { setTimeout(resolve, 3000); });
+            found = await receipt();
+            if (found) return show(found);
         }
-    } catch (e) { /* receipt falls back to static text */ }
+        state('hourglass_top', 'Still confirming your payment', 'Nothing more to do: your plan starts as soon as Stripe confirms the payment. Your account page shows it then.');
+        $('r-links').hidden = false;
+    } catch (e) {
+        if (e && e.message === 'signed out') return;
+        state('error', 'The receipt could not load', 'Your account page shows your plan and payments.');
+        $('r-links').hidden = false;
+    }
 })();
 </script>
 
