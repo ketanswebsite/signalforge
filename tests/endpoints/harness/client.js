@@ -2,9 +2,10 @@
  * Endpoint harness - HTTP client for the specs.
  *   const h = require('./harness/client');
  *   const r = await h.request('user', 'GET', '/api/trades');   // -> { status, headers, text, json }
- * Personas: 'anon' (no session), 'token' (anonymous + x-analysis-token header), or any key of
- * state.personas ('user', 'nosub', 'admin', ...). A named persona signs in once through the
- * preload's /__harness/login and keeps its session cookie.
+ * Personas: 'anon' (no session), 'token' (anonymous + the full ops token, ANALYSIS_API_TOKEN, in the
+ * x-analysis-token header), 'readtoken' (anonymous + the read-only ops token, ANALYSIS_READ_TOKEN, in the
+ * same header), or any key of state.personas ('user', 'nosub', 'admin', ...). A named persona signs in
+ * once through the preload's /__harness/login and keeps its session cookie.
  */
 'use strict';
 
@@ -63,6 +64,7 @@ async function request(persona, method, path, opts = {}) {
   const headers = { ...(opts.headers || {}) };
   let cookie;
   if (persona === 'token') headers['x-analysis-token'] = getState().token;
+  else if (persona === 'readtoken') headers['x-analysis-token'] = getState().readToken;
   else if (persona !== 'anon') cookie = await login(persona);
   return raw(method, path, { ...opts, headers, cookie });
 }

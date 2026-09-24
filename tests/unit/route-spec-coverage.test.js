@@ -75,7 +75,7 @@ describe('route-spec coverage', () => {
     });
 
     test('every spec case has a persona and an expected status; bug cases say why', () => {
-        const personas = ['anon', 'token', 'user', 'nosub', 'admin', 'trial', 'delete', 'victim', 'logout'];
+        const personas = ['anon', 'token', 'readtoken', 'user', 'nosub', 'admin', 'trial', 'delete', 'victim', 'logout'];
         for (const s of specs) {
             expect(Array.isArray(s.cases) && s.cases.length > 0).toBe(true);
             for (const c of s.cases) {

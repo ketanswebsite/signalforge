@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 
 // Import middleware
-const { ensureAdminAPI } = require('../middleware/admin-auth');
+const { ensureAdminAPI, isAdmin } = require('../middleware/admin-auth');
 
 const {
   adminErrorHandler,
@@ -188,11 +188,10 @@ router.get('/users', asyncHandler(async (req, res) => {
   `, [...params, limit, offset]);
 
   // Summarise what each user can actually use — shown in User Management
-  const ADMIN_EMAIL_ACCESS = process.env.ADMIN_EMAIL || 'ketanjoshisahs@gmail.com';
   const shortDate = d => d ? require('../lib/shared/date-format').formatDateDDMMYYYY(d) : null;
   const withAccess = usersResult.rows.map(row => {
     let access;
-    if (row.email === ADMIN_EMAIL_ACCESS) {
+    if (isAdmin(row.email)) {
       access = { level: 'admin', label: 'Admin', detail: 'Every feature, every market' };
     } else if (row.is_complimentary && (!row.complimentary_until || new Date(row.complimentary_until) > new Date())) {
       access = {

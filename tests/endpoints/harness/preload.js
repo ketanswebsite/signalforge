@@ -5,7 +5,7 @@
  * of the commit under test. It guarantees:
  *   1. The environment is the harness one, or it refuses to start (exit 97): a local sf_harness_* database,
  *      no bot token, Gemini, Stripe or VAPID keys, AUTO_EXECUTE=false, CONVICTION_SWEEP=false, no .env in cwd,
- *      not production.
+ *      not production, and ADMIN_EMAIL a harness persona (.invalid), so the admin is never a real account.
  *   2. node-cron is inert: every schedule() returns a no-op task, so no job ever fires. That includes the
  *      every-minute exit monitor, the 7 AM scan and the monthly sweep.
  *   3. Egress guard: any TCP connect to a host other than loopback is refused and counted. Unix sockets are
@@ -40,6 +40,7 @@ for (const k of ['TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID', 'GEMINI_API_KEY', 'ST
 }
 if (process.env.AUTO_EXECUTE !== 'false') fatal('AUTO_EXECUTE must be false');
 if (process.env.CONVICTION_SWEEP !== 'false') fatal('CONVICTION_SWEEP must be false');
+if (!/^[^@\s]+@[^@\s]+\.invalid$/.test(process.env.ADMIN_EMAIL || '')) fatal('ADMIN_EMAIL must be a harness persona on the .invalid TLD');
 const port = String(process.env.PORT || '');
 if (process.env.BASE_URL !== 'http://127.0.0.1:' + port) fatal('BASE_URL must be http://127.0.0.1:$PORT');
 

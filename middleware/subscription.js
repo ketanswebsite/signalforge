@@ -1,4 +1,5 @@
 const TradeDB = require('../database-postgres');
+const { isAdmin } = require('../config/admin');
 
 // The app's one database pool (database-postgres.js), null when DATABASE_URL is unset. This
 // module used to open a pool of its own.
@@ -204,8 +205,7 @@ function ensureSubscriptionActive(req, res, next) {
   }
 
   // Admin bypass - admin always has access
-  const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'ketanjoshisahs@gmail.com';
-  if (req.user.email === ADMIN_EMAIL) {
+  if (isAdmin(req.user.email)) {
     req.subscription = {
       status: 'admin',
       isActive: true,

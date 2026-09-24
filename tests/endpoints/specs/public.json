@@ -15,6 +15,12 @@
     "note": "the ops token is not a session"
    },
    {
+    "as": "readtoken",
+    "status": 200,
+    "check": "html",
+    "note": "the read token is not a session"
+   },
+   {
     "as": "nosub",
     "status": 302,
     "note": "already signed in -> redirect to /"
@@ -82,6 +88,12 @@
     "check": "authenticatedFalse"
    },
    {
+    "as": "readtoken",
+    "status": 200,
+    "check": "authenticatedFalse",
+    "note": "the read token is not a session"
+   },
+   {
     "as": "nosub",
     "status": 200,
     "check": "authenticatedTrue"
@@ -116,6 +128,11 @@
    {
     "as": "token",
     "status": 403
+   },
+   {
+    "as": "readtoken",
+    "status": 403,
+    "note": "the read token is not a session"
    },
    {
     "as": "user",
@@ -155,6 +172,12 @@
     "as": "token",
     "status": 200,
     "check": "authenticatedFalse"
+   },
+   {
+    "as": "readtoken",
+    "status": 200,
+    "check": "authenticatedFalse",
+    "note": "the read token is not a session"
    },
    {
     "as": "nosub",
@@ -209,6 +232,24 @@
     "as": "token",
     "status": 200,
     "check": "object"
+   },
+   {
+    "as": "readtoken",
+    "status": 401,
+    "note": "the AI routine feed is not an ops probe: the full token only, never the read token"
+   },
+   {
+    "as": "anon",
+    "path": "/api/signals/screened-today?token={fullToken}",
+    "status": 200,
+    "check": "object",
+    "note": "legacy: the full token in the URL still works here until the routine sends the header"
+   },
+   {
+    "as": "anon",
+    "path": "/api/signals/screened-today?token={readToken}",
+    "status": 401,
+    "note": "the read token is never read from the URL"
    }
   ]
  },
@@ -232,6 +273,11 @@
    {
     "as": "user",
     "status": 401
+   },
+   {
+    "as": "readtoken",
+    "status": 401,
+    "note": "the read token never starts a scan (refused by the guard; the handler never runs)"
    }
   ]
  },
@@ -255,6 +301,11 @@
    {
     "as": "user",
     "status": 401
+   },
+   {
+    "as": "readtoken",
+    "status": 401,
+    "note": "never a POST: this route starts the AI sweep. Refused by the guard; the handler never runs"
    }
   ]
  },
@@ -304,6 +355,31 @@
     "status": 200,
     "check": "object",
     "note": "Fixed in IV: an impossible day is ignored, like a malformed one."
+   },
+   {
+    "as": "readtoken",
+    "status": 200,
+    "check": "object",
+    "note": "read-only probe: the read token opens it (header)"
+   },
+   {
+    "as": "readtoken",
+    "path": "/api/ops/conviction-stats?days=7&day=2026-01-01",
+    "status": 200,
+    "check": "object"
+   },
+   {
+    "as": "anon",
+    "path": "/api/ops/conviction-stats?token={fullToken}",
+    "status": 200,
+    "check": "object",
+    "note": "legacy: the full token in the URL still works here until the owner's routine sends the header"
+   },
+   {
+    "as": "anon",
+    "path": "/api/ops/conviction-stats?token={readToken}",
+    "status": 401,
+    "note": "the read token is never read from the URL"
    }
   ]
  },
@@ -327,6 +403,11 @@
    {
     "as": "user",
     "status": 401
+   },
+   {
+    "as": "readtoken",
+    "status": 401,
+    "note": "never a POST: this route deletes a day's bookings. Refused by the guard; the handler never runs"
    }
   ]
  },
@@ -354,8 +435,27 @@
    {
     "as": "token",
     "status": 200,
-    "check": "commitSha",
-    "note": "commit is null outside Render (no RENDER_GIT_COMMIT)"
+    "check": "versionProbe",
+    "note": "commit is null outside Render (no RENDER_GIT_COMMIT); adminEmailConfigured is true (the harness sets ADMIN_EMAIL) and the answer never holds the address"
+   },
+   {
+    "as": "readtoken",
+    "status": 200,
+    "check": "versionProbe",
+    "note": "read-only probe: the read token opens it (header)"
+   },
+   {
+    "as": "anon",
+    "path": "/api/ops/version?token={fullToken}",
+    "status": 200,
+    "check": "versionProbe",
+    "note": "legacy: the full token in the URL still works here until the owner's routine sends the header"
+   },
+   {
+    "as": "anon",
+    "path": "/api/ops/version?token={readToken}",
+    "status": 401,
+    "note": "the read token is never read from the URL"
    }
   ]
  },
@@ -385,6 +485,24 @@
     "status": 200,
     "check": "object",
     "note": "read-only counts; the harness server has the Postgres store, so the table exists and holds the personas' sessions"
+   },
+   {
+    "as": "readtoken",
+    "status": 200,
+    "check": "object",
+    "note": "read-only probe: the read token opens it (header)"
+   },
+   {
+    "as": "anon",
+    "path": "/api/ops/sessions-stats?token={fullToken}",
+    "status": 401,
+    "note": "header only: not even the full token is read from the URL here"
+   },
+   {
+    "as": "anon",
+    "path": "/api/ops/sessions-stats?token={readToken}",
+    "status": 401,
+    "note": "the read token is never read from the URL"
    }
   ]
  },
@@ -427,6 +545,30 @@
     "status": 400,
     "path": "/api/ops/schedule-stats?day=2026-02-30",
     "note": "not a real date"
+   },
+   {
+    "as": "readtoken",
+    "status": 200,
+    "check": "object",
+    "note": "read-only probe: the read token opens it (header)"
+   },
+   {
+    "as": "readtoken",
+    "path": "/api/ops/schedule-stats?day=2026-02-30",
+    "status": 400,
+    "note": "the read token reaches the handler: its own 400 for an impossible date"
+   },
+   {
+    "as": "anon",
+    "path": "/api/ops/schedule-stats?token={fullToken}",
+    "status": 401,
+    "note": "header only: not even the full token is read from the URL here"
+   },
+   {
+    "as": "anon",
+    "path": "/api/ops/schedule-stats?token={readToken}",
+    "status": 401,
+    "note": "the read token is never read from the URL"
    }
   ]
  },
@@ -450,6 +592,25 @@
     "as": "token",
     "status": 200,
     "check": "object"
+   },
+   {
+    "as": "readtoken",
+    "status": 200,
+    "check": "object",
+    "note": "read-only probe: the read token opens it (header)"
+   },
+   {
+    "as": "anon",
+    "path": "/api/ops/alert-prefs-stats?token={fullToken}",
+    "status": 200,
+    "check": "object",
+    "note": "legacy: the full token in the URL still works here until the owner's routine sends the header"
+   },
+   {
+    "as": "anon",
+    "path": "/api/ops/alert-prefs-stats?token={readToken}",
+    "status": 401,
+    "note": "the read token is never read from the URL"
    }
   ]
  },
@@ -474,6 +635,25 @@
     "status": 200,
     "check": "duplicateActive",
     "note": "read-only. The seed holds one duplicate open position (the 'default' user's HARNESSD.L, twice), which duplicateActive.trades must count, and HARNESS.L once each in two users' portfolios, which it must not; the high-conviction book holds HARNESSH.L once"
+   },
+   {
+    "as": "readtoken",
+    "status": 200,
+    "check": "duplicateActive",
+    "note": "read-only probe: the read token opens it (header)"
+   },
+   {
+    "as": "anon",
+    "path": "/api/ops/exit-checks-stats?token={fullToken}",
+    "status": 200,
+    "check": "duplicateActive",
+    "note": "legacy: the full token in the URL still works here until the owner's routine sends the header"
+   },
+   {
+    "as": "anon",
+    "path": "/api/ops/exit-checks-stats?token={readToken}",
+    "status": 401,
+    "note": "the read token is never read from the URL"
    }
   ]
  },
@@ -497,6 +677,11 @@
    {
     "as": "user",
     "status": 401
+   },
+   {
+    "as": "readtoken",
+    "status": 401,
+    "note": "never a POST: this route prunes exit checks. Refused by the guard; the handler never runs"
    }
   ]
  },
@@ -520,6 +705,11 @@
    {
     "as": "user",
     "status": 401
+   },
+   {
+    "as": "readtoken",
+    "status": 401,
+    "note": "never a POST: this route sends the EOD summary. Refused by the guard; the handler never runs"
    }
   ]
  },
@@ -535,6 +725,12 @@
     "as": "token",
     "status": 302,
     "check": "redirectLogin"
+   },
+   {
+    "as": "readtoken",
+    "status": 302,
+    "check": "redirectLogin",
+    "note": "the read token is not a session"
    },
    {
     "as": "nosub",
@@ -609,6 +805,12 @@
     "note": "the ops token is not a session"
    },
    {
+    "as": "readtoken",
+    "path": "/yahoo/history?symbol=HARNESS.L",
+    "status": 401,
+    "note": "the read token is not a session"
+   },
+   {
     "as": "user",
     "status": 400,
     "note": "no ?symbol"
@@ -651,6 +853,11 @@
     "as": "token",
     "status": 401,
     "note": "the ops token does not pass the /api sign-in gate"
+   },
+   {
+    "as": "readtoken",
+    "status": 401,
+    "note": "the read token is not a session"
    },
    {
     "as": "nosub",
@@ -952,6 +1159,12 @@
     "check": "object"
    },
    {
+    "as": "readtoken",
+    "status": 200,
+    "check": "object",
+    "note": "the read token is not a session"
+   },
+   {
     "as": "user",
     "status": 200,
     "check": "object"
@@ -992,6 +1205,12 @@
     "check": "html"
    },
    {
+    "as": "readtoken",
+    "status": 200,
+    "check": "html",
+    "note": "the read token is not a session"
+   },
+   {
     "as": "nosub",
     "status": 302,
     "note": "signed in -> /index.html"
@@ -1020,6 +1239,12 @@
     "status": 302,
     "check": "redirectLogin",
     "note": "the ops token is not a session"
+   },
+   {
+    "as": "readtoken",
+    "status": 302,
+    "check": "redirectLogin",
+    "note": "the read token is not a session"
    },
    {
     "as": "nosub",

@@ -7,7 +7,7 @@
  * routes against Postgres; these tests pin the order of the statements and the rules around them.
  */
 const AccountDeletion = require('../../lib/shared/account-deletion');
-const { ADMIN_EMAILS } = require('../../middleware/admin-auth');
+const { adminEmail } = require('../../config/admin');
 
 /** A pool whose one client records every statement and answers from `answers` */
 function fakePool({ userExists = true, subscriptions = [], payments = [], missingTables = [], failOn = null, rollbackFails = false } = {}) {
@@ -132,7 +132,7 @@ describe('deleteAccount', () => {
 
     test('the admin account is never deleted', async () => {
         const { statements, pool } = fakePool();
-        await expect(AccountDeletion.deleteAccount({ pool, email: ADMIN_EMAILS[0], requestedBy: ADMIN_EMAILS[0], byAdmin: true }))
+        await expect(AccountDeletion.deleteAccount({ pool, email: adminEmail(), requestedBy: adminEmail(), byAdmin: true }))
             .rejects.toThrow('The admin account cannot be deleted');
         expect(statements).toEqual([]);
     });
@@ -145,14 +145,16 @@ describe('isProtectedAccount', () => {
         else process.env.ADMIN_EMAIL = saved;
     });
 
-    test('the admin guard list, in any case, and ADMIN_EMAIL (the house book) are protected', () => {
+    test('the admin (config/admin.js), in any case, is protected: the guard\'s admin and the house book are one account', () => {
         delete process.env.ADMIN_EMAIL;
-        expect(AccountDeletion.isProtectedAccount(ADMIN_EMAILS[0])).toBe(true);
-        expect(AccountDeletion.isProtectedAccount(` ${ADMIN_EMAILS[0].toUpperCase()} `)).toBe(true);
+        const fallback = adminEmail();
+        expect(AccountDeletion.isProtectedAccount(fallback)).toBe(true);
+        expect(AccountDeletion.isProtectedAccount(` ${fallback.toUpperCase()} `)).toBe(true);
         expect(AccountDeletion.isProtectedAccount('someone@e2e.invalid')).toBe(false);
         expect(AccountDeletion.isProtectedAccount(undefined)).toBe(false);
         process.env.ADMIN_EMAIL = 'house@e2e.invalid';
         expect(AccountDeletion.isProtectedAccount('house@e2e.invalid')).toBe(true);
+        expect(AccountDeletion.isProtectedAccount(fallback)).toBe(false);
     });
 });
 

@@ -3,6 +3,10 @@ const path = require('path');
 const session = require('express-session');
 const rateLimit = require('express-rate-limit');
 const Input = require('./lib/shared/input');
+// Who the admin is (ADMIN_EMAIL): AdminIdentity.isAdmin() is the one definition of "admin"
+const AdminIdentity = require('./config/admin');
+// The ops tokens (ANALYSIS_API_TOKEN, and ANALYSIS_READ_TOKEN for the read-only GET /api/ops probes)
+const { requireOpsToken } = require('./lib/shared/ops-auth');
 
 // Load environment variables
 require('dotenv').config();
@@ -111,9 +115,6 @@ const CapitalManager = require('./lib/portfolio/capital-manager');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// Admin email constant
-const ADMIN_EMAIL = 'ketanjoshisahs@gmail.com';
 
 // Load authentication configuration with error handling
 let passport, sessionConfig, ensureAuthenticated, ensureAuthenticatedAPI, authRoutes;
@@ -272,7 +273,7 @@ app.get('/api/auth/status', (req, res) => {
       user: {
         email: req.user.email,
         name: req.user.name,
-        isAdmin: req.user.email === ADMIN_EMAIL
+        isAdmin: AdminIdentity.isAdmin(req.user.email)
       }
     });
   } else {
@@ -285,14 +286,10 @@ app.get('/api/auth/status', (req, res) => {
 // Token-guarded read of today's screened signals — for the external AI-analysis
 // routine (cloud Claude Code). Registered before the blanket /api auth guard:
 // guarded by ANALYSIS_API_TOKEN instead of a Google OAuth session so a
-// headless cloud job can read. Read-only.
-app.get('/api/signals/screened-today', async (req, res) => {
+// headless cloud job can read. Read-only, but not an ops probe: the full token
+// only (header, or ?token= until the routine sends the header), never the read token.
+app.get('/api/signals/screened-today', requireOpsToken({ query: true }), async (req, res) => {
   try {
-    const token = req.query.token || req.get('x-analysis-token');
-    if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
     const today = new Date().toISOString().split('T')[0];
     // All of today's screened signals regardless of status — the AI gate stores
     // non-GO signals as 'dismissed', and the analysis routine should see those
@@ -333,11 +330,7 @@ app.get('/api/signals/screened-today', async (req, res) => {
 // Token-guarded manual scan trigger (ops/testing) — same ANALYSIS_API_TOKEN
 // guard as screened-today. Fire-and-forget: responds immediately, the scan
 // runs in the background and reports through logs/Telegram as usual.
-app.post('/api/scanner/run', (req, res) => {
-  const token = req.query.token || req.get('x-analysis-token');
-  if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+app.post('/api/scanner/run', requireOpsToken({ query: true }), (req, res) => {
   if (!stockScanner) {
     return res.status(503).json({ error: 'Scanner not loaded' });
   }
@@ -358,11 +351,7 @@ app.post('/api/scanner/run', (req, res) => {
 // Manually start (or check on) the monthly AI conviction sweep.
 // Fire-and-forget: responds immediately, the sweep runs in the background;
 // progress via GET /api/ml/conviction/sweep-status.
-app.post('/api/ops/conviction-sweep', async (req, res) => {
-  const token = req.query.token || req.get('x-analysis-token');
-  if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+app.post('/api/ops/conviction-sweep', requireOpsToken({ query: true }), async (req, res) => {
   try {
     const { runConvictionSweep, getSweepStatus } = require('./ml/conviction-sweep');
     const current = getSweepStatus();
@@ -381,11 +370,7 @@ app.post('/api/ops/conviction-sweep', async (req, res) => {
 // universe?": a genuine sweep is a universe-sized spike on one date, verdicts
 // scored on demand are a smear of small counts. ?days=N widens the history;
 // ?day=YYYY-MM-DD adds that date's writes per 10 minutes (how a run ended).
-app.get('/api/ops/conviction-stats', async (req, res) => {
-  const token = req.query.token || req.get('x-analysis-token');
-  if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+app.get('/api/ops/conviction-stats', requireOpsToken({ query: true, read: true }), async (req, res) => {
   try {
     const { getVerdictStats, getSweepStatus } = require('./ml/conviction-sweep');
     const days = Math.min(Math.max(parseInt(req.query.days, 10) || 120, 1), 730);
@@ -397,11 +382,7 @@ app.get('/api/ops/conviction-stats', async (req, res) => {
   }
 });
 
-app.post('/api/ops/reset-day-trades', async (req, res) => {
-  const token = req.query.token || req.get('x-analysis-token');
-  if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+app.post('/api/ops/reset-day-trades', requireOpsToken({ query: true }), async (req, res) => {
   try {
     const date = req.query.date || new Date().toISOString().split('T')[0];
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -466,11 +447,7 @@ app.post('/api/ops/reset-day-trades', async (req, res) => {
 // The computation is CapitalManager.reconcileReport(), which the nightly drift
 // check (lib/portfolio/ledger-drift-check.js, 22:30 UK on weekdays) runs too.
 // That check only reports; `nightlyCheck` in the answer is its last run.
-app.post('/api/ops/reconcile-capital', async (req, res) => {
-  const token = req.query.token || req.get('x-analysis-token');
-  if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+app.post('/api/ops/reconcile-capital', requireOpsToken({ query: true }), async (req, res) => {
   try {
     const apply = req.query.apply === 'true';
 
@@ -504,26 +481,24 @@ app.post('/api/ops/reconcile-capital', async (req, res) => {
 });
 
 // Token-guarded deploy/version probe — Render injects RENDER_GIT_COMMIT, so
-// this answers "which commit is actually live?" after a push.
-app.get('/api/ops/version', (req, res) => {
-  const token = req.query.token || req.get('x-analysis-token');
-  if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+// this answers "which commit is actually live?" after a push. Read-only: the read
+// token opens it too. adminEmailConfigured says whether ADMIN_EMAIL is set (while it
+// is not, config/admin.js falls back to a built-in address), adminEmailMatchesFallback
+// whether it names that same account (then the fallback can go); never the address.
+app.get('/api/ops/version', requireOpsToken({ query: true, read: true }), (req, res) => {
   res.json({
     success: true,
     commit: process.env.RENDER_GIT_COMMIT || null,
     node: process.version,
-    uptimeSeconds: Math.round(process.uptime())
+    uptimeSeconds: Math.round(process.uptime()),
+    adminEmailConfigured: AdminIdentity.adminEmailConfigured(),
+    adminEmailMatchesFallback: AdminIdentity.adminEmailMatchesFallback()
   });
 });
 
 // Token-guarded (header only), READ-ONLY: the Postgres session store at work
 // (lib/shared/pg-session-store.js). Counts only, never a session id or its contents.
-app.get('/api/ops/sessions-stats', async (req, res) => {
-  if (!process.env.ANALYSIS_API_TOKEN || req.get('x-analysis-token') !== process.env.ANALYSIS_API_TOKEN) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+app.get('/api/ops/sessions-stats', requireOpsToken({ read: true }), async (req, res) => {
   const store = authEnabled && sessionConfig && sessionConfig.store ? sessionConfig.store.constructor.name : 'memory';
   try {
     const { rows: [probe] } = await TradeDB.pool.query("SELECT to_regclass('public.user_sessions') IS NOT NULL AS exists");
@@ -542,10 +517,7 @@ app.get('/api/ops/sessions-stats', async (req, res) => {
 // Token-guarded (header only), READ-ONLY: what each scheduled job left in the database on one UK day, so a run
 // can be checked without its logs (the 1 PM executor keeps its log in memory, and a deploy wipes it). Counts and
 // London times only. ?day=YYYY-MM-DD is a UK date; the default is today.
-app.get('/api/ops/schedule-stats', async (req, res) => {
-  if (!process.env.ANALYSIS_API_TOKEN || req.get('x-analysis-token') !== process.env.ANALYSIS_API_TOKEN) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+app.get('/api/ops/schedule-stats', requireOpsToken({ read: true }), async (req, res) => {
   const day = req.query.day === undefined
     ? new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
     : require('./lib/shared/input').isoDate(req.query.day);
@@ -555,7 +527,7 @@ app.get('/api/ops/schedule-stats', async (req, res) => {
   const clock = column => `to_char(${london(column)}, 'YYYY-MM-DD HH24:MI:SS')`;
   const rows = (sql, params = [day]) => TradeDB.pool.query(sql, params).then(result => result.rows);
   // The executor's main pass books the house portfolio under the admin's account ('default' is the pre-2026 owner)
-  const house = [day, process.env.ADMIN_EMAIL || 'ketanjoshisahs@gmail.com'];
+  const house = [day, AdminIdentity.adminEmail()];
   try {
     const [scan, opened, [bookings], closed, [exitChecks], [marketCaps], [highConviction]] = await Promise.all([
       // 7 AM scan: the signals it stored for the day, and what the executor made of them
@@ -600,14 +572,10 @@ app.get('/api/ops/schedule-stats', async (req, res) => {
 // telegram_enabled DEFAULTs false and the page POSTs the whole object, so a
 // stored false is not proof of an opt-out — `audience.masterOff` is how many
 // linked subscribers a naive master-switch check would silence.
-app.get('/api/ops/alert-prefs-stats', async (req, res) => {
-  const token = req.query.token || req.get('x-analysis-token');
-  if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+app.get('/api/ops/alert-prefs-stats', requireOpsToken({ query: true, read: true }), async (req, res) => {
   try {
     const pool = TradeDB.pool;
-    const adminEmail = process.env.ADMIN_EMAIL || 'ketanjoshisahs@gmail.com';
+    const adminEmail = AdminIdentity.adminEmail();
     const toNumbers = (row) => Object.fromEntries(
       Object.entries(row).map(([key, value]) => [key, /^\d+$/.test(String(value)) ? Number(value) : value])
     );
@@ -669,11 +637,7 @@ app.get('/api/ops/alert-prefs-stats', async (req, res) => {
 // the caller. Measures before/after any retention change. It also counts
 // duplicate open positions (duplicateActive), which must read 0 on production
 // before a unique index can make one open row per position a database rule.
-app.get('/api/ops/exit-checks-stats', async (req, res) => {
-  const token = req.query.token || req.get('x-analysis-token');
-  if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+app.get('/api/ops/exit-checks-stats', requireOpsToken({ query: true, read: true }), async (req, res) => {
   try {
     const pool = TradeDB.pool;
 
@@ -813,7 +777,7 @@ app.get('/api/ops/exit-checks-stats', async (req, res) => {
     if (tradeChecks.exists) {
       const { rows: [owner] } = await pool.query(
         'SELECT count(*) AS linked FROM users WHERE email = $1 AND telegram_chat_id IS NOT NULL',
-        [process.env.ADMIN_EMAIL || 'ketanjoshisahs@gmail.com']
+        [AdminIdentity.adminEmail()]
       );
       const { rows: failedCloses } = await pool.query(`
         SELECT c.trade_id, t.symbol, t.market, c.alert_type,
@@ -930,11 +894,7 @@ app.get('/api/ops/exit-checks-stats', async (req, res) => {
 // then prune minute rows older than the window (never alert rows). Pass
 // dryRun=true to only report; EXIT_CHECK_PRUNE=false on the server is the kill
 // switch and turns every run into a dry run.
-app.post('/api/ops/prune-exit-checks', async (req, res) => {
-  const token = req.query.token || req.get('x-analysis-token');
-  if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+app.post('/api/ops/prune-exit-checks', requireOpsToken({ query: true }), async (req, res) => {
   const { pruneExitChecks } = require('./lib/portfolio/exit-check-retention');
   const result = await pruneExitChecks({ dryRun: req.query.dryRun === 'true' });
   res.status(result.error ? 500 : 200).json({ success: !result.error, ...result });
@@ -942,11 +902,7 @@ app.post('/api/ops/prune-exit-checks', async (req, res) => {
 
 // Token-guarded manual EOD-summary trigger (ops/testing) — same job the
 // 7 PM UK cron runs. Fire-and-forget.
-app.post('/api/ops/eod-summary', (req, res) => {
-  const token = req.query.token || req.get('x-analysis-token');
-  if (!process.env.ANALYSIS_API_TOKEN || token !== process.env.ANALYSIS_API_TOKEN) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+app.post('/api/ops/eod-summary', requireOpsToken({ query: true }), (req, res) => {
   const eodSummary = require('./lib/portfolio/eod-summary');
   eodSummary.sendEODSummary()
     .then(r => console.log('[MANUAL EOD] finished:', JSON.stringify(r)))
@@ -1023,7 +979,7 @@ app.get('/admin', ensureAuthenticated, (req, res) => {
   if (process.env.ADMIN_DEV_BYPASS === 'true' && process.env.NODE_ENV !== 'production') {
     return res.sendFile(path.join(__dirname, 'public', 'admin-v2.html'));
   }
-  if (req.user?.email !== ADMIN_EMAIL) {
+  if (!AdminIdentity.isAdmin(req.user?.email)) {
     return res.status(403).send('Access denied. Admin privileges required.');
   }
   res.sendFile(path.join(__dirname, 'public', 'admin-v2.html'));
@@ -1037,7 +993,7 @@ app.get(['/admin-portal', '/admin-v2'], (req, res) => {
 app.get('/api/admin/subscribers', ensureAuthenticatedAPI, async (req, res) => {
   // Check if user is admin (ADMIN_DEV_BYPASS covers local no-auth dev, never production)
   const devBypass = process.env.ADMIN_DEV_BYPASS === 'true' && process.env.NODE_ENV !== 'production';
-  if (!devBypass && (!req.user || req.user.email !== ADMIN_EMAIL)) {
+  if (!devBypass && (!req.user || !AdminIdentity.isAdmin(req.user.email))) {
     return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
   }
 
@@ -1436,7 +1392,7 @@ app.delete('/api/user/delete-account', ensureAuthenticatedAPI, async (req, res) 
 // Admin-only: Manually link Telegram to OAuth user
 app.post('/api/admin/manual-link', ensureAuthenticatedAPI, async (req, res) => {
   // Check if user is admin
-  if (req.user.email !== ADMIN_EMAIL) {
+  if (!AdminIdentity.isAdmin(req.user.email)) {
     return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
   }
 
@@ -1470,7 +1426,7 @@ app.post('/api/admin/manual-link', ensureAuthenticatedAPI, async (req, res) => {
 // Admin-only: Manually unlink Telegram from OAuth user
 app.post('/api/admin/manual-unlink', ensureAuthenticatedAPI, async (req, res) => {
   // Check if user is admin
-  if (req.user.email !== ADMIN_EMAIL) {
+  if (!AdminIdentity.isAdmin(req.user.email)) {
     return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
   }
 
@@ -1495,7 +1451,7 @@ app.post('/api/admin/manual-unlink', ensureAuthenticatedAPI, async (req, res) =>
 // Admin-only: Remove Telegram subscriber completely
 app.post('/api/admin/remove-telegram-user', ensureAuthenticatedAPI, async (req, res) => {
   // Check if user is admin
-  if (req.user.email !== ADMIN_EMAIL) {
+  if (!AdminIdentity.isAdmin(req.user.email)) {
     return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
   }
 
@@ -1561,9 +1517,9 @@ async function autoRecoverUsers() {
       totalRecovered += result.rowCount;
     }
     
-    // 3. Add known admin user if not present
+    // 3. Add known admin user if not present (only when ADMIN_EMAIL names one, as before)
     try {
-      const adminEmail = process.env.ADMIN_EMAIL;
+      const adminEmail = AdminIdentity.adminEmailConfigured() ? AdminIdentity.adminEmail() : null;
       if (adminEmail) {
         await pool.query(`
           INSERT INTO users (email, name, google_id, first_login, last_login, created_at)
@@ -2264,7 +2220,7 @@ app.get('/api/admin/signal-diagnostics', ensureAuthenticatedAPI, async (req, res
     // The house book: the account the 1 PM executor books every signal to (lib/scheduler/trade-executor.js).
     // Without it the capital lookup failed (getPortfolioCapital needs an account), the ledger read as empty
     // and every signal showed MARKET_NOT_FOUND.
-    const houseAccount = process.env.ADMIN_EMAIL || ADMIN_EMAIL;
+    const houseAccount = AdminIdentity.adminEmail();
     const capitalStatus = await CapitalManager.getCapitalStatus(houseAccount);
 
     // Get dismissed signals from today
@@ -2814,7 +2770,7 @@ app.use((req, res, next) => {
   }
   // The admin portal's HTML is admin-only even as a static file
   if (req.path === '/admin-v2.html' || req.path === '/admin.html') {
-    if (req.user?.email === (process.env.ADMIN_EMAIL || 'ketanjoshisahs@gmail.com')) return next();
+    if (AdminIdentity.isAdmin(req.user?.email)) return next();
     return res.redirect('/');
   }
   // All other static files require authentication
@@ -2829,7 +2785,7 @@ app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 
 // Get portfolio status (admin only)
 app.get('/api/portfolio/status', ensureAuthenticatedAPI, async (req, res) => {
-  if (req.user.email !== ADMIN_EMAIL) {
+  if (!AdminIdentity.isAdmin(req.user.email)) {
     return res.status(403).json({ error: 'Admin access required' });
   }
 
@@ -2847,7 +2803,7 @@ app.get('/api/portfolio/status', ensureAuthenticatedAPI, async (req, res) => {
 
 // Get all active high conviction trades
 app.get('/api/portfolio/trades/active', ensureAuthenticatedAPI, async (req, res) => {
-  if (req.user.email !== ADMIN_EMAIL) {
+  if (!AdminIdentity.isAdmin(req.user.email)) {
     return res.status(403).json({ error: 'Admin access required' });
   }
 
@@ -2870,7 +2826,7 @@ function badDateFilter(filters) {
 }
 
 app.get('/api/portfolio/trades/all', ensureAuthenticatedAPI, async (req, res) => {
-  if (req.user.email !== ADMIN_EMAIL) {
+  if (!AdminIdentity.isAdmin(req.user.email)) {
     return res.status(403).json({ error: 'Admin access required' });
   }
 
@@ -2887,7 +2843,7 @@ app.get('/api/portfolio/trades/all', ensureAuthenticatedAPI, async (req, res) =>
 
 // Get P&L summary
 app.get('/api/portfolio/pl-summary', ensureAuthenticatedAPI, async (req, res) => {
-  if (req.user.email !== ADMIN_EMAIL) {
+  if (!AdminIdentity.isAdmin(req.user.email)) {
     return res.status(403).json({ error: 'Admin access required' });
   }
 
@@ -2904,7 +2860,7 @@ app.get('/api/portfolio/pl-summary', ensureAuthenticatedAPI, async (req, res) =>
 
 // Update all active trades (manual trigger)
 app.post('/api/portfolio/update-trades', ensureAuthenticatedAPI, async (req, res) => {
-  if (req.user.email !== ADMIN_EMAIL) {
+  if (!AdminIdentity.isAdmin(req.user.email)) {
     return res.status(403).json({ error: 'Admin access required' });
   }
 
@@ -2922,7 +2878,7 @@ app.post('/api/portfolio/update-trades', ensureAuthenticatedAPI, async (req, res
 
 // Generate and send weekly report (manual trigger)
 app.post('/api/portfolio/send-weekly-report', ensureAuthenticatedAPI, async (req, res) => {
-  if (req.user.email !== ADMIN_EMAIL) {
+  if (!AdminIdentity.isAdmin(req.user.email)) {
     return res.status(403).json({ error: 'Admin access required' });
   }
 
@@ -2940,7 +2896,7 @@ app.post('/api/portfolio/send-weekly-report', ensureAuthenticatedAPI, async (req
 
 // Preview weekly report (without sending)
 app.get('/api/portfolio/preview-report', ensureAuthenticatedAPI, async (req, res) => {
-  if (req.user.email !== ADMIN_EMAIL) {
+  if (!AdminIdentity.isAdmin(req.user.email)) {
     return res.status(403).json({ error: 'Admin access required' });
   }
 
@@ -2958,7 +2914,7 @@ app.get('/api/portfolio/preview-report', ensureAuthenticatedAPI, async (req, res
 
 // Close a specific trade manually
 app.post('/api/portfolio/close-trade/:symbol', ensureAuthenticatedAPI, async (req, res) => {
-  if (req.user.email !== ADMIN_EMAIL) {
+  if (!AdminIdentity.isAdmin(req.user.email)) {
     return res.status(403).json({ error: 'Admin access required' });
   }
 

@@ -547,6 +547,11 @@
     "status": 401
    },
    {
+    "as": "readtoken",
+    "status": 401,
+    "note": "the read token is not a session: 401 at the /api sign-in gate"
+   },
+   {
     "as": "nosub",
     "status": 200,
     "check": "object"
@@ -893,6 +898,11 @@
    {
     "as": "token",
     "status": 401
+   },
+   {
+    "as": "readtoken",
+    "status": 401,
+    "note": "the read token is not a session: 401 at the /api sign-in gate"
    },
    {
     "as": "admin",

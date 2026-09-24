@@ -6,6 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const TradeDB = require('../database-postgres');
+const AdminIdentity = require('../config/admin');
 
 // The app's one database pool (database-postgres.js), null when DATABASE_URL is unset. This
 // router used to open a pool of its own.
@@ -163,9 +164,8 @@ router.get('/user/subscription', ensureAuthenticated, async (req, res) => {
     const userEmail = req.user.email;
     const { getUserSubscriptionStatus } = require('../middleware/subscription');
 
-    // Check if user is admin
-    const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'ketanjoshisahs@gmail.com';
-    const isAdmin = userEmail === ADMIN_EMAIL;
+    // Check if user is admin (the admin guard's own check)
+    const isAdmin = AdminIdentity.isAdmin(userEmail);
 
     const subscription = await getUserSubscriptionStatus(userEmail);
 

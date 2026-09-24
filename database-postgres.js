@@ -1,4 +1,6 @@
 const { Pool } = require('pg');
+// The admin's account (ADMIN_EMAIL, config/admin.js): the one-time data migrations below move rows to it
+const { adminEmail } = require('./config/admin');
 
 // PostgreSQL database connection
 let pool = null;
@@ -517,7 +519,7 @@ async function migrateExistingUsers() {
     `);
     
     for (const row of result.rows) {
-      const userId = row.user_id === 'default' ? 'ketanjoshisahs@gmail.com' : row.user_id;
+      const userId = row.user_id === 'default' ? adminEmail() : row.user_id;
       
       // Check if user already exists in users table
       const existingUser = await pool.query('SELECT email FROM users WHERE email = $1', [userId]);
@@ -549,18 +551,18 @@ async function migrateTradesToPrimaryUser() {
       return;
     }
 
-    // Update all trades from deepak.joshi2898@gmail.com to ketanjoshisahs@gmail.com
+    // Update all trades from deepak.joshi2898@gmail.com to the admin's account
     const result = await pool.query(`
       UPDATE trades
-      SET user_id = 'ketanjoshisahs@gmail.com'
+      SET user_id = $1
       WHERE user_id = 'deepak.joshi2898@gmail.com'
       RETURNING id
-    `);
+    `, [adminEmail()]);
 
     const migratedCount = result.rowCount;
 
     if (migratedCount > 0) {
-      console.log(`✅ Migrated ${migratedCount} trades to primary user (ketanjoshisahs@gmail.com)`);
+      console.log(`✅ Migrated ${migratedCount} trades to the admin's account`);
     }
 
     // Mark migration as applied
@@ -711,11 +713,11 @@ async function syncActivePositions() {
         FROM trades
         WHERE status = 'active'
         AND symbol LIKE '%.NS'
-        AND user_id = 'ketanjoshisahs@gmail.com'
+        AND user_id = $1
       )
       WHERE user_id = 'system' AND market = 'India'
       RETURNING active_positions
-    `);
+    `, [adminEmail()]);
 
     // Update UK market (.L stocks)
     const ukResult = await pool.query(`
@@ -725,11 +727,11 @@ async function syncActivePositions() {
         FROM trades
         WHERE status = 'active'
         AND symbol LIKE '%.L'
-        AND user_id = 'ketanjoshisahs@gmail.com'
+        AND user_id = $1
       )
       WHERE user_id = 'system' AND market = 'UK'
       RETURNING active_positions
-    `);
+    `, [adminEmail()]);
 
     // Update US market (no suffix)
     const usResult = await pool.query(`
@@ -740,11 +742,11 @@ async function syncActivePositions() {
         WHERE status = 'active'
         AND symbol NOT LIKE '%.NS'
         AND symbol NOT LIKE '%.L'
-        AND user_id = 'ketanjoshisahs@gmail.com'
+        AND user_id = $1
       )
       WHERE user_id = 'system' AND market = 'US'
       RETURNING active_positions
-    `);
+    `, [adminEmail()]);
 
     const indiaCount = indiaResult.rows[0]?.active_positions || 0;
     const ukCount = ukResult.rows[0]?.active_positions || 0;
@@ -794,10 +796,10 @@ async function populateInvestmentAmount() {
         updated_at = CURRENT_TIMESTAMP
       WHERE status = 'active'
       AND symbol LIKE '%.NS'
-      AND user_id = 'ketanjoshisahs@gmail.com'
+      AND user_id = $2
       AND investment_amount IS NULL
       RETURNING id
-    `, [tradeSizes.India]);
+    `, [tradeSizes.India, adminEmail()]);
 
     // Update UK market trades (.L stocks)
     const ukResult = await pool.query(`
@@ -808,10 +810,10 @@ async function populateInvestmentAmount() {
         updated_at = CURRENT_TIMESTAMP
       WHERE status = 'active'
       AND symbol LIKE '%.L'
-      AND user_id = 'ketanjoshisahs@gmail.com'
+      AND user_id = $2
       AND investment_amount IS NULL
       RETURNING id
-    `, [tradeSizes.UK]);
+    `, [tradeSizes.UK, adminEmail()]);
 
     // Update US market trades (no suffix)
     const usResult = await pool.query(`
@@ -823,10 +825,10 @@ async function populateInvestmentAmount() {
       WHERE status = 'active'
       AND symbol NOT LIKE '%.NS'
       AND symbol NOT LIKE '%.L'
-      AND user_id = 'ketanjoshisahs@gmail.com'
+      AND user_id = $2
       AND investment_amount IS NULL
       RETURNING id
-    `, [tradeSizes.US]);
+    `, [tradeSizes.US, adminEmail()]);
 
     const indiaCount = indiaResult.rowCount || 0;
     const ukCount = ukResult.rowCount || 0;
@@ -879,7 +881,7 @@ async function backfillAllocatedCapital() {
               WHERE status = 'active'
               AND symbol NOT LIKE '%.NS'
               AND symbol NOT LIKE '%.L'
-              AND user_id = 'ketanjoshisahs@gmail.com'
+              AND user_id = $1
               AND investment_amount IS NOT NULL
             ), 0),
             available_capital = initial_capital + realized_pl - COALESCE((
@@ -888,7 +890,7 @@ async function backfillAllocatedCapital() {
               WHERE status = 'active'
               AND symbol NOT LIKE '%.NS'
               AND symbol NOT LIKE '%.L'
-              AND user_id = 'ketanjoshisahs@gmail.com'
+              AND user_id = $1
               AND investment_amount IS NOT NULL
             ), 0),
             updated_at = CURRENT_TIMESTAMP
@@ -904,7 +906,7 @@ async function backfillAllocatedCapital() {
               FROM trades
               WHERE status = 'active'
               AND symbol LIKE '${market.symbol_pattern}'
-              AND user_id = 'ketanjoshisahs@gmail.com'
+              AND user_id = $1
               AND investment_amount IS NOT NULL
             ), 0),
             available_capital = initial_capital + realized_pl - COALESCE((
@@ -912,7 +914,7 @@ async function backfillAllocatedCapital() {
               FROM trades
               WHERE status = 'active'
               AND symbol LIKE '${market.symbol_pattern}'
-              AND user_id = 'ketanjoshisahs@gmail.com'
+              AND user_id = $1
               AND investment_amount IS NOT NULL
             ), 0),
             updated_at = CURRENT_TIMESTAMP
@@ -921,7 +923,7 @@ async function backfillAllocatedCapital() {
         `;
       }
 
-      await pool.query(query);
+      await pool.query(query, [adminEmail()]);
     }
 
     // Get final values for logging
@@ -980,7 +982,7 @@ async function recalculateAllocatedCapital() {
               WHERE status = 'active'
               AND symbol NOT LIKE '%.NS'
               AND symbol NOT LIKE '%.L'
-              AND user_id = 'ketanjoshisahs@gmail.com'
+              AND user_id = $1
               AND investment_amount IS NOT NULL
             ), 0),
             available_capital = initial_capital + realized_pl - COALESCE((
@@ -989,7 +991,7 @@ async function recalculateAllocatedCapital() {
               WHERE status = 'active'
               AND symbol NOT LIKE '%.NS'
               AND symbol NOT LIKE '%.L'
-              AND user_id = 'ketanjoshisahs@gmail.com'
+              AND user_id = $1
               AND investment_amount IS NOT NULL
             ), 0),
             updated_at = CURRENT_TIMESTAMP
@@ -1005,7 +1007,7 @@ async function recalculateAllocatedCapital() {
               FROM trades
               WHERE status = 'active'
               AND symbol LIKE '${market.symbol_pattern}'
-              AND user_id = 'ketanjoshisahs@gmail.com'
+              AND user_id = $1
               AND investment_amount IS NOT NULL
             ), 0),
             available_capital = initial_capital + realized_pl - COALESCE((
@@ -1013,7 +1015,7 @@ async function recalculateAllocatedCapital() {
               FROM trades
               WHERE status = 'active'
               AND symbol LIKE '${market.symbol_pattern}'
-              AND user_id = 'ketanjoshisahs@gmail.com'
+              AND user_id = $1
               AND investment_amount IS NOT NULL
             ), 0),
             updated_at = CURRENT_TIMESTAMP
@@ -1022,7 +1024,7 @@ async function recalculateAllocatedCapital() {
         `;
       }
 
-      await pool.query(query);
+      await pool.query(query, [adminEmail()]);
     }
 
     // Get final values for logging
@@ -1069,7 +1071,7 @@ async function backfillHistoricalRealizedPL() {
           SELECT COALESCE(SUM(profit_loss), 0)
           FROM trades
           WHERE status = 'closed'
-            AND user_id = 'ketanjoshisahs@gmail.com'
+            AND user_id = $1
             AND symbol NOT LIKE '%.NS'
             AND symbol NOT LIKE '%.L'
             AND profit_loss IS NOT NULL
@@ -1078,7 +1080,7 @@ async function backfillHistoricalRealizedPL() {
           SELECT COALESCE(SUM(profit_loss), 0)
           FROM trades
           WHERE status = 'closed'
-            AND user_id = 'ketanjoshisahs@gmail.com'
+            AND user_id = $1
             AND symbol NOT LIKE '%.NS'
             AND symbol NOT LIKE '%.L'
             AND profit_loss IS NOT NULL
@@ -1086,7 +1088,7 @@ async function backfillHistoricalRealizedPL() {
       updated_at = CURRENT_TIMESTAMP
       WHERE user_id = 'system' AND market = 'US'
       RETURNING realized_pl, available_capital
-    `);
+    `, [adminEmail()]);
 
     // Update India Market (.NS suffix stocks)
     const indiaResult = await pool.query(`
@@ -1095,7 +1097,7 @@ async function backfillHistoricalRealizedPL() {
           SELECT COALESCE(SUM(profit_loss), 0)
           FROM trades
           WHERE status = 'closed'
-            AND user_id = 'ketanjoshisahs@gmail.com'
+            AND user_id = $1
             AND symbol LIKE '%.NS'
             AND profit_loss IS NOT NULL
       ),
@@ -1103,14 +1105,14 @@ async function backfillHistoricalRealizedPL() {
           SELECT COALESCE(SUM(profit_loss), 0)
           FROM trades
           WHERE status = 'closed'
-            AND user_id = 'ketanjoshisahs@gmail.com'
+            AND user_id = $1
             AND symbol LIKE '%.NS'
             AND profit_loss IS NOT NULL
       ) - allocated_capital,
       updated_at = CURRENT_TIMESTAMP
       WHERE user_id = 'system' AND market = 'India'
       RETURNING realized_pl, available_capital
-    `);
+    `, [adminEmail()]);
 
     // Update UK Market (.L suffix stocks)
     const ukResult = await pool.query(`
@@ -1119,7 +1121,7 @@ async function backfillHistoricalRealizedPL() {
           SELECT COALESCE(SUM(profit_loss), 0)
           FROM trades
           WHERE status = 'closed'
-            AND user_id = 'ketanjoshisahs@gmail.com'
+            AND user_id = $1
             AND symbol LIKE '%.L'
             AND profit_loss IS NOT NULL
       ),
@@ -1127,14 +1129,14 @@ async function backfillHistoricalRealizedPL() {
           SELECT COALESCE(SUM(profit_loss), 0)
           FROM trades
           WHERE status = 'closed'
-            AND user_id = 'ketanjoshisahs@gmail.com'
+            AND user_id = $1
             AND symbol LIKE '%.L'
             AND profit_loss IS NOT NULL
       ) - allocated_capital,
       updated_at = CURRENT_TIMESTAMP
       WHERE user_id = 'system' AND market = 'UK'
       RETURNING realized_pl, available_capital
-    `);
+    `, [adminEmail()]);
 
     const usData = usResult.rows[0] || {};
     const indiaData = indiaResult.rows[0] || {};
@@ -1226,14 +1228,14 @@ async function migrateSystemCapitalToUser() {
       return;
     }
 
-    // Migrate 'system' to primary user
+    // Migrate 'system' to the admin's account
     await pool.query(`
       UPDATE portfolio_capital
-      SET user_id = 'ketanjoshisahs@gmail.com'
+      SET user_id = $1
       WHERE user_id = 'system'
-    `);
+    `, [adminEmail()]);
 
-    console.log('✅ Migrated system capital to ketanjoshisahs@gmail.com');
+    console.log('✅ Migrated system capital to the admin\'s account');
 
     // Add NOT NULL constraint
     try {

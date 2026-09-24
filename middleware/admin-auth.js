@@ -1,13 +1,11 @@
 /**
  * Admin Authentication Middleware
  * Session-based admin check. server.js mounts ensureAdminAPI in front of
- * everything under /api/admin, after the /api sign-in gate.
+ * everything under /api/admin, after the /api sign-in gate. Who the admin is
+ * lives in config/admin.js (ADMIN_EMAIL); its isAdmin() is the one definition.
  */
 
-// Admin configuration
-const ADMIN_EMAILS = [
-  'ketanjoshisahs@gmail.com'
-];
+const { adminEmail, isAdmin } = require('../config/admin');
 
 const ADMIN_ROLES = {
   SUPER_ADMIN: 'super_admin',
@@ -20,17 +18,7 @@ const ADMIN_ROLES = {
  * Determine admin role based on email
  */
 function determineAdminRole(email) {
-  if (email === 'ketanjoshisahs@gmail.com') {
-    return ADMIN_ROLES.SUPER_ADMIN;
-  }
-  return ADMIN_ROLES.READ_ONLY;
-}
-
-/**
- * Check if user is admin
- */
-function isAdmin(email) {
-  return ADMIN_EMAILS.includes(email);
+  return isAdmin(email) ? ADMIN_ROLES.SUPER_ADMIN : ADMIN_ROLES.READ_ONLY;
 }
 
 /**
@@ -39,7 +27,7 @@ function isAdmin(email) {
 function ensureAdminAPI(req, res, next) {
   // Local development bypass — inert unless explicitly enabled and never in production
   if (process.env.ADMIN_DEV_BYPASS === 'true' && process.env.NODE_ENV !== 'production') {
-    req.adminUser = { email: process.env.ADMIN_EMAIL || 'ketanjoshisahs@gmail.com', name: 'Dev admin', role: 'super_admin' };
+    req.adminUser = { email: adminEmail(), name: 'Dev admin', role: 'super_admin' };
     return next();
   }
   // The signed-in Google account must be an admin (the session is the only credential)
@@ -67,6 +55,5 @@ module.exports = {
   ensureAdminAPI,
   isAdmin,
   determineAdminRole,
-  ADMIN_ROLES,
-  ADMIN_EMAILS
+  ADMIN_ROLES
 };

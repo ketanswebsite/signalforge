@@ -1,5 +1,5 @@
 -- Endpoint-harness seed. global-setup.js loads it into a scratch sf_harness_* database after the schema copy:
---   psql -v ON_ERROR_STOP=1 -v admin_email=<ADMIN_EMAILS[0] from middleware/admin-auth.js> -d sf_harness_x -f seed.sql
+--   psql -v ON_ERROR_STOP=1 -v admin_email=<the admin persona, which global-setup.js also sets as ADMIN_EMAIL> -d sf_harness_x -f seed.sql
 -- Personas use the reserved .invalid TLD and every symbol is fake (HARNESS*): nothing can match a real account or listing.
 -- Dates use CURRENT_DATE in UTC: global-setup sets the scratch database timezone to UTC, as on Render.
 

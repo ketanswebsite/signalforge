@@ -32,8 +32,7 @@ router.get('/auth/google/callback',
             const subscription = await getUserSubscriptionStatus(req.user.email);
 
             // Admin bypass - admin always gets redirected to home
-            const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'ketanjoshisahs@gmail.com';
-            const isAdminUser = req.user.email === ADMIN_EMAIL;
+            const isAdminUser = isAdmin(req.user.email);
 
             // Save session explicitly before redirecting
             req.session.save((err) => {

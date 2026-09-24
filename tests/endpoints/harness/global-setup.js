@@ -11,7 +11,7 @@
  * 3. Yahoo chart fixtures for the fake symbols, so no request leaves the machine.
  * 4. server.js starts under the preload with an explicit environment: nothing is inherited from the shell.
  * 5. Ready means: the preload reports listening, the startup maintenance has finished, and /health answers.
- * The state (URL, token, personas, seeded ids) goes to a JSON file named in HARNESS_STATE.
+ * The state (URL, tokens, personas, seeded ids) goes to a JSON file named in HARNESS_STATE.
  */
 'use strict';
 
@@ -101,10 +101,9 @@ async function setup(ctx) {
   const rows = run(pgBin('pg_dump'), ['--data-only', '--no-owner', '--no-privileges', '--table=schema_migrations', '--table=subscription_plans', schemaDb]);
   run(psql, ['-q', '-v', 'ON_ERROR_STOP=1', '-d', db], { input: rows });
 
-  // ---- 2. seed (the admin persona is the first address in middleware/admin-auth.js, read as text)
-  const adminSrc = fs.readFileSync(path.join(ROOT, 'middleware/admin-auth.js'), 'utf8');
-  const adminEmail = ((adminSrc.match(/ADMIN_EMAILS\s*=\s*\[\s*['"]([^'"]+)['"]/) || [])[1] || '').toLowerCase();
-  if (!adminEmail) throw new Error('could not read ADMIN_EMAILS[0] from middleware/admin-auth.js');
+  // ---- 2. seed. The admin persona is a harness account named by ADMIN_EMAIL (config/admin.js reads it), so no
+  //      real address is used and every admin check is proven to follow ADMIN_EMAIL
+  const adminEmail = 'harness-admin@e2e.invalid';
   run(psql, ['-q', '-v', 'ON_ERROR_STOP=1', '-v', `admin_email=${adminEmail}`, '-d', db, '-f', path.join(HARNESS, 'seed.sql')]);
 
   // ---- 3. fixtures
@@ -114,6 +113,7 @@ async function setup(ctx) {
   // ---- 4. boot
   const port = await freePort();
   const token = 'harness-' + crypto.randomBytes(24).toString('hex');
+  const readToken = 'harness-read-' + crypto.randomBytes(24).toString('hex');
   const webhookSecret = 'harness-' + crypto.randomBytes(16).toString('hex');
   const logFile = path.join(work, 'server.log');
   const routesOut = path.join(work, 'routes-runtime.json');
@@ -122,7 +122,7 @@ async function setup(ctx) {
     NODE_ENV: 'development', PORT: String(port), BASE_URL: `http://127.0.0.1:${port}`, DATABASE_URL: dbUrl,
     GOOGLE_CLIENT_ID: 'harness.apps.googleusercontent.com', GOOGLE_CLIENT_SECRET: 'harness-not-a-secret',
     CALLBACK_URL: `http://127.0.0.1:${port}/auth/google/callback`, SESSION_SECRET: crypto.randomBytes(32).toString('hex'),
-    ANALYSIS_API_TOKEN: token, TELEGRAM_WEBHOOK_SECRET: webhookSecret,
+    ANALYSIS_API_TOKEN: token, ANALYSIS_READ_TOKEN: readToken, ADMIN_EMAIL: adminEmail, TELEGRAM_WEBHOOK_SECRET: webhookSecret,
     AUTO_EXECUTE: 'false', CONVICTION_SWEEP: 'false', CONVICTION_SWEEP_BOOT_RESUME: 'false', CONVICTION_SWEEP_ALERTS: 'false',
     CLOSE_FAILURE_ALERTS: 'false', EXIT_CHECK_PRUNE: 'false',
     HARNESS_LOGIN: '1', HARNESS_FIXTURES: fixtures, HARNESS_ROUTES_OUT: routesOut
@@ -161,11 +161,13 @@ async function setup(ctx) {
     victimSubscriptionId: q("SELECT id FROM user_subscriptions WHERE user_email = 'harness-victim@e2e.invalid' ORDER BY id LIMIT 1"),
     paymentTxnId: 'harness-txn-0001',
     freePlanId: q("SELECT id FROM subscription_plans WHERE plan_code = 'FREE' ORDER BY id LIMIT 1"),
-    adminEmail   // DELETE /api/admin/users/:email must refuse the admin account
+    adminEmail,   // DELETE /api/admin/users/:email must refuse the admin account
+    // the tokens, for the specs that put one in the URL: the full one still works there (legacy ?token=), the read one never
+    fullToken: token, readToken
   };
 
   const state = {
-    base: `http://127.0.0.1:${port}`, port, pid: child.pid, db, work, logFile, routesOut, token, webhookSecret,
+    base: `http://127.0.0.1:${port}`, port, pid: child.pid, db, work, logFile, routesOut, token, readToken, webhookSecret,
     // how to start a second server on the same database (the session-persistence self-check)
     root: ROOT, preload: path.join(HARNESS, 'preload.js'), env,
     personas: {

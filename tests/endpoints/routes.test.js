@@ -8,7 +8,8 @@
  *     "order": "last",                                  optional: runs after every other spec (destructive / session-ending)
  *     "absent": true,                                   optional: the route must NOT exist (removed on purpose)
  *     "cases": [ { "as": "user", "status": 200, "check": "array", "body": { ... }, "bug": "why", "note": "..." } ] }
- * Personas: anon, token (anonymous + x-analysis-token), user (live trial), nosub (no subscription, never changed),
+ * Personas: anon, token (anonymous + the full ops token), readtoken (anonymous + the read-only ops token: the GET /api/ops
+ * probes only), user (live trial), nosub (no subscription, never changed),
  * admin, trial (subscription lifecycle), delete (throwaway for deletions), victim (target of admin actions),
  * logout (session-ending calls).
  * A case with "bug" states the CORRECT status and runs as test.failing: it fails today because of a known bug and
@@ -41,6 +42,14 @@ const CHECKS = {
     isAdminTrue: r => expect((r.json && (r.json.isAdmin ?? (r.json.user && r.json.user.isAdmin)))).toBe(true),
     isAdminFalse: r => expect(Boolean(r.json && (r.json.isAdmin ?? (r.json.user && r.json.user.isAdmin)))).toBe(false),
     commitSha: r => expect(String(r.json && r.json.commit)).toMatch(/^([0-9a-f]{7,40}|unknown|null|undefined)$/),
+    // GET /api/ops/version: the commit, and whether ADMIN_EMAIL is set (the harness sets it) - never the address itself
+    versionProbe: r => {
+        expect(String(r.json && r.json.commit)).toMatch(/^([0-9a-f]{7,40}|unknown|null|undefined)$/);
+        expect(r.json.adminEmailConfigured).toBe(true);
+        // the harness's ADMIN_EMAIL is a .invalid account, not the built-in one
+        expect(r.json.adminEmailMatchesFallback).toBe(false);
+        expect(r.text.includes(h.state().personas.admin)).toBe(false);
+    },
     // { success: true, count: <whole number> }: the bulk import and delete-all answers
     successCount: r => {
         expect(r.json && r.json.success).toBe(true);
