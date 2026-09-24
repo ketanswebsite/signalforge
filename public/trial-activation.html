@@ -18,9 +18,9 @@
             <span class="lc-band__badge">Explorer · free</span>
             <h1>Your 90 days start now</h1>
             <p class="lc-band__lede" id="d0-dates">Every signal, every market, nothing held back — long enough to judge the rule properly.</p>
-            <div class="sa-row" style="justify-content:center">
-                <button class="sa-btn sa-btn--lg sa-btn--onband" id="start-trial"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:18px">radar</span>Start my 90 days</button>
-                <a class="sa-btn sa-btn--lg sa-btn--ghostband" href="/telegram-subscribe.html"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:18px">send</span>Connect Telegram</a>
+            <div class="sa-row cm-row-center">
+                <button class="sa-btn sa-btn--lg sa-btn--onband" id="start-trial"><span class="material-symbols-rounded" aria-hidden="true">radar</span>Start my 90 days</button>
+                <a class="sa-btn sa-btn--lg sa-btn--ghostband" href="/telegram-subscribe.html"><span class="material-symbols-rounded" aria-hidden="true">send</span>Connect Telegram</a>
             </div>
             <p class="lc-band__small">The first scan for you runs at 07:00 UK tomorrow. No card on file — day 91 simply asks.</p>
         </div>
@@ -36,34 +36,34 @@
 </div>
 
 <div id="state-counting" hidden>
-    <main class="sa-page sa-page--narrow" style="padding-top:var(--s-7)">
+    <main class="sa-page sa-page--narrow cm-pt-7">
         <div class="sa-callout" id="count-callout">
             <span class="material-symbols-rounded" aria-hidden="true">hourglass_top</span>
             <div>
                 <strong id="count-title">Your free days are counting</strong>
                 <span id="count-body">No action needed yet — this is just so day 91 is never a surprise. Upgrading now changes nothing until the free days run out.</span>
-                <div style="margin-top:12px"><a class="sa-btn sa-btn--sm sa-btn--secondary" href="/pricing.html">See plans</a></div>
+                <div class="cm-mt-3"><a class="sa-btn sa-btn--sm sa-btn--secondary" href="/pricing.html">See plans</a></div>
             </div>
         </div>
-        <p id="chip-note" style="font-size:var(--size-sm);color:var(--text-3);margin-top:var(--s-4)">A countdown chip appears in the app header at 14 days and turns amber at 5. It links straight to plans and never blocks the screen.</p>
+        <p id="chip-note" class="cm-note cm-mt-4">A countdown chip appears in the app header at 14 days and turns amber at 5. It links straight to plans and never blocks the screen.</p>
     </main>
 </div>
 
 <div id="state-expired" hidden>
-    <main class="sa-page sa-page--narrow" style="padding-top:var(--s-7)">
-        <div class="sa-grid sa-grid--split" style="align-items:start">
-            <div class="sa-stack" style="gap:var(--s-4)">
-                <span class="sa-badge sa-badge--neutral"><span class="material-symbols-rounded" style="font-size:14px" aria-hidden="true">lock</span>Read-only</span>
-                <h1 style="font-size:var(--size-h2)">Your 90 days are done</h1>
+    <main class="sa-page sa-page--narrow cm-pt-7">
+        <div class="sa-grid sa-grid--split cm-align-start">
+            <div class="sa-stack cm-gap-4">
+                <span class="sa-badge sa-badge--neutral"><span class="material-symbols-rounded" aria-hidden="true">lock</span>Read-only</span>
+                <h1 class="cm-page-title">Your 90 days are done</h1>
                 <p>The scanner has stopped sending you signals, and the app is read-only. Nothing was deleted — every trade, position and simulation is still here, and picking up where you left off is one step.</p>
                 <div class="sa-row">
-                    <a class="sa-btn sa-btn--primary sa-btn--lg" href="/checkout.html"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:18px">workspace_premium</span>Choose Trader</a>
+                    <a class="sa-btn sa-btn--primary sa-btn--lg" href="/checkout.html"><span class="material-symbols-rounded" aria-hidden="true">workspace_premium</span>Choose Trader</a>
                 </div>
-                <p style="font-size:var(--size-sm);color:var(--text-3)">Prefer to leave? <a href="/data-management.html">Your data page</a> can export everything first.</p>
+                <p class="cm-note">Prefer to leave? <a href="/data-management.html">Your data page</a> can export everything first.</p>
             </div>
             <div class="sa-card sa-card--sunk">
-                <h3 class="sa-card__title" style="margin-bottom:var(--s-4)">Where things stand</h3>
-                <div class="sa-stack" style="gap:var(--s-4)" id="expired-stats">
+                <h3 class="sa-card__title cm-mb-4">Where things stand</h3>
+                <div class="sa-stack cm-gap-4" id="expired-stats">
                     <div class="sa-stat">
                         <span class="sa-stat__label">Your history</span>
                         <span class="sa-stat__value sa-stat__value--sm" id="x-trades">—</span>
@@ -75,8 +75,8 @@
     </main>
 </div>
 
-<main class="sa-page sa-page--narrow" style="padding-top:0">
-    <div style="margin-top:var(--s-6)">
+<main class="sa-page sa-page--narrow cm-pt-0">
+    <div class="cm-mt-6">
         <div class="sa-legal">
             <button class="sa-legal__btn" type="button" aria-expanded="false" onclick="var b=this.parentElement.querySelector('.sa-legal__body');var x=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',x?'false':'true');b.hidden=x">Educational tool, not investment advice. Your capital is at risk.<span class="material-symbols-rounded" aria-hidden="true">expand_more</span></button>
             <div class="sa-legal__body" hidden>

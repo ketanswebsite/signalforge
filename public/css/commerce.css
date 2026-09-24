@@ -18,3 +18,48 @@
 .dm-stored{border-bottom:1.5px solid var(--line);padding-bottom:var(--s-3)}
 .dm-stored strong{font-size:var(--size-sm)}
 .dm-stored p{font-size:var(--size-xs);color:var(--text-3);margin-top:2px}
+
+/* Inline-style extraction (checkout, success, failure, trial, data, terms,
+   privacy). Icon and wordmark sizes are contextual, because every element they
+   match on these seven pages carried that size inline; everything else is a
+   cm-* class. A cm-* class that overrides a component property has the same
+   specificity and wins because this sheet loads after design-system/index.css. */
+.sa-appbar__brand .sa-wordmark{font-size:19px}
+.sa-btn .material-symbols-rounded{font-size:18px}
+.sa-btn--sm .material-symbols-rounded{font-size:16px} /* after the rule above: same specificity */
+.co-note .material-symbols-rounded{font-size:16px}
+.sa-badge .material-symbols-rounded{font-size:14px}
+.sa-dl__icon .material-symbols-rounded{font-size:20px}
+.sa-empty__icon .material-symbols-rounded,.sa-payframe__slot .material-symbols-rounded{font-size:26px}
+a.sa-seg__opt,a.sa-seg__opt:hover{text-decoration:none} /* segment links; outranks a:hover */
+
+.cm-appbar-in{max-width:var(--page-max)}
+.cm-narrow{max-width:660px}
+.cm-pt-0{padding-top:0}
+.cm-pt-7{padding-top:var(--s-7)}
+.cm-align-start{align-items:start}
+.cm-row-center{justify-content:center}
+.cm-gap-3{gap:var(--s-3)}
+.cm-gap-4{gap:var(--s-4)}
+.cm-sheet-narrow{max-width:480px}
+
+.cm-page-title{font-size:var(--size-h2)}
+.cm-lede{margin-bottom:var(--s-6);max-width:58ch}
+.cm-note{font-size:var(--size-sm);color:var(--text-3)}
+.cm-paylabel{font-family:var(--font-display);font-size:13px;text-transform:uppercase;letter-spacing:.02em}
+.cm-block{display:block}
+
+/* failure reasons: .sa-dl rows with a numeral in a loss-tinted box */
+.cm-reason-icon{background:var(--loss-soft)}
+.cm-reason-num{font-family:var(--font-display);font-size:15px}
+.cm-reason-name{font-family:var(--font-sans)}
+
+.cm-mt-3{margin-top:var(--s-3)}
+.cm-mt-4{margin-top:var(--s-4)}
+.cm-mt-6{margin-top:var(--s-6)}
+.cm-mt-8{margin-top:var(--s-8)}
+.cm-mt-6px{margin-top:6px}
+.cm-mb-3{margin-bottom:var(--s-3)}
+.cm-mb-4{margin-bottom:var(--s-4)}
+.cm-mb-5{margin-bottom:var(--s-5)}
+.cm-mb-6px{margin-bottom:6px}

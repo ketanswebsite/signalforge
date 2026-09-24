@@ -16,24 +16,24 @@
 <body>
 
 <header class="sa-appbar">
-    <div class="sa-appbar__in" style="max-width:var(--page-max)">
-        <a class="sa-appbar__brand" href="/"><span class="sa-wordmark" style="font-size:19px"><b>Sutr</b><i>Algo</i></span></a>
+    <div class="sa-appbar__in cm-appbar-in">
+        <a class="sa-appbar__brand" href="/"><span class="sa-wordmark"><b>Sutr</b><i>Algo</i></span></a>
         <div class="sa-appbar__end">
-            <span class="co-note"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:16px">lock</span>Secure checkout</span>
+            <span class="co-note"><span class="material-symbols-rounded" aria-hidden="true">lock</span>Secure checkout</span>
         </div>
     </div>
 </header>
 
 <main class="sa-page sa-page--narrow">
-    <div class="sa-spread" style="margin-bottom:var(--s-5)">
+    <div class="sa-spread cm-mb-5">
         <div>
-            <h1 style="font-size:var(--size-h2)">Checkout</h1>
-            <p style="margin-top:6px">Trader plan, billed monthly. This is the only screen with a card form in it.</p>
+            <h1 class="cm-page-title">Checkout</h1>
+            <p class="cm-mt-6px">Trader plan, billed monthly. This is the only screen with a card form in it.</p>
         </div>
     </div>
 
-    <div class="sa-grid sa-grid--split" style="align-items:start">
-        <div class="sa-stack" style="gap:var(--s-4)">
+    <div class="sa-grid sa-grid--split cm-align-start">
+        <div class="sa-stack cm-gap-4">
             <div id="card-errors" hidden>
                 <div class="sa-callout sa-callout--loss">
                     <span class="material-symbols-rounded" aria-hidden="true">error</span>
@@ -48,11 +48,11 @@
 
             <div class="sa-payframe" id="payframe">
                 <div class="sa-payframe__head">
-                    <span style="font-family:var(--font-display);font-size:13px;text-transform:uppercase;letter-spacing:.02em">Card details</span>
-                    <span class="sa-badge sa-badge--neutral"><span class="material-symbols-rounded" style="font-size:14px" aria-hidden="true">lock</span>Handled by Stripe</span>
+                    <span class="cm-paylabel">Card details</span>
+                    <span class="sa-badge sa-badge--neutral"><span class="material-symbols-rounded" aria-hidden="true">lock</span>Handled by Stripe</span>
                 </div>
                 <div class="sa-payframe__slot" id="card-element" aria-label="Stripe payment element">
-                    <span class="material-symbols-rounded" aria-hidden="true" style="font-size:26px">credit_card</span>
+                    <span class="material-symbols-rounded" aria-hidden="true">credit_card</span>
                     <span>Stripe's own card element loads here —<br>number, expiry and CVC never touch SutrAlgo.</span>
                 </div>
             </div>
@@ -64,7 +64,7 @@
             </button>
         </div>
 
-        <div class="sa-stack" style="gap:var(--s-4)">
+        <div class="sa-stack cm-gap-4">
             <div class="sa-receipt" aria-label="Order summary">
                 <div class="sa-receipt__row"><span class="sa-receipt__k">Plan</span><span class="sa-receipt__v" id="r-plan">Trader — monthly</span></div>
                 <div class="sa-receipt__row"><span class="sa-receipt__k">Free days used</span><span class="sa-receipt__v" id="r-trial">—</span></div>
@@ -79,7 +79,7 @@
         </div>
     </div>
 
-    <div style="margin-top:var(--s-8)">
+    <div class="cm-mt-8">
         <div class="sa-legal">
             <button class="sa-legal__btn" type="button" aria-expanded="false" onclick="var b=this.parentElement.querySelector('.sa-legal__body');var x=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',x?'false':'true');b.hidden=x">Educational tool, not investment advice. Your capital is at risk.<span class="material-symbols-rounded" aria-hidden="true">expand_more</span></button>
             <div class="sa-legal__body" hidden>

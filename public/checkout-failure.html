@@ -13,49 +13,49 @@
 <body>
 
 <header class="sa-appbar">
-    <div class="sa-appbar__in" style="max-width:var(--page-max)">
-        <a class="sa-appbar__brand" href="/"><span class="sa-wordmark" style="font-size:19px"><b>Sutr</b><i>Algo</i></span></a>
+    <div class="sa-appbar__in cm-appbar-in">
+        <a class="sa-appbar__brand" href="/"><span class="sa-wordmark"><b>Sutr</b><i>Algo</i></span></a>
         <div class="sa-appbar__end">
-            <span class="co-note"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:16px">lock</span>Payment</span>
+            <span class="co-note"><span class="material-symbols-rounded" aria-hidden="true">lock</span>Payment</span>
         </div>
     </div>
 </header>
 
-<main class="sa-page sa-page--narrow" style="max-width:660px">
-    <h1 style="font-size:var(--size-h2);margin-bottom:6px">The payment didn't complete</h1>
-    <p style="margin-bottom:var(--s-5)">Nothing was charged. It's almost always one of these three.</p>
+<main class="sa-page sa-page--narrow cm-narrow">
+    <h1 class="cm-page-title cm-mb-6px">The payment didn't complete</h1>
+    <p class="cm-mb-5">Nothing was charged. It's almost always one of these three.</p>
 
-    <div class="sa-stack" style="gap:var(--s-3);margin-bottom:var(--s-5)">
+    <div class="sa-stack cm-gap-3 cm-mb-5">
         <div class="sa-dl">
-            <span class="sa-dl__icon" style="background:var(--loss-soft)"><span style="font-family:var(--font-display);font-size:15px">1</span></span>
+            <span class="sa-dl__icon cm-reason-icon"><span class="cm-reason-num">1</span></span>
             <span class="sa-dl__meta">
-                <span class="sa-dl__name" style="font-family:var(--font-sans)">The bank said no</span>
-                <span class="sa-dl__hint" style="display:block">Usually a limit or a block on online payments. A call to your bank, or a different card, clears it.</span>
+                <span class="sa-dl__name cm-reason-name">The bank said no</span>
+                <span class="sa-dl__hint cm-block">Usually a limit or a block on online payments. A call to your bank, or a different card, clears it.</span>
             </span>
         </div>
         <div class="sa-dl">
-            <span class="sa-dl__icon" style="background:var(--loss-soft)"><span style="font-family:var(--font-display);font-size:15px">2</span></span>
+            <span class="sa-dl__icon cm-reason-icon"><span class="cm-reason-num">2</span></span>
             <span class="sa-dl__meta">
-                <span class="sa-dl__name" style="font-family:var(--font-sans)">The verification step was closed</span>
-                <span class="sa-dl__hint" style="display:block">Your bank asked for a confirmation and the window was closed before it finished. Trying again restarts it.</span>
+                <span class="sa-dl__name cm-reason-name">The verification step was closed</span>
+                <span class="sa-dl__hint cm-block">Your bank asked for a confirmation and the window was closed before it finished. Trying again restarts it.</span>
             </span>
         </div>
         <div class="sa-dl">
-            <span class="sa-dl__icon" style="background:var(--loss-soft)"><span style="font-family:var(--font-display);font-size:15px">3</span></span>
+            <span class="sa-dl__icon cm-reason-icon"><span class="cm-reason-num">3</span></span>
             <span class="sa-dl__meta">
-                <span class="sa-dl__name" style="font-family:var(--font-sans)">The connection dropped</span>
-                <span class="sa-dl__hint" style="display:block">Nothing was charged. Check your connection and try again — the payment only completes when you see a receipt.</span>
+                <span class="sa-dl__name cm-reason-name">The connection dropped</span>
+                <span class="sa-dl__hint cm-block">Nothing was charged. Check your connection and try again — the payment only completes when you see a receipt.</span>
             </span>
         </div>
     </div>
 
     <div class="sa-row">
-        <a class="sa-btn sa-btn--primary sa-btn--lg" href="/checkout.html"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:18px">refresh</span>Try the payment again</a>
+        <a class="sa-btn sa-btn--primary sa-btn--lg" href="/checkout.html"><span class="material-symbols-rounded" aria-hidden="true">refresh</span>Try the payment again</a>
         <a class="sa-btn sa-btn--secondary sa-btn--lg" href="/checkout.html">Use a different card</a>
     </div>
-    <p style="font-size:var(--size-sm);color:var(--text-3);margin-top:var(--s-4)">Your free days keep counting in the meantime — you lose nothing by trying tomorrow.</p>
+    <p class="cm-note cm-mt-4">Your free days keep counting in the meantime — you lose nothing by trying tomorrow.</p>
 
-    <div style="margin-top:var(--s-8)">
+    <div class="cm-mt-8">
         <div class="sa-legal">
             <button class="sa-legal__btn" type="button" aria-expanded="false" onclick="var b=this.parentElement.querySelector('.sa-legal__body');var x=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',x?'false':'true');b.hidden=x">Educational tool, not investment advice. Your capital is at risk.<span class="material-symbols-rounded" aria-hidden="true">expand_more</span></button>
             <div class="sa-legal__body" hidden>

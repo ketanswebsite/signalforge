@@ -15,17 +15,17 @@
 <body>
 
 <header class="sa-appbar">
-    <div class="sa-appbar__in" style="max-width:var(--page-max)">
-        <a class="sa-appbar__brand" href="/"><span class="sa-wordmark" style="font-size:19px"><b>Sutr</b><i>Algo</i></span></a>
+    <div class="sa-appbar__in cm-appbar-in">
+        <a class="sa-appbar__brand" href="/"><span class="sa-wordmark"><b>Sutr</b><i>Algo</i></span></a>
         <div class="sa-appbar__end">
-            <span class="sa-badge sa-badge--neutral"><span class="material-symbols-rounded" style="font-size:14px" aria-hidden="true">shield</span>Your data</span>
+            <span class="sa-badge sa-badge--neutral"><span class="material-symbols-rounded" aria-hidden="true">shield</span>Your data</span>
         </div>
     </div>
 </header>
 
 <main class="sa-page sa-page--narrow">
-    <h1 style="font-size:var(--size-h2);margin-bottom:6px">Your data</h1>
-    <p style="margin-bottom:var(--s-6);max-width:58ch">Everything SutrAlgo holds about you, ready to take away — and the way to delete all of it.</p>
+    <h1 class="cm-page-title cm-mb-6px">Your data</h1>
+    <p class="cm-lede">Everything SutrAlgo holds about you, ready to take away — and the way to delete all of it.</p>
 
     <div id="signin-note" hidden>
         <div class="sa-callout">
@@ -34,56 +34,56 @@
         </div>
     </div>
 
-    <div class="sa-grid sa-grid--split" style="align-items:start" id="data-grid">
-        <div class="sa-stack" style="gap:var(--s-4)">
+    <div class="sa-grid sa-grid--split cm-align-start" id="data-grid">
+        <div class="sa-stack cm-gap-4">
             <div class="sa-spread">
                 <h3 class="sa-card__title">Take it with you</h3>
-                <a class="sa-btn sa-btn--primary" href="/api/user/download-data" id="dl-all"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:18px">download</span>Download everything</a>
+                <a class="sa-btn sa-btn--primary" href="/api/user/download-data" id="dl-all"><span class="material-symbols-rounded" aria-hidden="true">download</span>Download everything</a>
             </div>
-            <div class="sa-stack" style="gap:var(--s-3)">
+            <div class="sa-stack cm-gap-3">
                 <div class="sa-dl">
-                    <span class="sa-dl__icon"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:20px">table_view</span></span>
+                    <span class="sa-dl__icon"><span class="material-symbols-rounded" aria-hidden="true">table_view</span></span>
                     <span class="sa-dl__meta">
                         <span class="sa-dl__name">trades.csv</span>
-                        <span class="sa-dl__hint" style="display:block">Every trade — dates, prices, results, exit reasons</span>
+                        <span class="sa-dl__hint cm-block">Every trade — dates, prices, results, exit reasons</span>
                     </span>
                     <span class="sa-dl__size" id="sz-trades">—</span>
-                    <a class="sa-btn sa-btn--sm sa-btn--quiet" href="/api/trades/export"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:16px">download</span>CSV</a>
+                    <a class="sa-btn sa-btn--sm sa-btn--quiet" href="/api/trades/export"><span class="material-symbols-rounded" aria-hidden="true">download</span>CSV</a>
                 </div>
                 <div class="sa-dl">
-                    <span class="sa-dl__icon"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:20px">person</span></span>
+                    <span class="sa-dl__icon"><span class="material-symbols-rounded" aria-hidden="true">person</span></span>
                     <span class="sa-dl__meta">
                         <span class="sa-dl__name">signalforge-data.json</span>
-                        <span class="sa-dl__hint" style="display:block">Profile, trades, alert settings — the full export in one file</span>
+                        <span class="sa-dl__hint cm-block">Profile, trades, alert settings — the full export in one file</span>
                     </span>
                     <span class="sa-dl__size" id="sz-json">—</span>
-                    <a class="sa-btn sa-btn--sm sa-btn--quiet" href="/api/user/download-data"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:16px">download</span>JSON</a>
+                    <a class="sa-btn sa-btn--sm sa-btn--quiet" href="/api/user/download-data"><span class="material-symbols-rounded" aria-hidden="true">download</span>JSON</a>
                 </div>
             </div>
-            <p style="font-size:var(--size-xs);color:var(--text-3)">Files are generated fresh when you ask — the counts above are from your account right now.</p>
+            <p class="co-agree">Files are generated fresh when you ask — the counts above are from your account right now.</p>
         </div>
 
-        <div class="sa-stack" style="gap:var(--s-4)">
+        <div class="sa-stack cm-gap-4">
             <div class="sa-card sa-card--sunk">
-                <h3 class="sa-card__title" style="margin-bottom:var(--s-3)">What we store, and why</h3>
-                <div class="sa-stack" style="gap:var(--s-3)">
+                <h3 class="sa-card__title cm-mb-3">What we store, and why</h3>
+                <div class="sa-stack cm-gap-3">
                     <div class="dm-stored"><strong>Name and email</strong><p>From Google sign-in. It is how your account exists.</p></div>
                     <div class="dm-stored"><strong>Region</strong><p>Sets your currency and price. Nothing more precise than country.</p></div>
                     <div class="dm-stored"><strong>Positions and trades</strong><p>Your history in the app — the thing the exports contain.</p></div>
                     <div class="dm-stored"><strong>Telegram chat id</strong><p>Only if you connected the bot; deleting the link removes it.</p></div>
-                    <p style="font-size:var(--size-xs);color:var(--text-3)">No card numbers (the payment provider keeps those), no broker connections, no browsing analytics beyond page counts.</p>
+                    <p class="co-agree">No card numbers (the payment provider keeps those), no broker connections, no browsing analytics beyond page counts.</p>
                 </div>
             </div>
 
             <div class="sa-card">
-                <h3 class="sa-card__title" style="margin-bottom:6px">Delete the account</h3>
-                <p class="sa-card__hint" style="margin-bottom:var(--s-4)">Removes everything above, permanently, within 30 days. Export first — there is no undo.</p>
-                <button class="sa-btn sa-btn--danger" id="open-delete"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:18px">delete_forever</span>Delete my account</button>
+                <h3 class="sa-card__title cm-mb-6px">Delete the account</h3>
+                <p class="sa-card__hint cm-mb-4">Removes everything above, permanently, within 30 days. Export first — there is no undo.</p>
+                <button class="sa-btn sa-btn--danger" id="open-delete"><span class="material-symbols-rounded" aria-hidden="true">delete_forever</span>Delete my account</button>
             </div>
         </div>
     </div>
 
-    <div style="margin-top:var(--s-8)">
+    <div class="cm-mt-8">
         <div class="sa-legal">
             <button class="sa-legal__btn" type="button" aria-expanded="false" onclick="var b=this.parentElement.querySelector('.sa-legal__body');var x=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',x?'false':'true');b.hidden=x">Exports are your personal data under UK GDPR. Deletion is permanent.<span class="material-symbols-rounded" aria-hidden="true">expand_more</span></button>
             <div class="sa-legal__body" hidden>
@@ -95,7 +95,7 @@
 </main>
 
 <div class="sa-scrim" id="delete-scrim" hidden>
-    <div class="sa-sheet" style="max-width:480px" role="dialog" aria-modal="true" aria-labelledby="del-title">
+    <div class="sa-sheet cm-sheet-narrow" role="dialog" aria-modal="true" aria-labelledby="del-title">
         <div class="sa-sheet__head">
             <h2 class="sa-sheet__title" id="del-title">Delete this account?</h2>
             <button class="sa-iconbtn" id="close-delete" aria-label="Close"><span class="material-symbols-rounded" aria-hidden="true">close</span></button>
@@ -116,7 +116,7 @@
         </div>
         <div class="sa-sheet__foot">
             <button class="sa-btn sa-btn--secondary" id="keep-account">Keep my account</button>
-            <button class="sa-btn sa-btn--danger" id="confirm-delete" disabled><span class="material-symbols-rounded" aria-hidden="true" style="font-size:18px">delete_forever</span>Delete permanently</button>
+            <button class="sa-btn sa-btn--danger" id="confirm-delete" disabled><span class="material-symbols-rounded" aria-hidden="true">delete_forever</span>Delete permanently</button>
         </div>
     </div>
 </div>

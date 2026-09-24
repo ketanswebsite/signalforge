@@ -13,19 +13,19 @@
 <body>
 
 <header class="sa-appbar">
-    <div class="sa-appbar__in" style="max-width:var(--page-max)">
-        <a class="sa-appbar__brand" href="/"><span class="sa-wordmark" style="font-size:19px"><b>Sutr</b><i>Algo</i></span></a>
+    <div class="sa-appbar__in cm-appbar-in">
+        <a class="sa-appbar__brand" href="/"><span class="sa-wordmark"><b>Sutr</b><i>Algo</i></span></a>
         <div class="sa-appbar__end">
-            <span class="co-note"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:16px">lock</span>Receipt</span>
+            <span class="co-note"><span class="material-symbols-rounded" aria-hidden="true">lock</span>Receipt</span>
         </div>
     </div>
 </header>
 
-<main class="sa-page sa-page--narrow" style="max-width:660px">
+<main class="sa-page sa-page--narrow cm-narrow">
     <div class="co-center">
-        <span class="sa-empty__icon"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:26px">check</span></span>
-        <h1 style="font-size:var(--size-h2)">You're on Trader</h1>
-        <p style="margin-top:6px">A copy of this receipt is on its way to your email.</p>
+        <span class="sa-empty__icon"><span class="material-symbols-rounded" aria-hidden="true">check</span></span>
+        <h1 class="cm-page-title">You're on Trader</h1>
+        <p class="cm-mt-6px">A copy of this receipt is on its way to your email.</p>
     </div>
 
     <div class="sa-receipt" aria-label="Receipt">
@@ -36,19 +36,19 @@
         <div class="sa-receipt__row sa-receipt__row--total"><span class="sa-receipt__k">Paid today</span><span class="sa-receipt__v" id="r-amount">—</span></div>
     </div>
 
-    <div class="sa-card" style="margin-top:var(--s-4)">
-        <h3 class="sa-card__title" style="margin-bottom:var(--s-3)">What happens next</h3>
-        <div class="sa-stack" style="gap:var(--s-3)">
+    <div class="sa-card cm-mt-4">
+        <h3 class="sa-card__title cm-mb-3">What happens next</h3>
+        <div class="sa-stack cm-gap-3">
             <span class="co-next"><span class="material-symbols-rounded" aria-hidden="true">schedule</span>Signals resume with tomorrow's 07:00 UK scan — nothing to set up.</span>
             <span class="co-next"><span class="material-symbols-rounded" aria-hidden="true">send</span>Not on Telegram yet? Connecting takes a minute and the signals come to your phone.</span>
         </div>
-        <div class="sa-row" style="margin-top:var(--s-4)">
-            <a class="sa-btn sa-btn--primary" href="/index.html"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:18px">radar</span>Go to the Scanner</a>
-            <a class="sa-btn sa-btn--secondary" href="/telegram-subscribe.html"><span class="material-symbols-rounded" aria-hidden="true" style="font-size:18px">send</span>Connect Telegram</a>
+        <div class="sa-row cm-mt-4">
+            <a class="sa-btn sa-btn--primary" href="/index.html"><span class="material-symbols-rounded" aria-hidden="true">radar</span>Go to the Scanner</a>
+            <a class="sa-btn sa-btn--secondary" href="/telegram-subscribe.html"><span class="material-symbols-rounded" aria-hidden="true">send</span>Connect Telegram</a>
         </div>
     </div>
 
-    <div style="margin-top:var(--s-8)">
+    <div class="cm-mt-8">
         <div class="sa-legal">
             <button class="sa-legal__btn" type="button" aria-expanded="false" onclick="var b=this.parentElement.querySelector('.sa-legal__body');var x=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',x?'false':'true');b.hidden=x">Educational tool, not investment advice. Your capital is at risk.<span class="material-symbols-rounded" aria-hidden="true">expand_more</span></button>
             <div class="sa-legal__body" hidden>
