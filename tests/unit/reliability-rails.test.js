@@ -165,7 +165,7 @@ describe('notifyOwner never rejects', () => {
         const db = { getUserChatId: jest.fn(() => Promise.resolve('CHAT')) };
         const bot = { sendTelegramAlert: jest.fn(() => Promise.resolve(true)) };
         await expect(CloseFailures.notifyOwner('hello', { TradeDB: db, telegramBot: bot })).resolves.toBe(true);
-        expect(bot.sendTelegramAlert).toHaveBeenCalledWith('CHAT', { type: 'custom', message: 'hello' });
+        expect(bot.sendTelegramAlert).toHaveBeenCalledWith('CHAT', { type: 'custom', message: 'hello', kind: 'owner-alert' });
     });
 });
 

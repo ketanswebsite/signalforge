@@ -78,6 +78,19 @@ const CHECKS = {
         expect(trades.groups[0].ids.every(Number.isInteger)).toBe(true);
         expect(highConviction).toEqual({ count: 0, surplusRows: 0, groups: [] });
     },
+    // GET /api/ops/telegram-stats (GAPS #12): the harness has no bot, so no message is sent or counted, but the table
+    // exists from boot, so the probe's queries run; counts only, and every label is explained
+    telegramStats: r => {
+        const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+        expect(r.json).toMatchObject({
+            success: true, table: true, day: today, days: 14, kinds: [], daily: [], totals: { sent: 0, failed: 0, failures: {} },
+            countedSince: null, retentionDays: 90, notYetWritten: 0, writeOutstanding: false
+        });
+        expect(Object.keys(r.json.legend.kinds)).toEqual(expect.arrayContaining(['scan', 'booking-dm', 'exit-dm', 'eod-dm', 'owner-alert', 'bot-reply', 'other']));
+        expect(Object.keys(r.json.legend.reasons)).toEqual(expect.arrayContaining(['blocked', 'chat-not-found', 'bad-markdown', 'rate-limited', 'network']));
+    },
+    // ... for another UK day and window: ?day=2026-09-23&days=90
+    telegramStatsWindow: r => expect(r.json).toMatchObject({ success: true, table: true, day: '2026-09-23', days: 90, kinds: [], daily: [] }),
 
     // ---- the admin portal shows only what the database holds (I12b). seed.sql has one paid subscription stored as the
     // Stripe checkout stores it: plan_code HARNESS_PAID and no plan_id, GBP 29.97 a quarter, so 9.99 a month.

@@ -1362,7 +1362,8 @@ router.post('/settings/telegram/test', asyncHandler(async (req, res) => {
   const telegramBot = require('../lib/telegram/telegram-bot');
   const delivered = await telegramBot.sendTelegramAlert(chatId, {
     type: 'custom',
-    message: 'Admin portal test message: the bot can reach this chat.'
+    message: 'Admin portal test message: the bot can reach this chat.',
+    kind: 'admin-test'
   });
   if (!delivered) {
     throw new AdminAPIError('EXTERNAL_SERVICE_ERROR', 'Telegram did not accept the test message');

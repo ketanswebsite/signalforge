@@ -566,6 +566,22 @@ app.get('/api/ops/schedule-stats', requireOpsToken({ read: true }), async (req, 
   }
 });
 
+// Token-guarded (header only), READ-ONLY: the bot's Telegram messages (GAPS #12, lib/telegram/delivery-counts.js).
+// For one UK day (?day=YYYY-MM-DD, default today) the messages sent and not delivered by kind, with Telegram's
+// reason for each failure; for the ?days=N UK days up to it (1-90, default 14) the daily totals. Counts only: the
+// table holds no chat id and no message text.
+app.get('/api/ops/telegram-stats', requireOpsToken({ read: true }), async (req, res) => {
+  const DeliveryCounts = require('./lib/telegram/delivery-counts');
+  const day = req.query.day === undefined ? DeliveryCounts.ukDay() : Input.isoDate(req.query.day);
+  if (!day) return res.status(400).json({ error: 'day must be a date written YYYY-MM-DD' });
+  const days = Math.min(Math.max(parseInt(req.query.days, 10) || 14, 1), DeliveryCounts.RETENTION_DAYS);
+  try {
+    res.json({ success: true, ...(await DeliveryCounts.report(TradeDB.pool, { day, days })) });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Token-guarded, READ-ONLY probe for the Alerts page switches (alert_preferences).
 // Counts only — no emails, no chat ids. No sender reads this table today, so
 // this answers "who would honouring it affect?" BEFORE anything does:
@@ -3199,3 +3215,8 @@ require('./lib/shared/process-guards').installProcessGuards({
     telegramBot: require('./lib/telegram/telegram-bot')
   })
 });
+
+// Telegram delivery counts (lib/telegram/delivery-counts.js): the table exists from boot, so
+// GET /api/ops/telegram-stats reads it before the first message is counted
+require('./lib/telegram/delivery-counts').ensureTable(TradeDB.pool)
+  .catch(error => console.error('⚠️ [TELEGRAM DELIVERIES] Could not create the table:', error.message));

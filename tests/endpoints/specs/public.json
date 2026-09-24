@@ -1300,5 +1300,78 @@
     "note": "after: the same cookie is signed out (passport regenerates the session)"
    }
   ]
+ },
+ {
+  "route": "GET /api/ops/telegram-stats",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "anon",
+    "status": 401,
+    "path": "/api/ops/telegram-stats?token=harness-wrong-token",
+    "note": "header only: a token in the URL is never read"
+   },
+   {
+    "as": "user",
+    "status": 401,
+    "note": "a signed-in session is not the ops token"
+   },
+   {
+    "as": "admin",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 200,
+    "check": "telegramStats",
+    "note": "read-only (GAPS #12): today's Telegram messages by kind, sent and not delivered with Telegram's reason, and the daily totals; the harness has no bot, so every count is zero, but the table exists from boot, so the queries run"
+   },
+   {
+    "as": "token",
+    "status": 200,
+    "check": "telegramStatsWindow",
+    "path": "/api/ops/telegram-stats?day=2026-09-23&days=90"
+   },
+   {
+    "as": "token",
+    "status": 200,
+    "check": "telegramStats",
+    "path": "/api/ops/telegram-stats?days=abc",
+    "note": "a malformed window is the default 14 days, as conviction-stats reads one"
+   },
+   {
+    "as": "token",
+    "status": 400,
+    "path": "/api/ops/telegram-stats?day=2026-02-30",
+    "note": "not a real date"
+   },
+   {
+    "as": "readtoken",
+    "status": 200,
+    "check": "telegramStats",
+    "note": "read-only probe: the read token opens it (header)"
+   },
+   {
+    "as": "readtoken",
+    "path": "/api/ops/telegram-stats?day=2026-02-30",
+    "status": 400,
+    "note": "the read token reaches the handler: its own 400 for an impossible date"
+   },
+   {
+    "as": "anon",
+    "path": "/api/ops/telegram-stats?token={fullToken}",
+    "status": 401,
+    "note": "header only: not even the full token is read from the URL here"
+   },
+   {
+    "as": "anon",
+    "path": "/api/ops/telegram-stats?token={readToken}",
+    "status": 401,
+    "note": "the read token is never read from the URL"
+   }
+  ]
  }
 ]
