@@ -378,18 +378,25 @@ router.put('/subscription-plans/:id', asyncHandler(async (req, res) => {
 // Delete subscription plan
 router.delete('/subscription-plans/:id', asyncHandler(async (req, res) => {
   const planId = req.params.id;
+  if (!/^\d+$/.test(planId)) {
+    throw new AdminAPIError('NOT_FOUND', 'Plan not found');
+  }
 
-  // Check if plan has active subscriptions
+  // Any subscription that references the plan blocks the delete, whatever its status: the
+  // foreign key (user_subscriptions.plan_id) refuses it. Counting only 'active' ones let a plan
+  // with trial subscribers through to that refusal, which came back as a misleading 400.
   const checkResult = await TradeDB.pool.query(`
-    SELECT COUNT(*) FROM user_subscriptions
-    WHERE plan_id = $1 AND status = 'active'
+    SELECT status, COUNT(*)::int AS count FROM user_subscriptions
+    WHERE plan_id = $1
+    GROUP BY status
   `, [planId]);
+  const inUse = checkResult.rows.reduce((sum, row) => sum + row.count, 0);
 
-  if (parseInt(checkResult.rows[0].count) > 0) {
+  if (inUse > 0) {
     throw new AdminAPIError(
       'CONFLICT',
-      'Cannot delete plan with active subscriptions',
-      { activeSubscriptions: checkResult.rows[0].count }
+      'Cannot delete a plan that subscriptions still use',
+      { subscriptions: Object.fromEntries(checkResult.rows.map(row => [row.status, row.count])) }
     );
   }
 
@@ -718,15 +725,28 @@ router.post('/payments/:transactionId/verify', asyncHandler(async (req, res) => 
   const { approved } = req.body;
 
   requireField(req.body, 'approved');
+  if (typeof approved !== 'boolean') {
+    throw new AdminAPIError('VALIDATION_ERROR', 'approved must be true or false');
+  }
 
-  // Update payment status
+  // Only a payment still awaiting verification can be approved or rejected. One statement checks
+  // and changes it, so two admins cannot both decide the same payment. It used to update 0 rows
+  // for a payment that does not exist, and re-stamp one already decided, and answer success.
   const newStatus = approved ? 'completed' : 'failed';
-
-  await TradeDB.pool.query(`
+  const updated = await TradeDB.pool.query(`
     UPDATE payment_transactions
-    SET status = $1
-    WHERE transaction_id = $2
+    SET status = $1, processed_at = NOW(), updated_at = NOW()
+    WHERE transaction_id = $2 AND status = 'pending'
+    RETURNING transaction_id
   `, [newStatus, transactionId]);
+
+  if (updated.rows.length === 0) {
+    const existing = await TradeDB.pool.query('SELECT status FROM payment_transactions WHERE transaction_id = $1', [transactionId]);
+    if (existing.rows.length === 0) {
+      throw new AdminAPIError('PAYMENT_NOT_FOUND', 'Payment not found');
+    }
+    throw new AdminAPIError('PAYMENT_ALREADY_VERIFIED', `Payment is already ${existing.rows[0].status}`);
+  }
 
   // Update verification queue
   await TradeDB.pool.query(`
@@ -761,27 +781,42 @@ router.post('/payments/:transactionId/refund', asyncHandler(async (req, res) => 
   const payment = paymentResult.rows[0];
 
   if (payment.status !== 'completed') {
-    throw new AdminAPIError('INVALID_STATE', 'Can only refund completed payments');
+    throw new AdminAPIError('INVALID_STATE', `Can only refund completed payments (this one is ${payment.status})`);
   }
 
-  // Update payment status to refunded
-  await TradeDB.pool.query(`
-    UPDATE payment_transactions
-    SET status = 'refunded', refund_reason = $1, refunded_at = NOW()
-    WHERE transaction_id = $2
-  `, [reason, transactionId]);
-
-  // Create refund record
-  await TradeDB.pool.query(`
-    INSERT INTO payment_refunds (
-      transaction_id, user_email, refund_amount, currency,
-      refund_reason, status, created_at
-    ) VALUES ($1, $2, $3, $4, $5, 'completed', NOW())
-  `, [transactionId, payment.user_email, payment.amount, payment.currency, reason]);
+  // One transaction: the payment becomes 'refunded' - only while it is still completed, so a double
+  // click cannot refund twice - and payment_refunds gets the reason and the time. The reason and
+  // time used to be written to payment_transactions, which has no such columns: every refund failed
+  // with 500. This records the refund; the money itself moves in the payment provider.
+  const client = await TradeDB.pool.connect();
+  try {
+    await client.query('BEGIN');
+    const updated = await client.query(`
+      UPDATE payment_transactions
+      SET status = 'refunded', updated_at = NOW()
+      WHERE transaction_id = $1 AND status = 'completed'
+      RETURNING transaction_id
+    `, [transactionId]);
+    if (updated.rows.length === 0) {
+      throw new AdminAPIError('INVALID_STATE', 'Can only refund completed payments (this one changed meanwhile)');
+    }
+    await client.query(`
+      INSERT INTO payment_refunds (
+        transaction_id, user_email, refund_amount, currency,
+        refund_reason, status, refunded_at, created_at
+      ) VALUES ($1, $2, $3, $4, $5, 'completed', NOW(), NOW())
+    `, [transactionId, payment.user_email, payment.amount, payment.currency, reason]);
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
 
   res.json(successResponse(
     { transactionId, refundAmount: payment.amount },
-    'Refund processed successfully'
+    'Refund recorded'
   ));
 }));
 

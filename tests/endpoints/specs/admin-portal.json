@@ -589,9 +589,14 @@
    },
    {
     "as": "admin",
+    "status": 404,
+    "path": "/api/admin/subscription-plans/not-a-number",
+    "note": "a non-numeric id is no plan (it reached Postgres: 500)"
+   },
+   {
+    "as": "admin",
     "status": 409,
-    "bug": "the in-use guard counts only status='active' subscriptions (routes/admin.js:373-376), so a plan whose subscribers are on trial (FREE) goes on to the DELETE; the FK user_subscriptions_plan_id_fkey refuses it (23503) and adminErrorHandler reports that as 400 INVALID_INPUT 'Referenced resource does not exist' (middleware/admin-error-handler.js:165-169) - should be 409 CONFLICT, plan still has subscriptions",
-    "note": "safe: the FK makes the DELETE fail atomically, the FREE plan stays"
+    "note": "safe: the FK makes the DELETE fail atomically, the FREE plan stays Fixed in I12a: any subscription referencing the plan blocks the delete."
    }
   ]
  },
@@ -1028,7 +1033,7 @@
     "body": {
      "approved": true
     },
-    "bug": "never checks the transaction exists: both UPDATEs match 0 rows and it answers 200 'Payment approved successfully' for a payment that does not exist (routes/admin.js:743-759); should be 404 PAYMENT_NOT_FOUND"
+    "note": "Fixed in I12a: an unknown payment is 404."
    },
    {
     "as": "admin",
@@ -1036,8 +1041,15 @@
     "body": {
      "approved": true
     },
-    "bug": "never checks the payment is awaiting verification: it re-stamps any payment, so an already-completed payment is 'approved' again (and approved:false would flip it to failed, or a refunded one back to completed and refundable) - routes/admin.js:741-747; PAYMENT_ALREADY_VERIFIED (422, middleware/admin-error-handler.js:39) exists but is unused",
-    "note": "harness-txn-0001 is seeded completed with no verification-queue row; approved:true is a no-op write today"
+    "note": "harness-txn-0001 is seeded completed with no verification-queue row; approved:true is a no-op write today Fixed in I12a: only a pending payment can be decided."
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "approved": "yes"
+    },
+    "note": "approved is true or false"
    }
   ]
  },
@@ -1101,8 +1113,7 @@
      "reason": "harness refund"
     },
     "check": "object",
-    "bug": "the UPDATE sets refund_reason and refunded_at on payment_transactions (routes/admin.js:786-790), columns only payment_refunds has (database-postgres.js:135-137; migrations/003 never gave them to payment_transactions): Postgres 42703 -> 500, so no completed payment can ever be refunded",
-    "note": "order last: once fixed this refunds the seeded payment"
+    "note": "order last: once fixed this refunds the seeded payment Fixed in I12a: the refund lands in payment_refunds."
    },
    {
     "as": "admin",
@@ -1110,8 +1121,7 @@
     "body": {
      "reason": "harness refund again"
     },
-    "bug": "same root cause as the case above: the first refund never lands, so this repeat 500s on the same UPDATE instead of reaching the 'Can only refund completed payments' INVALID_STATE check (routes/admin.js:781-783)",
-    "note": "discriminator: a 422 today would mean the first refund's UPDATE had gone through"
+    "note": "discriminator: a 422 today would mean the first refund's UPDATE had gone through Fixed in I12a: a refunded payment cannot be refunded again."
    }
   ]
  },
