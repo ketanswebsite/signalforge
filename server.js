@@ -595,27 +595,36 @@ app.get('/api/ops/schedule-stats', async (req, res) => {
   // Timestamps without a zone are written in the server's own zone: read them as London time
   const london = column => `((${column}) AT TIME ZONE current_setting('TimeZone')) AT TIME ZONE 'Europe/London'`;
   const clock = column => `to_char(${london(column)}, 'YYYY-MM-DD HH24:MI:SS')`;
-  const rows = sql => TradeDB.pool.query(sql, [day]).then(result => result.rows);
+  const rows = (sql, params = [day]) => TradeDB.pool.query(sql, params).then(result => result.rows);
+  // The executor's main pass books the house portfolio under the admin's account ('default' is the pre-2026 owner)
+  const house = [day, process.env.ADMIN_EMAIL || 'ketanjoshisahs@gmail.com'];
   try {
-    const [scan, opened, closed, [exitChecks], [marketCaps], [highConviction]] = await Promise.all([
+    const [scan, opened, [bookings], closed, [exitChecks], [marketCaps], [highConviction]] = await Promise.all([
       // 7 AM scan: the signals it stored for the day, and what the executor made of them
       rows(`SELECT market, status, count(*)::int AS signals, ${clock('min(created_at)')} AS "firstStoredAt", ${clock('max(created_at)')} AS "lastStoredAt"
             FROM pending_signals WHERE signal_date = $1 GROUP BY market, status ORDER BY market, status`),
       // 1 PM executor: automatic trades booked that day, for the house portfolio and for subscribers
-      rows(`SELECT market, CASE WHEN user_id = 'default' THEN 'house' ELSE 'subscribers' END AS book, count(*)::int AS trades
-            FROM trades WHERE auto_added = true AND (${london('entry_date')})::date = $1 GROUP BY 1, 2 ORDER BY 1, 2`),
+      rows(`SELECT market, CASE WHEN user_id IN ('default', $2) THEN 'house' ELSE 'subscribers' END AS book,
+                   count(*)::int AS trades, count(DISTINCT user_id)::int AS accounts
+            FROM trades WHERE auto_added = true AND (${london('entry_date')})::date = $1 GROUP BY 1, 2 ORDER BY 1, 2`, house),
+      // the same symbol booked twice into one account on one day should never happen
+      rows(`SELECT count(*)::int AS "duplicateBookings" FROM (
+              SELECT user_id, symbol FROM trades WHERE auto_added = true AND (${london('entry_date')})::date = $1
+              GROUP BY user_id, symbol HAVING count(*) > 1) twice`),
       // exit monitor: automatic trades it closed that day, by reason
       rows(`SELECT market, exit_reason AS "exitReason", count(*)::int AS trades
             FROM trades WHERE auto_added = true AND status = 'closed' AND (${london('exit_date')})::date = $1 GROUP BY 1, 2 ORDER BY 1, 2`),
       rows(`SELECT count(*)::int AS checks, ${clock('max(check_time)')} AS "lastCheckAt"
             FROM trade_exit_checks WHERE (${london('check_time')})::date = $1`),
-      rows(`SELECT count(*)::int AS refreshed, ${clock('max(last_updated)')} AS "lastRefreshAt"
-            FROM stock_market_caps WHERE (${london('last_updated')})::date = $1`),
+      rows(`SELECT count(*) FILTER (WHERE (${london('last_updated')})::date = $1)::int AS refreshed,
+                   ${clock("max(last_updated) FILTER (WHERE (" + london('last_updated') + ")::date = $1)")} AS "lastRefreshAt",
+                   count(*)::int AS rows, ${clock('max(last_updated)')} AS "lastRefreshEver"
+            FROM stock_market_caps`),
       rows(`SELECT count(*) FILTER (WHERE entry_date = $1)::int AS entered, count(*) FILTER (WHERE exit_date = $1)::int AS exited,
                    count(*) FILTER (WHERE status = 'active')::int AS open, ${clock('max(updated_at)')} AS "lastUpdateAt"
             FROM high_conviction_portfolio`)
     ]);
-    res.json({ success: true, day, scan, executor: { opened }, exitMonitor: { ...exitChecks, closed }, marketCaps, highConviction });
+    res.json({ success: true, day, scan, executor: { opened, ...bookings }, exitMonitor: { ...exitChecks, closed }, marketCaps, highConviction });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
