@@ -15,8 +15,11 @@ try {
   console.error('Failed to load PostgreSQL database module:', err.message);
 }
 
-// Using memory store for sessions (PostgreSQL-based session store can be added later)
-console.log('Using memory store for sessions');
+// Sessions live in Postgres (lib/shared/pg-session-store.js), so a deploy or a restart does not sign
+// everyone out. Without a database pool (a local run with no DATABASE_URL) they fall back to memory.
+const { PgSessionStore } = require('../lib/shared/pg-session-store');
+const sessionStore = TradeDB && TradeDB.pool ? new PgSessionStore({ pool: TradeDB.pool }) : undefined;
+console.log(sessionStore ? 'Sessions: Postgres (user_sessions)' : 'Sessions: memory (no database pool)');
 
 // Parse allowed users from environment variable
 const allowedUsers = process.env.ALLOWED_USERS 
@@ -115,8 +118,7 @@ console.log('✅ SESSION_SECRET validation passed - secure session secret config
 
 // Session configuration
 const sessionConfig = {
-    // Using memory store - sessions will not persist across server restarts
-    // For production, consider using connect-pg-simple for PostgreSQL session storage
+    store: sessionStore, // Postgres; undefined means express-session's own memory store
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,

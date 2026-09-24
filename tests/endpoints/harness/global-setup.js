@@ -163,6 +163,8 @@ async function setup(ctx) {
 
   const state = {
     base: `http://127.0.0.1:${port}`, port, pid: child.pid, db, work, logFile, routesOut, token, webhookSecret,
+    // how to start a second server on the same database (the session-persistence self-check)
+    root: ROOT, preload: path.join(HARNESS, 'preload.js'), env,
     personas: {
       user: 'harness-user@e2e.invalid', nosub: 'harness-nosub@e2e.invalid', delete: 'harness-delete@e2e.invalid',
       victim: 'harness-victim@e2e.invalid', trial: 'harness-trial@e2e.invalid', logout: 'harness-logout@e2e.invalid',
