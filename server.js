@@ -560,6 +560,27 @@ app.get('/api/ops/version', (req, res) => {
   });
 });
 
+// Token-guarded (header only), READ-ONLY: the Postgres session store at work
+// (lib/shared/pg-session-store.js). Counts only, never a session id or its contents.
+app.get('/api/ops/sessions-stats', async (req, res) => {
+  if (!process.env.ANALYSIS_API_TOKEN || req.get('x-analysis-token') !== process.env.ANALYSIS_API_TOKEN) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  const store = authEnabled && sessionConfig && sessionConfig.store ? sessionConfig.store.constructor.name : 'memory';
+  try {
+    const { rows: [probe] } = await TradeDB.pool.query("SELECT to_regclass('public.user_sessions') IS NOT NULL AS exists");
+    if (!probe.exists) return res.json({ success: true, store, table: false });
+    const { rows: [counts] } = await TradeDB.pool.query(`
+      SELECT count(*) FILTER (WHERE expire > NOW())::int AS active,
+             count(*) FILTER (WHERE expire <= NOW())::int AS expired
+      FROM user_sessions
+    `);
+    res.json({ success: true, store, table: true, ...counts });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Token-guarded, READ-ONLY probe for the Alerts page switches (alert_preferences).
 // Counts only — no emails, no chat ids. No sender reads this table today, so
 // this answers "who would honouring it affect?" BEFORE anything does:
@@ -1230,11 +1251,7 @@ app.get('/api/user/download-data', ensureAuthenticatedAPI, async (req, res) => {
 app.get('/api/trades/export', ensureAuthenticatedAPI, async (req, res) => {
   try {
     const email = req.user.email;
-    const { Pool } = require('pg');
-    const pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-    });
+    const pool = TradeDB.pool; // the app's one pool (it used to open a new one per call)
 
     // Get all trades
     const result = await pool.query(
@@ -1249,7 +1266,6 @@ app.get('/api/trades/export', ensureAuthenticatedAPI, async (req, res) => {
       [email]
     );
 
-    await pool.end();
 
     // Build CSV
     const csvHeader = 'Symbol,Name,Entry Date,Entry Price,Exit Date,Exit Price,Shares,Status,Profit/Loss,Profit/Loss %,Entry Reason,Exit Reason,Target Price,Stop Loss %,Investment Amount,Currency,Created At\n';
@@ -1566,11 +1582,7 @@ app.post('/api/admin/remove-telegram-user', ensureAuthenticatedAPI, async (req, 
 async function autoRecoverUsers() {
   try {
     
-    const { Pool } = require('pg');
-    const pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-    });
+    const pool = TradeDB.pool; // the app's one pool (it used to open a new one per call)
     
     let totalRecovered = 0;
     
@@ -1629,7 +1641,6 @@ async function autoRecoverUsers() {
 
     }
     
-    await pool.end();
   } catch (error) {
   }
 }
@@ -1637,11 +1648,7 @@ async function autoRecoverUsers() {
 // Check subscription setup endpoint
 app.get('/api/check-subscription-setup', requireAdmin, async (req, res) => {
   try {
-    const { Pool } = require('pg');
-    const pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-    });
+    const pool = TradeDB.pool; // the app's one pool (it used to open a new one per call)
 
     const results = {};
 
@@ -1730,7 +1737,6 @@ app.get('/api/check-subscription-setup', requireAdmin, async (req, res) => {
       results.users_table = { subscription_columns: [] };
     }
 
-    await pool.end();
     res.json(results);
     
   } catch (error) {

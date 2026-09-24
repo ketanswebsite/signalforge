@@ -383,6 +383,35 @@
   ]
  },
  {
+  "route": "GET /api/ops/sessions-stats",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "anon",
+    "status": 401,
+    "path": "/api/ops/sessions-stats?token=harness-wrong-token"
+   },
+   {
+    "as": "user",
+    "status": 401,
+    "note": "a signed-in session is not the ops token"
+   },
+   {
+    "as": "admin",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 200,
+    "check": "object",
+    "note": "read-only counts; the harness server has the Postgres store, so the table exists and holds the personas' sessions"
+   }
+  ]
+ },
+ {
   "route": "GET /api/ops/alert-prefs-stats",
   "cases": [
    {
