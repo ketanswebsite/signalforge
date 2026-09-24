@@ -2791,7 +2791,9 @@ app.get('/api/push/vapid-public-key', (req, res) => {
   res.json({ publicKey });
 });
 
-// Subscribe to push notifications
+// Subscribe to push notifications. Only a browser push service is a valid endpoint, and an account keeps its
+// newest subscriptions (lib/push/endpoint-policy.js): each send is a POST from this server to the endpoint.
+const { isAllowedPushEndpoint, prunePushSubscriptions } = require('./lib/push/endpoint-policy');
 app.post('/api/push/subscribe', ensureAuthenticatedAPI, async (req, res) => {
   try {
     const { subscription, userAgent } = req.body;
@@ -2803,11 +2805,15 @@ app.post('/api/push/subscribe', ensureAuthenticatedAPI, async (req, res) => {
         !isText(subscription.keys.p256dh) || !isText(subscription.keys.auth)) {
       return res.status(400).json({ error: 'Invalid subscription data' });
     }
+    if (!isAllowedPushEndpoint(subscription.endpoint)) {
+      return res.status(400).json({ error: 'Unsupported push service' });
+    }
 
     const userEmail = req.user.email;
     // user_agent is VARCHAR(500): a longer value crashed the INSERT with 500.
     const agent = typeof userAgent === 'string' ? userAgent.slice(0, 500) : null;
     await TradeDB.savePushSubscription(userEmail, subscription, agent);
+    await prunePushSubscriptions(TradeDB.pool, userEmail);
 
     console.log(`[PUSH] User ${userEmail} subscribed to push notifications`);
     res.json({ success: true, message: 'Subscribed successfully' });

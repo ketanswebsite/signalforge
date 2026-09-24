@@ -148,7 +148,7 @@ describe('notifications the server sends', () => {
             const PushService = require('../../lib/push/push-service');
             const service = new PushService(null);
             expect(service.isConfigured).toBe(true);
-            expect(await service.sendNotification({ endpoint: 'https://push.test/1', keys_p256dh: 'p', keys_auth: 'a' }, { title: 't' })).toBe(true);
+            expect(await service.sendNotification({ endpoint: 'https://fcm.googleapis.com/fcm/send/1', keys_p256dh: 'p', keys_auth: 'a' }, { title: 't' })).toBe(true);
             const options = send.mock.calls[0][2] || {};
             expect(options.timeout).toBeGreaterThan(0);
             expect(options.timeout).toBeLessThanOrEqual(30000);

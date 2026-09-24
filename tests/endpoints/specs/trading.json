@@ -625,7 +625,7 @@
   "route": "POST /api/push/subscribe",
   "body": {
    "subscription": {
-    "endpoint": "https://push.e2e.invalid/harness-delete-1",
+    "endpoint": "https://fcm.googleapis.com/fcm/send/harness-delete-1",
     "keys": {
      "p256dh": "harness-p256dh",
      "auth": "harness-auth"
@@ -654,7 +654,7 @@
     "as": "delete",
     "status": 200,
     "check": "object",
-    "note": "fake .invalid endpoint on the throwaway persona"
+    "note": "a Google push URL on the throwaway persona (never contacted: the harness has no VAPID keys and no network)"
    },
    {
     "as": "user",
@@ -673,7 +673,7 @@
     "check": "object",
     "body": {
      "subscription": {
-      "endpoint": "https://push.e2e.invalid/harness-delete-long-agent",
+      "endpoint": "https://fcm.googleapis.com/fcm/send/harness-delete-long-agent",
       "keys": {
        "p256dh": "harness-p256dh",
        "auth": "harness-auth"
@@ -682,13 +682,27 @@
      "userAgent": "<the letter x repeated 501 times>"
     },
     "note": "Fixed in I8: a user agent longer than the VARCHAR(500) column is cut to 500 characters; it used to crash the INSERT -> 500"
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "body": {
+     "subscription": {
+      "endpoint": "https://push.e2e.invalid/harness-user-not-a-push-service",
+      "keys": {
+       "p256dh": "harness-p256dh",
+       "auth": "harness-auth"
+      }
+     }
+    },
+    "note": "Fixed in I8b: only a browser push service is a valid endpoint ('Unsupported push service'; lib/push/endpoint-policy.js). Any URL used to be stored, and every broadcast POSTed to it"
    }
   ]
  },
  {
   "route": "POST /api/push/unsubscribe",
   "body": {
-   "endpoint": "https://push.e2e.invalid/harness-delete-1"
+   "endpoint": "https://fcm.googleapis.com/fcm/send/harness-delete-1"
   },
   "cases": [
    {
