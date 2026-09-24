@@ -3,15 +3,15 @@
 (function () {
   'use strict';
 
+  /* Every switch here is honoured by lib/shared/alert-policy.js. They cover the
+     messages about the subscriber's OWN positions; the shared channel is muted
+     with /stop in the bot. Do not add a switch no sender can honour. */
   const FIELDS = [
-    { key: 'telegram_enabled', label: 'Telegram alerts', help: "The master switch. Nothing sends while it's off." },
-    { key: 'alert_on_buy', label: 'New signals', help: 'A message the moment the scanner finds a setup, with the buy price, target and stop.' },
+    { key: 'telegram_enabled', label: 'Your own alerts', help: "While it's off, nothing about your own positions is sent: no buys, no sells, no evening summary. The shared SutrAlgo channel keeps posting. Send /stop to the bot to mute that." },
+    { key: 'alert_on_buy', label: 'Trades booked for you', help: "Told at each market's 1 PM when the day's signals are bought into your portfolio, with the size and price." },
     { key: 'alert_on_target', label: 'Hit the +8% target', help: 'Told when a position reaches its sell price.' },
     { key: 'alert_on_stoploss', label: 'Hit the −5% stop', help: 'Told when the stop cuts a position.' },
-    { key: 'alert_on_time_exit', label: 'Ran out of time', help: 'Told when day 30 sells a position.' },
-    { key: 'alert_on_sell', label: 'Sold by hand', help: 'Told when a manual sell is recorded.' },
-    { key: 'market_open_alert', label: 'Market opens', help: 'A nudge when each market opens.' },
-    { key: 'market_close_alert', label: 'Market closes', help: 'A nudge when each market closes.' }
+    { key: 'alert_on_time_exit', label: 'Ran out of time', help: 'Told when day 30 sells a position.' }
   ];
 
   let prefs = null;
@@ -55,9 +55,7 @@
       const label = el('label', 'sa-switch');
       const input = document.createElement('input');
       input.type = 'checkbox';
-      input.checked = prefs[field.key] !== undefined
-        ? Boolean(prefs[field.key])
-        : field.key.indexOf('market_') !== 0; /* alert_* default on, market_* default off */
+      input.checked = prefs[field.key] !== false; /* same rule the server applies: only an explicit false is off */
       input.setAttribute('aria-label', field.label);
       input.addEventListener('change', function () {
         prefs[field.key] = input.checked;

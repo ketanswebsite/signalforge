@@ -2718,8 +2718,12 @@ app.get('/api/alerts/preferences', ensureAuthenticatedAPI, ensureSubscriptionAct
   try {
     const userId = req.user ? req.user.email : 'default';
     const prefs = await TradeDB.getAlertPreferences(userId);
+    // No row = never opened the Alerts page = everything on, the master switch
+    // included: linking Telegram is all the page asks of a subscriber. This used
+    // to default to false, and because the page POSTs the whole object back,
+    // flipping ANY switch then stored an opt-out the user had never chosen.
     res.json(prefs || {
-      telegram_enabled: false,
+      telegram_enabled: true,
       telegram_chat_id: null,
       email_enabled: false,
       email_address: null,

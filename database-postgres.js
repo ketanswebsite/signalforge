@@ -100,7 +100,7 @@ async function initializeDatabase() {
       CREATE TABLE IF NOT EXISTS alert_preferences (
         id SERIAL PRIMARY KEY,
         user_id VARCHAR(255) UNIQUE NOT NULL,
-        telegram_enabled BOOLEAN DEFAULT false,
+        telegram_enabled BOOLEAN DEFAULT true,
         telegram_chat_id VARCHAR(100),
         email_enabled BOOLEAN DEFAULT false,
         email_address VARCHAR(255),
@@ -115,6 +115,15 @@ async function initializeDatabase() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // The master switch starts ON: the Alerts page tells a subscriber that linking
+    // Telegram is all there is to do. CREATE TABLE IF NOT EXISTS never touches a
+    // table that already exists, hence the ALTER (idempotent).
+    try {
+      await pool.query(`ALTER TABLE alert_preferences ALTER COLUMN telegram_enabled SET DEFAULT true`);
+    } catch (err) {
+      // Not fatal: saveAlertPreferences always writes the column explicitly
+    }
 
     // Create telegram_subscribers table for broadcast functionality
     await pool.query(`
@@ -2057,7 +2066,7 @@ const TradeDB = {
         RETURNING *`,
         [
           prefs.user_id,
-          prefs.telegram_enabled || false,
+          prefs.telegram_enabled !== false, // only an explicit false pauses — an absent key is not an opt-out
           prefs.telegram_chat_id || null,
           prefs.email_enabled || false,
           prefs.email_address || null,
