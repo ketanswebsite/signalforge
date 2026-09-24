@@ -50,6 +50,21 @@ FROM subscription_plans WHERE plan_code = 'FREE';   -- target of the admin cance
 INSERT INTO payment_transactions (user_email, transaction_id, payment_provider, amount, currency, status, payment_date)
 VALUES ('harness-user@e2e.invalid', 'harness-txn-0001', 'manual', 9.99, 'GBP', 'completed', now() - interval '3 days');
 
+-- The delete persona's rows that only DELETE /api/user/delete-account removes (it runs last): a paid payment tied to
+-- its trial row (archived to deleted_user_financial_records, and deleted before the subscription it references),
+-- a saved setting and a push subscription.
+INSERT INTO payment_transactions (subscription_id, user_email, transaction_id, payment_provider, amount, currency, status, payment_date)
+SELECT id, user_email, 'harness-txn-0002', 'manual', 9.99, 'GBP', 'completed', now() - interval '2 days'
+FROM user_subscriptions WHERE user_email = 'harness-delete@e2e.invalid';
+
+INSERT INTO user_settings (user_id, setting_key, setting_value)
+VALUES ('harness-delete@e2e.invalid', 'default_stop_loss_percent', '5')
+ON CONFLICT (user_id, setting_key) DO NOTHING;
+
+INSERT INTO push_subscriptions (user_email, endpoint, keys_p256dh, keys_auth, user_agent)
+VALUES ('harness-delete@e2e.invalid', 'https://push.e2e.invalid/harness-delete-seed', 'harness-p256dh', 'harness-auth', 'harness')
+ON CONFLICT (endpoint) DO NOTHING;
+
 -- ---------------------------------------------------------------- trades (manual, so no capital allocation to reconcile)
 INSERT INTO trades (symbol, name, entry_date, entry_price, shares, status, target_price, stop_loss_percent,
                     investment_amount, trade_size, currency_symbol, market, user_id, auto_added)

@@ -841,10 +841,24 @@
     "status": 401
    },
    {
+    "as": "token",
+    "status": 401
+   },
+   {
+    "as": "admin",
+    "status": 403,
+    "note": "the admin account owns the house portfolio (the executor books every signal to it): refused before anything is touched"
+   },
+   {
     "as": "delete",
     "status": 200,
     "check": "object",
-    "bug": "server.js:1513-1519 sets user_subscriptions.status = 'deleted', which user_subscriptions_status_check does not allow; the try/catch swallows the error but Postgres has already aborted the transaction, so DELETE FROM users (server.js:1531) fails with \"current transaction is aborted\" and the route rolls back and answers 500 - every user who ever had a subscription row (trial included) cannot delete their account (the audit insert at server.js:1401-1421 has the same swallow-inside-a-transaction flaw)"
+    "note": "trial row plus a paid payment tied to it (seed.sql): archives the payment records, deletes every row the account owns, then the account"
+   },
+   {
+    "as": "delete",
+    "status": 401,
+    "note": "the session ended with the account, and the server is still up: the old handler destroyed the session while passport was still logging out, and passport's callback threw and killed the process"
    }
   ],
   "note": "This file is named user-account.json so that it sorts after trading.json. The delete persona is still used by trading.json's order-last DELETE /api/trades specs, and a fixed delete-account ends that persona's session and deletes its user row."

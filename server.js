@@ -1106,20 +1106,15 @@ app.post('/api/user/unlink-telegram', ensureAuthenticatedAPI, async (req, res) =
 app.get('/api/user/data-summary', ensureAuthenticatedAPI, async (req, res) => {
   try {
     const email = req.user.email;
-    const { Pool } = require('pg');
-    const pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-    });
+    const pool = TradeDB.pool;
 
     // Get user basic info
     const userResult = await pool.query(
-      'SELECT created_at, email, name FROM users WHERE email = $1',
+      'SELECT created_at, email, name, last_login FROM users WHERE email = $1',
       [email]
     );
 
     if (userResult.rows.length === 0) {
-      await pool.end();
       return res.status(404).json({ error: 'User not found' });
     }
 
@@ -1143,7 +1138,15 @@ app.get('/api/user/data-summary', ensureAuthenticatedAPI, async (req, res) => {
       [email]
     );
 
-    await pool.end();
+    // Saved settings, and browsers registered for push notifications
+    const settingsResult = await pool.query(
+      'SELECT COUNT(*) AS settings FROM user_settings WHERE user_id = $1',
+      [email]
+    );
+    const pushResult = await pool.query(
+      'SELECT COUNT(*) AS push_subscriptions FROM push_subscriptions WHERE user_email = $1',
+      [email]
+    );
 
     // Determine last activity
     const lastActivity = user.last_login || tradesResult.rows[0]?.last_trade_date || user.created_at;
@@ -1154,6 +1157,8 @@ app.get('/api/user/data-summary', ensureAuthenticatedAPI, async (req, res) => {
       name: user.name,
       total_trades: parseInt(tradesResult.rows[0]?.total_trades || 0),
       active_signals: parseInt(alertsResult.rows[0]?.active_signals || 0),
+      settings: parseInt(settingsResult.rows[0]?.settings || 0),
+      push_subscriptions: parseInt(pushResult.rows[0]?.push_subscriptions || 0),
       last_activity: lastActivity
     });
 
@@ -1167,11 +1172,18 @@ app.get('/api/user/data-summary', ensureAuthenticatedAPI, async (req, res) => {
 app.get('/api/user/download-data', ensureAuthenticatedAPI, async (req, res) => {
   try {
     const email = req.user.email;
-    const { Pool } = require('pg');
-    const pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-    });
+    const pool = TradeDB.pool;
+    // The subscription and payment tables come from migrations/, not the boot DDL. A table or
+    // column this database never got exports as an empty section; any other error fails the download.
+    const rowsOf = async (section, sql) => {
+      try {
+        return (await pool.query(sql, [email])).rows;
+      } catch (error) {
+        if (error.code !== '42P01' && error.code !== '42703') throw error;   // undefined table / column
+        console.warn(`[GDPR] export section ${section} skipped: ${error.message}`);
+        return [];
+      }
+    };
 
     // Get all user data
     const userData = {};
@@ -1197,34 +1209,42 @@ app.get('/api/user/download-data', ensureAuthenticatedAPI, async (req, res) => {
     );
     userData.alertPreferences = alertsResult.rows[0] || null;
 
-    // 4. Subscription info
-    try {
-      const subsResult = await pool.query(
-        'SELECT * FROM user_subscriptions WHERE user_email = $1',
-        [email]
-      );
-      userData.subscription = subsResult.rows[0] || null;
-    } catch (e) {
-      userData.subscription = null;
-    }
+    // 4. Settings
+    userData.settings = await rowsOf('settings',
+      'SELECT setting_key, setting_value, created_at, updated_at FROM user_settings WHERE user_id = $1 ORDER BY setting_key');
 
-    // 5. Payment history (anonymized sensitive data)
-    try {
-      const paymentsResult = await pool.query(
-        `SELECT
-          transaction_id, amount, currency, status, payment_method,
-          payment_date, created_at, updated_at
-         FROM payment_transactions
-         WHERE user_email = $1
-         ORDER BY created_at DESC`,
-        [email]
-      );
-      userData.paymentHistory = paymentsResult.rows;
-    } catch (e) {
-      userData.paymentHistory = [];
-    }
+    // 5. Browsers registered for push notifications (their encryption keys stay out of the file)
+    userData.pushSubscriptions = await rowsOf('pushSubscriptions',
+      'SELECT endpoint, user_agent, is_active, created_at, last_used_at FROM push_subscriptions WHERE user_email = $1 ORDER BY created_at');
 
-    await pool.end();
+    // 6. Paper-capital ledgers, one per market
+    userData.paperCapital = await rowsOf('paperCapital',
+      `SELECT market, currency, initial_capital, realized_pl, allocated_capital, available_capital,
+              active_positions, max_positions, updated_at
+       FROM portfolio_capital WHERE user_id = $1 ORDER BY market`);
+
+    // 7. Subscriptions: every one the account has had (newest first), their history and any complimentary access
+    userData.subscriptions = await rowsOf('subscriptions',
+      'SELECT * FROM user_subscriptions WHERE user_email = $1 ORDER BY created_at DESC');
+    userData.subscription = userData.subscriptions[0] || null;
+    userData.subscriptionHistory = await rowsOf('subscriptionHistory',
+      `SELECT event_type, old_status, new_status, description, created_at
+       FROM subscription_history WHERE user_email = $1 ORDER BY created_at`);
+    userData.accessGrants = await rowsOf('accessGrants',
+      `SELECT grant_type, expires_at, reason, granted_at, revoked_at, revoke_reason
+       FROM subscription_grants WHERE user_email = $1 ORDER BY granted_at`);
+
+    // 8. Payment history (anonymized sensitive data) and refunds
+    userData.paymentHistory = await rowsOf('paymentHistory',
+      `SELECT
+        transaction_id, amount, currency, status, payment_method,
+        payment_date, created_at, updated_at
+       FROM payment_transactions
+       WHERE user_email = $1
+       ORDER BY created_at DESC`);
+    userData.refunds = await rowsOf('refunds',
+      `SELECT transaction_id, refund_amount, currency, refund_reason, status, refunded_at, created_at
+       FROM payment_refunds WHERE user_email = $1 ORDER BY created_at DESC`);
 
     // Add metadata
     userData.exportDate = new Date().toISOString();
@@ -1306,41 +1326,76 @@ app.get('/api/trades/export', ensureAuthenticatedAPI, async (req, res) => {
 });
 
 // Delete user account (GDPR Article 17 - Right to Erasure)
+//
+// One transaction: archive the payment records the law makes us keep (6 years), delete every row
+// the account owns, then the account itself. Postgres aborts the whole transaction on any error, so
+// a statement that may fail runs in its own savepoint and only that statement is undone. Until
+// 2026-09-24 a swallowed CHECK violation (user_subscriptions has no 'deleted' status) aborted the
+// transaction: every account with a subscription row got a 500 and kept all its data.
 app.delete('/api/user/delete-account', ensureAuthenticatedAPI, async (req, res) => {
-  const { Pool } = require('pg');
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-  });
-  const client = await pool.connect();
+  const email = req.user && req.user.email;
+  if (!email) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  // The admin account owns the house portfolio (the executor books every signal to it).
+  if (email === ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'The admin account cannot be deleted from the app' });
+  }
 
+  const rawIp = req.ip || (req.socket && req.socket.remoteAddress) || '';
+  const ipAddress = require('net').isIP(rawIp) ? rawIp : null;   // the INET columns reject anything else
+
+  let client;
   try {
-    const email = req.user.email;
+    client = await TradeDB.pool.connect();
+  } catch (error) {
+    console.error('Error deleting account (no database connection):', error);
+    return res.status(500).json({ error: 'Failed to delete account' });
+  }
 
+  // One statement in a savepoint. `tolerate(error)` decides whether a failure is fatal; by default
+  // only a table this database never got (42P01) is skipped - the subscription, payment and audit
+  // tables come from migrations/, not the boot DDL.
+  const missingTable = (error) => error.code === '42P01';
+  const step = async (sql, params = [email], tolerate = missingTable) => {
+    await client.query('SAVEPOINT gdpr_step');
+    try {
+      const result = await client.query(sql, params);
+      await client.query('RELEASE SAVEPOINT gdpr_step');
+      return result;
+    } catch (error) {
+      await client.query('ROLLBACK TO SAVEPOINT gdpr_step');
+      await client.query('RELEASE SAVEPOINT gdpr_step');
+      if (!tolerate(error)) throw error;
+      return { rows: [], rowCount: 0 };
+    }
+  };
+
+  let financialRecordsRetained = false;
+  let releaseError;
+  try {
     await client.query('BEGIN');
 
-    // 1. Create audit log entry BEFORE deletion
-    try {
-      await client.query(`
-        INSERT INTO admin_activity_log (admin_email, activity_type, description, target_type, target_id, metadata, ip_address, success)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      `, [
-        email,
-        'account_deletion',
-        'User requested account deletion',
-        'user',
-        email,
-        JSON.stringify({
-          reason: 'User requested account deletion via data management page',
-          timestamp: new Date().toISOString()
-        }),
-        req.ip || req.connection.remoteAddress,
-        true
-      ]);
-    } catch (auditError) {
-      // Log but don't fail if audit table doesn't exist
-      console.error('Failed to create audit log:', auditError);
-    }
+    // 1. Audit entry for the erasure itself (kept). Best effort: it never blocks the deletion.
+    await step(`
+      INSERT INTO admin_activity_log (admin_email, activity_type, description, target_type, target_id, metadata, ip_address, success)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `, [
+      email,
+      'account_deletion',
+      'User requested account deletion',
+      'user',
+      email,
+      JSON.stringify({
+        reason: 'User requested account deletion via data management page',
+        timestamp: new Date().toISOString()
+      }),
+      ipAddress,
+      true
+    ], (auditError) => {
+      console.error('Failed to create audit log:', auditError.message);
+      return true;
+    });
 
     // 2. Archive financial records (REQUIRED for 6 years per UK law)
     // Create archive table if it doesn't exist
@@ -1357,42 +1412,21 @@ app.delete('/api/user/delete-account', ensureAuthenticatedAPI, async (req, res) 
       )
     `);
 
-    // Get financial records
     const financialRecords = {
-      paymentTransactions: [],
-      paymentRefunds: [],
-      subscriptions: []
+      paymentTransactions: (await step('SELECT * FROM payment_transactions WHERE user_email = $1')).rows,
+      paymentRefunds: (await step('SELECT * FROM payment_refunds WHERE user_email = $1')).rows,
+      subscriptions: (await step('SELECT * FROM user_subscriptions WHERE user_email = $1')).rows,
+      subscriptionHistory: (await step('SELECT * FROM subscription_history WHERE user_email = $1')).rows,
+      paymentVerifications: (await step('SELECT * FROM payment_verification_queue WHERE user_email = $1')).rows
     };
 
-    try {
-      const paymentsResult = await client.query(
-        'SELECT * FROM payment_transactions WHERE user_email = $1',
-        [email]
-      );
-      financialRecords.paymentTransactions = paymentsResult.rows;
-    } catch (e) {}
+    // Only money makes a financial record: a free trial alone (amount 0, no Stripe id) is not kept.
+    const paidSubscription = financialRecords.subscriptions.some(s =>
+      Number(s.amount_paid) > 0 || Boolean(s.stripe_subscription_id) || (s.billing_cycle && s.billing_cycle !== 'trial'));
+    financialRecordsRetained = financialRecords.paymentTransactions.length > 0 ||
+      financialRecords.paymentRefunds.length > 0 || paidSubscription;
 
-    try {
-      const refundsResult = await client.query(
-        'SELECT * FROM payment_refunds WHERE user_email = $1',
-        [email]
-      );
-      financialRecords.paymentRefunds = refundsResult.rows;
-    } catch (e) {}
-
-    try {
-      const subsResult = await client.query(
-        'SELECT * FROM user_subscriptions WHERE user_email = $1',
-        [email]
-      );
-      financialRecords.subscriptions = subsResult.rows;
-    } catch (e) {}
-
-    // Archive financial records for 6 years
-    if (financialRecords.paymentTransactions.length > 0 ||
-        financialRecords.paymentRefunds.length > 0 ||
-        financialRecords.subscriptions.length > 0) {
-
+    if (financialRecordsRetained) {
       const retentionDate = new Date();
       retentionDate.setFullYear(retentionDate.getFullYear() + 6);
 
@@ -1404,91 +1438,105 @@ app.delete('/api/user/delete-account', ensureAuthenticatedAPI, async (req, res) 
         retentionDate,
         JSON.stringify(financialRecords),
         email,
-        req.ip || req.connection.remoteAddress
+        ipAddress
       ]);
     }
 
-    // 3. Delete user data (in order to respect foreign key constraints)
-
-    // Delete alert preferences
+    // 3. Delete everything the account owns, children first: payment_transactions references both
+    //    users and user_subscriptions without ON DELETE CASCADE.
+    await client.query('DELETE FROM trades WHERE user_id = $1', [email]);   // exit checks + daily rollup cascade
     await client.query('DELETE FROM alert_preferences WHERE user_id = $1', [email]);
+    await client.query('DELETE FROM portfolio_capital WHERE user_id = $1', [email]);
+    await client.query('DELETE FROM user_settings WHERE user_id = $1', [email]);
+    await client.query('DELETE FROM push_subscriptions WHERE user_email = $1', [email]);
+    await step('DELETE FROM trade_alerts_sent WHERE user_id = $1');
 
-    // Delete all trades
-    await client.query('DELETE FROM trades WHERE user_id = $1', [email]);
-
-    // Unlink Telegram (but keep telegram subscriber record for their chat)
-    const telegramResult = await client.query(
-      'SELECT telegram_chat_id FROM users WHERE email = $1',
-      [email]
+    // Telegram: the chat keeps its broadcast subscription (its owner can /stop it), unlinked from this account
+    const linked = await client.query('SELECT telegram_chat_id FROM users WHERE email = $1', [email]);
+    const chatId = linked.rows[0] && linked.rows[0].telegram_chat_id;
+    await client.query(
+      'UPDATE telegram_subscribers SET user_id = NULL WHERE user_id = $1' + (chatId ? ' OR chat_id = $2' : ''),
+      chatId ? [email, String(chatId)] : [email]
     );
 
-    if (telegramResult.rows.length > 0 && telegramResult.rows[0].telegram_chat_id) {
-      const chatId = telegramResult.rows[0].telegram_chat_id;
-      await client.query(
-        'UPDATE telegram_subscribers SET user_id = NULL WHERE chat_id = $1',
-        [chatId]
-      );
-    }
-
-    // Mark subscriptions as deleted (don't actually delete for financial records)
-    try {
-      await client.query(`
-        UPDATE user_subscriptions
-        SET status = 'deleted',
-            updated_at = CURRENT_TIMESTAMP
-        WHERE user_email = $1
-      `, [email]);
-    } catch (e) {}
-
-    // Delete payment transactions (already archived)
-    try {
-      await client.query('DELETE FROM payment_transactions WHERE user_email = $1', [email]);
-    } catch (e) {}
-
-    try {
-      await client.query('DELETE FROM payment_refunds WHERE user_email = $1', [email]);
-    } catch (e) {}
+    await step('DELETE FROM payment_verification_queue WHERE user_email = $1');
+    await step('DELETE FROM payment_refunds WHERE user_email = $1');
+    await step('DELETE FROM payment_transactions WHERE user_email = $1');
+    await step('DELETE FROM subscription_history WHERE user_email = $1');
+    await step('DELETE FROM subscription_grants WHERE user_email = $1');
+    await step('DELETE FROM user_subscriptions WHERE user_email = $1');
 
     // 4. Finally, delete the user record
     await client.query('DELETE FROM users WHERE email = $1', [email]);
 
+    // 5. The audit triggers of migrations/007 copy every changed trade, preference and profile row
+    //    (row_to_json) into these logs - including the deletions just made - so they go last.
+    for (const table of ['trade_audit_log', 'alert_preferences_audit_log', 'user_audit_log',
+      'trade_audit_log_archive', 'alert_preferences_audit_log_archive', 'user_audit_log_archive']) {
+      await step(`DELETE FROM ${table} WHERE user_email = $1`);
+    }
+
     await client.query('COMMIT');
-
-    // 5. Logout the user (destroy session)
-    if (req.logout) {
-      req.logout((err) => {
-        if (err) console.error('Error during logout:', err);
-      });
-    }
-
-    if (req.session) {
-      req.session.destroy();
-    }
-
-    res.json({
-      success: true,
-      message: 'Account successfully deleted',
-      details: {
-        email: email,
-        deletionDate: new Date().toISOString(),
-        financialRecordsRetained: financialRecords.paymentTransactions.length > 0 ||
-                                   financialRecords.paymentRefunds.length > 0 ||
-                                   financialRecords.subscriptions.length > 0,
-        retentionPeriod: '6 years as required by UK financial regulations'
-      }
-    });
-
   } catch (error) {
-    await client.query('ROLLBACK');
+    try {
+      await client.query('ROLLBACK');
+    } catch (rollbackError) {
+      releaseError = rollbackError;   // a broken connection must not go back to the pool
+    }
     console.error('Error deleting account:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to delete account',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   } finally {
-    client.release();
-    await pool.end();
+    client.release(releaseError);
   }
+
+  // 6. End the account's sessions. The account is already gone, so a failure here is only logged.
+  try {
+    // passport 0.7's logout saves, then regenerates, the session in callbacks: the session may be
+    // destroyed only after it has finished. Destroying it first (as this route did) makes passport's
+    // callback throw outside any try/catch, which kills the process.
+    if (typeof req.logout === 'function') {
+      await new Promise((resolve) => req.logout((err) => {
+        if (err) console.error('Error during logout:', err);
+        resolve();
+      }));
+    }
+    // Sessions on the account's other devices: every signed-in request re-creates a missing users
+    // row (ensureUserInDatabase), so a session left behind would bring the account back.
+    const store = req.sessionStore;
+    if (store && typeof store.destroyUserSessions === 'function') {
+      // The Postgres store (lib/shared/pg-session-store.js) ends them in one statement
+      await new Promise((resolve) => store.destroyUserSessions(email, () => resolve()));
+    } else if (store && typeof store.all === 'function') {
+      await new Promise((resolve) => store.all((err, sessions) => {
+        if (!err && sessions) {
+          for (const [sid, session] of Object.entries(sessions)) {
+            const owner = session && session.passport && session.passport.user;
+            if (owner && owner.email === email) store.destroy(sid);
+          }
+        }
+        resolve();
+      }));
+    }
+    if (req.session) {
+      await new Promise((resolve) => req.session.destroy(() => resolve()));
+    }
+  } catch (error) {
+    console.error('Error ending sessions after account deletion:', error);
+  }
+
+  res.json({
+    success: true,
+    message: 'Account successfully deleted',
+    details: {
+      email: email,
+      deletionDate: new Date().toISOString(),
+      financialRecordsRetained,
+      retentionPeriod: financialRecordsRetained ? '6 years as required by UK financial regulations' : null
+    }
+  });
 });
 
 // Admin-only: Manually link Telegram to OAuth user

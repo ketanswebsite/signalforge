@@ -25,6 +25,14 @@ function fakePool({ failCreates = 0 } = {}) {
             }
             if (q.startsWith('INSERT INTO')) { rows.set(values[0], { sess: values[1], expire: values[2] }); return { rowCount: 1 }; }
             if (q.startsWith(`DELETE FROM ${TABLE} WHERE sid`)) return { rowCount: rows.delete(values[0]) ? 1 : 0 };
+            if (q.startsWith(`DELETE FROM ${TABLE} WHERE sess`)) {
+                let n = 0;
+                for (const [sid, r] of rows) {
+                    const s = JSON.parse(r.sess);
+                    if (s.passport && s.passport.user && s.passport.user.email === values[0]) { rows.delete(sid); n++; }
+                }
+                return { rowCount: n };
+            }
             if (q.startsWith('UPDATE')) {
                 const r = rows.get(values[0]);
                 if (r && r.expire < values[1]) { r.expire = values[1]; return { rowCount: 1 }; }
@@ -101,6 +109,17 @@ test('touch only ever pushes the expiry later', async () => {
     const later = new Date(Date.now() + 20 * HOUR);
     await call(store, 'touch', 'sid-4', sessionFor('u@e2e.invalid', later));
     expect(pool.rows.get('sid-4').expire.getTime()).toBe(later.getTime());
+});
+
+test('destroyUserSessions ends every session of one account and no other', async () => {
+    const pool = fakePool();
+    const store = new PgSessionStore({ pool, pruneEveryMs: 0 });
+    const later = new Date(Date.now() + HOUR);
+    await call(store, 'set', 'phone', sessionFor('gone@e2e.invalid', later));
+    await call(store, 'set', 'laptop', sessionFor('gone@e2e.invalid', later));
+    await call(store, 'set', 'someone-else', sessionFor('stays@e2e.invalid', later));
+    await expect(call(store, 'destroyUserSessions', 'gone@e2e.invalid')).resolves.toBe(2);
+    expect([...pool.rows.keys()]).toEqual(['someone-else']);
 });
 
 test('prune deletes expired rows only and says how many', async () => {
