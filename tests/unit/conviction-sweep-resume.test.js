@@ -25,12 +25,17 @@
  *      line when Gemini failed and verdicts were stored rule-based (what 2026-08-29 did);
  *      sent to ADMIN_EMAIL's linked chat only, retried as plain text, never fatal to the
  *      sweep, and off with CONVICTION_SWEEP_ALERTS=false.
- *   5. The rails around the owner's shouldResumeSweep() policy.
+ *   5. The shipped resume policy - at least max(50, 1% of the universe) left - and the
+ *      rails around it.
  *   6. getVerdictStats(days, { day }) adds one date's writes per 10 minutes.
+ *   7. runSweepWatchdog(), the sweep-day watchdog: sweep day from 09:00 to 20:00 UK only,
+ *      its own switch (CONVICTION_SWEEP_WATCHDOG), the same rails as a restart, at most
+ *      3 runs a day - and the end report names only a pick-up that really will happen.
  *
  * "The shipped policy" block describes shouldResumeSweep() as shipped - if you reshape
- * that function, that block is the one to edit with it. Everything else holds whatever
- * the policy decides.
+ * that function, that block is the one to edit with it. The tests of the pick-up
+ * mechanics hand in `policy: pickUp` (always yes): their universes are far smaller than
+ * the shipped floor of 50, and they hold whatever the policy decides.
  */
 
 process.env.CONVICTION_SWEEP_DELAY_MS = '1';   // read once, when the sweep module loads
@@ -60,10 +65,18 @@ const SWEEP_DAY_10AM = new Date('2026-10-03T09:00:00Z');   // Sat 3 Oct, 10:00 U
 const SWEEP_DAY_0730 = new Date('2026-10-03T06:30:00Z');   // 07:30 UK: the 08:00 cron has not fired yet
 const SECOND_SATURDAY = new Date('2026-10-10T09:00:00Z');
 const WEDNESDAY = new Date('2026-09-23T12:00:00Z');
+// The watchdog's day: it looks from 09:00 to 20:00 UK
+const SWEEP_DAY_0830 = new Date('2026-10-03T07:30:00Z');
+const SWEEP_DAY_0900 = new Date('2026-10-03T08:00:00Z');
+const SWEEP_DAY_2000 = new Date('2026-10-03T19:00:00Z');
+const SWEEP_DAY_2030 = new Date('2026-10-03T19:30:00Z');
 
-const ENV = ['CONVICTION_SWEEP', 'CONVICTION_SWEEP_BOOT_RESUME', 'CONVICTION_SWEEP_ALERTS', 'CONVICTION_SWEEP_FRESH',
-    'CONVICTION_SWEEP_RESUME_DAYS', 'CONVICTION_MAX_AGE_DAYS', 'CONVICTION_CACHE_TTL_MIN', 'GEMINI_API_KEY',
-    'PRICE_UNIT_REPAIR', 'ADMIN_EMAIL'];
+// The pick-up mechanics are tested with a policy that always says yes
+const pickUp = () => true;
+
+const ENV = ['CONVICTION_SWEEP', 'CONVICTION_SWEEP_BOOT_RESUME', 'CONVICTION_SWEEP_WATCHDOG', 'CONVICTION_SWEEP_ALERTS',
+    'CONVICTION_SWEEP_FRESH', 'CONVICTION_SWEEP_RESUME_DAYS', 'CONVICTION_MAX_AGE_DAYS', 'CONVICTION_CACHE_TTL_MIN',
+    'GEMINI_API_KEY', 'PRICE_UNIT_REPAIR', 'ADMIN_EMAIL'];
 const envAtStart = Object.fromEntries(ENV.map(k => [k, process.env[k]]));
 
 /** A verdict as the engine stored it `ageDays` ago */
@@ -165,6 +178,8 @@ beforeEach(() => {
     for (const k of ENV) delete process.env[k];
     // The shared owner sender remembers the last good chat id (a failing database answers null)
     OwnerAlerts.reset();
+    // and the watchdog the runs it has started today
+    Sweep.resetWatchdog();
     jest.spyOn(console, 'log').mockImplementation(() => {});
 });
 
@@ -204,7 +219,7 @@ describe('resumeInterruptedSweep - a restart on sweep day', () => {
         sourcesUp();
         ownerLinked();
 
-        const decision = await Sweep.resumeInterruptedSweep({ now: SWEEP_DAY_10AM });
+        const decision = await Sweep.resumeInterruptedSweep({ now: SWEEP_DAY_10AM, policy: pickUp });
         expect(decision).toMatchObject({ resumed: true, remaining: 2 });
         const result = await decision.run;
 
@@ -257,12 +272,12 @@ describe('resumeInterruptedSweep - a restart on sweep day', () => {
         sourcesUp();
         ownerLinked();
 
-        const pending = Sweep.resumeInterruptedSweep({ now: SWEEP_DAY_10AM });   // parked on its first read
+        const pending = Sweep.resumeInterruptedSweep({ now: SWEEP_DAY_10AM, policy: pickUp });   // parked on its first read
         const cronRun = Sweep.runConvictionSweep({ trigger: 'monthly' });        // 08:00 fires meanwhile
         const decision = await pending;
         await cronRun;
 
-        expect(decision.resumed).toBe(false);
+        expect(decision).toMatchObject({ resumed: false, reason: expect.stringMatching(/already running/) });
         expect(scoredSymbols().sort()).toEqual(['RACE1.L', 'RACE2.L']);        // each scored once
     });
 
@@ -321,7 +336,9 @@ describe('scheduleResumeCheck - the boot hook', () => {
     test('keeps looking while another process writes, then picks the run up', async () => {
         jest.useFakeTimers({ now: SWEEP_DAY_10AM });
         const table = verdictTable([['HAND1.L', 0, 20]]);      // the old process wrote 20 s ago
-        universe('HAND1.L', 'HAND2.L');
+        // 50 left, the shipped policy's floor: the real restart path, policy included
+        const left = Array.from({ length: 50 }, (_, i) => `HAND${i + 2}.L`);
+        universe('HAND1.L', ...left);
         sourcesUp();
         ownerLinked();
 
@@ -331,10 +348,10 @@ describe('scheduleResumeCheck - the boot hook', () => {
         expect(axios.get).not.toHaveBeenCalled();
 
         await jest.advanceTimersByTimeAsync(3 * 60 * 1000);   // the old process is gone by now
-        for (let i = 0; i < 20 && Sweep.getSweepStatus().running; i++) await jest.advanceTimersByTimeAsync(50);
+        for (let i = 0; i < 200 && Sweep.getSweepStatus().running; i++) await jest.advanceTimersByTimeAsync(50);
 
-        expect(logged()).toMatch(/picking the sweep up again — 1 symbol left/);
-        expect(scoredSymbols()).toEqual(['HAND2.L']);
+        expect(logged()).toMatch(/picking the sweep up again — 50 symbols left/);
+        expect(scoredSymbols().sort()).toEqual([...left].sort());
         expect(table.today('HAND2.L')).toBeDefined();
     });
 });
@@ -438,7 +455,7 @@ describe('the owner report', () => {
         sourcesUp();
         ownerLinked();
 
-        await (await Sweep.resumeInterruptedSweep({ now: SWEEP_DAY_10AM })).run;
+        await (await Sweep.resumeInterruptedSweep({ now: SWEEP_DAY_10AM, policy: pickUp })).run;
         const [start, end] = sentMessages();
 
         expect(start).toMatch(/🔁 \*AI SWEEP PICKED UP AGAIN\* — picked up after a restart/);
@@ -523,13 +540,43 @@ describe('the owner report', () => {
     });
 });
 
-describe('shouldResumeSweep - the shipped policy', () => {
-    const state = remaining => ({ remaining, universe: 5029, ukHour: 10, minutesSinceLastWrite: 5 });
+describe('shouldResumeSweep - the shipped policy: at least max(50, 1% of the universe) left', () => {
+    const state = (remaining, universe = 5029) => ({ remaining, universe, ukHour: 10, minutesSinceLastWrite: 5 });
 
-    test('picks the run up whenever anything is left', () => {
-        expect(Sweep.shouldResumeSweep(state(1))).toBe(true);
+    test('a run that died leaves hundreds or thousands behind: picked up', () => {
         expect(Sweep.shouldResumeSweep(state(3007))).toBe(true);
+        expect(Sweep.shouldResumeSweep(state(51))).toBe(true);          // 1% of 5,029 is 50.29
+    });
+
+    test('the leftovers of a run that finished - its blind and failed symbols - are not', () => {
+        expect(Sweep.shouldResumeSweep(state(50))).toBe(false);
+        expect(Sweep.shouldResumeSweep(state(1))).toBe(false);
         expect(Sweep.shouldResumeSweep(state(0))).toBe(false);
+    });
+
+    test('never for fewer than 50, however small the universe; 1% once that is more', () => {
+        expect(Sweep.shouldResumeSweep(state(49, 400))).toBe(false);
+        expect(Sweep.shouldResumeSweep(state(50, 400))).toBe(true);
+        expect(Sweep.shouldResumeSweep(state(69, 7000))).toBe(false);
+        expect(Sweep.shouldResumeSweep(state(70, 7000))).toBe(true);    // exactly 1%, no rounding up
+    });
+
+    test('the hour and the last write do not change the answer', () => {
+        expect(Sweep.shouldResumeSweep({ remaining: 60, universe: 5029, ukHour: 23, minutesSinceLastWrite: null })).toBe(true);
+        expect(Sweep.shouldResumeSweep({ remaining: 20, universe: 5029, ukHour: 9, minutesSinceLastWrite: 0 })).toBe(false);
+    });
+
+    test('a restart after a run that finished with a few blind symbols leaves them to on-demand scoring', async () => {
+        verdictTable([['FEW1.L', 0]]);
+        universe('FEW1.L', 'FEW2.L', 'FEW3.L');
+        sourcesUp();
+        ownerLinked();
+
+        const decision = await Sweep.resumeInterruptedSweep({ now: SWEEP_DAY_10AM });
+
+        expect(decision).toMatchObject({ resumed: false, remaining: 2, reason: expect.stringMatching(/declined/) });
+        expect(axios.get).not.toHaveBeenCalled();
+        expect(telegramBot.sendTelegramAlert).not.toHaveBeenCalled();
     });
 });
 
@@ -612,6 +659,191 @@ describe('getVerdictStats - one date, per 10 minutes', () => {
 
         const { settings } = await Sweep.getVerdictStats(30);
 
-        expect(settings).toMatchObject({ bootResume: false, ownerReports: true, sweepEnabled: true });
+        expect(settings).toMatchObject({ bootResume: false, watchdog: true, ownerReports: true, sweepEnabled: true });
+    });
+});
+
+describe('runSweepWatchdog - sweep day, every 30 minutes from 09:00 to 20:00 UK', () => {
+    test('picks up a run that ended short and scores ONLY what is not stored', async () => {
+        const table = verdictTable([['WD1.L', 0]]);
+        universe('WD1.L', 'WD2.L', 'WD3.L');
+        sourcesUp();
+        ownerLinked();
+
+        const decision = await Sweep.runSweepWatchdog({ now: SWEEP_DAY_10AM, policy: pickUp });
+        expect(decision).toMatchObject({ resumed: true, remaining: 2 });
+        const result = await decision.run;
+
+        expect(result).toMatchObject({ trigger: 'watchdog', total: 3, scored: 2, skipped: 1, remaining: 0 });
+        expect(scoredSymbols().sort()).toEqual(['WD2.L', 'WD3.L']);
+        expect(table.today('WD1.L').pillars.technical.evidence).toEqual(['stored']);   // not paid for twice
+        const [start, end] = sentMessages();
+        expect(start).toMatch(/🔁 \*AI SWEEP PICKED UP AGAIN\* — picked up by the sweep-day watchdog/);
+        expect(end).toMatch(/✅ \*AI SWEEP FINISHED\* — picked up by the sweep-day watchdog/);
+        expect(logged()).toMatch(/Watchdog: picking the sweep up again — 2 symbols left/);
+    });
+
+    test.each([
+        ['a Wednesday', {}, WEDNESDAY, /^not sweep day$/],
+        ['the second Saturday', {}, SECOND_SATURDAY, /^not sweep day$/],
+        ['08:30 UK on sweep day - the monthly run has just begun', {}, SWEEP_DAY_0830, /outside the watchdog hours/],
+        ['20:30 UK on sweep day', {}, SWEEP_DAY_2030, /outside the watchdog hours/],
+        ['CONVICTION_SWEEP=false', { CONVICTION_SWEEP: 'false' }, SWEEP_DAY_10AM, /^CONVICTION_SWEEP=false$/],
+        ['CONVICTION_SWEEP_WATCHDOG=false', { CONVICTION_SWEEP_WATCHDOG: 'false' }, SWEEP_DAY_10AM, /^CONVICTION_SWEEP_WATCHDOG=false$/]
+    ])('never on %s - and not even a table read', async (_, env, now, reason) => {
+        Object.assign(process.env, env);
+        verdictTable();
+        universe('WDRAIL1.L', 'WDRAIL2.L');
+        sourcesUp();
+        ownerLinked();
+
+        const decision = await Sweep.runSweepWatchdog({ now, policy: pickUp });
+
+        expect(decision).toMatchObject({ resumed: false, reason: expect.stringMatching(reason) });
+        expect(db.pool.query).not.toHaveBeenCalled();
+        expect(axios.get).not.toHaveBeenCalled();
+        expect(telegramBot.sendTelegramAlert).not.toHaveBeenCalled();
+    });
+
+    test('says nothing on any other day - its cron fires every Saturday', async () => {
+        await Sweep.runSweepWatchdog({ now: SECOND_SATURDAY, policy: pickUp });
+
+        expect(logged()).not.toMatch(/Watchdog/);
+    });
+
+    test.each([
+        ['09:00 UK, its first check', SWEEP_DAY_0900],
+        ['20:00 UK, its last', SWEEP_DAY_2000]
+    ])('%s: it looks, and asks the policy', async (_, now) => {
+        verdictTable([['EDGE1.L', 0]]);
+        universe('EDGE1.L', 'EDGE2.L');
+        const policy = jest.fn(() => false);
+
+        const decision = await Sweep.runSweepWatchdog({ now, policy });
+
+        expect(policy).toHaveBeenCalledTimes(1);
+        expect(decision).toMatchObject({ resumed: false, remaining: 1, reason: expect.stringMatching(/declined/) });
+    });
+
+    test('its own switch: CONVICTION_SWEEP_BOOT_RESUME=false stops the restart check, not the watchdog', async () => {
+        process.env.CONVICTION_SWEEP_BOOT_RESUME = 'false';
+        verdictTable([['OWNSW1.L', 0]]);
+        universe('OWNSW1.L', 'OWNSW2.L');
+        sourcesUp();
+        ownerLinked();
+
+        const restart = await Sweep.resumeInterruptedSweep({ now: SWEEP_DAY_10AM, policy: pickUp });
+        const watchdog = await Sweep.runSweepWatchdog({ now: SWEEP_DAY_10AM, policy: pickUp });
+        await watchdog.run;
+
+        expect(restart).toMatchObject({ resumed: false, reason: 'CONVICTION_SWEEP_BOOT_RESUME=false' });
+        expect(watchdog).toMatchObject({ resumed: true, remaining: 1 });
+        expect(scoredSymbols()).toEqual(['OWNSW2.L']);
+    });
+
+    test('never a second run in this process: the monthly run is still going', async () => {
+        verdictTable();
+        universe('WDBUSY1.L', 'WDBUSY2.L');
+        sourcesUp();
+        ownerLinked();
+
+        const cronRun = Sweep.runConvictionSweep({ trigger: 'monthly' });
+        const decision = await Sweep.runSweepWatchdog({ now: SWEEP_DAY_10AM, policy: pickUp });
+        await cronRun;
+
+        expect(decision).toMatchObject({ resumed: false, reason: expect.stringMatching(/already running/) });
+        expect(scoredSymbols().sort()).toEqual(['WDBUSY1.L', 'WDBUSY2.L']);        // each scored once
+    });
+
+    test('never while another process is still writing verdicts', async () => {
+        verdictTable([['WDHAND1.L', 0, 45]]);                  // written 45 seconds ago
+        universe('WDHAND1.L', 'WDHAND2.L');
+        sourcesUp();
+        ownerLinked();
+
+        const decision = await Sweep.runSweepWatchdog({ now: SWEEP_DAY_10AM, policy: pickUp });
+
+        expect(decision).toMatchObject({ resumed: false, retry: true, remaining: 1 });
+        expect(decision.reason).toMatch(/written 45s ago/);
+        expect(axios.get).not.toHaveBeenCalled();
+    });
+
+    test('sources down all day: three futile runs, not twenty-three - and a fresh count next sweep day', async () => {
+        verdictTable();
+        universe('DOWN1.L', 'DOWN2.L');
+        sourcesUp('DOWN1.L', 'DOWN2.L');                          // every result blind: nothing is stored
+        ownerLinked();
+
+        const decisions = [];
+        for (const iso of ['2026-10-03T09:00:00Z', '2026-10-03T09:30:00Z', '2026-10-03T10:00:00Z', '2026-10-03T10:30:00Z']) {
+            const decision = await Sweep.runSweepWatchdog({ now: new Date(iso), policy: pickUp });
+            decisions.push(decision);
+            await decision.run;
+        }
+
+        expect(decisions.map(d => d.resumed)).toEqual([true, true, true, false]);
+        expect(decisions[3].reason).toMatch(/already started 3 runs today/);
+        expect(sentMessages()).toHaveLength(6);                   // picked up + finished short, three times
+
+        const nextSweepDay = await Sweep.runSweepWatchdog({ now: new Date('2026-11-07T10:00:00Z'), policy: pickUp });
+        await nextSweepDay.run;
+        expect(nextSweepDay.resumed).toBe(true);
+    });
+
+    test('a table that cannot be read: no run, no message, and the try does not count', async () => {
+        db.pool.query.mockRejectedValue(new Error('Connection terminated unexpectedly'));
+        universe('WDDARK1.L');
+        sourcesUp();
+        ownerLinked();
+
+        for (const iso of ['2026-10-03T09:00:00Z', '2026-10-03T09:30:00Z', '2026-10-03T10:00:00Z']) {
+            const decision = await Sweep.runSweepWatchdog({ now: new Date(iso), policy: pickUp });
+            expect(decision).toMatchObject({ resumed: false, reason: expect.stringMatching(/could not be read/) });
+        }
+        expect(axios.get).not.toHaveBeenCalled();
+        expect(telegramBot.sendTelegramAlert).not.toHaveBeenCalled();
+
+        verdictTable();                                            // the database is back
+        const decision = await Sweep.runSweepWatchdog({ now: new Date('2026-10-03T10:30:00Z'), policy: pickUp });
+        await decision.run;
+        expect(decision.resumed).toBe(true);
+    });
+});
+
+describe('the end report names what will pick the leftovers up - and only what really will', () => {
+    // A monthly run on sweep day at 10:00 UK where `left` symbols come back blind (nothing stored)
+    async function endReportOnSweepDay(prefix, left) {
+        jest.useFakeTimers({ now: SWEEP_DAY_10AM });
+        const blind = Array.from({ length: left }, (_, i) => `${prefix}${i + 2}.L`);
+        verdictTable();
+        universe(`${prefix}1.L`, ...blind);
+        sourcesUp(...blind);
+        ownerLinked();
+
+        const run = Sweep.runConvictionSweep({ trigger: 'monthly' });
+        for (let i = 0; i < 200 && Sweep.getSweepStatus().running; i++) await jest.advanceTimersByTimeAsync(50);
+        await run;
+        return sentMessages()[1];
+    }
+
+    test('fewer than the floor: no automatic pick-up, so re-fire by hand', async () => {
+        const end = await endReportOnSweepDay('FLOOR', 2);
+
+        expect(end).toMatch(/2 symbols left without a verdict this recent/);
+        expect(end).toMatch(/No automatic pick-up for fewer than 50\. To finish them: re-fire POST/);
+    });
+
+    test('enough for a pick-up, inside the watchdog\'s hours: the watchdog', async () => {
+        const end = await endReportOnSweepDay('WDNOTE', 50);
+
+        expect(end).toMatch(/50 symbols left without a verdict this recent/);
+        expect(end).toMatch(/The sweep-day watchdog picks them up within 30 minutes\. Or re-fire POST/);
+    });
+
+    test('the watchdog switched off: a restart', async () => {
+        process.env.CONVICTION_SWEEP_WATCHDOG = 'false';
+        const end = await endReportOnSweepDay('RSNOTE', 50);
+
+        expect(end).toMatch(/A restart today picks them up\. Or re-fire POST/);
     });
 });

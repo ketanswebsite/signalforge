@@ -34,9 +34,16 @@
  *   - a restart on sweep day picks the run up again (resumeInterruptedSweep).
  *     It scores only what is not stored yet, so nothing already done is paid
  *     for twice — only the few symbols that were mid-flight when it died.
+ *   - so does the sweep-day watchdog (runSweepWatchdog), every 30 minutes from
+ *     09:00 to 20:00 UK, for a run that ended short in a process that lived on:
+ *     a refused start, sources that failed part-way (2026-08-29), a run that
+ *     threw. It starts at most WATCHDOG_MAX_RUNS runs a day.
+ *   - either pick-up needs at least max(50, 1% of the universe) symbols left
+ *     (shouldResumeSweep); fewer wait for on-demand scoring.
  *
- * Kill switch: CONVICTION_SWEEP=false (the monthly run and the restart pick-up)
+ * Kill switch: CONVICTION_SWEEP=false (the monthly run, the restart pick-up and the watchdog)
  * No pick-up after a restart: CONVICTION_SWEEP_BOOT_RESUME=false
+ * No sweep-day watchdog: CONVICTION_SWEEP_WATCHDOG=false
  * No owner messages: CONVICTION_SWEEP_ALERTS=false
  * Reuse instead of re-scoring (the pre-2026-09 behaviour): CONVICTION_SWEEP_FRESH=false
  * Manual trigger: POST /api/ops/conviction-sweep (ANALYSIS_API_TOKEN in the x-analysis-token header)
@@ -63,17 +70,28 @@ const RESUME_CHECK_DELAY_MS = 3 * 60 * 1000;
 // recently means a run is still going somewhere; look again a little later
 const BUSY_WINDOW_SECONDS = 120;
 const RESUME_RECHECK_MS = 3 * 60 * 1000;
+// A pick-up (after a restart, or by the watchdog) needs at least this many
+// symbols left: 1% of the universe, and never fewer than 50. See shouldResumeSweep()
+const RESUME_MIN_LEFT = 50;
+const RESUME_MIN_PERCENT = 1;
+// The sweep-day watchdog acts from 09:00 to 20:00 UK, both included (minutes
+// after midnight; the scanner cron hub fires it at '*/30 9-20 * * 6'), and
+// starts at most WATCHDOG_MAX_RUNS runs a day
+const WATCHDOG_FIRST_MINUTE_UK = 9 * 60;
+const WATCHDOG_LAST_MINUTE_UK = 20 * 60;
+const WATCHDOG_MAX_RUNS = 3;
 const MAX_ERROR_LENGTH = 200;
 
 const TRIGGER_LABEL = {
     monthly: 'monthly run',
     resume: 'picked up after a restart',
+    watchdog: 'picked up by the sweep-day watchdog',
     manual: 'manual run'
 };
 
 const status = {
     running: false,
-    trigger: null,          // 'monthly' | 'resume' | 'manual'
+    trigger: null,          // 'monthly' | 'resume' | 'watchdog' | 'manual'
     startedAt: null,
     finishedAt: null,
     total: 0,
@@ -137,24 +155,49 @@ function bootResumeEnabled() {
     return process.env.CONVICTION_SWEEP_BOOT_RESUME !== 'false';
 }
 
+function watchdogEnabled() {
+    return process.env.CONVICTION_SWEEP_WATCHDOG !== 'false';
+}
+
+// The runs the watchdog has started, for one UK date at a time. In memory:
+// a restart forgets it, and the restart check covers that moment anyway
+const watchdogDay = { date: null, runs: 0 };
+
+function watchdogRunsOn(date) {
+    return watchdogDay.date === date ? watchdogDay.runs : 0;
+}
+
 function tally() {
     return `${status.scored} scored (${status.withoutGemini} without Gemini), ${status.reused} reused, ${status.blind} blind, ${status.skipped} skipped, ${status.failed} failed`;
 }
 
 /**
- * The Europe/London wall clock: weekday (0 = Sunday), day of the month, hour.
+ * The Europe/London wall clock: weekday (0 = Sunday), day of the month, hour,
+ * minute, and the date as YYYY-MM-DD.
  */
 function ukClock(now = new Date()) {
     const parts = {};
     const format = new Intl.DateTimeFormat('en-GB', {
-        timeZone: 'Europe/London', weekday: 'short', day: 'numeric', hour: 'numeric', hourCycle: 'h23'
+        timeZone: 'Europe/London', weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: 'numeric', minute: 'numeric', hourCycle: 'h23'
     });
     for (const part of format.formatToParts(now)) parts[part.type] = part.value;
     return {
         weekday: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(parts.weekday),
         day: parseInt(parts.day, 10),
-        hour: parseInt(parts.hour, 10)
+        hour: parseInt(parts.hour, 10),
+        minute: parseInt(parts.minute, 10),
+        date: `${parts.year}-${parts.month}-${parts.day}`
     };
+}
+
+/**
+ * The watchdog's hours: 09:00 to 20:00 UK, both included.
+ */
+function withinWatchdogHours(now = new Date()) {
+    const { hour, minute } = ukClock(now);
+    const minuteOfDay = hour * 60 + minute;
+    return minuteOfDay >= WATCHDOG_FIRST_MINUTE_UK && minuteOfDay <= WATCHDOG_LAST_MINUTE_UK;
 }
 
 /**
@@ -259,12 +302,31 @@ function triggerLabel(trigger) {
 const REFIRE_HINT = 're-fire POST /api/ops/conviction-sweep, which skips what is done';
 
 function formatStartMessage({ trigger, universe, toScore, fresh }) {
-    return `${trigger === 'resume' ? '🔁 *AI SWEEP PICKED UP AGAIN*' : '🧠 *AI SWEEP STARTED*'} — ${triggerLabel(trigger)}\n\n` +
+    return `${trigger === 'resume' || trigger === 'watchdog' ? '🔁 *AI SWEEP PICKED UP AGAIN*' : '🧠 *AI SWEEP STARTED*'} — ${triggerLabel(trigger)}\n\n` +
         `📋 *To score:* ${count(toScore)} of ${count(universe)} symbols ` +
         `(skipping ${count(universe - toScore)} with a verdict from the last ${resumeWindowDays()} days)\n` +
         `🔄 *Mode:* ${fresh ? 'fresh re-score' : `${markdownSafe('CONVICTION_SWEEP_FRESH=false')}: verdicts still in date are reused`}\n` +
         `🕐 *Time:* ${formatDateTimeUK(new Date())}\n\n` +
         `A report follows when the run ends. No report means the run died and nothing picked it up: ${REFIRE_HINT}.`;
+}
+
+/**
+ * The end report's word on the symbols a run left behind: what will pick them
+ * up, and only what really will. A pick-up needs sweep day and at least
+ * resumeThreshold() symbols left; the watchdog, its hours and a run to spare.
+ */
+function pickUpNote(remaining, universe, now = new Date()) {
+    if (process.env.CONVICTION_SWEEP === 'false' || !isSweepDay(now)) {
+        return 'To finish them: ';
+    }
+    if (remaining < resumeThreshold(universe)) {
+        return `No automatic pick-up for fewer than ${count(resumeThreshold(universe))}. To finish them: `;
+    }
+    const { hour, minute, date } = ukClock(now);
+    if (watchdogEnabled() && hour * 60 + minute < WATCHDOG_LAST_MINUTE_UK && watchdogRunsOn(date) < WATCHDOG_MAX_RUNS) {
+        return 'The sweep-day watchdog picks them up within 30 minutes. Or ';
+    }
+    return bootResumeEnabled() ? 'A restart today picks them up. Or ' : 'To finish them: ';
 }
 
 /**
@@ -299,8 +361,7 @@ function formatEndMessage(run, universe) {
     if (run.remaining > 0) {
         message += `\n${symbolCount(run.remaining)} left without a verdict this recent: each keeps its older one ` +
             'until that expires, then gets scored on demand, one at a time. ' +
-            (isSweepDay() && bootResumeEnabled() ? 'A restart today picks them up. Or ' : 'To finish them: ') +
-            `${REFIRE_HINT}.`;
+            `${pickUpNote(run.remaining, universe)}${REFIRE_HINT}.`;
     }
     return message;
 }
@@ -315,7 +376,7 @@ function formatRefusalMessage(trigger) {
 
 /**
  * @param {object} [options]
- * @param {'monthly'|'resume'|'manual'} [options.trigger]  who started it: the cron, a restart, or a person
+ * @param {'monthly'|'resume'|'watchdog'|'manual'} [options.trigger]  who started it: the cron, a restart, the watchdog, or a person
  */
 async function runConvictionSweep({ trigger = 'manual' } = {}) {
     if (status.running) {
@@ -431,38 +492,45 @@ function getSweepStatus() {
 }
 
 /**
- * The plain rule: anything the sweep has not stored yet is worth picking up.
- * It is also what resolveShouldResume() falls back to when the policy below
- * misbehaves.
+ * The fallback: anything the sweep has not stored yet is worth picking up.
+ * resolveShouldResume() falls back to it when the policy below misbehaves,
+ * so a broken policy errs towards coverage.
  */
 function anythingLeft(state) {
     return state.remaining > 0;
 }
 
 /**
- * Should a restart on sweep day pick the monthly sweep up again?
+ * The fewest symbols left that a pick-up is worth starting for: 1% of the
+ * universe, and never fewer than 50 (51 of today's 5,029).
+ */
+function resumeThreshold(universe) {
+    return Math.max(RESUME_MIN_LEFT, Math.ceil(universe * RESUME_MIN_PERCENT / 100));
+}
+
+/**
+ * Should the sweep be picked up again, after a restart or by the sweep-day
+ * watchdog? Yes when at least resumeThreshold() symbols are left
+ * (README §4.7).
  *
- * ── Yours to shape ───────────────────────────────────────────────────────
- * This runs once per restart on a sweep day, after the rails below have
- * passed, and every `true` spends Gemini calls — one per symbol still
- * uncovered — and sends you two Telegram messages (picked up, finished).
+ * Why a floor: a run that FINISHED still leaves its blind and failed symbols
+ * uncovered, and each pick-up costs a run plus two Telegram messages (picked
+ * up, finished). Without a floor every deploy that day, and every watchdog
+ * check, would retry a handful of dead tickers. A real death leaves hundreds
+ * or thousands behind; a handful waits for on-demand scoring instead, one
+ * Gemini call per symbol when something asks for it.
  *
- * Things you might decide differently from the plain rule:
- *   - A small remainder is usually not a death: a run that FINISHED leaves
- *     its blind/failed symbols uncovered, so every later deploy that day
- *     retries them. Cheap, but two messages each time. A floor such as
- *     remaining >= universe / 100 keeps resumes for real deaths only, and
- *     leaves the leftovers to on-demand scoring.
- *   - Late in the day: at 21:00 with 3,000 left, the run goes on past 01:00.
- *     You may prefer to re-fire it yourself after some hour.
- *   - minutesSinceLastWrite: a run that died minutes ago is very different
- *     from leftovers of a run that ended hours ago.
+ * The hour and minutesSinceLastWrite do not matter. A pick-up scores only
+ * what is not stored, so a late one costs no more than an early one, and a
+ * run another process is still writing is kept away by the busy check
+ * (BUSY_WINDOW_SECONDS) before this is asked.
  *
- * Rails you cannot break from here (resumeInterruptedSweep): CONVICTION_SWEEP
- * and CONVICTION_SWEEP_BOOT_RESUME, sweep day only, never before the 08:00
- * cron, never while a sweep runs here or another process is still writing
+ * Rails no policy can break (resumeInterruptedSweep): CONVICTION_SWEEP and the
+ * caller's own switch (CONVICTION_SWEEP_BOOT_RESUME or
+ * CONVICTION_SWEEP_WATCHDOG), sweep day only, never before the 08:00 cron,
+ * never while a sweep runs here or another process is still writing
  * verdicts, never when conviction_daily cannot be read. A policy that throws
- * or returns anything but true/false is replaced by the plain rule.
+ * or returns anything but true/false is replaced by anythingLeft().
  *
  * @param {object} state
  * @param {number} state.remaining  universe symbols with no verdict from the last CONVICTION_SWEEP_RESUME_DAYS days
@@ -472,8 +540,7 @@ function anythingLeft(state) {
  * @returns {boolean} true = pick the sweep up now
  */
 function shouldResumeSweep(state) {
-    // TODO(owner): the plain rule for now — see the trade-offs above
-    return anythingLeft(state);
+    return state.remaining >= resumeThreshold(state.universe);
 }
 
 /**
@@ -490,22 +557,30 @@ function resolveShouldResume(state, policy = shouldResumeSweep) {
 }
 
 /**
- * After a restart: if today is sweep day and the table shows the universe is
- * not covered, start the sweep again. The resume window makes that safe —
- * whatever this run already stored is skipped, not paid for twice. Never
+ * Pick an unfinished sweep up: if today is sweep day and the table shows the
+ * universe is not covered, start the sweep again. The resume window makes
+ * that safe: whatever is already stored is skipped, not paid for twice.
+ * Two callers, each with its own switch: a restart (scheduleResumeCheck,
+ * trigger 'resume', CONVICTION_SWEEP_BOOT_RESUME) and the sweep-day watchdog
+ * (runSweepWatchdog, trigger 'watchdog', CONVICTION_SWEEP_WATCHDOG). Never
  * throws; answers what it decided and why.
  *
  * @param {object} [options]
  * @param {Date} [options.now]          the moment to judge "sweep day" and the UK hour by
  * @param {Function} [options.policy]   the resume policy (tests)
+ * @param {'resume'|'watchdog'} [options.trigger]  who is asking: a restart (the default) or the watchdog
  * @returns {Promise<{resumed: boolean, reason?: string, retry?: boolean, remaining?: number, run?: Promise}>}
  */
-async function resumeInterruptedSweep({ now = new Date(), policy = shouldResumeSweep } = {}) {
+async function resumeInterruptedSweep({ now = new Date(), policy = shouldResumeSweep, trigger = 'resume' } = {}) {
+    const byWatchdog = trigger === 'watchdog';
     try {
         if (process.env.CONVICTION_SWEEP === 'false') {
             return { resumed: false, reason: 'CONVICTION_SWEEP=false' };
         }
-        if (!bootResumeEnabled()) {
+        if (byWatchdog && !watchdogEnabled()) {
+            return { resumed: false, reason: 'CONVICTION_SWEEP_WATCHDOG=false' };
+        }
+        if (!byWatchdog && !bootResumeEnabled()) {
             return { resumed: false, reason: 'CONVICTION_SWEEP_BOOT_RESUME=false' };
         }
         if (!isSweepDay(now)) {
@@ -554,7 +629,7 @@ async function resumeInterruptedSweep({ now = new Date(), policy = shouldResumeS
         if (status.running) {
             return { resumed: false, reason: 'a sweep is already running in this process' };
         }
-        const run = runConvictionSweep({ trigger: 'resume' });
+        const run = runConvictionSweep({ trigger: byWatchdog ? 'watchdog' : 'resume' });
         run.catch(error => console.error('❌ [AI SWEEP] Picked-up run failed:', error.message));
         return { resumed: true, remaining, run };
     } catch (error) {
@@ -579,6 +654,53 @@ function scheduleResumeCheck(delayMs = RESUME_CHECK_DELAY_MS) {
     }, delayMs);
     if (timer && typeof timer.unref === 'function') timer.unref();
     return timer;
+}
+
+/**
+ * The sweep-day watchdog. The scanner cron hub fires it every 30 minutes on
+ * Saturdays from 09:00 to 20:30 UK. From 09:00 to 20:00 on sweep day it picks
+ * up a run that ended short while the process lived on, which no restart
+ * will ever pick up: a refused start, sources that failed part-way
+ * (2026-08-29), a run that threw. The same rails and policy as a restart,
+ * plus two of its own: those hours only, and at most WATCHDOG_MAX_RUNS runs a
+ * day, so sources that stay down all day cost three futile runs (and six
+ * messages), not twenty-three. Never throws. Logs what it decided on sweep
+ * day, and nothing on any other day.
+ *
+ * @param {object} [options]
+ * @param {Date} [options.now]          the moment to judge "sweep day" and the UK time by
+ * @param {Function} [options.policy]   the resume policy (tests)
+ * @returns {Promise<{resumed: boolean, reason?: string, retry?: boolean, remaining?: number, run?: Promise}>}
+ */
+async function runSweepWatchdog({ now = new Date(), policy = shouldResumeSweep } = {}) {
+    if (!isSweepDay(now)) {
+        return { resumed: false, reason: 'not sweep day' };
+    }
+    const { date } = ukClock(now);
+    let decision;
+    if (!withinWatchdogHours(now)) {
+        decision = { resumed: false, reason: 'outside the watchdog hours (09:00-20:00 UK)' };
+    } else if (watchdogRunsOn(date) >= WATCHDOG_MAX_RUNS) {
+        decision = { resumed: false, reason: `the watchdog has already started ${WATCHDOG_MAX_RUNS} runs today` };
+    } else {
+        decision = await resumeInterruptedSweep({ now, policy, trigger: 'watchdog' });
+        if (decision.resumed) {
+            watchdogDay.runs = watchdogRunsOn(date) + 1;
+            watchdogDay.date = date;
+        }
+    }
+    console.log(`🧠 [AI SWEEP] Watchdog: ${decision.resumed
+        ? `picking the sweep up again — ${symbolCount(decision.remaining)} left`
+        : decision.reason}`);
+    return decision;
+}
+
+/**
+ * Forget the runs the watchdog has started (tests).
+ */
+function resetWatchdog() {
+    watchdogDay.date = null;
+    watchdogDay.runs = 0;
 }
 
 /**
@@ -678,6 +800,7 @@ async function getVerdictStats(days = 120, { day = null } = {}) {
             sweepEnabled: process.env.CONVICTION_SWEEP !== 'false',
             sweepFresh: sweepIsFresh(),
             bootResume: bootResumeEnabled(),
+            watchdog: watchdogEnabled(),
             ownerReports: sweepAlertsEnabled(),
             geminiConfigured: !!process.env.GEMINI_API_KEY
         },
@@ -700,5 +823,7 @@ module.exports = {
     isSweepDay,
     resumeInterruptedSweep,
     scheduleResumeCheck,
+    runSweepWatchdog,
+    resetWatchdog,
     shouldResumeSweep
 };

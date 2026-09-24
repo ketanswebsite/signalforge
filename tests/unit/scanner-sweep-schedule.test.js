@@ -6,7 +6,11 @@
  *      disagree about which Saturday it is.
  *   2. Nothing the sweep throws escapes the cron callback (an unhandled rejection kills
  *      the whole web process on Node 22).
- *   3. Boot schedules the restart check once; CONVICTION_SWEEP=false schedules neither.
+ *   3. Boot schedules the restart check once.
+ *   4. The sweep-day watchdog fires every 30 minutes on Saturdays from 09:00 to 20:30 UK
+ *      and leaves every decision to runSweepWatchdog() (sweep day, 09:00-20:00, its own
+ *      switch: see conviction-sweep-resume.test.js). Nothing it throws escapes either.
+ *   5. CONVICTION_SWEEP=false schedules none of them.
  */
 
 jest.mock('node-cron', () => ({ schedule: jest.fn() }));
@@ -21,7 +25,8 @@ jest.mock('../../lib/telegram/telegram-bot', () => ({
 jest.mock('../../ml/conviction-sweep', () => ({
     isSweepDay: jest.fn(),
     runConvictionSweep: jest.fn(),
-    scheduleResumeCheck: jest.fn()
+    scheduleResumeCheck: jest.fn(),
+    runSweepWatchdog: jest.fn()
 }));
 
 const cron = require('node-cron');
@@ -35,6 +40,7 @@ function initialize() {
     new StockScanner().initialize();
 }
 const sweepCron = () => cron.schedule.mock.calls.find(([expression]) => expression === '0 8 * * 6');
+const watchdogCrons = () => cron.schedule.mock.calls.filter(([expression]) => expression === '*/30 9-20 * * 6');
 
 beforeEach(() => {
     delete process.env.CONVICTION_SWEEP;
@@ -79,10 +85,36 @@ test('boot schedules the restart check, once', () => {
     expect(ConvictionSweep.scheduleResumeCheck).toHaveBeenCalledTimes(1);
 });
 
-test('CONVICTION_SWEEP=false: no monthly cron and no restart check', () => {
+test('the watchdog cron: once, every 30 minutes on Saturday daytime, and runSweepWatchdog() decides', async () => {
+    initialize();
+    expect(watchdogCrons()).toHaveLength(1);
+    const [[, fire, options]] = watchdogCrons();
+    expect(options).toMatchObject({ timezone: 'Europe/London' });
+
+    ConvictionSweep.runSweepWatchdog.mockResolvedValue({ resumed: false, reason: 'not sweep day' });
+    await fire();
+
+    expect(ConvictionSweep.runSweepWatchdog).toHaveBeenCalledTimes(1);
+    expect(ConvictionSweep.runSweepWatchdog).toHaveBeenCalledWith();   // it judges the day and the hour itself
+    expect(ConvictionSweep.isSweepDay).not.toHaveBeenCalled();
+    expect(ConvictionSweep.runConvictionSweep).not.toHaveBeenCalled();
+});
+
+test('a watchdog that throws never escapes the cron callback', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    initialize();
+    const [[, fire]] = watchdogCrons();
+    ConvictionSweep.runSweepWatchdog.mockRejectedValue(new Error('boom'));
+
+    await expect(fire()).resolves.toBeUndefined();
+    expect(console.error).toHaveBeenCalledWith('❌ [CRON] AI sweep watchdog failed:', 'boom');
+});
+
+test('CONVICTION_SWEEP=false: no monthly cron, no restart check and no watchdog', () => {
     process.env.CONVICTION_SWEEP = 'false';
     initialize();
 
     expect(sweepCron()).toBeUndefined();
+    expect(watchdogCrons()).toEqual([]);
     expect(ConvictionSweep.scheduleResumeCheck).not.toHaveBeenCalled();
 });

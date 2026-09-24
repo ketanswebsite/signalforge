@@ -57,11 +57,11 @@ Update it in the same commit as the change it describes. See rule 1.
 | High-conviction portfolio & weekly report (every 10 min; Sat 10:00 UK) | 1.2 | 2026-09-24 · unit + endpoint | 🟢 Unit-tested (re-entry, close failure). An exit alert or weekly report that reaches nobody now reaches the owner, and the manual close reports whether its alert was delivered. ⚠️ Updates are keyed by symbol with no unique index; the exit alert is sent at most once. Its admin API answers 400 for a malformed date or price (it crashed with 500 until 2026-09-24). |
 | EOD AI summary (19:00 UK weekdays) | 1.1 | 2026-09-23 · unit + endpoint | 🟢 Unit-tested: the day move and the signed percentage (a tiny loss printed `-0.00%` until 2026-09-23). The harness verifies access rules only; the summary itself is never run there (probe-only). |
 | AI conviction check, on demand (`/api/ml/conviction/*`) | 1.1 | 2026-09-24 · endpoint | ✅ Working: only symbols in the scan universe are scored, always under the universe's own name, so no caller can spend Gemini calls on arbitrary symbols or steer the verdict everyone shares; a GET on the batch path answers 405. |
-| Monthly AI sweep (first Saturday 08:00 UK; boot resume; GAPS #20/#21 fixed) | 1.1 | 2026-09-24 · unit + endpoint | 🟢 Unit-tested; first real run Sat 2026-10-03. The stats probe ignores an impossible day, as it does a malformed one. ⏳ Owner: the fresh re-score (~5,029 Gemini calls a month) roughly doubles the actual AI spend. |
+| Monthly AI sweep (first Saturday 08:00 UK; picked up after a restart and by a 09:00–20:00 watchdog; GAPS #20/#21 fixed) | 1.2 | 2026-09-24 · unit + endpoint | 🟢 Unit-tested; first real run Sat 2026-10-03. A pick-up needs at least max(50, 1%) of the universe left and scores only what is not stored; the watchdog starts at most 3 runs a day (§4.7). The stats probe ignores an impossible day, as it does a malformed one. ⏳ Owner: the fresh re-score (~5,029 Gemini calls a month) roughly doubles the actual AI spend. |
 | AI analysis routine feed (`GET /api/signals/screened-today`) | 1.0 | 2026-09-23 · endpoint | ✅ Working (the routine should send its token as a header, not in the URL) |
 | Market data: Yahoo proxy & live prices (`/yahoo/*`, `POST /api/prices`) | 1.2 | 2026-09-24 · endpoint | ⚠️ Faulty: anonymous, with a wildcard CORS header; `/api/prices` is unbounded. Fixed: the scanner and the Simulator read the Adj Close column as volume (2026-09-23); a non-string symbol crashed `/api/prices` with 500 (2026-09-24). |
 | Data repairs: pence/pounds flips (GAPS #18), stale fills (GAPS #19) | 1.0 | 2026-09-23 · unit | 🧪 Detect-only. ⏳ Owner: `PRICE_UNIT_REPAIR=true` changes which UK stocks qualify. Stale fills stay off until GAPS #1. |
-| Market caps (06:00 UK weekdays + Sat 08:00) | 1.1 | 2026-09-23 · endpoint | ⚠️ The Saturday refresh overlaps the monthly sweep. The two caller-less market-cap routes are gone. |
+| Market caps (06:00 UK weekdays + Sat 08:00, not on sweep day) | 1.2 | 2026-09-24 · unit + endpoint | 🟢 Unit-tested (the schedule): the Saturday refresh stands aside on sweep day, so it no longer overlaps the monthly sweep. The harness verifies the stats route and the refresh route's access rules; the refresh itself is probe-only. The two caller-less market-cap routes are gone. |
 | Simulator (`portfolio-backtest.html`) | 1.0 | 2026-09-23 · endpoint | ⚠️ Faulty in the page (the harness only sees its routes, which pass): exit-reason colours are assigned by position; it uses a different engine from the live scan (GAPS #7); a missing close books a NaN P/L. |
 | Positions chart dialog | 1.0 | 2026-09-23 · endpoint | ⚠️ Faulty in the page (its routes pass): dark-mode legend colours are hard-coded; a dead parameter path. |
 | Trailing stop (−5% → break-even at +4% → +1% for each further +1%) | 0.9 | 2026-09-18 · unit (WIP) | ⏳ Owner: built, not shipped. The backtest shows expectancy +1.56 → +1.44 %/trade. |
@@ -128,7 +128,8 @@ Update it in the same commit as the change it describes. See rule 1.
 Newest first. Each line is one commit on `main`; `git show <sha>` has the full reasoning.
 
 **2026-09-24**
-- *(this commit)* Malformed input answers 400 instead of reaching Postgres and failing with 500, on nine routes: the high-conviction admin API's dates and exit price, the sweep stats probe's day, `/api/prices` symbols, the Alerts switches, Telegram chat ids, a complimentary grant's expiry, and a plan's region, currency, price and trial days (`lib/shared/input.js`). The Users tab could never grant temporary access: it sent the expiry under a name the API did not read. The harness flipped all 10 pinned cases; 24 remain
+- *(this commit)* Sweep schedule for the 2026-10-03 run: the Saturday 08:00 market-cap refresh stands aside on sweep day (it walked the same Yahoo chart endpoint as the sweep, for 40–55 minutes); a sweep-day watchdog picks up a run that ended short in a live process, every 30 minutes from 09:00 to 20:00 UK (at most 3 runs a day; `CONVICTION_SWEEP_WATCHDOG=false` turns it off); a pick-up, after a restart or by the watchdog, needs at least max(50, 1%) of the universe left. The three policies left for the owner (`shouldResumeSweep`, `shouldNotifyOwner`, `chooseRetentionDays`) are settled and written down in §4.7
+- `f697eb5` Malformed input answers 400 instead of reaching Postgres and failing with 500, on nine routes: the high-conviction admin API's dates and exit price, the sweep stats probe's day, `/api/prices` symbols, the Alerts switches, Telegram chat ids, a complimentary grant's expiry, and a plan's region, currency, price and trial days (`lib/shared/input.js`). The Users tab could never grant temporary access: it sent the expiry under a name the API did not read. The harness flipped all 10 pinned cases; 24 remain
 - `5c87a13` Remove the one-off residue probe: prod read clean, so the Run-tests buttons left no rows to delete. Tidy the test set-up: the integration "suite" only asserted its own fetch mock and the benchmark file ran nothing; both go with their npm scripts, as does a `diagnose` script whose file was deleted earlier. `package.json` named a missing `main`, and jest warned about an unknown option on every run
 - `ab35b5f` Remove the admin Run-tests feature: the Database tab's button and runner, its 3 routes (they spawned test scripts against the live database, wrote rows there and always failed), `GET /api/test` and the 4 scripts behind them. A read-only token probe, `GET /api/ops/test-residue-stats`, counts the rows they left. The harness keeps all 40 removed routes gone
 - `e5a3e6d` Reliability rails: an unhandled promise rejection is logged and reported to the owner (throttled) instead of crashing the server and signing everyone out; an uncaught exception reports before it exits; a deploy's SIGTERM closes the HTTP server and exits within 20 s (the old instance used to keep sweeping until Render killed it). The owner also hears when an exit-monitor pass fails outright (hourly at most) and when a high-conviction exit alert or weekly report reaches nobody. The owner-alert sender never rejects
@@ -272,7 +273,7 @@ flowchart TB
   RET["23:20 UK: roll up and prune exit checks"]
   CL["00:00 UTC: clear stale pending signals"]
   WK["Saturday 10:00 UK: weekly report"]
-  SW["first Saturday 08:00 UK: monthly AI sweep<br/>resumes after a restart"]
+  SW["first Saturday 08:00 UK: monthly AI sweep<br/>picked up after a restart,<br/>or by the 09:00-20:00 watchdog"]
 ```
 
 ---
@@ -346,6 +347,16 @@ These rules bind every contributor and every Claude session; `CLAUDE.md` points 
     - never recreate `main.css`;
     - no inline CSS in HTML or JS.
 22. Use Google Fonts and Google Material Icons.
+
+### 4.7 Automatic policies (settled 2026-09-24; change one only together with its rule here)
+23. **Monthly AI sweep schedule** (`ml/conviction-sweep.js`; its crons are in `lib/scanner/scanner.js`):
+    - sweep day is the first Saturday of the month on the UK clock (`isSweepDay()`, the one definition every job uses); the run starts at 08:00 UK;
+    - the Saturday 08:00 market-cap refresh stands aside on sweep day, unless `CONVICTION_SWEEP=false`; the weekday 06:00 refresh is unchanged;
+    - a run that stopped short is picked up after a restart (from 08:00; off with `CONVICTION_SWEEP_BOOT_RESUME=false`) and by the sweep-day watchdog (every 30 minutes from 09:00 to 20:00 UK, at most 3 runs a day; off with `CONVICTION_SWEEP_WATCHDOG=false`);
+    - a pick-up needs at least max(50, 1% of the universe) symbols left (`shouldResumeSweep()`); fewer wait for on-demand scoring;
+    - a pick-up scores only symbols with no verdict from the last `CONVICTION_SWEEP_RESUME_DAYS` (14) days, so nothing is paid for twice. It never starts while a sweep runs in the process, within 2 minutes of the newest verdict write (another process may still be sweeping), or when `conviction_daily` cannot be read.
+24. **Close-failure alerts** (`shouldNotifyOwner()` in `lib/portfolio/close-failure-alerts.js`): the owner hears about the first failed close of a position at once, whatever its kind, then every `CLOSE_FAILURE_REMINDER_MIN` (60) minutes while it keeps failing. Never more often than every 5 minutes, never silent for more than 24 hours. Subscribers are never told.
+25. **Exit-check retention** (`chooseRetentionDays()` in `lib/portfolio/exit-check-retention.js`): a fixed window of `EXIT_CHECK_RETENTION_DAYS` (30) full days of minute-level checks, whatever the table's size. The daily rollup is kept for ever, and alert rows are never deleted. A size-based window would be a new decision: record it here first.
 
 ---
 
