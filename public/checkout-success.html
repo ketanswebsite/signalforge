@@ -68,10 +68,11 @@
         var nb = new Date(d); nb.setMonth(nb.getMonth() + 1);
         document.getElementById('r-next').textContent = nb.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
+        // Both answers are envelopes: {success, message, data}
         var pr = await fetch('/api/user/payments');
         if (pr.ok) {
             var pays = await pr.json();
-            var list = pays.payments || pays.data || pays;
+            var list = pays && pays.data && pays.data.payments;
             if (Array.isArray(list) && list.length) {
                 var p = list[0];
                 var sym = { GBP: '£', USD: '$', INR: '₹' }[(p.currency || '').toUpperCase()] || '';
@@ -82,8 +83,9 @@
         var sr = await fetch('/api/user/subscription');
         if (sr.ok) {
             var s = await sr.json();
-            var plan = (s.subscription && (s.subscription.plan_name || s.subscription.planName)) || s.plan_name || s.planName;
-            if (plan) document.getElementById('r-plan').textContent = plan + ' — monthly';
+            var sub = (s && s.data && s.data.subscription) || {};
+            // A receipt names the paid plan in force, never the free trial it follows
+            if (sub.status === 'active' && sub.plan_name) document.getElementById('r-plan').textContent = sub.plan_name + ' — monthly';
         }
     } catch (e) { /* receipt falls back to static text */ }
 })();

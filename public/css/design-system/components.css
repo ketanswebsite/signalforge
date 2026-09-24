@@ -346,9 +346,13 @@
 /* ---------- countdown chip (trial, in the app bar) ---------- */
 .sa-countdown{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border:1.5px solid var(--gold-on-band);border-radius:var(--r-pill);font-size:var(--size-xs);font-weight:var(--w-bold);color:var(--bg);white-space:nowrap;background:transparent}
 .sa-countdown__num{font-family:var(--font-display);font-weight:var(--w-display);font-size:15px;color:var(--gold-on-band);line-height:1}
-.sa-countdown a{color:var(--gold-on-band);text-decoration:underline;text-underline-offset:3px}
+a.sa-countdown,a.sa-countdown:hover{text-decoration:none}
+.sa-countdown__cta{color:var(--gold-on-band);text-decoration:underline;text-underline-offset:3px}
 .sa-countdown--warn{border-color:var(--warn-lit);background:rgba(251,191,36,.12)}
-.sa-countdown--warn .sa-countdown__num,.sa-countdown--warn a{color:var(--warn-lit)}
+.sa-countdown--warn .sa-countdown__num,.sa-countdown--warn .sa-countdown__cta{color:var(--warn-lit)}
+/* phones: no room beside the brand and the menu for the whole line - "10 days left", then the number alone */
+@media (max-width:520px){.sa-countdown__opt{display:none}}
+@media (max-width:360px){.sa-countdown__text{display:none}}
 
 /* ---------- download / list row (data page, failure reasons) ---------- */
 .sa-dl{display:flex;align-items:center;gap:var(--s-3);border:2px solid var(--frame);background:var(--surface);padding:var(--s-3) var(--s-4)}

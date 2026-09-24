@@ -5,20 +5,13 @@
 
 const express = require('express');
 const router = express.Router();
-const { Pool } = require('pg');
+const TradeDB = require('../database-postgres');
 const { getStripeClient, getPublishableKey, isStripeConfigured, validateWebhookSignature } = require('../config/stripe');
 
-// Create pool for database queries
-let pool = null;
-
+// The app's one database pool (database-postgres.js), null when DATABASE_URL is unset. This
+// router used to open a pool of its own.
 function getPool() {
-    if (!pool && process.env.DATABASE_URL) {
-        pool = new Pool({
-            connectionString: process.env.DATABASE_URL,
-            ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-        });
-    }
-    return pool;
+    return TradeDB.pool;
 }
 
 // Helper functions
@@ -90,7 +83,7 @@ router.post('/create-subscription', ensureAuthenticated, async (req, res) => {
 
         // Handle free trial without payment
         if (isFree) {
-            return res.status(400).json(errorResponse('Use /start-free-trial endpoint for free plans'));
+            return res.status(400).json(errorResponse('The free plan starts with POST /api/user/subscription/start-trial'));
         }
 
         // Calculate amount based on billing period
@@ -213,94 +206,6 @@ router.post('/create-subscription', ensureAuthenticated, async (req, res) => {
     } catch (error) {
         console.error('Error creating subscription:', error);
         res.status(500).json(errorResponse('Failed to create subscription'));
-    }
-});
-
-/**
- * POST /api/stripe/start-free-trial
- * Start a free trial subscription (no payment required)
- * Requires authentication
- */
-router.post('/start-free-trial', ensureAuthenticated, async (req, res) => {
-    try {
-        const { planCode } = req.body;
-        const userEmail = req.user.email;
-        const db = getPool();
-
-        if (!db) {
-            return res.status(500).json(errorResponse('Database not available'));
-        }
-
-        // Get plan details
-        const planResult = await db.query(
-            'SELECT * FROM subscription_plans WHERE plan_code = $1 AND is_active = true',
-            [planCode || 'FREE']
-        );
-
-        if (planResult.rows.length === 0) {
-            return res.status(404).json(errorResponse('Plan not found', 'NOT_FOUND'));
-        }
-
-        const plan = planResult.rows[0];
-
-        // Check if user already has an active subscription
-        const existingSubResult = await db.query(
-            'SELECT id FROM user_subscriptions WHERE user_email = $1 AND status IN (\'active\', \'trial\') LIMIT 1',
-            [userEmail]
-        );
-
-        if (existingSubResult.rows.length > 0) {
-            return res.status(400).json(errorResponse('You already have an active subscription', 'ALREADY_SUBSCRIBED'));
-        }
-
-        const trialDays = plan.trial_days || 90;
-        const subscriptionEndDate = new Date();
-        subscriptionEndDate.setDate(subscriptionEndDate.getDate() + trialDays);
-
-        // Create free trial subscription
-        const subResult = await db.query(`
-            INSERT INTO user_subscriptions (
-                user_email,
-                plan_code,
-                plan_name,
-                billing_period,
-                amount_paid,
-                currency,
-                status,
-                subscription_start_date,
-                subscription_end_date,
-                trial_start_date,
-                trial_end_date,
-                auto_renew,
-                created_at,
-                updated_at
-            ) VALUES ($1, $2, $3, NULL, 0, $4, 'trial', NOW(), $5, NOW(), $5, false, NOW(), NOW())
-            RETURNING id
-        `, [
-            userEmail,
-            plan.plan_code,
-            plan.plan_name,
-            plan.currency,
-            subscriptionEndDate
-        ]);
-
-        const subscriptionId = subResult.rows[0].id;
-
-        // Log to subscription history
-        await db.query(`
-            INSERT INTO subscription_history (subscription_id, user_email, event_type, new_status, description)
-            VALUES ($1, $2, 'created', 'trial', 'Free trial started')
-        `, [subscriptionId, userEmail]);
-
-        res.json(successResponse({
-            subscriptionId: subscriptionId,
-            trialDays: trialDays,
-            trialEndDate: subscriptionEndDate
-        }));
-
-    } catch (error) {
-        console.error('Error starting free trial:', error);
-        res.status(500).json(errorResponse('Failed to start free trial'));
     }
 });
 

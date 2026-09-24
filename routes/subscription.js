@@ -5,19 +5,12 @@
 
 const express = require('express');
 const router = express.Router();
-const { Pool } = require('pg');
+const TradeDB = require('../database-postgres');
 
-// Create pool for database queries
-let pool = null;
-
+// The app's one database pool (database-postgres.js), null when DATABASE_URL is unset. This
+// router used to open a pool of its own.
 function getPool() {
-  if (!pool && process.env.DATABASE_URL) {
-    pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-    });
-  }
-  return pool;
+  return TradeDB.pool;
 }
 
 // Helper function for success responses
@@ -176,11 +169,14 @@ router.get('/user/subscription', ensureAuthenticated, async (req, res) => {
 
     const subscription = await getUserSubscriptionStatus(userEmail);
 
-    if (!subscription) {
+    // No row yet: the account has never started a trial. The trial page shows its day-0 state and
+    // the account page its "No plan yet" card; region still feeds the checkout page's plan pick.
+    if (!subscription || subscription.status === 'none') {
       return res.json(successResponse({
         hasSubscription: false,
         status: 'none',
         isAdmin: isAdmin,
+        region: subscription ? subscription.region : undefined,
         message: isAdmin ? 'Admin - Unlimited Access' : 'No active subscription found'
       }));
     }
@@ -255,13 +251,14 @@ router.post('/user/subscription/cancel', ensureAuthenticated, async (req, res) =
       return res.status(500).json(errorResponse('Database not available'));
     }
 
-    // Get current subscription
+    // The running row: a trial or a paid plan still inside its period
     const subResult = await db.query(`
-      SELECT id, status, subscription_end_date
+      SELECT id, status
       FROM user_subscriptions
       WHERE user_email = $1
-        AND status IN ('active', 'trial')
-      ORDER BY created_at DESC
+        AND (   (status = 'trial' AND trial_end_date > NOW())
+             OR (status = 'active' AND COALESCE(end_date, subscription_end_date) > NOW()))
+      ORDER BY created_at DESC, id DESC
       LIMIT 1
     `, [userEmail]);
 
@@ -271,16 +268,27 @@ router.post('/user/subscription/cancel', ensureAuthenticated, async (req, res) =
 
     const subscription = subResult.rows[0];
 
-    // Update subscription status to cancelled
-    await db.query(`
+    // Cancel it but keep the access already given: end_date becomes the end the row already had
+    // (the trial end, or the paid-up period), and middleware/subscription.js keeps a cancelled row
+    // active until then. SET expressions read the row as it was, so `status` is still 'trial' or 'active'.
+    const cancelResult = await db.query(`
       UPDATE user_subscriptions
       SET
         status = 'cancelled',
+        end_date = CASE WHEN status = 'trial' THEN trial_end_date
+                        ELSE COALESCE(end_date, subscription_end_date) END,
         cancellation_date = NOW(),
         cancellation_reason = $1,
         updated_at = NOW()
-      WHERE id = $2
+      WHERE id = $2 AND status IN ('trial', 'active')
+      RETURNING end_date
     `, [reason || 'User requested cancellation', subscription.id]);
+
+    // A second cancel that raced this one (a double click) finds the row already cancelled
+    if (cancelResult.rows.length === 0) {
+      return res.status(409).json(errorResponse('Your plan is already cancelled', 'ALREADY_CANCELLED'));
+    }
+    const accessUntil = cancelResult.rows[0].end_date;
 
     // Log to subscription history
     await db.query(`
@@ -296,8 +304,10 @@ router.post('/user/subscription/cancel', ensureAuthenticated, async (req, res) =
 
     res.json(successResponse({
       cancelled: true,
-      accessUntil: subscription.subscription_end_date,
-      message: `Your subscription has been cancelled. You'll continue to have access until ${require('../lib/shared/date-format').formatDateDDMMYYYY(subscription.subscription_end_date)}.`
+      accessUntil,
+      message: accessUntil
+        ? `Your subscription has been cancelled. You'll continue to have access until ${require('../lib/shared/date-format').formatDateDDMMYYYY(accessUntil)}.`
+        : 'Your subscription has been cancelled.'
     }));
 
   } catch (error) {
@@ -320,43 +330,56 @@ router.post('/user/subscription/reactivate', ensureAuthenticated, async (req, re
       return res.status(500).json(errorResponse('Database not available'));
     }
 
-    // Get cancelled subscription
+    // Only the row the access check reads (the newest that is not a checkout attempt) can come back,
+    // and only while the access its cancel kept is still running: the rule middleware/subscription.js
+    // applies to a cancelled row, so what the account page offers is what this route accepts
     const subResult = await db.query(`
-      SELECT id, status, plan_name
+      SELECT id, status, plan_name, trial_end_date, amount_paid,
+             COALESCE(end_date, subscription_end_date, trial_end_date) AS access_until
       FROM user_subscriptions
       WHERE user_email = $1
-        AND status = 'cancelled'
-        AND subscription_end_date > NOW()
-      ORDER BY created_at DESC
+        AND status NOT IN ('pending', 'payment_failed')
+      ORDER BY created_at DESC, id DESC
       LIMIT 1
     `, [userEmail]);
 
-    if (subResult.rows.length === 0) {
+    const subscription = subResult.rows[0];
+
+    if (!subscription || subscription.status !== 'cancelled' ||
+        !subscription.access_until || new Date(subscription.access_until) <= new Date()) {
       return res.status(404).json(errorResponse('No cancelled subscription found to reactivate', 'NOT_FOUND'));
     }
 
-    const subscription = subResult.rows[0];
+    // A free trial comes back as a trial with the same end date: no extra free days, and never a paid
+    // 'active' row. Only a paid plan comes back as 'active'.
+    const restoredStatus = subscription.trial_end_date && !(Number(subscription.amount_paid) > 0) ? 'trial' : 'active';
 
-    // Reactivate subscription
-    await db.query(`
+    // Reactivate subscription (a second request that raced this one finds the row no longer cancelled)
+    const reactivated = await db.query(`
       UPDATE user_subscriptions
       SET
-        status = 'active',
+        status = $2,
         cancellation_date = NULL,
         cancellation_reason = NULL,
         updated_at = NOW()
-      WHERE id = $1
-    `, [subscription.id]);
+      WHERE id = $1 AND status = 'cancelled'
+      RETURNING id
+    `, [subscription.id, restoredStatus]);
+    if (reactivated.rows.length === 0) {
+      return res.status(409).json(errorResponse('Your plan is already running again', 'ALREADY_REACTIVATED'));
+    }
 
     // Log to history
     await db.query(`
       INSERT INTO subscription_history
       (subscription_id, user_email, event_type, old_status, new_status, description)
-      VALUES ($1, $2, 'reactivated', 'cancelled', 'active', 'Subscription reactivated by user')
-    `, [subscription.id, userEmail]);
+      VALUES ($1, $2, 'reactivated', 'cancelled', $3, 'Subscription reactivated by user')
+    `, [subscription.id, userEmail, restoredStatus]);
 
     res.json(successResponse({
       reactivated: true,
+      status: restoredStatus,
+      accessUntil: subscription.access_until,
       message: `Your ${subscription.plan_name} subscription has been reactivated!`
     }));
 
@@ -380,22 +403,24 @@ router.post('/user/subscription/start-trial', ensureAuthenticated, async (req, r
       return res.status(500).json(errorResponse('Database not available'));
     }
 
-    // Check if user already has a subscription
-    const existingSubResult = await db.query(`
-      SELECT id, status, trial_end_date, end_date
+    // A running trial or paid plan, as the access check reads it, blocks a new trial
+    const { getUserSubscriptionStatus } = require('../middleware/subscription');
+    const current = await getUserSubscriptionStatus(userEmail);
+    if (current && (current.status === 'trial' || current.status === 'active')) {
+      return res.status(400).json(errorResponse('You already have an active subscription or trial', 'ALREADY_SUBSCRIBED'));
+    }
+
+    // One free trial per account: a trial that was cancelled or has run out never starts again
+    const pastTrial = await db.query(`
+      SELECT 1
       FROM user_subscriptions
       WHERE user_email = $1
-      ORDER BY created_at DESC
+        AND (status = 'trial' OR trial_start_date IS NOT NULL OR trial_end_date IS NOT NULL)
       LIMIT 1
     `, [userEmail]);
 
-    if (existingSubResult.rows.length > 0) {
-      const existingSub = existingSubResult.rows[0];
-
-      // If they already have an active trial or subscription, don't create a new one
-      if (existingSub.status === 'trial' || existingSub.status === 'active') {
-        return res.status(400).json(errorResponse('You already have an active subscription or trial', 'ALREADY_SUBSCRIBED'));
-      }
+    if (pastTrial.rows.length > 0) {
+      return res.status(409).json(errorResponse('You have already had your free trial. Choose a plan to keep the signals coming.', 'TRIAL_USED'));
     }
 
     // Get the FREE plan details

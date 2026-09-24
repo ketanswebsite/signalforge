@@ -233,9 +233,50 @@
     } catch (e) { /* leave hidden */ }
   }
 
+  // ---------- free-trial countdown chip (the trial page promises it: from 14 days left, amber at 5) ----------
+  function chipPart(tag, className, text) {
+    var node = document.createElement(tag);
+    node.className = className;
+    if (text) node.textContent = text;
+    return node;
+  }
+
+  function trialChip(days) {
+    var unit = days === 1 ? 'day' : 'days';
+    var chip = chipPart('a', 'sa-countdown' + (days <= 5 ? ' sa-countdown--warn' : ''));
+    chip.href = '/pricing.html';
+    chip.title = days + ' free ' + unit + ' left: see the plans';
+    chip.appendChild(chipPart('span', 'sa-countdown__num', String(days)));
+    // Phones drop the optional words (css/design-system/components.css): "10 days left", then the number alone
+    var text = chipPart('span', 'sa-countdown__text');
+    text.appendChild(chipPart('span', 'sa-countdown__opt', 'free '));
+    text.appendChild(document.createTextNode(unit + ' left'));
+    var more = chipPart('span', 'sa-countdown__opt', ' · ');
+    more.appendChild(chipPart('span', 'sa-countdown__cta', 'keep the signals'));
+    text.appendChild(more);
+    chip.appendChild(text);
+    return chip;
+  }
+
+  async function loadTrialCountdown() {
+    var slot = document.querySelector('.sa-appbar__end');
+    if (!slot) return;
+    try {
+      var res = await fetch('/api/user/subscription');
+      if (!res.ok) return;
+      var body = await res.json();
+      // {success, data: {subscription}}: daysRemaining is the server's own count (middleware/subscription.js)
+      var sub = body && body.data && body.data.subscription;
+      if (!sub || sub.status !== 'trial' || typeof sub.daysRemaining !== 'number') return;
+      if (sub.daysRemaining < 0 || sub.daysRemaining > 14) return;
+      slot.insertBefore(trialChip(sub.daysRemaining), slot.firstChild);
+    } catch (e) { /* optional chrome: never break the page */ }
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     syncThemeButton();
     loadUser();
     loadPositionsCount();
+    loadTrialCountdown();
   });
 })();

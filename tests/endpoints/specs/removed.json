@@ -1093,5 +1093,21 @@
     "note": "signed in: no handler (the harness mounts no Stripe router either), the 404 fallback answers"
    }
   ]
+ },
+ {
+  "route": "POST /api/stripe/start-free-trial",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I10 (\"Free-trial lifecycle\"): the trial page starts trials with POST /api/user/subscription/start-trial, which is always mounted and allows one free trial per account. This duplicate existed only with Stripe keys, never called Stripe, took any plan code and allowed unlimited re-trials. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "nosub",
+    "status": 404,
+    "note": "signed in: no handler (and routes/stripe.js is not mounted in the harness), the 404 fallback answers"
+   }
+  ]
  }
 ]

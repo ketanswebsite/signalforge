@@ -977,26 +977,17 @@ class AccountPage {
     }
 
     setupSubscriptionButtons() {
-        const cancelBtn = document.getElementById('cancel-btn');
-        if (cancelBtn) {
-            cancelBtn.addEventListener('click', () => {
-                document.getElementById('cancel-modal').classList.add('active');
-            });
-        }
-
-        const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
-        if (confirmCancelBtn) {
-            confirmCancelBtn.addEventListener('click', () => {
-                this.cancelSubscription();
-            });
-        }
-
-        const reactivateBtn = document.getElementById('reactivate-btn');
-        if (reactivateBtn) {
-            reactivateBtn.addEventListener('click', () => {
-                this.reactivateSubscription();
-            });
-        }
+        // Runs after every render of the plan card and once more from init(): bind each element once, or one
+        // click sends the request once per binding (every cancel went out twice)
+        const bindOnce = (id, handler) => {
+            const el = document.getElementById(id);
+            if (!el || el.dataset.bound) return;
+            el.dataset.bound = '1';
+            el.addEventListener('click', handler);
+        };
+        bindOnce('cancel-btn', () => document.getElementById('cancel-modal').classList.add('active'));
+        bindOnce('confirm-cancel-btn', () => this.cancelSubscription());
+        bindOnce('reactivate-btn', () => this.reactivateSubscription());
     }
 
     async cancelSubscription() {

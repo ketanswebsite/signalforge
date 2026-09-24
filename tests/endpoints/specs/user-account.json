@@ -613,15 +613,35 @@
    },
    {
     "as": "trial",
+    "path": "/api/user/auto-trading",
+    "body": {
+     "enabled": false
+    },
+    "status": 403,
+    "check": "object",
+    "note": "before: the trial persona has never started a trial (status none), so the subscription gate refuses it. This probe (enabled:false is a no-op write) is the control for the access probes below"
+   },
+   {
+    "as": "trial",
     "status": 200,
     "check": "object",
-    "note": "lifecycle 1/5: the trial persona starts its free trial"
+    "note": "lifecycle 1/6: the trial persona starts its free trial"
+   },
+   {
+    "as": "trial",
+    "path": "/api/user/auto-trading",
+    "body": {
+     "enabled": false
+    },
+    "status": 200,
+    "check": "object",
+    "note": "after: the new trial opens the subscription gate"
    },
    {
     "as": "trial",
     "status": 400,
     "check": "object",
-    "note": "lifecycle 2/5: a second start is refused (ALREADY_SUBSCRIBED)"
+    "note": "lifecycle 2/6: a second start while the trial runs is refused (ALREADY_SUBSCRIBED)"
    }
   ]
  },
@@ -652,14 +672,31 @@
     "body": {
      "reason": "harness lifecycle test"
     },
-    "note": "lifecycle 3/5: cancels the trial started above"
+    "note": "lifecycle 3/6: cancels the trial started above"
+   },
+   {
+    "as": "trial",
+    "path": "/api/user/auto-trading",
+    "body": {
+     "enabled": false
+    },
+    "status": 200,
+    "check": "object",
+    "note": "the cancelled trial keeps access until its trial end date: the cancel writes that end into end_date and middleware/subscription.js keeps a cancelled row active until then (until 2026-09-24 the gate refused at once)"
    },
    {
     "as": "trial",
     "status": 404,
     "check": "object",
     "body": {},
-    "note": "lifecycle 4/5: nothing active is left to cancel"
+    "note": "lifecycle 4/6: nothing running is left to cancel"
+   },
+   {
+    "as": "trial",
+    "path": "/api/user/subscription/start-trial",
+    "status": 409,
+    "check": "object",
+    "note": "lifecycle 5/6: one free trial per account - a cancelled trial is never started again (TRIAL_USED; until 2026-09-24 this wrote a second 90-day trial)"
    }
   ]
  },
@@ -686,7 +723,20 @@
     "as": "trial",
     "status": 200,
     "check": "object",
-    "bug": "lifecycle 5/5: a cancelled trial can never be reactivated - the lookup requires subscription_end_date > NOW() (routes/subscription.js:329), but start-trial (routes/subscription.js:422-451) writes only trial_end_date, so the NULL end date never matches and the route answers 404, although the account page offers \"Reactivate my plan\" for every cancelled plan and the trial period has not ended"
+    "note": "lifecycle 6/6: the cancelled trial comes back as a trial with the same end date - no extra free days, never a paid active row (until 2026-09-24 the lookup required subscription_end_date, which start-trial never writes, so this was 404)"
+   },
+   {
+    "as": "trial",
+    "path": "/api/user/subscription/start-trial",
+    "status": 400,
+    "check": "object",
+    "note": "after: the row runs again, so a new start is ALREADY_SUBSCRIBED (a row still cancelled would answer 409 TRIAL_USED)"
+   },
+   {
+    "as": "trial",
+    "status": 404,
+    "check": "object",
+    "note": "after: nothing cancelled is left to reactivate"
    }
   ]
  },

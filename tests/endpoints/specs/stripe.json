@@ -14,13 +14,6 @@
     ]
   },
   {
-    "route": "POST /api/stripe/start-free-trial",
-    "cases": [
-      { "as": "anon", "status": 401 },
-      { "as": "nosub", "status": 404, "note": "not mounted in the harness: the trial page's only action does not exist without Stripe keys (the Free trial row)" }
-    ]
-  },
-  {
     "route": "POST /api/stripe/webhook",
     "cases": [
       { "as": "anon", "status": 401, "note": "mounted after the /api sign-in gate, so Stripe itself would get 401 here too - the paid-checkout bug (owner decision E6)" }

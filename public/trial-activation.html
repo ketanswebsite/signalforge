@@ -45,7 +45,7 @@
                 <div style="margin-top:12px"><a class="sa-btn sa-btn--sm sa-btn--secondary" href="/pricing.html">See plans</a></div>
             </div>
         </div>
-        <p style="font-size:var(--size-sm);color:var(--text-3);margin-top:var(--s-4)">A countdown chip appears in the app header at 14 days and turns amber at 5. It links straight to plans and never blocks the screen.</p>
+        <p id="chip-note" style="font-size:var(--size-sm);color:var(--text-3);margin-top:var(--s-4)">A countdown chip appears in the app header at 14 days and turns amber at 5. It links straight to plans and never blocks the screen.</p>
     </main>
 </div>
 
@@ -96,39 +96,58 @@
         });
     }
     function fmt(d) { return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }); }
+    // The subscription API answers {success, message, data} or {success: false, error: {code, message}};
+    // the sign-in gate and the 404 fallback answer {error: '...'}.
+    function errorText(out, fallback) {
+        var e = out && out.error;
+        return (e && e.message) || (typeof e === 'string' && e) || fallback;
+    }
 
     try {
         var r = await fetch('/api/user/subscription');
         if (r.status === 401) { location.href = '/login.html'; return; }
-        var s = await r.json();
-        var sub = s.subscription || s;
-        var status = (sub.status || '').toLowerCase();
-        var end = sub.trial_end_date || sub.trialEndDate || sub.current_period_end || sub.currentPeriodEnd;
-        var daysLeft = end ? Math.ceil((new Date(end) - new Date()) / 86400000) : null;
+        var body = await r.json();
+        if (!r.ok || !body || body.success === false) throw new Error(errorText(body, 'The plan could not be read.'));
+        var d = body.data || {};
+        var sub = d.subscription || {};
+        var status = String(sub.status || d.status || 'none').toLowerCase();
+        var end = sub.subscription_end_date || sub.trial_end_date || null;
+        var endD = end ? new Date(end) : null;
+        var daysLeft = endD ? Math.ceil((endD - new Date()) / 86400000) : null;
 
-        if (!status || status === 'none' || status === 'pending') {
-            var start = new Date(), endD = new Date(); endD.setDate(endD.getDate() + 90);
-            document.getElementById('d0-dates').textContent = fmt(start) + ' to ' + fmt(endD) + '. Every signal, every market, nothing held back — long enough to judge the rule properly.';
+        // The chip the note promises (js/app-shell.js) counts down a running trial only
+        document.getElementById('chip-note').hidden = d.isAdmin || status !== 'trial';
+        if (d.isAdmin) {
+            document.getElementById('count-title').textContent = 'Admin access';
+            document.getElementById('count-body').textContent = 'Nothing counts down on the admin account.';
+            show('state-counting');
+        } else if (status === 'none') {
+            var start = new Date(), until = new Date(); until.setDate(until.getDate() + 90);
+            document.getElementById('d0-dates').textContent = fmt(start) + ' to ' + fmt(until) + '. Every signal, every market, nothing held back — long enough to judge the rule properly.';
             show('state-day0');
-        } else if (status === 'expired' || (daysLeft !== null && daysLeft <= 0 && status !== 'active')) {
+        } else if (!sub.isActive) {
             show('state-expired');
             try {
-                var tr = await fetch('/api/trades');
-                if (tr.ok) {
-                    var t = await tr.json();
-                    var list = t.trades || t;
-                    if (Array.isArray(list)) document.getElementById('x-trades').textContent = list.length + ' records';
+                // /api/trades is closed to an account whose plan has ended; the data summary is not
+                var ds = await fetch('/api/user/data-summary');
+                if (ds.ok) {
+                    var summary = await ds.json();
+                    if (summary && summary.total_trades != null) document.getElementById('x-trades').textContent = summary.total_trades + ' records';
                 }
             } catch (e) {}
         } else {
-            var warn = daysLeft !== null && daysLeft <= 5;
-            var co = document.getElementById('count-callout');
-            if (warn) co.classList.add('sa-callout--warn');
-            document.getElementById('count-title').textContent = daysLeft !== null ? daysLeft + ' free days left' : 'Your plan is active';
-            if (daysLeft !== null && daysLeft <= 14) {
-                document.getElementById('count-body').textContent = warn
-                    ? 'After ' + (end ? fmt(new Date(end)) : 'the last day') + ' the scanner stops sending you signals. Your positions and history stay exactly as they are.'
-                    : 'No action needed yet — this is just so day 91 is never a surprise. Upgrading now changes nothing until the free days run out.';
+            var countBody = document.getElementById('count-body');
+            if (status === 'trial' && daysLeft !== null) {
+                var warn = daysLeft <= 5;
+                if (warn) document.getElementById('count-callout').classList.add('sa-callout--warn');
+                document.getElementById('count-title').textContent = daysLeft + (daysLeft === 1 ? ' free day left' : ' free days left');
+                if (warn) countBody.textContent = 'After ' + fmt(endD) + ' the scanner stops sending you signals. Your positions and history stay exactly as they are.';
+            } else if (status === 'cancelled' && endD) {
+                document.getElementById('count-title').textContent = 'Your plan is cancelled';
+                countBody.textContent = 'You keep everything until ' + fmt(endD) + '. Changed your mind? Reactivate it from your account page before then.';
+            } else {
+                document.getElementById('count-title').textContent = 'Your plan is active';
+                countBody.textContent = 'Nothing is counting down: the scanner keeps sending you signals.';
             }
             show('state-counting');
         }
@@ -140,11 +159,13 @@
     if (btn) btn.addEventListener('click', async function () {
         btn.disabled = true;
         try {
-            var resp = await fetch('/api/stripe/start-free-trial', {
+            var resp = await fetch('/api/user/subscription/start-trial', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({})
             });
-            var out = await resp.json();
-            if (!resp.ok || out.error) throw new Error(out.error || 'The trial could not be started.');
+            if (resp.status === 401) { location.href = '/login.html'; return; }
+            var out = null;
+            try { out = await resp.json(); } catch (e) { /* not JSON: the fallback text below */ }
+            if (!resp.ok || !out || out.success === false) throw new Error(errorText(out, 'The trial could not be started. Refresh and try again.'));
             location.href = '/index.html';
         } catch (e) {
             document.getElementById('trial-error-text').textContent = e.message;
