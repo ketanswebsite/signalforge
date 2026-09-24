@@ -2673,12 +2673,18 @@ app.post('/api/push/subscribe', ensureAuthenticatedAPI, async (req, res) => {
   try {
     const { subscription, userAgent } = req.body;
 
-    if (!subscription || !subscription.endpoint || !subscription.keys) {
+    // The INSERT needs all three as text: an empty keys object reached the NOT NULL
+    // keys_p256dh column and crashed with 500 instead of answering 400.
+    const isText = v => typeof v === 'string' && v.length > 0;
+    if (!subscription || !isText(subscription.endpoint) || !subscription.keys ||
+        !isText(subscription.keys.p256dh) || !isText(subscription.keys.auth)) {
       return res.status(400).json({ error: 'Invalid subscription data' });
     }
 
     const userEmail = req.user.email;
-    await TradeDB.savePushSubscription(userEmail, subscription, userAgent);
+    // user_agent is VARCHAR(500): a longer value crashed the INSERT with 500.
+    const agent = typeof userAgent === 'string' ? userAgent.slice(0, 500) : null;
+    await TradeDB.savePushSubscription(userEmail, subscription, agent);
 
     console.log(`[PUSH] User ${userEmail} subscribed to push notifications`);
     res.json({ success: true, message: 'Subscribed successfully' });
@@ -2780,9 +2786,9 @@ app.post('/api/admin/push/broadcast', ensureAuthenticatedAPI, async (req, res) =
     const payload = {
       title,
       body,
-      icon: '/images/favicon.PNG',
-      badge: '/images/favicon.PNG',
-      url: url || '/account',
+      icon: '/images/brand/app-icon.png',
+      badge: '/images/brand/app-icon.png',
+      url: url || '/account.html',
       requireInteraction: false
     };
 
@@ -2857,6 +2863,12 @@ app.get('/', (req, res) => {
     // Unauthenticated users see landing page
     res.sendFile(path.join(__dirname, 'public', 'landing.html'));
   }
+});
+
+// Push notifications used to open /account, a page that never existed (404). The ones already
+// delivered still carry that link, so it leads to the Account page; signed out, to the sign-in page.
+app.get('/account', ensureAuthenticated, (req, res) => {
+  res.redirect('/account.html');
 });
 
 // Protect static files except the public pages and their assets

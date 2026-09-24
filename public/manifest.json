@@ -2,26 +2,25 @@
     "name": "SutrAlgo Trading Signals",
     "short_name": "SutrAlgo",
     "description": "Automated stock trading signals and portfolio management",
-    "start_url": "/account",
+    "start_url": "/index.html",
     "display": "standalone",
-    "background_color": "#0a0a0a",
-    "theme_color": "#d4af37",
-    "orientation": "portrait-primary",
+    "background_color": "#F3EFE6",
+    "theme_color": "#141210",
     "scope": "/",
     "lang": "en",
     "categories": ["finance", "business"],
     "icons": [
         {
-            "src": "/images/favicon.PNG",
-            "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "any maskable"
-        },
-        {
-            "src": "/images/favicon.PNG",
+            "src": "/images/brand/app-icon.png",
             "sizes": "512x512",
             "type": "image/png",
-            "purpose": "any maskable"
+            "purpose": "any"
+        },
+        {
+            "src": "/images/brand/app-icon.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
         }
     ],
     "screenshots": [],

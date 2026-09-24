@@ -584,7 +584,23 @@
       "keys": {}
      }
     },
-    "bug": "keys are only checked for presence: an empty keys object passes server.js:3288 and the INSERT hits NOT NULL keys_p256dh (database-postgres.js:3603; keys_p256dh is NOT NULL at database-postgres.js:387) -> 500 'Failed to save subscription'"
+    "note": "Fixed in I8: endpoint, keys.p256dh and keys.auth must be non-empty strings (server.js); an empty keys object used to reach the NOT NULL keys_p256dh column -> 500"
+   },
+   {
+    "as": "delete",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "subscription": {
+      "endpoint": "https://push.e2e.invalid/harness-delete-long-agent",
+      "keys": {
+       "p256dh": "harness-p256dh",
+       "auth": "harness-auth"
+      }
+     },
+     "userAgent": "<the letter x repeated 501 times>"
+    },
+    "note": "Fixed in I8: a user agent longer than the VARCHAR(500) column is cut to 500 characters; it used to crash the INSERT -> 500"
    }
   ]
  },

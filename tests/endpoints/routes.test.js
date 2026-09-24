@@ -31,6 +31,7 @@ const CHECKS = {
     object: r => expect(r.json && typeof r.json === 'object' && !Array.isArray(r.json)).toBe(true),
     html: r => expect(String(r.headers['content-type'] || '')).toMatch(/text\/html/),
     redirectLogin: r => expect(String(r.headers.location || '')).toMatch(/\/login/),
+    redirectAccount: r => expect(String(r.headers.location || '')).toBe('/account.html'),
     authenticatedTrue: r => expect(r.json && r.json.authenticated).toBe(true),
     authenticatedFalse: r => expect(r.json && r.json.authenticated).toBe(false),
     isAdminTrue: r => expect((r.json && (r.json.isAdmin ?? (r.json.user && r.json.user.isAdmin)))).toBe(true),

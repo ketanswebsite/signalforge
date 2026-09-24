@@ -13,10 +13,10 @@ self.addEventListener('push', function(event) {
     let data = {
         title: 'SutrAlgo Alert',
         body: 'New notification',
-        icon: '/images/favicon.PNG',
-        badge: '/images/favicon.PNG',
+        icon: '/images/brand/app-icon.png',
+        badge: '/images/brand/app-icon.png',
         tag: 'default',
-        url: '/account',
+        url: '/account.html',
         requireInteraction: false
     };
 
@@ -66,7 +66,7 @@ self.addEventListener('notificationclick', function(event) {
 
     event.notification.close();
 
-    const urlToOpen = event.notification.data?.url || '/account';
+    const urlToOpen = event.notification.data?.url || '/account.html';
 
     // Handle action button clicks
     if (event.action) {

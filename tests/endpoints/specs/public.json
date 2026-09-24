@@ -765,6 +765,46 @@
   ]
  },
  {
+  "route": "GET /account",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 302,
+    "check": "redirectLogin",
+    "note": "the link every push notification carried until I8 (a 404 then); signed out -> the sign-in page"
+   },
+   {
+    "as": "token",
+    "status": 302,
+    "check": "redirectLogin",
+    "note": "the ops token is not a session"
+   },
+   {
+    "as": "nosub",
+    "status": 302,
+    "check": "redirectAccount"
+   },
+   {
+    "as": "user",
+    "status": 302,
+    "check": "redirectAccount",
+    "note": "signed in -> the Account page"
+   },
+   {
+    "as": "admin",
+    "status": 302,
+    "check": "redirectAccount"
+   },
+   {
+    "as": "user",
+    "path": "/account.html",
+    "status": 200,
+    "check": "html",
+    "note": "the redirect lands on a real page"
+   }
+  ]
+ },
+ {
   "route": "GET /logout",
   "order": "last",
   "cases": [
