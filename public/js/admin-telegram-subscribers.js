@@ -134,7 +134,8 @@ window.AdminTelegramSubscribers = (function () {
     });
     table.appendChild(tbody);
 
-    const wrap = el('div', 'table-card');
+    // data-table-wrapper: ten columns scroll inside the card instead of widening the page on a phone
+    const wrap = el('div', 'table-card data-table-wrapper');
     wrap.appendChild(table);
     container.appendChild(wrap);
   }

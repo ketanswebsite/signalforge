@@ -19,94 +19,121 @@ const {
   AdminAPIError
 } = require('../middleware/admin-error-handler');
 
-const {
-  logAdminAPIRequest,
-  getRecentActivityLogs
-} = require('../middleware/admin-activity-log');
-
 // Import database
 const TradeDB = require('../database-postgres');
 const Input = require('../lib/shared/input');
+const AccountDeletion = require('../lib/shared/account-deletion');
+const SqlConsole = require('../lib/shared/sql-console');
 
 // What the subscription_plans CHECK constraints allow (migrations/003_create_subscription_tables.sql)
 const PLAN_REGIONS = ['UK', 'US', 'India', 'Global'];
 const PLAN_CURRENCIES = ['GBP', 'USD', 'INR'];
 
-// Dashboard "Recent activity" feed: a placeholder that always answers an empty
-// list. It sits above router.use(ensureAdminAPI), but server.js puts the admin
-// guard in front of this whole router, so it is admin-only like the rest.
-router.get('/audit/logs', (req, res) => {
-  res.json({
-    success: true,
-    data: { logs: [] },
-    message: 'Operation successful'
-  });
-});
+// Subscription rows (us) and their plans (sp). A row from the Stripe checkout (routes/stripe.js) names
+// its plan by plan_code and has no plan_id: joined on plan_id alone, every Stripe row was missing from
+// the plan counts and the MRR.
+const PLAN_OF_ROW = 'sp.id = us.plan_id OR (us.plan_id IS NULL AND sp.plan_code = us.plan_code)';
+// A row that pays now: 'active' and inside its paid period, as middleware/subscription.js grants access
+const PAYING = "us.status = 'active' AND COALESCE(us.end_date, us.subscription_end_date) > NOW()";
+// A row with access now: a paying one, or a free trial that is still running
+const CURRENT = `(us.status = 'trial' AND us.trial_end_date > NOW()) OR (${PAYING})`;
+// What a paying row brings in each month: its own payment spread over its billing period (a Stripe
+// row), else its plan's monthly price (a row an admin or a migration made)
+const MONTHLY_AMOUNT = `CASE
+      WHEN COALESCE(us.billing_period, us.billing_cycle) = 'lifetime' THEN 0
+      WHEN us.amount_paid > 0 THEN us.amount_paid / CASE COALESCE(us.billing_period, us.billing_cycle)
+        WHEN 'quarterly' THEN 3 WHEN 'annual' THEN 12 WHEN 'yearly' THEN 12 ELSE 1 END
+      ELSE COALESCE(sp.price_monthly, 0)
+    END`;
 
-// Apply admin authentication and activity logging to all routes below
+/**
+ * Monthly recurring revenue, one entry per currency: amounts in different currencies are never
+ * added together (the old figures summed pounds, dollars and rupees and showed the total in pounds).
+ * @returns {Promise<Array<{currency: string, mrr: number, subscriptions: number}>>}
+ */
+async function recurringRevenue() {
+  const { rows } = await TradeDB.pool.query(`
+    SELECT COALESCE(us.currency, sp.currency) AS currency,
+           ROUND(SUM(${MONTHLY_AMOUNT}), 2) AS mrr,
+           COUNT(*)::int AS subscriptions
+    FROM user_subscriptions us
+    LEFT JOIN subscription_plans sp ON ${PLAN_OF_ROW}
+    WHERE ${PAYING}
+    GROUP BY 1
+    ORDER BY 1
+  `);
+  return rows.map(row => ({ currency: row.currency, mrr: parseFloat(row.mrr), subscriptions: row.subscriptions }));
+}
+
+/**
+ * Churn over the last 30 days, in percent (one decimal): the subscriptions cancelled in that time against
+ * those plus the ones paying now. A cancellation is dated by cancellation_date (the user's cancel and the
+ * Stripe webhook write it), else end_date (the admin's cancel writes only that). It used to read end_date
+ * alone, so a subscription Stripe cancelled never counted, and to set every 'active' row against them,
+ * paid up or not.
+ * @returns {Promise<number>}
+ */
+async function churnRate() {
+  const { rows } = await TradeDB.pool.query(`
+    SELECT
+      (COUNT(*) FILTER (WHERE us.status = 'cancelled'
+        AND COALESCE(us.cancellation_date, us.end_date) >= NOW() - INTERVAL '30 days'))::int AS cancelled,
+      (COUNT(*) FILTER (WHERE ${PAYING}))::int AS paying
+    FROM user_subscriptions us
+  `);
+  const { cancelled, paying } = rows[0];
+  return cancelled + paying > 0 ? Math.round((cancelled / (cancelled + paying)) * 1000) / 10 : 0;
+}
+
+// Dashboard "Recent activity": the audit log (admin_activity_log). Account deletions write to it, the
+// user's own and the admin's (lib/shared/account-deletion.js); until 2026-09-24 this route was a
+// placeholder that always answered an empty list. It sits above router.use(ensureAdminAPI), but
+// server.js puts the admin guard in front of this whole router, so it is admin-only like the rest.
+router.get('/audit/logs', asyncHandler(async (req, res) => {
+  const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 100);
+  let result;
+  try {
+    result = await TradeDB.pool.query(`
+      SELECT id, admin_email, activity_type, description, target_type, target_id, success, created_at
+      FROM admin_activity_log
+      ORDER BY created_at DESC, id DESC
+      LIMIT $1
+    `, [limit]);
+  } catch (error) {
+    if (error.code === '42P01') {   // a database that never got migrations/008_create_admin_activity_log.sql
+      return res.json(successResponse({ logs: [], missing: true }, 'This database has no audit log table'));
+    }
+    throw error;
+  }
+  res.json(successResponse({ logs: result.rows }));
+}));
+
+// Apply admin authentication to all routes below
 router.use(ensureAdminAPI);
-// Temporarily disable activity logging to debug 500 errors
-// router.use(logAdminAPIRequest());
 
 // ========== Dashboard Metrics ==========
+// Each figure is read on its own. One that cannot be read comes back as null, and the dashboard shows
+// '—': the old handler reported a failed read as 0, and sent a hard-coded zero change for each
+// figure and a payments-this-month figure it never computed.
 router.get('/dashboard/metrics', asyncHandler(async (req, res) => {
-  // Initialize default values
-  let totalUsers = 0;
-  let activeSubscriptions = 0;
-  let totalTrades = 0;
-  let mrr = 0;
-  let paymentsThisMonth = 0;
-
-  // Get metrics from database with individual try-catch for each table
-  try {
-    const usersResult = await TradeDB.pool.query('SELECT COUNT(*) FROM users');
-    totalUsers = parseInt(usersResult.rows[0].count) || 0;
-  } catch (error) {
-    console.log('Users table query failed:', error.message);
-  }
-
-  try {
-    const subsResult = await TradeDB.pool.query(
-      "SELECT COUNT(*) FROM user_subscriptions WHERE status = 'active'"
-    );
-    activeSubscriptions = parseInt(subsResult.rows[0].count) || 0;
-  } catch (error) {
-    console.log('Subscriptions table query failed:', error.message);
-  }
-
-  try {
-    const tradesResult = await TradeDB.pool.query('SELECT COUNT(*) FROM trades');
-    totalTrades = parseInt(tradesResult.rows[0].count) || 0;
-  } catch (error) {
-    console.log('Trades table query failed:', error.message);
-  }
-
-  // Calculate MRR (if subscription_plans table exists)
-  try {
-    const mrrResult = await TradeDB.pool.query(`
-      SELECT COALESCE(SUM(sp.price_monthly), 0) as total_mrr
-      FROM user_subscriptions us
-      JOIN subscription_plans sp ON us.plan_id = sp.id
-      WHERE us.status = 'active'
-    `);
-    mrr = parseFloat(mrrResult.rows[0]?.total_mrr || 0);
-  } catch (error) {
-    console.log('MRR calculation failed:', error.message);
-  }
-
-  res.json(successResponse({
-    mrr,
-    totalUsers,
-    activeSubscriptions,
-    totalTrades,
-    paymentsThisMonth,
-    changes: {
-      mrr: '+0%',
-      users: '+0',
-      subscriptions: '+0',
-      payments: '+0'
+  const read = async (what, fn) => {
+    try {
+      return await fn();
+    } catch (error) {
+      console.log(`Dashboard metric "${what}" failed:`, error.message);
+      return null;
     }
-  }));
+  };
+  const count = (what, sql) => read(what, async () => parseInt((await TradeDB.pool.query(sql)).rows[0].count, 10));
+
+  const [totalUsers, activeSubscriptions, totalTrades, mrr] = await Promise.all([
+    count('users', 'SELECT COUNT(*) FROM users'),
+    count('paying subscriptions', `SELECT COUNT(*) FROM user_subscriptions us WHERE ${PAYING}`),
+    count('trades', 'SELECT COUNT(*) FROM trades'),
+    read('mrr', recurringRevenue)
+  ]);
+
+  res.json(successResponse({ totalUsers, activeSubscriptions, totalTrades, mrr }));
 }));
 
 // ========== User Management ==========
@@ -115,7 +142,21 @@ router.get('/users', asyncHandler(async (req, res) => {
   const limit = parseInt(req.query.limit) || 50;
   const offset = (page - 1) * limit;
 
-  const countResult = await TradeDB.pool.query('SELECT COUNT(*) FROM users');
+  // The Users tab's search box (part of an email or a name) and its "Telegram linked" filter. The tab
+  // always sent them; until 2026-09-24 this route ignored both and listed everyone.
+  const where = [];
+  const params = [];
+  const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+  if (search) {
+    params.push(`%${search.replace(/[\\%_]/g, '\\$&')}%`);
+    where.push(`(u.email ILIKE $${params.length} OR u.name ILIKE $${params.length})`);
+  }
+  if (req.query.filter === 'telegram') {
+    where.push('u.telegram_chat_id IS NOT NULL');
+  }
+  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+  const countResult = await TradeDB.pool.query(`SELECT COUNT(*) FROM users u ${whereSql}`, params);
   const total = parseInt(countResult.rows[0].count);
 
   const usersResult = await TradeDB.pool.query(`
@@ -141,9 +182,10 @@ router.get('/users', asyncHandler(async (req, res) => {
       ORDER BY us.id DESC
       LIMIT 1
     ) s ON true
+    ${whereSql}
     ORDER BY u.first_login DESC
-    LIMIT $1 OFFSET $2
-  `, [limit, offset]);
+    LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+  `, [...params, limit, offset]);
 
   // Summarise what each user can actually use — shown in User Management
   const ADMIN_EMAIL_ACCESS = process.env.ADMIN_EMAIL || 'ketanjoshisahs@gmail.com';
@@ -258,30 +300,51 @@ router.put('/users/:email', asyncHandler(async (req, res) => {
   res.json(successResponse(result.rows[0], 'User updated successfully'));
 }));
 
+// Deletes the account and everything it owns, and signs it out on every device: the same deletion as
+// the user's own GDPR delete (lib/shared/account-deletion.js). It used to delete the users row alone:
+// the account's trades, subscriptions and payments stayed, and its next signed-in request re-created
+// the row (server.js ensureUserInDatabase), so the account came back.
 router.delete('/users/:email', asyncHandler(async (req, res) => {
   const email = req.params.email;
+  if (AccountDeletion.isProtectedAccount(email)) {
+    throw new AdminAPIError('FORBIDDEN', 'The admin account owns the house portfolio and cannot be deleted');
+  }
 
-  const result = await TradeDB.pool.query(`
-    DELETE FROM users WHERE email = $1 RETURNING email
-  `, [email]);
+  let result;
+  try {
+    result = await AccountDeletion.deleteAccount({
+      pool: TradeDB.pool,
+      email,
+      requestedBy: req.adminUser.email,
+      ipAddress: AccountDeletion.clientAddress(req),
+      byAdmin: true
+    });
+  } catch (error) {
+    console.error('Admin account deletion failed:', error.message);
+    throw new AdminAPIError('DATABASE_ERROR', 'Deleting the account failed, and nothing was deleted');
+  }
 
-  if (result.rows.length === 0) {
+  if (!result.found) {
     throw new AdminAPIError('USER_NOT_FOUND', `User with email ${email} not found`);
   }
 
-  res.json(successResponse({ email }, 'User deleted successfully'));
+  const sessionsEnded = await AccountDeletion.endAccountSessions(req.sessionStore, email);
+  res.json(successResponse(
+    { email, financialRecordsRetained: result.financialRecordsRetained, sessionsEnded },
+    'User deleted with everything the account owned, and signed out everywhere'
+  ));
 }));
 
 // ========== Subscription Management ==========
 
-// Get all subscription plans
+// Get all subscription plans, each with the subscriptions that have access now (running trials included)
 router.get('/subscription-plans', asyncHandler(async (req, res) => {
   const plansResult = await TradeDB.pool.query(`
     SELECT
       sp.*,
-      COUNT(us.id) as subscriber_count
+      (COUNT(us.id) FILTER (WHERE ${CURRENT}))::int AS subscriber_count
     FROM subscription_plans sp
-    LEFT JOIN user_subscriptions us ON sp.id = us.plan_id AND us.status = 'active'
+    LEFT JOIN user_subscriptions us ON ${PLAN_OF_ROW}
     GROUP BY sp.id
     ORDER BY sp.created_at DESC
   `);
@@ -418,6 +481,7 @@ router.get('/subscriptions', asyncHandler(async (req, res) => {
   const offset = (page - 1) * limit;
   const status = req.query.status;
 
+  // A Stripe row keeps its own plan name, currency, dates and billing period (routes/stripe.js)
   let query = `
     SELECT
       us.id,
@@ -425,14 +489,16 @@ router.get('/subscriptions', asyncHandler(async (req, res) => {
       us.plan_id,
       us.status,
       us.trial_end_date,
-      us.start_date,
-      us.end_date,
+      COALESCE(us.start_date, us.subscription_start_date, us.trial_start_date) AS start_date,
+      COALESCE(us.end_date, us.subscription_end_date) AS end_date,
       us.created_at,
-      sp.plan_name,
-      sp.currency,
-      sp.price_monthly
+      COALESCE(us.plan_name, sp.plan_name) AS plan_name,
+      COALESCE(us.currency, sp.currency) AS currency,
+      sp.price_monthly,
+      us.amount_paid,
+      COALESCE(us.billing_period, us.billing_cycle) AS billing
     FROM user_subscriptions us
-    LEFT JOIN subscription_plans sp ON us.plan_id = sp.id
+    LEFT JOIN subscription_plans sp ON ${PLAN_OF_ROW}
   `;
 
   const params = [limit, offset];
@@ -566,49 +632,27 @@ router.post('/users/:email/revoke-access', asyncHandler(async (req, res) => {
   res.json(successResponse(userUpdate.rows[0], 'Complimentary access revoked successfully'));
 }));
 
-// Get subscription analytics
+// Get subscription analytics. MRR per currency, from every paying row (Stripe rows included). The
+// trends it used to send (MRR +12%, ARR +12%, churn -2%, LTV +15%) were hard-coded, and so was its
+// lifetime value: total MRR divided by the churn rate, not a customer's value.
 router.get('/subscription-analytics', asyncHandler(async (req, res) => {
-  // Calculate MRR
-  const mrrResult = await TradeDB.pool.query(`
-    SELECT COALESCE(SUM(sp.price_monthly), 0) as mrr
-    FROM user_subscriptions us
-    JOIN subscription_plans sp ON us.plan_id = sp.id
-    WHERE us.status = 'active'
-  `);
+  const mrr = await recurringRevenue();
+  const churn = await churnRate();
 
-  // Calculate churn rate (cancelled in last 30 days / active at start of period)
-  const churnResult = await TradeDB.pool.query(`
-    SELECT
-      COUNT(CASE WHEN status = 'cancelled' AND end_date >= NOW() - INTERVAL '30 days' THEN 1 END) as cancelled,
-      COUNT(CASE WHEN status = 'active' THEN 1 END) as active
-    FROM user_subscriptions
-  `);
-
-  const mrr = parseFloat(mrrResult.rows[0].mrr);
-  const cancelled = parseInt(churnResult.rows[0].cancelled);
-  const active = parseInt(churnResult.rows[0].active);
-  const churnRate = active > 0 ? ((cancelled / (active + cancelled)) * 100).toFixed(2) : 0;
-
-  // Get growth data for last 6 months
+  // Subscriptions started in each of the last 6 months, trials included, oldest first
   const growthResult = await TradeDB.pool.query(`
     SELECT
-      TO_CHAR(created_at, 'Mon') as month,
-      COUNT(*) as count
+      TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YYYY') as month,
+      COUNT(*)::int as count
     FROM user_subscriptions
-    WHERE created_at >= NOW() - INTERVAL '6 months'
-    GROUP BY TO_CHAR(created_at, 'Mon'), EXTRACT(MONTH FROM created_at)
-    ORDER BY EXTRACT(MONTH FROM created_at)
+    WHERE created_at >= DATE_TRUNC('month', NOW()) - INTERVAL '5 months'
+    GROUP BY DATE_TRUNC('month', created_at)
+    ORDER BY DATE_TRUNC('month', created_at)
   `);
 
   res.json(successResponse({
     mrr,
-    arr: mrr * 12,
-    churn_rate: churnRate,
-    avg_ltv: mrr > 0 ? (mrr / (churnRate / 100 || 1)).toFixed(2) : 0,
-    mrr_change: '+12%',
-    arr_change: '+12%',
-    churn_change: '-2%',
-    ltv_change: '+15%',
+    churn_rate: churn,
     growth: growthResult.rows
   }));
 }));
@@ -820,13 +864,16 @@ router.post('/payments/:transactionId/refund', asyncHandler(async (req, res) => 
   ));
 }));
 
-// Get payment analytics
+// Get payment analytics. Revenue is per currency, and the changes it used to send (+15%, +23, +2%,
+// -1%) were hard-coded; there is no earlier period to compare with, so there are none.
 router.get('/payment-analytics', asyncHandler(async (req, res) => {
-  // Total revenue
+  // Completed payments, per currency
   const revenueResult = await TradeDB.pool.query(`
-    SELECT COALESCE(SUM(amount), 0) as total_revenue
+    SELECT currency, SUM(amount) as revenue, COUNT(*)::int as payments
     FROM payment_transactions
     WHERE status = 'completed'
+    GROUP BY currency
+    ORDER BY currency
   `);
 
   // Total transactions
@@ -839,34 +886,34 @@ router.get('/payment-analytics', asyncHandler(async (req, res) => {
     FROM payment_transactions
   `);
 
-  // Revenue by provider
+  // Revenue by provider and currency
   const providerResult = await TradeDB.pool.query(`
     SELECT
       payment_provider as provider,
-      COALESCE(SUM(amount), 0) as revenue,
-      COUNT(*) as count
+      currency,
+      SUM(amount) as revenue,
+      COUNT(*)::int as count
     FROM payment_transactions
     WHERE status = 'completed'
-    GROUP BY payment_provider
+    GROUP BY payment_provider, currency
     ORDER BY revenue DESC
   `);
 
-  // Success rate by day (last 7 days)
+  // Success rate by day (last 7 days, oldest first)
   const successRateResult = await TradeDB.pool.query(`
     SELECT
-      TO_CHAR(created_at, 'Dy') as date,
+      TO_CHAR(DATE_TRUNC('day', created_at), 'DD-MM') as date,
       ROUND(
         (COUNT(CASE WHEN status = 'completed' THEN 1 END)::DECIMAL / COUNT(*) * 100),
         2
       ) as rate
     FROM payment_transactions
     WHERE created_at >= NOW() - INTERVAL '7 days'
-    GROUP BY TO_CHAR(created_at, 'Dy'), EXTRACT(DOW FROM created_at)
-    ORDER BY EXTRACT(DOW FROM created_at)
+    GROUP BY DATE_TRUNC('day', created_at)
+    ORDER BY DATE_TRUNC('day', created_at)
   `);
 
   const stats = transactionsResult.rows[0];
-  const totalRevenue = parseFloat(revenueResult.rows[0].total_revenue);
   const totalTransactions = parseInt(stats.total);
   const successRate = totalTransactions > 0
     ? ((parseInt(stats.completed) / totalTransactions) * 100).toFixed(2)
@@ -876,111 +923,55 @@ router.get('/payment-analytics', asyncHandler(async (req, res) => {
     : 0;
 
   res.json(successResponse({
-    totalRevenue,
+    revenue: revenueResult.rows.map(row => ({ currency: row.currency, revenue: parseFloat(row.revenue), payments: row.payments })),
     totalTransactions,
     successRate,
     refundRate,
-    revenueChange: '+15%',
-    transactionChange: '+23',
-    successRateChange: '+2%',
-    refundRateChange: '-1%',
-    byProvider: providerResult.rows,
+    byProvider: providerResult.rows.map(row => ({ ...row, revenue: parseFloat(row.revenue) })),
     successRateDaily: successRateResult.rows
   }));
 }));
 
 // ========== Analytics ==========
 
-// Revenue Analytics
+// Revenue Analytics: MRR per currency from every paying row (Stripe rows included), what each plan
+// and region brings in, and completed payments per month. It used to add pounds, dollars and rupees
+// together, send an "MRR growth" of 12% that was a placeholder, and a lifetime value computed as
+// total MRR divided by the churn rate.
 router.get('/analytics/revenue', asyncHandler(async (req, res) => {
-  // Calculate MRR
-  const mrrResult = await TradeDB.pool.query(`
-    SELECT COALESCE(SUM(sp.price_monthly), 0) as mrr
-    FROM user_subscriptions us
-    JOIN subscription_plans sp ON us.plan_id = sp.id
-    WHERE us.status = 'active'
-  `);
+  const mrr = await recurringRevenue();
 
-  const mrr = parseFloat(mrrResult.rows[0].mrr);
-  const arr = mrr * 12;
-
-  // Calculate ARPU (Average Revenue Per User)
-  const arpuResult = await TradeDB.pool.query(`
+  // What each plan and region brings in each month, per currency
+  const breakdownResult = await TradeDB.pool.query(`
     SELECT
-      CASE WHEN COUNT(*) > 0 THEN SUM(sp.price_monthly) / COUNT(*)
-      ELSE 0 END as arpu
+      COALESCE(sp.region, 'Unknown') as region,
+      COALESCE(us.plan_name, sp.plan_name) as plan_name,
+      COALESCE(us.currency, sp.currency) as currency,
+      ROUND(SUM(${MONTHLY_AMOUNT}), 2) as mrr,
+      COUNT(*)::int as subscriptions
     FROM user_subscriptions us
-    JOIN subscription_plans sp ON us.plan_id = sp.id
-    WHERE us.status = 'active'
+    LEFT JOIN subscription_plans sp ON ${PLAN_OF_ROW}
+    WHERE ${PAYING}
+    GROUP BY 1, 2, 3
+    ORDER BY 4 DESC
   `);
 
-  // Calculate LTV (simple: MRR / churn rate)
-  const churnResult = await TradeDB.pool.query(`
-    SELECT
-      COUNT(CASE WHEN status = 'cancelled' AND end_date >= NOW() - INTERVAL '30 days' THEN 1 END) as cancelled,
-      COUNT(CASE WHEN status = 'active' THEN 1 END) as active
-    FROM user_subscriptions
-  `);
-
-  const cancelled = parseInt(churnResult.rows[0].cancelled);
-  const active = parseInt(churnResult.rows[0].active);
-  const churnRate = active > 0 ? (cancelled / (active + cancelled)) * 100 : 0;
-  const ltv = churnRate > 0 ? (mrr / (churnRate / 100)) : 0;
-
-  // Revenue by region
-  const regionResult = await TradeDB.pool.query(`
-    SELECT
-      sp.region,
-      COALESCE(SUM(sp.price_monthly), 0) as revenue
-    FROM user_subscriptions us
-    JOIN subscription_plans sp ON us.plan_id = sp.id
-    WHERE us.status = 'active'
-    GROUP BY sp.region
-    ORDER BY revenue DESC
-  `);
-
-  const byRegion = {};
-  regionResult.rows.forEach(row => {
-    byRegion[row.region] = parseFloat(row.revenue);
-  });
-
-  // Revenue by plan
-  const planResult = await TradeDB.pool.query(`
-    SELECT
-      sp.plan_name,
-      COALESCE(SUM(sp.price_monthly), 0) as revenue
-    FROM user_subscriptions us
-    JOIN subscription_plans sp ON us.plan_id = sp.id
-    WHERE us.status = 'active'
-    GROUP BY sp.plan_name
-    ORDER BY revenue DESC
-  `);
-
-  const byPlan = {};
-  planResult.rows.forEach(row => {
-    byPlan[row.plan_name] = parseFloat(row.revenue);
-  });
-
-  // Revenue trend (last 12 months)
+  // Completed payments per month and currency, the last 12 months, oldest first
   const trendResult = await TradeDB.pool.query(`
     SELECT
-      TO_CHAR(created_at, 'Mon YYYY') as month,
-      COALESCE(SUM(amount), 0) as revenue
+      TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YYYY') as month,
+      currency,
+      SUM(amount) as revenue
     FROM payment_transactions
-    WHERE created_at >= NOW() - INTERVAL '12 months' AND status = 'completed'
-    GROUP BY TO_CHAR(created_at, 'Mon YYYY'), EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at)
-    ORDER BY EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at)
+    WHERE created_at >= DATE_TRUNC('month', NOW()) - INTERVAL '11 months' AND status = 'completed'
+    GROUP BY DATE_TRUNC('month', created_at), currency
+    ORDER BY DATE_TRUNC('month', created_at), currency
   `);
 
   res.json(successResponse({
     mrr,
-    arr,
-    arpu: parseFloat(arpuResult.rows[0].arpu),
-    ltv: parseFloat(ltv.toFixed(2)),
-    mrrGrowth: 12, // Placeholder
-    byRegion,
-    byPlan,
-    trend: trendResult.rows
+    breakdown: breakdownResult.rows.map(row => ({ ...row, mrr: parseFloat(row.mrr) })),
+    trend: trendResult.rows.map(row => ({ ...row, revenue: parseFloat(row.revenue) }))
   }));
 }));
 
@@ -1014,15 +1005,8 @@ router.get('/analytics/engagement', asyncHandler(async (req, res) => {
     WHERE last_login < CURRENT_DATE - INTERVAL '30 days' OR last_login IS NULL
   `);
 
-  // Feature usage (placeholder - would need actual feature tracking)
-  const featureUsage = {
-    'Trade Management': 89,
-    'Analytics': 67,
-    'Export': 45,
-    'ML Insights': 23
-  };
-
-  // Activity trend (last 30 days)
+  // Users by the day of their last sign-in, the last 30 days (the only activity users rows record).
+  // The feature-usage percentages and the week and month growth this route used to send were made up.
   const activityTrendResult = await TradeDB.pool.query(`
     SELECT
       TO_CHAR(last_login, 'YYYY-MM-DD') as date,
@@ -1038,44 +1022,32 @@ router.get('/analytics/engagement', asyncHandler(async (req, res) => {
     wau: parseInt(wauResult.rows[0].wau),
     mau: parseInt(mauResult.rows[0].mau),
     inactive: parseInt(inactiveResult.rows[0].inactive),
-    wauGrowth: 7.6, // Placeholder
-    mauGrowth: 12.2, // Placeholder
-    featureUsage,
     activityTrend: activityTrendResult.rows
   }));
 }));
 
 // Subscription Health Analytics
 router.get('/analytics/subscriptions', asyncHandler(async (req, res) => {
-  // Trial conversion rate
+  // Trial conversion, per account: of the accounts that ever had a trial, those paying now. The Stripe
+  // checkout adds a paid row and leaves the trial row as it was (routes/stripe.js), so the old count of
+  // 'active' rows with a trial end date never saw a Stripe conversion.
   const conversionResult = await TradeDB.pool.query(`
     SELECT
-      COUNT(CASE WHEN status = 'active' AND trial_end_date IS NOT NULL THEN 1 END) as converted,
-      COUNT(CASE WHEN trial_end_date IS NOT NULL THEN 1 END) as total_trials
-    FROM user_subscriptions
+      (COUNT(*) FILTER (WHERE EXISTS (
+        SELECT 1 FROM user_subscriptions us WHERE us.user_email = t.user_email AND ${PAYING}
+      )))::int AS converted,
+      COUNT(*)::int AS total_trials
+    FROM (SELECT DISTINCT user_email FROM user_subscriptions WHERE trial_end_date IS NOT NULL) t
   `);
 
-  const converted = parseInt(conversionResult.rows[0].converted);
-  const totalTrials = parseInt(conversionResult.rows[0].total_trials);
-  const trialConversion = totalTrials > 0 ? ((converted / totalTrials) * 100).toFixed(1) : 0;
+  const converted = conversionResult.rows[0].converted;
+  const totalTrials = conversionResult.rows[0].total_trials;
+  const trialConversion = totalTrials > 0 ? Math.round((converted / totalTrials) * 1000) / 10 : 0;
 
-  // Churn rate
-  const churnResult = await TradeDB.pool.query(`
-    SELECT
-      COUNT(CASE WHEN status = 'cancelled' AND end_date >= NOW() - INTERVAL '30 days' THEN 1 END) as cancelled,
-      COUNT(CASE WHEN status = 'active' THEN 1 END) as active
-    FROM user_subscriptions
-  `);
+  const churn = await churnRate();
 
-  const cancelled = parseInt(churnResult.rows[0].cancelled);
-  const active = parseInt(churnResult.rows[0].active);
-  const churnRate = active > 0 ? ((cancelled / (active + cancelled)) * 100).toFixed(1) : 0;
-
-  // Upgrades/downgrades (placeholder)
-  const upgrades = 12;
-  const downgrades = 3;
-
-  // Subscription funnel
+  // Subscription funnel. The upgrades (12), downgrades (3) and "profile completed" (88% of trials)
+  // this route used to send were made up: nothing records a plan change or a profile.
   const funnelResult = await TradeDB.pool.query(`
     SELECT
       COUNT(*) as signups
@@ -1085,7 +1057,6 @@ router.get('/analytics/subscriptions', asyncHandler(async (req, res) => {
   const funnel = {
     signups: parseInt(funnelResult.rows[0].signups),
     trialStarted: totalTrials,
-    profileCompleted: Math.floor(totalTrials * 0.88), // Placeholder
     converted
   };
 
@@ -1100,7 +1071,7 @@ router.get('/analytics/subscriptions', asyncHandler(async (req, res) => {
       END as age_group,
       COUNT(*) as count
     FROM user_subscriptions us
-    WHERE status = 'active'
+    WHERE ${PAYING}
     GROUP BY age_group
   `);
 
@@ -1110,10 +1081,8 @@ router.get('/analytics/subscriptions', asyncHandler(async (req, res) => {
   });
 
   res.json(successResponse({
-    trialConversion: parseFloat(trialConversion),
-    churnRate: parseFloat(churnRate),
-    upgrades,
-    downgrades,
+    trialConversion,
+    churnRate: churn,
     funnel,
     ageDistribution
   }));
@@ -1179,29 +1148,12 @@ router.get('/analytics/trades', asyncHandler(async (req, res) => {
   }));
 }));
 
-// Generate Custom Report
-router.post('/analytics/reports', asyncHandler(async (req, res) => {
-  const { type, period, format, email, sections } = req.body;
-
-  requireFields(req.body, ['type', 'period', 'format']);
-
-  // Placeholder implementation
-  // In a real implementation, this would generate actual reports in PDF, Excel, etc.
-
-  res.json(successResponse({
-    message: `Report generation started`,
-    type,
-    period,
-    format,
-    email,
-    sections,
-    status: 'processing'
-  }));
-}));
-
 // ========== Database Tools ==========
 
-// Get migrations
+// The migration files, and which of them schema_migrations records. Nothing here applies a migration:
+// they are applied by hand (run-single-migration.js), which does not record them, so a file the list
+// calls unrecorded may well be applied. This route used to call those files "pending", beside two
+// buttons that ran nothing and answered success.
 router.get('/database/migrations', asyncHandler(async (req, res) => {
   const fs = require('fs');
   const path = require('path');
@@ -1233,107 +1185,45 @@ router.get('/database/migrations', asyncHandler(async (req, res) => {
     console.error('Error reading migrations directory:', error);
   }
 
-  // Find pending migrations
-  const appliedFilenames = applied.map(m => m.filename);
-  const pending = allMigrations.filter(m => !appliedFilenames.includes(m));
+  const recordedNames = applied.map(m => m.filename);
 
   res.json(successResponse({
-    applied,
-    pending,
-    lastMigration: applied.length > 0 ? applied[0].filename : null
+    recorded: applied,
+    unrecorded: allMigrations.filter(m => !recordedNames.includes(m)),
+    lastRecorded: applied.length > 0 ? applied[0].filename : null
   }));
 }));
 
-// Run pending migrations
-router.post('/database/migrations/run', asyncHandler(async (req, res) => {
-  // Placeholder - would need actual migration runner implementation
-  res.json(successResponse({
-    message: 'Migrations feature coming soon',
-    status: 'pending'
-  }));
-}));
-
-// Run single migration
-router.post('/database/migrations/run-single', asyncHandler(async (req, res) => {
-  const { filename } = req.body;
-  requireField(req.body, 'filename');
-
-  // Placeholder - would need actual migration runner implementation
-  res.json(successResponse({
-    message: `Migration ${filename} feature coming soon`,
-    status: 'pending'
-  }));
-}));
-
-// Get backups
-router.get('/database/backups', asyncHandler(async (req, res) => {
-  // Placeholder - would integrate with backup system
-  res.json(successResponse({
-    backups: []
-  }));
-}));
-
-// Create backup
-router.post('/database/backups/create', asyncHandler(async (req, res) => {
-  // Placeholder - would trigger actual backup
-  res.json(successResponse({
-    message: 'Backup created',
-    filename: `backup_${new Date().toISOString().split('T')[0]}.sql`
-  }));
-}));
-
-// Download backup
-router.get('/database/backups/download/:filename', asyncHandler(async (req, res) => {
-  const { filename } = req.params;
-  // Placeholder - would serve actual backup file
-  res.json(successResponse({
-    message: `Backup download for ${filename} coming soon`
-  }));
-}));
-
-// Restore backup
-router.post('/database/backups/restore', asyncHandler(async (req, res) => {
-  const { filename } = req.body;
-  requireField(req.body, 'filename');
-
-  // Placeholder - would restore from backup
-  res.json(successResponse({
-    message: `Restore from ${filename} feature coming soon`
-  }));
-}));
-
-// Execute SQL query
+// Execute SQL query. Read mode (the default, anything but mode 'write') runs exactly one statement in a
+// READ ONLY transaction (lib/shared/sql-console.js): Postgres refuses a write and a second statement.
+// It used to judge the text by its first word, so "WITH d AS (DELETE ...) SELECT", TRUNCATE or
+// "SELECT 1; DROP TABLE x" ran as reads. Write mode runs the text as given.
 router.post('/database/query', asyncHandler(async (req, res) => {
   const { query, mode } = req.body;
   requireField(req.body, 'query');
-
-  // Safety check for write operations in read-only mode
-  const queryLower = query.toLowerCase().trim();
-  const isWriteQuery = queryLower.startsWith('insert') ||
-                       queryLower.startsWith('update') ||
-                       queryLower.startsWith('delete') ||
-                       queryLower.startsWith('drop') ||
-                       queryLower.startsWith('alter') ||
-                       queryLower.startsWith('create');
-
-  if (isWriteQuery && mode !== 'write') {
-    throw new AdminAPIError('FORBIDDEN', 'Write operations require write mode to be enabled');
+  if (typeof query !== 'string') {
+    throw new AdminAPIError('VALIDATION_ERROR', 'query must be text');
   }
 
-  // Execute query with timeout
   const startTime = Date.now();
   let result;
 
   try {
-    // Add LIMIT if not present in SELECT queries (safety)
-    let safeQuery = query;
-    if (queryLower.startsWith('select') && !queryLower.includes('limit')) {
-      safeQuery += ' LIMIT 1000';
-    }
-
-    result = await TradeDB.pool.query(safeQuery);
+    result = mode === 'write'
+      ? await TradeDB.pool.query(SqlConsole.capRows(query))
+      : await SqlConsole.runReadOnly(TradeDB.pool, query);
   } catch (error) {
-    throw new AdminAPIError('QUERY_ERROR', error.message);
+    // A Postgres answer (a five-character SQLSTATE) is the admin's to read; anything else is ours (500)
+    if (!/^[0-9A-Z]{5}$/.test(String(error.code || ''))) {
+      throw error;
+    }
+    if (error.code === '25006') {
+      throw new AdminAPIError('FORBIDDEN', `Read-only mode: ${error.message}. Choose write mode to change data.`);
+    }
+    if (/multiple commands/.test(error.message)) {
+      throw new AdminAPIError('INVALID_INPUT', 'Read-only mode runs one statement at a time');
+    }
+    throw new AdminAPIError('INVALID_INPUT', error.message, { code: error.code });
   }
 
   const executionTime = Date.now() - startTime;
@@ -1401,241 +1291,142 @@ router.post('/database/maintenance/analyze', asyncHandler(async (req, res) => {
   }));
 }));
 
-// Run REINDEX
+// Run REINDEX, one table at a time (REINDEX TABLE needs the table's owner). The answer says which tables
+// failed: it used to say "REINDEX completed successfully" even when every table had failed.
 router.post('/database/maintenance/reindex', asyncHandler(async (req, res) => {
-  // REINDEX requires superuser privileges, so we'll reindex individual tables
   const tables = await TradeDB.pool.query(`
-    SELECT tablename FROM pg_tables WHERE schemaname = 'public'
+    SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename
   `);
 
-  for (const table of tables.rows) {
+  const failed = [];
+  for (const { tablename } of tables.rows) {
     try {
-      await TradeDB.pool.query(`REINDEX TABLE ${table.tablename}`);
+      await TradeDB.pool.query(`REINDEX TABLE "${tablename.replace(/"/g, '""')}"`);
     } catch (error) {
-      console.error(`Failed to reindex ${table.tablename}:`, error.message);
+      console.error(`Failed to reindex ${tablename}:`, error.message);
+      failed.push({ table: tablename, error: error.message });
     }
   }
 
-  res.json(successResponse({
-    message: 'REINDEX completed successfully'
-  }));
+  const total = tables.rows.length;
+  const reindexed = total - failed.length;
+  res.json(successResponse(
+    { reindexed, failed },
+    failed.length === 0
+      ? `REINDEX rebuilt the indexes of all ${total} tables`
+      : `REINDEX rebuilt ${reindexed} of ${total} tables; ${failed.length} failed`
+  ));
 }));
 
 // ========== System Settings ==========
-
-// Get general settings
+// What this server runs with, read-only: Render's environment sets it, and the portal cannot change it.
+// A key shows only as set or not set. The editable settings pages this replaces saved nothing, and
+// their values (a scan every 4 hours, a 60-minute session, PayPal and Razorpay, SMTP) were made up.
 router.get('/settings/general', asyncHandler(async (req, res) => {
+  const set = (name) => Boolean(process.env[name]);
   res.json(successResponse({
-    appName: process.env.APP_NAME || 'SignalForge',
-    appUrl: process.env.APP_URL || '',
-    supportEmail: process.env.SUPPORT_EMAIL || '',
     environment: process.env.NODE_ENV || 'development',
-    debugMode: process.env.DEBUG === 'true',
-    registrationEnabled: true,
-    sessionTimeout: 60,
-    rememberMeEnabled: true,
-    scannerSchedule: '0 */4 * * *',
-    scannerEnabled: true
+    autoExecute: process.env.AUTO_EXECUTE !== 'false',
+    integrations: {
+      telegramBot: set('TELEGRAM_BOT_TOKEN'),
+      webPush: set('VAPID_PUBLIC_KEY') && set('VAPID_PRIVATE_KEY'),
+      stripe: set('STRIPE_SECRET_KEY'),
+      stripeWebhook: set('STRIPE_WEBHOOK_SECRET'),
+      gemini: set('GEMINI_API_KEY')
+    }
   }));
 }));
 
-// Get Telegram settings
+// Telegram: is the bot configured, and has the signed-in admin linked their own chat (the test message
+// goes there)
 router.get('/settings/telegram', asyncHandler(async (req, res) => {
+  const { rows } = await TradeDB.pool.query('SELECT telegram_chat_id FROM users WHERE email = $1', [req.adminUser.email]);
   res.json(successResponse({
-    enabled: !!process.env.TELEGRAM_BOT_TOKEN,
-    botToken: process.env.TELEGRAM_BOT_TOKEN ? '••••••••' : '',
-    chatId: process.env.TELEGRAM_CHAT_ID || '',
-    notifyTrades: true,
-    notifySubscriptions: true,
-    notifyPayments: true,
-    notifyErrors: true,
-    webhookUrl: process.env.TELEGRAM_WEBHOOK_URL || '',
-    webhookEnabled: process.env.TELEGRAM_WEBHOOK_MODE === 'true'
+    botConfigured: Boolean(process.env.TELEGRAM_BOT_TOKEN),
+    ownChatLinked: Boolean(rows.length && rows[0].telegram_chat_id)
   }));
 }));
 
-// Test Telegram bot
+// Send the signed-in admin a message from the bot, to their own linked chat and nowhere else
+// (sendTelegramAlert would fall back to the broadcast chat, TELEGRAM_CHAT_ID, for a missing chat id).
+// It used to send nothing and answer "Test message sent successfully".
 router.post('/settings/telegram/test', asyncHandler(async (req, res) => {
-  // Placeholder - would send actual test message
-  res.json(successResponse({
-    message: 'Test message sent successfully'
-  }));
-}));
-
-// Get payment provider settings
-router.get('/settings/payment', asyncHandler(async (req, res) => {
-  res.json(successResponse({
-    stripe: {
-      enabled: !!process.env.STRIPE_SECRET_KEY,
-      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY ? '••••••••' : '',
-      secretKey: process.env.STRIPE_SECRET_KEY ? '••••••••' : '',
-      webhookSecret: process.env.STRIPE_WEBHOOK_SECRET ? '••••••••' : ''
-    },
-    paypal: {
-      enabled: !!process.env.PAYPAL_CLIENT_SECRET,
-      clientId: process.env.PAYPAL_CLIENT_ID ? '••••••••' : '',
-      clientSecret: process.env.PAYPAL_CLIENT_SECRET ? '••••••••' : '',
-      mode: process.env.PAYPAL_MODE || 'sandbox'
-    },
-    razorpay: {
-      enabled: !!process.env.RAZORPAY_KEY_SECRET,
-      keyId: process.env.RAZORPAY_KEY_ID ? '••••••••' : '',
-      keySecret: process.env.RAZORPAY_KEY_SECRET ? '••••••••' : '',
-      webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET ? '••••••••' : ''
-    }
-  }));
-}));
-
-// Get email templates
-router.get('/settings/email-templates', asyncHandler(async (req, res) => {
-  res.json(successResponse({
-    templates: [
-      { id: 'welcome', name: 'Welcome Email', subject: 'Welcome to SignalForge!' },
-      { id: 'trial-start', name: 'Trial Started', subject: 'Your trial has started' },
-      { id: 'trial-ending', name: 'Trial Ending Soon', subject: 'Your trial ends in 3 days' },
-      { id: 'subscription-confirmed', name: 'Subscription Confirmed', subject: 'Subscription confirmed' },
-      { id: 'payment-received', name: 'Payment Received', subject: 'Payment received' },
-      { id: 'password-reset', name: 'Password Reset', subject: 'Reset your password' }
-    ],
-    smtp: {
-      host: process.env.SMTP_HOST || '',
-      port: process.env.SMTP_PORT || 587,
-      username: process.env.SMTP_USERNAME || '',
-      password: process.env.SMTP_PASSWORD ? '••••••••' : '',
-      fromEmail: process.env.SMTP_FROM_EMAIL || '',
-      fromName: process.env.SMTP_FROM_NAME || 'SignalForge'
-    }
-  }));
-}));
-
-// Get specific email template
-router.get('/settings/email-templates/:templateId', asyncHandler(async (req, res) => {
-  const { templateId } = req.params;
-
-  // Placeholder - would load from database or file
-  res.json(successResponse({
-    id: templateId,
-    subject: 'Sample Subject',
-    body: '<h1>Hello {{name}}</h1><p>Welcome to SignalForge!</p>'
-  }));
-}));
-
-// Update email template
-router.put('/settings/email-templates/:templateId', asyncHandler(async (req, res) => {
-  const { templateId } = req.params;
-  const { subject, body } = req.body;
-
-  requireFields(req.body, ['subject', 'body']);
-
-  // Placeholder - would save to database or file
-  res.json(successResponse({
-    id: templateId,
-    subject,
-    body
-  }, 'Template updated successfully'));
-}));
-
-// Get feature flags
-router.get('/settings/feature-flags', asyncHandler(async (req, res) => {
-  res.json(successResponse({
-    flags: {
-      newDashboard: { enabled: false, description: 'New dashboard UI' },
-      mlPredictions: { enabled: false, description: 'Machine learning predictions' },
-      advancedCharts: { enabled: true, description: 'Advanced charting features' },
-      socialSharing: { enabled: false, description: 'Share trades on social media' },
-      portfolioTracking: { enabled: false, description: 'Portfolio tracking feature' },
-      exportTrades: { enabled: true, description: 'Export trades to CSV/Excel' },
-      webhooks: { enabled: false, description: 'Webhook integrations' },
-      apiAccess: { enabled: false, description: 'Public API access' }
-    }
-  }));
-}));
-
-// Update feature flags
-router.post('/settings/feature-flags', asyncHandler(async (req, res) => {
-  const { flags } = req.body;
-
-  requireField(req.body, 'flags');
-
-  // Placeholder - would save to database
-  res.json(successResponse({
-    flags
-  }, 'Feature flags updated successfully'));
-}));
-
-// Send broadcast message
-router.post('/settings/broadcast', asyncHandler(async (req, res) => {
-  const { title, message, audience, viaEmail, viaTelegram, viaInApp } = req.body;
-
-  requireFields(req.body, ['title', 'message', 'audience']);
-
-  // Placeholder - would send to actual users
-  let sentCount = 0;
-  switch (audience) {
-    case 'all':
-      sentCount = 100;
-      break;
-    case 'active':
-      sentCount = 75;
-      break;
-    case 'trial':
-      sentCount = 20;
-      break;
-    case 'inactive':
-      sentCount = 25;
-      break;
-    case 'admins':
-      sentCount = 5;
-      break;
+  if (!process.env.TELEGRAM_BOT_TOKEN) {
+    throw new AdminAPIError('SERVICE_UNAVAILABLE', 'Telegram is not configured on this server: TELEGRAM_BOT_TOKEN is not set');
+  }
+  const { rows } = await TradeDB.pool.query('SELECT telegram_chat_id FROM users WHERE email = $1', [req.adminUser.email]);
+  const chatId = rows.length ? rows[0].telegram_chat_id : null;
+  if (!chatId) {
+    throw new AdminAPIError('INVALID_STATE', 'Your account has no linked Telegram chat. Link it from the Account page, then try again.');
   }
 
-  res.json(successResponse({
-    sentCount,
-    viaEmail,
-    viaTelegram,
-    viaInApp
-  }, `Broadcast sent to ${sentCount} users`));
+  const telegramBot = require('../lib/telegram/telegram-bot');
+  const delivered = await telegramBot.sendTelegramAlert(chatId, {
+    type: 'custom',
+    message: 'Admin portal test message: the bot can reach this chat.'
+  });
+  if (!delivered) {
+    throw new AdminAPIError('EXTERNAL_SERVICE_ERROR', 'Telegram did not accept the test message');
+  }
+  res.json(successResponse({ delivered }, 'Test message sent to your linked Telegram chat'));
 }));
 
-// Get maintenance settings
-router.get('/settings/maintenance', asyncHandler(async (req, res) => {
-  res.json(successResponse({
-    maintenanceMode: process.env.MAINTENANCE_MODE === 'true',
-    maintenanceMessage: process.env.MAINTENANCE_MESSAGE || '',
-    maintenanceETA: process.env.MAINTENANCE_ETA || ''
-  }));
-}));
-
-// Toggle maintenance mode
-router.post('/settings/maintenance-mode', asyncHandler(async (req, res) => {
-  const { enabled, message, eta } = req.body;
-
-  // Placeholder - would update environment or database
-  res.json(successResponse({
-    maintenanceMode: enabled,
-    maintenanceMessage: message,
-    maintenanceETA: eta
-  }, `Maintenance mode ${enabled ? 'enabled' : 'disabled'}`));
-}));
-
-// Clear cache
+// Clear a cache. The server holds one worth clearing: the AI verdicts in memory (ml/conviction-engine.js),
+// which the next read takes back from the database (conviction_daily). This route used to accept any
+// name ("redis", "query", "sessions": none of them exists here) and clear nothing.
 router.post('/settings/clear-cache', asyncHandler(async (req, res) => {
   const { type } = req.body;
-
   requireField(req.body, 'type');
+  if (type !== 'conviction') {
+    throw new AdminAPIError('VALIDATION_ERROR', "type must be 'conviction' (the AI verdicts held in memory): the server has no other cache to clear");
+  }
 
-  // Placeholder - would clear actual cache
-  res.json(successResponse({
-    type,
-    cleared: true
-  }, `${type} cache cleared successfully`));
+  const cleared = require('../ml/conviction-engine').clearMemoryCache();
+  res.json(successResponse(
+    { type, cleared },
+    `Cleared ${cleared} AI verdict${cleared === 1 ? '' : 's'} from memory; the next read of each symbol goes to the database`
+  ));
 }));
 
 // ========== System Health ==========
+// The database answers SELECT 1, within timeoutMs. TradeDB.isConnected() says only that a pool was
+// created at boot: the health check used to call that "PostgreSQL pool responding" without asking.
+async function pingDatabase(timeoutMs = 5000) {
+  if (!TradeDB.pool) {
+    return { ok: false, ms: null, message: 'No database is configured (DATABASE_URL is not set)' };
+  }
+  const started = Date.now();
+  let timer;
+  try {
+    await Promise.race([
+      TradeDB.pool.query('SELECT 1'),
+      new Promise((resolve, reject) => {
+        timer = setTimeout(() => reject(new Error(`no answer within ${timeoutMs / 1000} s`)), timeoutMs);
+      })
+    ]);
+    const ms = Date.now() - started;
+    return { ok: true, ms, message: `PostgreSQL answered SELECT 1 in ${ms} ms` };
+  } catch (error) {
+    return { ok: false, ms: Date.now() - started, message: `PostgreSQL did not answer: ${error.message}` };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 router.get('/system/health', asyncHandler(async (req, res) => {
   const mem = process.memoryUsage();
-  const dbConnected = TradeDB.isConnected();
-  const heapPercent = mem.heapTotal > 0 ? (mem.heapUsed / mem.heapTotal) * 100 : 0;
+  const ping = await pingDatabase();
+  const dbConnected = ping.ok;
+  // Memory against the tightest limit the server knows: the container's (process.constrainedMemory(),
+  // the cgroup limit) for everything the process holds, else the most the V8 heap may grow to. It was
+  // the heap in use against heapTotal, the heap V8 has reserved so far and grows on demand: 90% of that
+  // is normal, and the check read "fail" on a server with memory to spare.
+  const containerLimit = typeof process.constrainedMemory === 'function' ? Number(process.constrainedMemory()) || 0 : 0;
+  const memory = containerLimit > 0 && containerLimit <= require('os').totalmem()
+    ? { used: mem.rss, limit: containerLimit, text: 'the process holds', of: 'the container allows' }
+    : { used: mem.heapUsed, limit: require('v8').getHeapStatistics().heap_size_limit, text: 'the heap holds', of: 'it may grow to' };
+  const heapPercent = memory.limit > 0 ? (memory.used / memory.limit) * 100 : 0;
+  const mb = bytes => Math.round(bytes / 1048576);
   const uptimeSec = process.uptime();
   const fmtUptime = `${Math.floor(uptimeSec / 3600)}h ${Math.floor((uptimeSec % 3600) / 60)}m`;
 
@@ -1644,12 +1435,13 @@ router.get('/system/health', asyncHandler(async (req, res) => {
     {
       name: 'Database connection',
       status: dbConnected ? 'pass' : 'fail',
-      message: dbConnected ? 'PostgreSQL pool responding' : 'Pool not connected'
+      message: ping.message,
+      duration: ping.ms === null ? undefined : `${ping.ms} ms`
     },
     {
       name: 'Memory pressure',
       status: heapPercent < 90 ? 'pass' : 'fail',
-      message: `Heap ${Math.round(mem.heapUsed / 1048576)}MB of ${Math.round(mem.heapTotal / 1048576)}MB (${heapPercent.toFixed(0)}%)`
+      message: `${memory.text[0].toUpperCase()}${memory.text.slice(1)} ${mb(memory.used)} MB of the ${mb(memory.limit)} MB ${memory.of} (${heapPercent.toFixed(0)}%)`
     },
     {
       name: 'Server uptime',
@@ -1659,8 +1451,8 @@ router.get('/system/health', asyncHandler(async (req, res) => {
   ];
 
   const warnings = [];
-  if (heapPercent >= 75 && heapPercent < 90) warnings.push(`Heap usage at ${heapPercent.toFixed(0)}% — keep an eye on memory`);
-  if (!dbConnected) warnings.push('Database pool is not connected — most admin data will fail to load');
+  if (heapPercent >= 75 && heapPercent < 90) warnings.push(`Memory at ${heapPercent.toFixed(0)}% of its limit — keep an eye on it`);
+  if (!dbConnected) warnings.push('The database did not answer: most admin data will fail to load');
 
   const health = {
     status: dbConnected ? 'healthy' : 'degraded',

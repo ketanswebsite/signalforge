@@ -145,7 +145,7 @@
 
 /* ---------- utilities the modules sprinkle around ---------- */
 .admin-portal .hidden{display:none !important}
-.admin-portal .flex{display:flex;align-items:center}
+.admin-portal .flex{display:flex;align-items:center;flex-wrap:wrap}
 .admin-portal .flex-between{display:flex;align-items:center;justify-content:space-between;gap:var(--s-3)}
 .admin-portal .gap-2{gap:var(--s-2)}
 .admin-portal .mb-2{margin-bottom:var(--s-2)}
@@ -170,13 +170,15 @@
 .admin-portal .gap-1{gap:var(--s-1)}
 .admin-portal .mb-0{margin-bottom:0}
 .admin-portal .mb-1{margin-bottom:var(--s-1)}
-.admin-portal .signal-testing-container{display:grid;gap:var(--s-4)}
+.admin-portal .signal-testing-container{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--s-4)}
 .admin-portal .testing-controls-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:var(--s-4)}
 .admin-portal .test-control-card{border:1.5px solid var(--line-strong);background:var(--surface-2);padding:var(--s-4);display:grid;gap:var(--s-2);align-content:start}
 .admin-portal .test-control-card h3{margin:0;font-size:var(--size-sm);font-weight:var(--w-bold)}
 .admin-portal .test-control-card p{margin:0;font-size:var(--size-xs);color:var(--text-2)}
 .admin-portal .execution-buttons{display:flex;gap:var(--s-2);flex-wrap:wrap}
 .admin-portal .diagnostics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--s-3)}
+/* a grid item is at least as wide as its content: a wide table scrolls in its wrapper instead of widening the page */
+.admin-portal .signal-testing-container>*,.admin-portal .diagnostics-grid>*{min-width:0}
 .admin-portal .signals-summary{display:flex;gap:var(--s-4);flex-wrap:wrap;margin-bottom:var(--s-3)}
 .admin-portal .summary-item{border:1.5px solid var(--line-strong);background:var(--surface-2);padding:var(--s-2) var(--s-3);font-size:var(--size-xs);font-variant-numeric:tabular-nums}
 .admin-portal .filter-controls{display:flex;gap:var(--s-2);flex-wrap:wrap;margin-bottom:var(--s-3)}

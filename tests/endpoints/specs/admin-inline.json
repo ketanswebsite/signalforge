@@ -240,7 +240,7 @@
    {
     "as": "user",
     "status": 403,
-    "note": "probe-only: runs the 7 AM high-conviction scan, never called authorised"
+    "note": "probe-only: runs the real 7 AM scan with its Telegram and push broadcasts, never called authorised. Since I12b a scanner answer of { error } is a 500, not \"Signal scan completed\""
    }
   ]
  },
@@ -371,12 +371,14 @@
    {
     "as": "admin",
     "status": 200,
-    "check": "object"
+    "check": "diagnosticsHouseBook",
+    "note": "today's signals are checked against the house book, the account the 1 PM executor books to; with no account every signal read MARKET_NOT_FOUND until I12b"
    }
   ]
  },
  {
   "route": "POST /api/admin/push/broadcast",
+  "note": "with VAPID keys set, an admin call sends to every subscribed browser: the harness never has keys (preload.js)",
   "cases": [
    {
     "as": "anon",
@@ -389,7 +391,43 @@
    {
     "as": "user",
     "status": 403,
-    "note": "probe-only: pushes to every subscribed device, never called authorised"
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {},
+    "note": "a title and a message are required"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "title": "Harness",
+     "body": "Harness message",
+     "url": "https://example.invalid/"
+    },
+    "note": "a click opens a page of this site only"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "title": "Harness",
+     "body": "Harness message",
+     "url": "//example.invalid/"
+    },
+    "note": "a protocol-relative address is another site too"
+   },
+   {
+    "as": "admin",
+    "status": 503,
+    "body": {
+     "title": "Harness",
+     "body": "Harness message",
+     "url": "/index.html"
+    },
+    "note": "web push is not configured in the harness, so nothing is sent. The Settings tab broadcasts through this route; until I12b it also required the email to be in ADMIN_EMAILS, a variable nothing else reads"
    }
   ]
  },

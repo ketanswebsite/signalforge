@@ -1,1315 +1,213 @@
 /**
  * Admin Settings Module
- * Handles system configuration, email templates, integrations, and feature flags
+ * What this server runs with (read-only: Render's environment sets it) and the three actions that
+ * work: a Telegram test message to the admin's own chat, a web push broadcast, and clearing the AI
+ * verdicts held in memory. Until 2026-09-24 this tab was seven pages of forms that saved nothing:
+ * buttons answered success without doing anything (save all, the Telegram test, the email template,
+ * the feature flags, the broadcast, maintenance mode and four cache buttons), and the rest promised
+ * features that were never built.
  */
 
 const AdminSettings = {
-    currentTab: 'general',
-    settings: {},
-    featureFlags: {},
-
     /**
      * Initialize the settings module
      */
     async init() {
-        this.render();
-        await this.loadTab(this.currentTab);
-    },
-
-    /**
-     * Render the main settings interface
-     */
-    render() {
         const container = document.getElementById('settings-page');
-
-        container.innerHTML = `
-            <div class="admin-card mb-2">
-                <div class="admin-card-header">
-                    <h2 class="admin-card-title">System Settings</h2>
-                    <button class="btn btn-primary btn-sm" onclick="AdminSettings.saveAllSettings()">
-                         Save All Changes
-                    </button>
-                </div>
-
-                <div class="admin-card-body">
-                    <!-- Tab Navigation -->
-                    <div class="tab-navigation mb-2">
-                        <button
-                            class="tab-btn ${this.currentTab === 'general' ? 'active' : ''}"
-                            onclick="AdminSettings.switchTab('general')"
-                        >
-                             General
-                        </button>
-                        <button
-                            class="tab-btn ${this.currentTab === 'telegram' ? 'active' : ''}"
-                            onclick="AdminSettings.switchTab('telegram')"
-                        >
-                             Telegram
-                        </button>
-                        <button
-                            class="tab-btn ${this.currentTab === 'payment' ? 'active' : ''}"
-                            onclick="AdminSettings.switchTab('payment')"
-                        >
-                             Payment Providers
-                        </button>
-                        <button
-                            class="tab-btn ${this.currentTab === 'email' ? 'active' : ''}"
-                            onclick="AdminSettings.switchTab('email')"
-                        >
-                             Email Templates
-                        </button>
-                        <button
-                            class="tab-btn ${this.currentTab === 'features' ? 'active' : ''}"
-                            onclick="AdminSettings.switchTab('features')"
-                        >
-                             Feature Flags
-                        </button>
-                        <button
-                            class="tab-btn ${this.currentTab === 'broadcast' ? 'active' : ''}"
-                            onclick="AdminSettings.switchTab('broadcast')"
-                        >
-                             Broadcast
-                        </button>
-                        <button
-                            class="tab-btn ${this.currentTab === 'maintenance' ? 'active' : ''}"
-                            onclick="AdminSettings.switchTab('maintenance')"
-                        >
-                             Maintenance
-                        </button>
-                    </div>
-
-                    <!-- Tab Content -->
-                    <div id="settings-tab-content">
-                        <div class="spinner-container spinner-medium">
-                            <div class="spinner"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
+        container.replaceChildren(
+            this.section('Configuration', 'settings-config'),
+            this.section('Telegram', 'settings-telegram'),
+            this.section('Web Push Broadcast', 'settings-broadcast'),
+            this.section('Memory Cache', 'settings-cache')
+        );
+        this.renderBroadcast();
+        this.renderCache();
+        await Promise.all([this.loadConfiguration(), this.loadTelegram()]);
     },
 
     /**
-     * Switch between tabs
+     * A card whose body holds one element with this id
      */
-    async switchTab(tabName) {
-        this.currentTab = tabName;
-
-        // Update active button
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        event.target.classList.add('active');
-
-        await this.loadTab(tabName);
+    section(heading, bodyId) {
+        const body = document.createElement('div');
+        body.id = bodyId;
+        body.appendChild(AdminComponents.noteEl('Loading...'));
+        return AdminComponents.cardEl(heading, body);
     },
 
     /**
-     * Load tab content
+     * POST and read the answer. The admin router answers { error: { message } }, server.js { error }.
      */
-    async loadTab(tabName) {
-        const content = document.getElementById('settings-tab-content');
-        content.innerHTML = '<div class="spinner-container spinner-medium"><div class="spinner"></div></div>';
-
+    async send(url, body) {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body || {})
+        });
+        let data = {};
         try {
-            switch (tabName) {
-                case 'general':
-                    await this.loadGeneralSettings();
-                    break;
-                case 'telegram':
-                    await this.loadTelegramSettings();
-                    break;
-                case 'payment':
-                    await this.loadPaymentSettings();
-                    break;
-                case 'email':
-                    await this.loadEmailTemplates();
-                    break;
-                case 'features':
-                    await this.loadFeatureFlags();
-                    break;
-                case 'broadcast':
-                    this.loadBroadcast();
-                    break;
-                case 'maintenance':
-                    await this.loadMaintenance();
-                    break;
-            }
+            data = await response.json();
         } catch (error) {
-            content.innerHTML = '<p class="text-center text-danger">Failed to load settings.</p>';
+            // not JSON: the status below says what happened
         }
-    },
-
-    /**
-     * Load general settings
-     */
-    async loadGeneralSettings() {
-        const response = await fetch('/api/admin/settings/general');
-        const data = await response.json();
-
-        if (!data.success) {
-            throw new Error(data.error?.message || 'Failed to load settings');
+        if (!response.ok || data.success === false) {
+            const reason = typeof data.error === 'string' ? data.error : (data.error && data.error.message);
+            throw new Error(reason || `The server answered ${response.status}`);
         }
-
-        this.settings.general = data.data;
-        this.renderGeneralSettings(data.data);
+        return data;
     },
 
     /**
-     * Render general settings
+     * A button that runs an action and shows the server's answer beside it
      */
-    renderGeneralSettings(settings) {
-        const content = document.getElementById('settings-tab-content');
-
-        content.innerHTML = `
-            <div class="admin-card mb-2">
-                <div class="admin-card-header">
-                    <h3>Application Settings</h3>
-                </div>
-                <div class="admin-card-body">
-                    <div class="form-group">
-                        <label>Application Name:</label>
-                        <input
-                            type="text"
-                            id="app-name"
-                            class="form-control"
-                            value="${settings.appName || 'SutrAlgo'}"
-                            placeholder="SutrAlgo"
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label>Application URL:</label>
-                        <input
-                            type="text"
-                            id="app-url"
-                            class="form-control"
-                            value="${settings.appUrl || ''}"
-                            placeholder="https://sutralgo.com"
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label>Support Email:</label>
-                        <input
-                            type="email"
-                            id="support-email"
-                            class="form-control"
-                            value="${settings.supportEmail || ''}"
-                            placeholder="support@sutralgo.com"
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label>Environment:</label>
-                        <select id="environment" class="form-control">
-                            <option value="development" ${settings.environment === 'development' ? 'selected' : ''}>Development</option>
-                            <option value="staging" ${settings.environment === 'staging' ? 'selected' : ''}>Staging</option>
-                            <option value="production" ${settings.environment === 'production' ? 'selected' : ''}>Production</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="debug-mode" ${settings.debugMode ? 'checked' : ''} />
-                            Enable Debug Mode
-                        </label>
-                        <small class="text-muted">Show detailed error messages and logs</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="registration-enabled" ${settings.registrationEnabled !== false ? 'checked' : ''} />
-                            Enable User Registration
-                        </label>
-                        <small class="text-muted">Allow new users to register</small>
-                    </div>
-                </div>
-            </div>
-
-            <div class="admin-card mb-2">
-                <div class="admin-card-header">
-                    <h3>Session Settings</h3>
-                </div>
-                <div class="admin-card-body">
-                    <div class="form-group">
-                        <label>Session Timeout (minutes):</label>
-                        <input
-                            type="number"
-                            id="session-timeout"
-                            class="form-control"
-                            value="${settings.sessionTimeout || 60}"
-                            min="5"
-                            max="1440"
-                        />
-                        <small class="text-muted">How long users stay logged in</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="remember-me-enabled" ${settings.rememberMeEnabled !== false ? 'checked' : ''} />
-                            Enable "Remember Me"
-                        </label>
-                        <small class="text-muted">Allow extended login sessions</small>
-                    </div>
-                </div>
-            </div>
-
-            <div class="admin-card">
-                <div class="admin-card-header">
-                    <h3>Cron Jobs & Scheduling</h3>
-                </div>
-                <div class="admin-card-body">
-                    <div class="form-group">
-                        <label>Stock Scanner Schedule:</label>
-                        <select id="scanner-schedule" class="form-control">
-                            <option value="0 */4 * * *" ${settings.scannerSchedule === '0 */4 * * *' ? 'selected' : ''}>Every 4 hours</option>
-                            <option value="0 */6 * * *" ${settings.scannerSchedule === '0 */6 * * *' ? 'selected' : ''}>Every 6 hours</option>
-                            <option value="0 0 * * *" ${settings.scannerSchedule === '0 0 * * *' ? 'selected' : ''}>Daily at midnight</option>
-                            <option value="0 0 */2 * *" ${settings.scannerSchedule === '0 0 */2 * *' ? 'selected' : ''}>Every 2 days</option>
-                        </select>
-                        <small class="text-muted">When to run automated stock scans</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="scanner-enabled" ${settings.scannerEnabled !== false ? 'checked' : ''} />
-                            Enable Automated Scanner
-                        </label>
-                    </div>
-
-                    <button class="btn btn-secondary" onclick="AdminSettings.testCronJob()">
-                         Test Scanner Now
-                    </button>
-                </div>
-            </div>
-        `;
+    actionButton(label, className, action) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `btn ${className}`;
+        button.textContent = label;
+        const result = document.createElement('p');
+        result.className = 'text-muted mt-1';
+        button.addEventListener('click', async () => {
+            button.disabled = true;
+            result.textContent = 'Working...';
+            try {
+                result.textContent = await action();
+            } catch (error) {
+                result.textContent = error.message;
+            } finally {
+                button.disabled = false;
+            }
+        });
+        return [button, result];
     },
 
     /**
-     * Load Telegram settings
+     * What this server is configured with
      */
-    async loadTelegramSettings() {
-        const response = await fetch('/api/admin/settings/telegram');
-        const data = await response.json();
-
-        if (!data.success) {
-            throw new Error(data.error?.message || 'Failed to load Telegram settings');
+    async loadConfiguration() {
+        const target = document.getElementById('settings-config');
+        let config;
+        try {
+            config = (await ApiClient.get('/api/admin/settings/general')).data;
+        } catch (error) {
+            target.replaceChildren(AdminComponents.noteEl(`The configuration could not be read: ${error.message}`));
+            return;
         }
 
-        this.settings.telegram = data.data;
-        this.renderTelegramSettings(data.data);
+        const set = value => (value ? 'Set' : 'Not set');
+        target.replaceChildren(
+            AdminComponents.tableEl(['Setting', 'Value'], [
+                ['Environment', config.environment],
+                ['Automatic trading', config.autoExecute
+                    ? 'On: the 1 PM executor books the day\'s signals'
+                    : 'Off (observation mode): nothing is booked'],
+                ['Telegram bot', set(config.integrations.telegramBot)],
+                ['Web push', set(config.integrations.webPush)],
+                ['Stripe payments', set(config.integrations.stripe)],
+                ['Stripe webhook', set(config.integrations.stripeWebhook)],
+                ['AI conviction', set(config.integrations.gemini)]
+            ]),
+            AdminComponents.noteEl('These come from the Render environment (AUTO_EXECUTE, TELEGRAM_BOT_TOKEN, VAPID_PUBLIC_KEY and ' +
+                'VAPID_PRIVATE_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, GEMINI_API_KEY). This page shows them and cannot change them.')
+        );
     },
 
     /**
-     * Render Telegram settings
+     * Telegram: the bot, the admin's own chat, and a test message to that chat
      */
-    renderTelegramSettings(settings) {
-        const content = document.getElementById('settings-tab-content');
-
-        content.innerHTML = `
-            <div class="admin-card mb-2">
-                <div class="admin-card-header">
-                    <h3>Telegram Bot Configuration</h3>
-                </div>
-                <div class="admin-card-body">
-                    <div class="alert ${settings.enabled ? 'alert-success' : 'alert-warning'} mb-2">
-                        <strong>Status:</strong> ${settings.enabled ? ' Enabled' : ' Disabled'}
-                    </div>
-
-                    <div class="form-group">
-                        <label>Bot Token:</label>
-                        <input
-                            type="password"
-                            id="telegram-bot-token"
-                            class="form-control"
-                            value="${settings.botToken || ''}"
-                            placeholder="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
-                        />
-                        <small class="text-muted">Get from @BotFather on Telegram</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Default Chat ID:</label>
-                        <input
-                            type="text"
-                            id="telegram-chat-id"
-                            class="form-control"
-                            value="${settings.chatId || ''}"
-                            placeholder="-1001234567890"
-                        />
-                        <small class="text-muted">Channel or chat ID for notifications</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="telegram-enabled" ${settings.enabled ? 'checked' : ''} />
-                            Enable Telegram Notifications
-                        </label>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Notification Types:</label>
-                        <div>
-                            <label>
-                                <input type="checkbox" id="notify-trades" ${settings.notifyTrades !== false ? 'checked' : ''} />
-                                Trade Signals
-                            </label>
-                        </div>
-                        <div>
-                            <label>
-                                <input type="checkbox" id="notify-subscriptions" ${settings.notifySubscriptions !== false ? 'checked' : ''} />
-                                New Subscriptions
-                            </label>
-                        </div>
-                        <div>
-                            <label>
-                                <input type="checkbox" id="notify-payments" ${settings.notifyPayments !== false ? 'checked' : ''} />
-                                Payment Events
-                            </label>
-                        </div>
-                        <div>
-                            <label>
-                                <input type="checkbox" id="notify-errors" ${settings.notifyErrors !== false ? 'checked' : ''} />
-                                System Errors
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-2">
-                        <button class="btn btn-primary" onclick="AdminSettings.testTelegramBot()">
-                             Send Test Message
-                        </button>
-                        <button class="btn btn-secondary" onclick="AdminSettings.getUpdates()">
-                             Get Bot Updates
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="admin-card">
-                <div class="admin-card-header">
-                    <h3>Webhook Configuration</h3>
-                </div>
-                <div class="admin-card-body">
-                    <div class="form-group">
-                        <label>Webhook URL:</label>
-                        <input
-                            type="text"
-                            id="telegram-webhook-url"
-                            class="form-control"
-                            value="${settings.webhookUrl || ''}"
-                            placeholder="https://yourapp.com/api/telegram/webhook"
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="webhook-enabled" ${settings.webhookEnabled ? 'checked' : ''} />
-                            Use Webhook (instead of polling)
-                        </label>
-                        <small class="text-muted">Recommended for production</small>
-                    </div>
-
-                    <button class="btn btn-secondary" onclick="AdminSettings.setWebhook()">
-                         Set Webhook
-                    </button>
-                    <button class="btn btn-secondary" onclick="AdminSettings.deleteWebhook()">
-                         Delete Webhook
-                    </button>
-                </div>
-            </div>
-        `;
-    },
-
-    /**
-     * Load payment settings
-     */
-    async loadPaymentSettings() {
-        const response = await fetch('/api/admin/settings/payment');
-        const data = await response.json();
-
-        if (!data.success) {
-            throw new Error(data.error?.message || 'Failed to load payment settings');
+    async loadTelegram() {
+        const target = document.getElementById('settings-telegram');
+        let telegram;
+        try {
+            telegram = (await ApiClient.get('/api/admin/settings/telegram')).data;
+        } catch (error) {
+            target.replaceChildren(AdminComponents.noteEl(`The Telegram status could not be read: ${error.message}`));
+            return;
         }
 
-        this.settings.payment = data.data;
-        this.renderPaymentSettings(data.data);
+        const [button, result] = this.actionButton('Send me a test message', 'btn-primary', async () =>
+            (await this.send('/api/admin/settings/telegram/test')).message);
+        target.replaceChildren(
+            AdminComponents.tableEl(['What', 'Status'], [
+                ['Bot', telegram.botConfigured ? 'Configured' : 'Not configured: TELEGRAM_BOT_TOKEN is not set'],
+                ['Your chat', telegram.ownChatLinked ? 'Linked' : 'Not linked: link it from the Account page']
+            ]),
+            AdminComponents.noteEl('The test message goes to your own linked chat, never to subscribers.'),
+            button,
+            result
+        );
     },
 
     /**
-     * Render payment settings
+     * A web push notification to every subscribed browser (POST /api/admin/push/broadcast)
      */
-    renderPaymentSettings(settings) {
-        const content = document.getElementById('settings-tab-content');
-
-        content.innerHTML = `
-            <!-- Stripe Settings -->
-            <div class="admin-card mb-2">
-                <div class="admin-card-header">
-                    <h3>Stripe Configuration</h3>
-                    <div>${settings.stripe?.enabled ? ' Enabled' : ' Disabled'}</div>
-                </div>
-                <div class="admin-card-body">
-                    <div class="form-group">
-                        <label>Publishable Key:</label>
-                        <input
-                            type="text"
-                            id="stripe-publishable-key"
-                            class="form-control"
-                            value="${settings.stripe?.publishableKey || ''}"
-                            placeholder="pk_test_..."
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label>Secret Key:</label>
-                        <input
-                            type="password"
-                            id="stripe-secret-key"
-                            class="form-control"
-                            value="${settings.stripe?.secretKey || ''}"
-                            placeholder="sk_test_..."
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label>Webhook Secret:</label>
-                        <input
-                            type="password"
-                            id="stripe-webhook-secret"
-                            class="form-control"
-                            value="${settings.stripe?.webhookSecret || ''}"
-                            placeholder="whsec_..."
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="stripe-enabled" ${settings.stripe?.enabled ? 'checked' : ''} />
-                            Enable Stripe
-                        </label>
-                    </div>
-
-                    <button class="btn btn-secondary" onclick="AdminSettings.testStripe()">
-                         Test Stripe Connection
-                    </button>
-                </div>
-            </div>
-
-            <!-- PayPal Settings -->
-            <div class="admin-card mb-2">
-                <div class="admin-card-header">
-                    <h3>PayPal Configuration</h3>
-                    <div>${settings.paypal?.enabled ? ' Enabled' : ' Disabled'}</div>
-                </div>
-                <div class="admin-card-body">
-                    <div class="form-group">
-                        <label>Client ID:</label>
-                        <input
-                            type="text"
-                            id="paypal-client-id"
-                            class="form-control"
-                            value="${settings.paypal?.clientId || ''}"
-                            placeholder="AZDxjDScFpQtjWTOUtWKbyN_bDt4OgqaF4eYXlewfBP4-8aqX3PiV8e1GWU6liB2CUXlkA59kJXE7M6R"
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label>Client Secret:</label>
-                        <input
-                            type="password"
-                            id="paypal-client-secret"
-                            class="form-control"
-                            value="${settings.paypal?.clientSecret || ''}"
-                            placeholder="EO422dn3gQLgDbLVpHC_5mXLPbxIVWDyDQBDe7_iEr9k6pnNf5X9L9rOpVJQ4pD6n2jHC8YdlPm_rVqp"
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label>Mode:</label>
-                        <select id="paypal-mode" class="form-control">
-                            <option value="sandbox" ${settings.paypal?.mode === 'sandbox' ? 'selected' : ''}>Sandbox (Test)</option>
-                            <option value="live" ${settings.paypal?.mode === 'live' ? 'selected' : ''}>Live (Production)</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="paypal-enabled" ${settings.paypal?.enabled ? 'checked' : ''} />
-                            Enable PayPal
-                        </label>
-                    </div>
-
-                    <button class="btn btn-secondary" onclick="AdminSettings.testPayPal()">
-                         Test PayPal Connection
-                    </button>
-                </div>
-            </div>
-
-            <!-- Razorpay Settings -->
-            <div class="admin-card">
-                <div class="admin-card-header">
-                    <h3>Razorpay Configuration</h3>
-                    <div>${settings.razorpay?.enabled ? ' Enabled' : ' Disabled'}</div>
-                </div>
-                <div class="admin-card-body">
-                    <div class="form-group">
-                        <label>Key ID:</label>
-                        <input
-                            type="text"
-                            id="razorpay-key-id"
-                            class="form-control"
-                            value="${settings.razorpay?.keyId || ''}"
-                            placeholder="rzp_test_..."
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label>Key Secret:</label>
-                        <input
-                            type="password"
-                            id="razorpay-key-secret"
-                            class="form-control"
-                            value="${settings.razorpay?.keySecret || ''}"
-                            placeholder="..."
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label>Webhook Secret:</label>
-                        <input
-                            type="password"
-                            id="razorpay-webhook-secret"
-                            class="form-control"
-                            value="${settings.razorpay?.webhookSecret || ''}"
-                            placeholder="..."
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="razorpay-enabled" ${settings.razorpay?.enabled ? 'checked' : ''} />
-                            Enable Razorpay
-                        </label>
-                    </div>
-
-                    <button class="btn btn-secondary" onclick="AdminSettings.testRazorpay()">
-                         Test Razorpay Connection
-                    </button>
-                </div>
-            </div>
-        `;
-    },
-
-    /**
-     * Load email templates
-     */
-    async loadEmailTemplates() {
-        const response = await fetch('/api/admin/settings/email-templates');
-        const data = await response.json();
-
-        if (!data.success) {
-            throw new Error(data.error?.message || 'Failed to load email templates');
-        }
-
-        this.renderEmailTemplates(data.data);
-    },
-
-    /**
-     * Render email templates
-     */
-    renderEmailTemplates(templates) {
-        const content = document.getElementById('settings-tab-content');
-
-        const templateList = templates.templates || [
-            { id: 'welcome', name: 'Welcome Email', subject: 'Welcome to SutrAlgo!' },
-            { id: 'trial-start', name: 'Trial Started', subject: 'Your trial has started' },
-            { id: 'trial-ending', name: 'Trial Ending Soon', subject: 'Your trial ends in 3 days' },
-            { id: 'subscription-confirmed', name: 'Subscription Confirmed', subject: 'Subscription confirmed' },
-            { id: 'payment-received', name: 'Payment Received', subject: 'Payment received' },
-            { id: 'password-reset', name: 'Password Reset', subject: 'Reset your password' }
-        ];
-
-        content.innerHTML = `
-            <div class="admin-card mb-2">
-                <div class="admin-card-header">
-                    <h3>Email Template Editor</h3>
-                </div>
-                <div class="admin-card-body">
-                    <div class="form-group">
-                        <label>Select Template:</label>
-                        <select id="template-selector" class="form-control" onchange="AdminSettings.selectTemplate(this.value)">
-                            <option value="">-- Choose a template --</option>
-                            ${templateList.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
-                        </select>
-                    </div>
-
-                    <div id="template-editor">
-                        <div class="form-group">
-                            <label>Subject Line:</label>
-                            <input
-                                type="text"
-                                id="template-subject"
-                                class="form-control"
-                                placeholder="Email subject..."
-                            />
-                        </div>
-
-                        <div class="form-group">
-                            <label>Email Body (HTML):</label>
-                            <textarea
-                                id="template-body"
-                                class="form-control"
-                                rows="15"
-                                placeholder="<h1>Hello {{name}}</h1>..."
-                            ></textarea>
-                            <small class="text-muted">
-                                Available variables: {{name}}, {{email}}, {{plan}}, {{trialEndDate}}, {{supportEmail}}
-                            </small>
-                        </div>
-
-                        <div class="flex gap-2">
-                            <button class="btn btn-primary" onclick="AdminSettings.saveTemplate()">
-                                 Save Template
-                            </button>
-                            <button class="btn btn-secondary" onclick="AdminSettings.sendTestEmail()">
-                                 Send Test Email
-                            </button>
-                            <button class="btn btn-secondary" onclick="AdminSettings.previewTemplate()">
-                                 Preview
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="admin-card">
-                <div class="admin-card-header">
-                    <h3>SMTP Configuration</h3>
-                </div>
-                <div class="admin-card-body">
-                    <div class="form-group">
-                        <label>SMTP Host:</label>
-                        <input
-                            type="text"
-                            id="smtp-host"
-                            class="form-control"
-                            value="${templates.smtp?.host || ''}"
-                            placeholder="smtp.gmail.com"
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label>SMTP Port:</label>
-                        <input
-                            type="number"
-                            id="smtp-port"
-                            class="form-control"
-                            value="${templates.smtp?.port || 587}"
-                            placeholder="587"
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label>SMTP Username:</label>
-                        <input
-                            type="text"
-                            id="smtp-username"
-                            class="form-control"
-                            value="${templates.smtp?.username || ''}"
-                            placeholder="your-email@gmail.com"
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label>SMTP Password:</label>
-                        <input
-                            type="password"
-                            id="smtp-password"
-                            class="form-control"
-                            value="${templates.smtp?.password || ''}"
-                            placeholder="••••••••"
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label>From Email:</label>
-                        <input
-                            type="email"
-                            id="smtp-from-email"
-                            class="form-control"
-                            value="${templates.smtp?.fromEmail || ''}"
-                            placeholder="noreply@sutralgo.com"
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label>From Name:</label>
-                        <input
-                            type="text"
-                            id="smtp-from-name"
-                            class="form-control"
-                            value="${templates.smtp?.fromName || 'SutrAlgo'}"
-                            placeholder="SutrAlgo"
-                        />
-                    </div>
-
-                    <button class="btn btn-secondary" onclick="AdminSettings.testSMTP()">
-                         Test SMTP Connection
-                    </button>
-                </div>
-            </div>
-        `;
-    },
-
-    /**
-     * Load feature flags
-     */
-    async loadFeatureFlags() {
-        const response = await fetch('/api/admin/settings/feature-flags');
-        const data = await response.json();
-
-        if (!data.success) {
-            throw new Error(data.error?.message || 'Failed to load feature flags');
-        }
-
-        this.featureFlags = data.data.flags || {};
-        this.renderFeatureFlags(data.data);
-    },
-
-    /**
-     * Render feature flags
-     */
-    renderFeatureFlags(data) {
-        const content = document.getElementById('settings-tab-content');
-
-        const flags = data.flags || {
-            newDashboard: { enabled: false, description: 'New dashboard UI' },
-            mlPredictions: { enabled: false, description: 'Machine learning predictions' },
-            advancedCharts: { enabled: true, description: 'Advanced charting features' },
-            socialSharing: { enabled: false, description: 'Share trades on social media' },
-            portfolioTracking: { enabled: false, description: 'Portfolio tracking feature' },
-            exportTrades: { enabled: true, description: 'Export trades to CSV/Excel' },
-            webhooks: { enabled: false, description: 'Webhook integrations' },
-            apiAccess: { enabled: false, description: 'Public API access' }
+    renderBroadcast() {
+        const target = document.getElementById('settings-broadcast');
+        const field = (label, control) => {
+            const group = document.createElement('div');
+            group.className = 'form-group';
+            const labelEl = document.createElement('label');
+            labelEl.htmlFor = control.id;
+            labelEl.textContent = label;
+            group.append(labelEl, control);
+            return group;
         };
 
-        content.innerHTML = `
-            <div class="admin-card">
-                <div class="admin-card-header">
-                    <h3>Feature Flags</h3>
-                    <button class="btn btn-primary btn-sm" onclick="AdminSettings.saveFeatureFlags()">
-                         Save Changes
-                    </button>
-                </div>
-                <div class="admin-card-body">
-                    <p class="text-muted mb-2">
-                        Enable or disable features without deploying code. Changes take effect immediately for all users.
-                    </p>
+        const title = document.createElement('input');
+        title.type = 'text';
+        title.id = 'broadcast-title';
+        title.className = 'form-control';
+        title.maxLength = 100;
 
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Feature</th>
-                                <th>Description</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${Object.entries(flags).map(([key, flag]) => `
-                                <tr>
-                                    <td><strong>${this.formatFlagName(key)}</strong></td>
-                                    <td>${flag.description || '-'}</td>
-                                    <td>
-                                        ${flag.enabled ?
-                                            AdminComponents.badge('Enabled', 'success') :
-                                            AdminComponents.badge('Disabled', 'secondary')
-                                        }
-                                    </td>
-                                    <td>
-                                        <label class="toggle-switch">
-                                            <input
-                                                type="checkbox"
-                                                id="flag-${key}"
-                                                ${flag.enabled ? 'checked' : ''}
-                                                onchange="AdminSettings.toggleFeatureFlag('${key}')"
-                                            />
-                                            <span class="toggle-slider"></span>
-                                        </label>
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
+        const message = document.createElement('textarea');
+        message.id = 'broadcast-message';
+        message.className = 'form-control';
+        message.rows = 4;
+        message.maxLength = 500;
 
-                    <div class="mt-2">
-                        <button class="btn btn-secondary" onclick="AdminSettings.addFeatureFlag()">
-                             Add New Feature Flag
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-    },
+        const link = document.createElement('input');
+        link.type = 'text';
+        link.id = 'broadcast-url';
+        link.className = 'form-control';
+        link.placeholder = '/account.html';
 
-    /**
-     * Load broadcast
-     */
-    loadBroadcast() {
-        const content = document.getElementById('settings-tab-content');
-
-        content.innerHTML = `
-            <div class="admin-card">
-                <div class="admin-card-header">
-                    <h3>Broadcast Message</h3>
-                </div>
-                <div class="admin-card-body">
-                    <p class="text-muted mb-2">
-                        Send announcements to all users via email or Telegram.
-                    </p>
-
-                    <div class="form-group">
-                        <label>Message Title:</label>
-                        <input
-                            type="text"
-                            id="broadcast-title"
-                            class="form-control"
-                            placeholder="Important Announcement"
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label>Message Body:</label>
-                        <textarea
-                            id="broadcast-message"
-                            class="form-control"
-                            rows="6"
-                            placeholder="Your message here..."
-                        ></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Send Via:</label>
-                        <div>
-                            <label>
-                                <input type="checkbox" id="broadcast-email" checked />
-                                Email
-                            </label>
-                        </div>
-                        <div>
-                            <label>
-                                <input type="checkbox" id="broadcast-telegram" />
-                                Telegram
-                            </label>
-                        </div>
-                        <div>
-                            <label>
-                                <input type="checkbox" id="broadcast-in-app" />
-                                In-App Notification
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Target Audience:</label>
-                        <select id="broadcast-audience" class="form-control">
-                            <option value="all">All Users</option>
-                            <option value="active">Active Subscribers Only</option>
-                            <option value="trial">Trial Users Only</option>
-                            <option value="inactive">Inactive Users</option>
-                            <option value="admins">Admins Only</option>
-                        </select>
-                    </div>
-
-                    <div class="alert alert-warning">
-                        <strong>Warning:</strong>This will send to all matching users. Please review carefully.
-                    </div>
-
-                    <div class="flex gap-2">
-                        <button class="btn btn-primary" onclick="AdminSettings.sendBroadcast()">
-                             Send Broadcast
-                        </button>
-                        <button class="btn btn-secondary" onclick="AdminSettings.previewBroadcast()">
-                             Preview
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-    },
-
-    /**
-     * Load maintenance
-     */
-    async loadMaintenance() {
-        const response = await fetch('/api/admin/settings/maintenance');
-        const data = await response.json();
-
-        if (!data.success) {
-            throw new Error(data.error?.message || 'Failed to load maintenance settings');
-        }
-
-        this.renderMaintenance(data.data);
-    },
-
-    /**
-     * Render maintenance
-     */
-    renderMaintenance(settings) {
-        const content = document.getElementById('settings-tab-content');
-
-        content.innerHTML = `
-            <div class="admin-card mb-2">
-                <div class="admin-card-header">
-                    <h3>Maintenance Mode</h3>
-                </div>
-                <div class="admin-card-body">
-                    <div class="alert ${settings.maintenanceMode ? 'alert-warning' : 'alert-success'} mb-2">
-                        <strong>Status:</strong> ${settings.maintenanceMode ? ' Maintenance Mode ACTIVE' : ' System Online'}
-                    </div>
-
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="maintenance-mode" ${settings.maintenanceMode ? 'checked' : ''} />
-                            Enable Maintenance Mode
-                        </label>
-                        <small class="text-muted">Show maintenance page to all users except admins</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Maintenance Message:</label>
-                        <textarea
-                            id="maintenance-message"
-                            class="form-control"
-                            rows="4"
-                            placeholder="We're performing scheduled maintenance. We'll be back soon!"
-                        >${settings.maintenanceMessage || ''}</textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Estimated Time (optional):</label>
-                        <input
-                            type="text"
-                            id="maintenance-eta"
-                            class="form-control"
-                            value="${settings.maintenanceETA || ''}"
-                            placeholder="We'll be back in 2 hours"
-                        />
-                    </div>
-
-                    <button class="btn btn-${settings.maintenanceMode ? 'success' : 'warning'}" onclick="AdminSettings.toggleMaintenanceMode()">
-                        ${settings.maintenanceMode ? ' Disable Maintenance Mode' : ' Enable Maintenance Mode'}
-                    </button>
-                </div>
-            </div>
-
-            <div class="admin-card mb-2">
-                <div class="admin-card-header">
-                    <h3>Cache Management</h3>
-                </div>
-                <div class="admin-card-body">
-                    <p class="text-muted mb-2">
-                        Clear cached data to apply configuration changes immediately.
-                    </p>
-
-                    <div class="grid-2col">
-                        <button class="btn btn-secondary" onclick="AdminSettings.clearCache('all')">
-                             Clear All Cache
-                        </button>
-                        <button class="btn btn-secondary" onclick="AdminSettings.clearCache('redis')">
-                             Clear Redis Cache
-                        </button>
-                        <button class="btn btn-secondary" onclick="AdminSettings.clearCache('sessions')">
-                             Clear Sessions
-                        </button>
-                        <button class="btn btn-secondary" onclick="AdminSettings.clearCache('query')">
-                             Clear Query Cache
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="admin-card">
-                <div class="admin-card-header">
-                    <h3>System Actions</h3>
-                </div>
-                <div class="admin-card-body">
-                    <div class="grid-2col">
-                        <button class="btn btn-secondary" onclick="AdminSettings.restartServer()">
-                             Restart Server
-                        </button>
-                        <button class="btn btn-secondary" onclick="AdminSettings.reloadConfig()">
-                             Reload Configuration
-                        </button>
-                        <button class="btn btn-danger" onclick="AdminSettings.clearLogs()">
-                             Clear System Logs
-                        </button>
-                        <button class="btn btn-secondary" onclick="AdminSettings.runHealthCheck()">
-                             Run Health Check
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-    },
-
-    /**
-     * Helper functions
-     */
-    formatFlagName(key) {
-        return key
-            .replace(/([A-Z])/g, ' $1')
-            .replace(/^./, str => str.toUpperCase())
-            .trim();
-    },
-
-    /**
-     * Template editor functions
-     */
-    selectTemplate(templateId) {
-        if (!templateId) {
-            document.getElementById('template-editor')
-            return;
-        }
-
-        // Load template content
-        fetch(`/api/admin/settings/email-templates/${templateId}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    document.getElementById('template-subject').value = data.data.subject || '';
-                    document.getElementById('template-body').value = data.data.body || '';
-                    document.getElementById('template-editor')
-                    this.currentTemplate = templateId;
-                }
-            });
-    },
-
-    async saveTemplate() {
-        if (!this.currentTemplate) return;
-
-        const subject = document.getElementById('template-subject').value;
-        const body = document.getElementById('template-body').value;
-
-        try {
-            const response = await fetch(`/api/admin/settings/email-templates/${this.currentTemplate}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ subject, body })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                AdminComponents.alert({
-                    type: 'success',
-                    message: 'Template saved successfully',
-                    autoDismiss: 3000
-                });
+        const [button, result] = this.actionButton('Send to every subscribed browser', 'btn-primary', async () => {
+            if (!confirm('Send this notification to every browser that turned on notifications?')) {
+                return 'Not sent.';
             }
-        } catch (error) {
-            AdminComponents.alert({
-                type: 'error',
-                message: `Failed to save template: ${error.message}`,
-                autoDismiss: 5000
+            const answer = await this.send('/api/admin/push/broadcast', {
+                title: title.value,
+                body: message.value,
+                url: link.value.trim()
             });
-        }
-    },
-
-    /**
-     * Action functions
-     */
-    async saveAllSettings() {
-        AdminComponents.alert({
-            type: 'success',
-            message: 'All settings saved successfully',
-            autoDismiss: 3000
+            title.value = '';
+            message.value = '';
+            link.value = '';
+            return answer.message;
         });
+
+        target.replaceChildren(
+            AdminComponents.noteEl('A notification to every browser that turned on notifications in the app. Telegram subscribers do not get it.'),
+            field('Title', title),
+            field('Message', message),
+            field('Opens this page of the site when clicked (optional)', link),
+            button,
+            result
+        );
     },
 
-    async testTelegramBot() {
-        try {
-            const response = await fetch('/api/admin/settings/telegram/test', {
-                method: 'POST'
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                AdminComponents.alert({
-                    type: 'success',
-                    message: 'Test message sent successfully!',
-                    autoDismiss: 3000
-                });
-            }
-        } catch (error) {
-            AdminComponents.alert({
-                type: 'error',
-                message: `Test failed: ${error.message}`,
-                autoDismiss: 5000
-            });
-        }
-    },
-
-    async sendBroadcast() {
-        const title = document.getElementById('broadcast-title').value;
-        const message = document.getElementById('broadcast-message').value;
-        const audience = document.getElementById('broadcast-audience').value;
-
-        if (!title || !message) {
-            AdminComponents.alert({
-                type: 'error',
-                message: 'Please enter a title and message',
-                autoDismiss: 3000
-            });
-            return;
-        }
-
-        if (!confirm(`Send broadcast to ${audience} users?`)) return;
-
-        try {
-            const response = await fetch('/api/admin/settings/broadcast', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    title,
-                    message,
-                    audience,
-                    viaEmail: document.getElementById('broadcast-email').checked,
-                    viaTelegram: document.getElementById('broadcast-telegram').checked,
-                    viaInApp: document.getElementById('broadcast-in-app').checked
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                AdminComponents.alert({
-                    type: 'success',
-                    message: `Broadcast sent to ${data.data.sentCount} users`,
-                    autoDismiss: 5000
-                });
-
-                // Clear form
-                document.getElementById('broadcast-title').value = '';
-                document.getElementById('broadcast-message').value = '';
-            }
-        } catch (error) {
-            AdminComponents.alert({
-                type: 'error',
-                message: `Broadcast failed: ${error.message}`,
-                autoDismiss: 5000
-            });
-        }
-    },
-
-    async toggleMaintenanceMode() {
-        const enabled = document.getElementById('maintenance-mode').checked;
-
-        try {
-            const response = await fetch('/api/admin/settings/maintenance-mode', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    enabled,
-                    message: document.getElementById('maintenance-message').value,
-                    eta: document.getElementById('maintenance-eta').value
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                AdminComponents.alert({
-                    type: 'success',
-                    message: `Maintenance mode ${enabled ? 'enabled' : 'disabled'}`,
-                    autoDismiss: 3000
-                });
-                await this.loadMaintenance();
-            }
-        } catch (error) {
-            AdminComponents.alert({
-                type: 'error',
-                message: `Failed: ${error.message}`,
-                autoDismiss: 5000
-            });
-        }
-    },
-
-    async clearCache(type) {
-        if (!confirm(`Clear ${type} cache?`)) return;
-
-        try {
-            const response = await fetch('/api/admin/settings/clear-cache', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                AdminComponents.alert({
-                    type: 'success',
-                    message: `${type} cache cleared successfully`,
-                    autoDismiss: 3000
-                });
-            }
-        } catch (error) {
-            AdminComponents.alert({
-                type: 'error',
-                message: `Failed: ${error.message}`,
-                autoDismiss: 5000
-            });
-        }
-    },
-
-    toggleFeatureFlag(key) {
-        const enabled = document.getElementById(`flag-${key}`).checked;
-        this.featureFlags[key] = { ...this.featureFlags[key], enabled };
-    },
-
-    async saveFeatureFlags() {
-        try {
-            const response = await fetch('/api/admin/settings/feature-flags', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ flags: this.featureFlags })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                AdminComponents.alert({
-                    type: 'success',
-                    message: 'Feature flags saved successfully',
-                    autoDismiss: 3000
-                });
-            }
-        } catch (error) {
-            AdminComponents.alert({
-                type: 'error',
-                message: `Failed: ${error.message}`,
-                autoDismiss: 5000
-            });
-        }
-    },
-
-    // Placeholder functions
-    getUpdates() { AdminComponents.alert({ type: 'info', message: 'Feature coming soon', autoDismiss: 2000 }); },
-    setWebhook() { AdminComponents.alert({ type: 'info', message: 'Feature coming soon', autoDismiss: 2000 }); },
-    deleteWebhook() { AdminComponents.alert({ type: 'info', message: 'Feature coming soon', autoDismiss: 2000 }); },
-    testStripe() { AdminComponents.alert({ type: 'info', message: 'Feature coming soon', autoDismiss: 2000 }); },
-    testPayPal() { AdminComponents.alert({ type: 'info', message: 'Feature coming soon', autoDismiss: 2000 }); },
-    testRazorpay() { AdminComponents.alert({ type: 'info', message: 'Feature coming soon', autoDismiss: 2000 }); },
-    sendTestEmail() { AdminComponents.alert({ type: 'info', message: 'Feature coming soon', autoDismiss: 2000 }); },
-    previewTemplate() { AdminComponents.alert({ type: 'info', message: 'Feature coming soon', autoDismiss: 2000 }); },
-    testSMTP() { AdminComponents.alert({ type: 'info', message: 'Feature coming soon', autoDismiss: 2000 }); },
-    addFeatureFlag() { AdminComponents.alert({ type: 'info', message: 'Feature coming soon', autoDismiss: 2000 }); },
-    previewBroadcast() { AdminComponents.alert({ type: 'info', message: 'Feature coming soon', autoDismiss: 2000 }); },
-    restartServer() { AdminComponents.alert({ type: 'info', message: 'Feature coming soon', autoDismiss: 2000 }); },
-    reloadConfig() { AdminComponents.alert({ type: 'info', message: 'Feature coming soon', autoDismiss: 2000 }); },
-    clearLogs() { AdminComponents.alert({ type: 'info', message: 'Feature coming soon', autoDismiss: 2000 }); },
-    runHealthCheck() { AdminComponents.alert({ type: 'info', message: 'Feature coming soon', autoDismiss: 2000 }); },
-    testCronJob() { AdminComponents.alert({ type: 'info', message: 'Feature coming soon', autoDismiss: 2000 }); }
+    /**
+     * The AI verdicts held in memory (POST /api/admin/settings/clear-cache)
+     */
+    renderCache() {
+        const target = document.getElementById('settings-cache');
+        const [button, result] = this.actionButton('Clear the AI verdicts held in memory', 'btn-secondary', async () =>
+            (await this.send('/api/admin/settings/clear-cache', { type: 'conviction' })).message);
+        target.replaceChildren(
+            AdminComponents.noteEl('Once read, an AI verdict stays in the server\'s memory until midnight UTC (or for ' +
+                'CONVICTION_CACHE_TTL_MIN minutes when that is set). Clearing makes the next read of each symbol go to the database.'),
+            button,
+            result
+        );
+    }
 };

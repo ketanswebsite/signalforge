@@ -1,12 +1,13 @@
 /**
  * Admin User Management Module
- * Handles user listing, search, filtering, and bulk actions
+ * Handles user listing, search, the Telegram filter, and single-account actions. Until 2026-09-24 it
+ * also showed an Export button and bulk Suspend, Activate and Delete buttons that did nothing, and a
+ * search and filters the server ignored.
  */
 
 const AdminUsers = {
   // Pagination managed by PaginationManager
   pagination: null,
-  selectedUsers: new Set(),
 
   /**
    * Initialize user management page
@@ -58,9 +59,6 @@ const AdminUsers = {
         <div class="admin-card-header flex-between">
           <h2 class="admin-card-title">User Management</h2>
           <div class="flex gap-2">
-            <button class="btn btn-secondary btn-sm" onclick="AdminUsers.exportUsers()">
-               Export
-            </button>
             <button class="btn btn-primary btn-sm" onclick="AdminUsers.showAddUserModal()">
                Add User
             </button>
@@ -80,25 +78,8 @@ const AdminUsers = {
             >
             <select class="form-control" id="user-filter" onchange="AdminUsers.handleFilter(event)">
               <option value="all" ${state.filterStatus === 'all' ? 'selected' : ''}>All Users</option>
-              <option value="active" ${state.filterStatus === 'active' ? 'selected' : ''}>Active</option>
-              <option value="telegram" ${state.filterStatus === 'telegram' ? 'selected' : ''}>Telegram Users</option>
-              <option value="oauth" ${state.filterStatus === 'oauth' ? 'selected' : ''}>OAuth Users</option>
+              <option value="telegram" ${state.filterStatus === 'telegram' ? 'selected' : ''}>Telegram Linked</option>
             </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- Bulk Actions Bar (hidden by default) -->
-      <div id="bulk-actions-bar"  class="admin-card mb-2">
-        <div class="admin-card-body flex-between">
-          <div>
-            <span id="selected-count">0</span> users selected
-          </div>
-          <div class="flex gap-2">
-            <button class="btn btn-secondary btn-sm" onclick="AdminUsers.clearSelection()">Clear</button>
-            <button class="btn btn-warning btn-sm" onclick="AdminUsers.bulkSuspend()">Suspend</button>
-            <button class="btn btn-success btn-sm" onclick="AdminUsers.bulkActivate()">Activate</button>
-            <button class="btn btn-danger btn-sm" onclick="AdminUsers.bulkDelete()">Delete</button>
           </div>
         </div>
       </div>
@@ -136,22 +117,18 @@ const AdminUsers = {
    * Render users table
    */
   renderUsersTable(users, pagination) {
+    // A name is whatever the account's Google profile says: it goes in as text, never as markup
     const tableHTML = AdminComponents.dataTable({
       columns: [
         {
-          label: '<input type="checkbox" onchange="AdminUsers.toggleAll(event)">',
-          key: 'select',
-          render: (_, user) => `<input type="checkbox" class="user-checkbox" value="${user.email}" onchange="AdminUsers.toggleUser(event, '${user.email}')" ${this.selectedUsers.has(user.email) ? 'checked' : ''}>`
-        },
-        {
           label: 'Email',
           key: 'email',
-          render: (email) => `<strong>${email}</strong>`
+          render: (email) => `<strong>${AdminComponents.escapeHtml(email)}</strong>`
         },
         {
           label: 'Name',
           key: 'name',
-          render: (name) => name || '-'
+          render: (name) => (name ? AdminComponents.escapeHtml(name) : '-')
         },
         {
           label: 'Access',
@@ -233,59 +210,6 @@ const AdminUsers = {
    */
   goToPage(page) {
     this.pagination.goToPage(page);
-  },
-
-  /**
-   * Toggle user selection
-   */
-  toggleUser(event, email) {
-    if (event.target.checked) {
-      this.selectedUsers.add(email);
-    } else {
-      this.selectedUsers.delete(email);
-    }
-    this.updateBulkActionsBar();
-  },
-
-  /**
-   * Toggle all users
-   */
-  toggleAll(event) {
-    const checkboxes = document.querySelectorAll('.user-checkbox');
-    checkboxes.forEach(checkbox => {
-      checkbox.checked = event.target.checked;
-      if (event.target.checked) {
-        this.selectedUsers.add(checkbox.value);
-      } else {
-        this.selectedUsers.delete(checkbox.value);
-      }
-    });
-    this.updateBulkActionsBar();
-  },
-
-  /**
-   * Update bulk actions bar
-   */
-  updateBulkActionsBar() {
-    const bar = document.getElementById('bulk-actions-bar');
-    const count = document.getElementById('selected-count');
-
-    if (this.selectedUsers.size >0) {
-      bar
-      count.textContent = this.selectedUsers.size;
-    } else {
-      bar
-    }
-  },
-
-  /**
-   * Clear selection
-   */
-  clearSelection() {
-    this.selectedUsers.clear();
-    const checkboxes = document.querySelectorAll('.user-checkbox');
-    checkboxes.forEach(checkbox => checkbox.checked = false);
-    this.updateBulkActionsBar();
   },
 
   /**
@@ -437,7 +361,8 @@ const AdminUsers = {
    * Delete user
    */
   async deleteUser(email) {
-    if (!confirm(`Are you sure you want to delete user ${email}?`)) {
+    if (!confirm(`Delete ${email} and everything the account owns (trades, subscriptions, settings), and sign it out everywhere? ` +
+      'Payment records are archived for 6 years. This cannot be undone.')) {
       return;
     }
 
@@ -454,8 +379,8 @@ const AdminUsers = {
 
       AdminComponents.alert({
         type: 'success',
-        message: 'User deleted successfully',
-        autoDismiss: 3000
+        message: data.message,
+        autoDismiss: 4000
       });
 
       this.loadUsers();
@@ -467,52 +392,6 @@ const AdminUsers = {
         autoDismiss: 5000
       });
     }
-  },
-
-  /**
-   * Bulk actions
-   */
-  async bulkSuspend() {
-    AdminComponents.alert({
-      type: 'info',
-      message: `Suspending ${this.selectedUsers.size} users...`,
-      autoDismiss: 3000
-    });
-    // TODO: Implement bulk suspend API
-  },
-
-  async bulkActivate() {
-    AdminComponents.alert({
-      type: 'info',
-      message: `Activating ${this.selectedUsers.size} users...`,
-      autoDismiss: 3000
-    });
-    // TODO: Implement bulk activate API
-  },
-
-  async bulkDelete() {
-    if (!confirm(`Are you sure you want to delete ${this.selectedUsers.size} users?`)) {
-      return;
-    }
-
-    AdminComponents.alert({
-      type: 'info',
-      message: `Deleting ${this.selectedUsers.size} users...`,
-      autoDismiss: 3000
-    });
-    // TODO: Implement bulk delete API
-  },
-
-  /**
-   * Export users
-   */
-  async exportUsers() {
-    AdminComponents.alert({
-      type: 'info',
-      message: 'Exporting users to CSV...',
-      autoDismiss: 3000
-    });
-    // TODO: Implement export functionality
   },
 
   /**

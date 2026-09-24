@@ -1,11 +1,11 @@
 /**
  * Admin Dashboard Module
- * Handles dashboard metrics, the revenue chart and recent activity
+ * The dashboard's figures and the audit log. A figure that cannot be read shows '—', never a made-up
+ * value: until 2026-09-24 the revenue chart plotted random numbers, every figure read 0 (the metrics
+ * were read from the wrong level of the answer), and the changes under them were hard-coded.
  */
 
 const AdminDashboard = {
-  // Store chart instance
-  revenueChart: null,
   // The 60-second metrics refresh (startMetricsRefresh)
   metricsTimer: null,
 
@@ -13,199 +13,71 @@ const AdminDashboard = {
    * Initialize dashboard
    */
   async init() {
-    try {
-      await this.loadMetrics();
-      await this.loadRecentActivity();
-      this.initRevenueChart();
-      this.startMetricsRefresh();
-    } catch (error) {
-      AdminComponents.alert({
-        type: 'error',
-        message: 'Failed to load dashboard data',
-        autoDismiss: 5000
-      });
-    }
+    await Promise.all([this.loadMetrics(), this.loadRecentActivity()]);
+    this.startMetricsRefresh();
+  },
+
+  /**
+   * MRR per currency ("£9.99 · $12.99"): amounts in different currencies are never added together.
+   * '—' when it could not be read, 0 when no subscription pays.
+   */
+  formatMrr(mrr) {
+    if (!Array.isArray(mrr)) return '—';
+    return AdminComponents.moneyText(mrr.map(entry => ({ amount: entry.mrr, currency: entry.currency })));
   },
 
   /**
    * Load dashboard metrics
    */
   async loadMetrics() {
+    const set = (id, text) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    };
+    const count = value => (Number.isInteger(value) ? AdminComponents.formatNumber(value) : '—');
+
+    let metrics = {};
     try {
-      const data = await ApiClient.get('/api/admin/dashboard/metrics');
-      const metrics = data;
-
-      // Update MRR
-      document.getElementById('metric-mrr').textContent = AdminComponents.formatCurrency(metrics.mrr, 'GBP');
-      document.getElementById('metric-mrr-change').textContent = metrics.changes?.mrr || '+0%';
-
-      // Update Users
-      document.getElementById('metric-users').textContent = AdminComponents.formatNumber(metrics.totalUsers);
-      document.getElementById('metric-users-change').textContent = metrics.changes?.users || '+0';
-
-      // Update Subscriptions
-      document.getElementById('metric-subs').textContent = AdminComponents.formatNumber(metrics.activeSubscriptions);
-      document.getElementById('metric-subs-change').textContent = metrics.changes?.subscriptions || '+0';
-
-      // Update Trades
-      document.getElementById('metric-trades').textContent = AdminComponents.formatNumber(metrics.totalTrades);
-      document.getElementById('metric-trades-change').textContent = metrics.changes?.trades || '+0';
-
+      const envelope = await ApiClient.get('/api/admin/dashboard/metrics');
+      metrics = envelope.data || {};
     } catch (error) {
-      // Show placeholder values
-      document.getElementById('metric-mrr').textContent = '£0.00';
-      document.getElementById('metric-users').textContent = '0';
-      document.getElementById('metric-subs').textContent = '0';
-      document.getElementById('metric-trades').textContent = '0';
+      // Every figure shows '—' below
     }
+
+    set('metric-mrr', this.formatMrr(metrics.mrr));
+    set('metric-users', count(metrics.totalUsers));
+    set('metric-subs', count(metrics.activeSubscriptions));
+    set('metric-trades', count(metrics.totalTrades));
   },
 
   /**
-   * Load recent activity
+   * Load the audit log: account deletions, by the account's owner or by an admin
    */
   async loadRecentActivity() {
+    const container = document.getElementById('recent-activity');
+    if (!container) return;
+
+    let answer;
     try {
-      const data = await ApiClient.get('/api/admin/audit/logs', { limit: 10 });
-      const logs = data.logs || [];
-      const activityContainer = document.getElementById('recent-activity');
-
-      if (logs.length === 0) {
-        activityContainer.innerHTML = '<p class="text-muted text-center">No recent activity</p>';
-        return;
-      }
-
-      // Map activity types to icons
-      const activityIcons = {
-        login: '',
-        logout: '',
-        user_created: '',
-        user_updated: '',
-        user_deleted: '',
-        subscription_created: '',
-        subscription_updated: '',
-        subscription_cancelled: '',
-        payment_verified: '',
-        payment_rejected: '',
-        refund_issued: '',
-        settings_updated: '',
-        database_query_executed: ''
-      };
-
-      const activityHTML = logs.map(log => {
-        const icon = activityIcons[log.activity_type] || '';
-        return AdminComponents.activityItem({
-          icon,
-          title: log.description,
-          description: log.activity_type.replace(/_/g, ' '),
-          timestamp: log.created_at,
-          user: log.admin_email
-        });
-      }).join('');
-
-      activityContainer.innerHTML = activityHTML;
-
+      answer = (await ApiClient.get('/api/admin/audit/logs', { limit: 10 })).data || {};
     } catch (error) {
-      document.getElementById('recent-activity').innerHTML =
-        '<p class="text-muted text-center">Failed to load activity</p>';
-    }
-  },
-
-  /**
-   * Initialize revenue trend chart
-   */
-  initRevenueChart() {
-    const ctx = document.getElementById('revenue-chart');
-    if (!ctx) return;
-
-    // Get the canvas element and check if there's already a chart
-    const canvas = ctx;
-
-    // Destroy any existing chart instance on this canvas
-    if (this.revenueChart) {
-      try {
-        this.revenueChart.destroy();
-      } catch (e) {
-      }
-      this.revenueChart = null;
+      container.replaceChildren(AdminComponents.noteEl('The audit log could not be read.'));
+      return;
     }
 
-    // Also check Chart.js global registry for any chart using this canvas
-    const chartId = Chart.getChart(canvas);
-    if (chartId) {
-      try {
-        chartId.destroy();
-      } catch (e) {
-      }
+    const logs = answer.logs || [];
+    if (answer.missing) {
+      container.replaceChildren(AdminComponents.noteEl('This database has no audit log table.'));
+      return;
+    }
+    if (logs.length === 0) {
+      container.replaceChildren(AdminComponents.noteEl('Nothing recorded yet. Account deletions are recorded here.'));
+      return;
     }
 
-    // Generate sample data for last 12 months
-    const labels = [];
-    const data = [];
-    const now = new Date();
-
-    for (let i = 11; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      labels.push(date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
-      // Sample data - replace with real data from API
-      data.push(Math.floor(Math.random() * 5000) + 1000);
-    }
-
-    try {
-      this.revenueChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Revenue (£)',
-            data: data,
-            borderColor: '#2563eb',
-            backgroundColor: 'rgba(37, 99, 235, 0.1)',
-            tension: 0.4,
-            fill: true
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          plugins: {
-            legend: {
-              display: false
-            },
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  return '£' + context.parsed.y.toLocaleString();
-                }
-              }
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                callback: function(value) {
-                  return '£' + value.toLocaleString();
-                }
-              }
-            }
-          }
-        }
-      });
-    } catch (error) {
-      this.revenueChart = null;
-    }
-  },
-
-  /**
-   * Change chart period
-   */
-  changeChartPeriod(period) {
-    // TODO: Implement period change (fetch different data range)
-    AdminComponents.alert({
-      type: 'info',
-      message: `Chart period changed to ${period}`,
-      autoDismiss: 3000
-    });
+    container.replaceChildren(AdminComponents.tableEl(['When', 'What', 'Account', 'By'], logs.map(log => [
+      DateFormatter.formatTime(log.created_at), log.description, log.target_id || '—', log.admin_email
+    ])));
   },
 
   /**
@@ -226,10 +98,6 @@ const AdminDashboard = {
     if (this.metricsTimer) {
       clearInterval(this.metricsTimer);
       this.metricsTimer = null;
-    }
-    if (this.revenueChart) {
-      this.revenueChart.destroy();
-      this.revenueChart = null;
     }
   }
 };

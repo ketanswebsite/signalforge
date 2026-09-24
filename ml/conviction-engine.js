@@ -593,4 +593,15 @@ function summarizeConviction(payload) {
         .slice(0, 500);
 }
 
-module.exports = { getConviction, summarizeConviction, fetchRecentHeadlines, scoreTechnical, isAllNeutral };
+/**
+ * Empty the in-memory layer (the admin portal's Settings tab). The stored verdicts stay: the next read
+ * takes a symbol's verdict from conviction_daily, as the first read after a restart does. Answers how
+ * many verdicts were held.
+ */
+function clearMemoryCache() {
+    const held = convictionCache.size;
+    convictionCache.clear();
+    return held;
+}
+
+module.exports = { getConviction, summarizeConviction, fetchRecentHeadlines, scoreTechnical, isAllNeutral, clearMemoryCache };

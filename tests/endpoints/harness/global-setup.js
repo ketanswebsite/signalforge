@@ -160,7 +160,8 @@ async function setup(ctx) {
     hcTradeId: q("SELECT id FROM high_conviction_portfolio WHERE symbol = 'HARNESSH.L' ORDER BY id LIMIT 1"),
     victimSubscriptionId: q("SELECT id FROM user_subscriptions WHERE user_email = 'harness-victim@e2e.invalid' ORDER BY id LIMIT 1"),
     paymentTxnId: 'harness-txn-0001',
-    freePlanId: q("SELECT id FROM subscription_plans WHERE plan_code = 'FREE' ORDER BY id LIMIT 1")
+    freePlanId: q("SELECT id FROM subscription_plans WHERE plan_code = 'FREE' ORDER BY id LIMIT 1"),
+    adminEmail   // DELETE /api/admin/users/:email must refuse the admin account
   };
 
   const state = {

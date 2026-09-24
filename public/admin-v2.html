@@ -86,7 +86,7 @@
             <div id="dashboard-page" class="admin-tab active">
                 <div class="tab-header">
                     <h2>Dashboard Overview</h2>
-                    <p class="text-secondary">Key metrics and recent activity</p>
+                    <p class="text-secondary">Key figures and the audit log</p>
                 </div>
 
                 <!-- Metrics Grid -->
@@ -97,8 +97,7 @@
                         </div>
                         <div class="metric-content">
                             <div class="metric-title">Monthly Recurring Revenue</div>
-                            <div class="metric-value data-value" id="metric-mrr">£0.00</div>
-                            <div class="metric-change" id="metric-mrr-change">+0%</div>
+                            <div class="metric-value data-value" id="metric-mrr">—</div>
                         </div>
                     </div>
 
@@ -108,8 +107,7 @@
                         </div>
                         <div class="metric-content">
                             <div class="metric-title">Total Users</div>
-                            <div class="metric-value data-value" id="metric-users">0</div>
-                            <div class="metric-change" id="metric-users-change">+0%</div>
+                            <div class="metric-value data-value" id="metric-users">—</div>
                         </div>
                     </div>
 
@@ -118,9 +116,8 @@
                             <span class="material-icons">track_changes</span>
                         </div>
                         <div class="metric-content">
-                            <div class="metric-title">Active Subscriptions</div>
-                            <div class="metric-value data-value" id="metric-subs">0</div>
-                            <div class="metric-change" id="metric-subs-change">+0%</div>
+                            <div class="metric-title">Paying Subscriptions</div>
+                            <div class="metric-value data-value" id="metric-subs">—</div>
                         </div>
                     </div>
 
@@ -130,26 +127,16 @@
                         </div>
                         <div class="metric-content">
                             <div class="metric-title">Total Trades</div>
-                            <div class="metric-value data-value" id="metric-trades">0</div>
-                            <div class="metric-change" id="metric-trades-change">+0%</div>
+                            <div class="metric-value data-value" id="metric-trades">—</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Revenue Chart -->
-                <div class="chart-container scroll-reveal">
-                    <h3>
-                        <span class="material-icons">trending_up</span>
-                        Revenue Trend
-                    </h3>
-                    <canvas id="revenue-chart"></canvas>
-                </div>
-
-                <!-- Recent Activity -->
+                <!-- Audit log (account deletions) -->
                 <div class="activity-container scroll-reveal">
                     <h3>
                         <span class="material-icons">history</span>
-                        Recent Activity
+                        Audit log
                     </h3>
                     <div id="recent-activity"></div>
                 </div>
@@ -162,7 +149,7 @@
                     <p class="text-secondary">Manage user accounts and permissions</p>
                 </div>
 
-                <!-- AdminUsers renders its full UI (search, filters, bulk actions, export) here -->
+                <!-- AdminUsers renders its full UI (search, the Telegram filter, the users table) here -->
                 <div id="users-management-root">
                     <div class="spinner-container"><div class="spinner-medium spinner"></div></div>
                 </div>

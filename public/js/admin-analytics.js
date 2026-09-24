@@ -1,6 +1,8 @@
 /**
  * Admin Analytics Module
- * Handles business intelligence, revenue analytics, engagement metrics, and custom reports
+ * Revenue, sign-in, subscription and trading figures, all read from the database. Until 2026-09-24
+ * several were made up (MRR growth, week and month growth, feature usage, upgrades and downgrades, a
+ * "profile completed" stage) and a Generate Report button started a report nothing ever made.
  */
 
 const AdminAnalytics = {
@@ -26,10 +28,7 @@ const AdminAnalytics = {
         container.innerHTML = `
             <div class="admin-card mb-2">
                 <div class="admin-card-header">
-                    <h2 class="admin-card-title">Analytics & Reports</h2>
-                    <button class="btn btn-primary btn-sm" onclick="AdminAnalytics.openReportGenerator()">
-                         Generate Report
-                    </button>
+                    <h2 class="admin-card-title">Analytics</h2>
                 </div>
 
                 <div class="admin-card-body">
@@ -127,161 +126,94 @@ const AdminAnalytics = {
     },
 
     /**
-     * Render revenue analytics
+     * Render revenue analytics: MRR per currency (Stripe subscriptions included), what each plan brings
+     * in, and completed payments per month
      */
     renderRevenueAnalytics(analytics) {
         const content = document.getElementById('analytics-tab-content');
+        const mrr = analytics.mrr || [];
+        const paying = mrr.reduce((sum, entry) => sum + entry.subscriptions, 0);
 
-        const formatCurrency = (amount, currency = 'GBP') => {
-            const symbols = { GBP: '£', USD: '$', INR: '₹' };
-            return `${symbols[currency] || '$'}${parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-        };
+        const metrics = document.createElement('div');
+        metrics.className = 'metrics-grid mb-2';
+        metrics.append(
+            AdminComponents.metricCardEl('Monthly Recurring Revenue',
+                AdminComponents.moneyText(mrr.map(entry => ({ amount: entry.mrr, currency: entry.currency }))), 'Paying subscriptions, per currency'),
+            AdminComponents.metricCardEl('Annual Run Rate',
+                AdminComponents.moneyText(mrr.map(entry => ({ amount: entry.mrr * 12, currency: entry.currency }))), 'MRR × 12'),
+            AdminComponents.metricCardEl('Revenue per Subscriber',
+                AdminComponents.moneyText(mrr.map(entry => ({ amount: entry.subscriptions ? entry.mrr / entry.subscriptions : 0, currency: entry.currency }))),
+                'MRR ÷ paying subscriptions'),
+            AdminComponents.metricCardEl('Paying Subscriptions', String(paying), 'Active and inside the paid period')
+        );
 
-        content.innerHTML = `
-            <!-- Key Metrics -->
-            <div class="metrics-grid mb-2">
-                <div class="metric-card">
-                    <div class="metric-icon"></div>
-                    <div class="metric-content">
-                        <div class="metric-title">Monthly Recurring Revenue</div>
-                        <div class="metric-value">${formatCurrency(analytics.mrr)}</div>
-                        <div class="metric-change metric-change-positive">
-                            ${analytics.mrrGrowth >0 ? '↑' : '↓'} ${Math.abs(analytics.mrrGrowth).toFixed(1)}% MoM
-                        </div>
-                    </div>
-                </div>
+        const trend = analytics.trend || [];
+        const canvas = document.createElement('canvas');
+        canvas.id = 'revenue-trend-chart';
+        canvas.height = 80;
 
-                <div class="metric-card">
-                    <div class="metric-icon"></div>
-                    <div class="metric-content">
-                        <div class="metric-title">Annual Recurring Revenue</div>
-                        <div class="metric-value">${formatCurrency(analytics.arr)}</div>
-                        <div class="metric-change metric-change-neutral">
-                            Projected from MRR
-                        </div>
-                    </div>
-                </div>
+        const breakdown = analytics.breakdown || [];
+        const byPlan = breakdown.length
+            ? AdminComponents.tableEl(['Plan', 'Region', 'Subscriptions', 'MRR'], breakdown.map(row => [
+                row.plan_name || '—', row.region, String(row.subscriptions), AdminComponents.formatCurrency(row.mrr, row.currency)
+            ]))
+            : AdminComponents.noteEl('No subscription pays at the moment.');
 
-                <div class="metric-card">
-                    <div class="metric-icon"></div>
-                    <div class="metric-content">
-                        <div class="metric-title">ARPU (Avg Revenue Per User)</div>
-                        <div class="metric-value">${formatCurrency(analytics.arpu)}</div>
-                        <div class="metric-change metric-change-neutral">
-                            Per active user
-                        </div>
-                    </div>
-                </div>
+        content.replaceChildren(
+            metrics,
+            AdminComponents.cardEl('Completed Payments per Month (last 12 months)',
+                trend.length ? canvas : AdminComponents.noteEl('No completed payments in the last 12 months.')),
+            AdminComponents.cardEl('MRR by Plan', byPlan)
+        );
 
-                <div class="metric-card">
-                    <div class="metric-icon"></div>
-                    <div class="metric-content">
-                        <div class="metric-title">Lifetime Value (LTV)</div>
-                        <div class="metric-value">${formatCurrency(analytics.ltv)}</div>
-                        <div class="metric-change metric-change-positive">
-                            12-month average
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Revenue Trend Chart -->
-            <div class="admin-card mb-2">
-                <div class="admin-card-header">
-                    <h3>Revenue Trend (Last 12 Months)</h3>
-                </div>
-                <div class="admin-card-body">
-                    <canvas id="revenue-trend-chart" height="80"></canvas>
-                </div>
-            </div>
-
-            <!-- Revenue Breakdown -->
-            <div class="revenue-breakdown-grid">
-                <!-- By Region -->
-                <div class="admin-card">
-                    <div class="admin-card-header">
-                        <h3>Revenue by Region</h3>
-                    </div>
-                    <div class="admin-card-body">
-                        ${Object.entries(analytics.byRegion || {}).map(([region, amount]) => `
-                            <div>
-                                <span>${region === 'UK' ? ' UK' : region === 'US' ? ' US' : region === 'India' ? ' India' : ' ' + region}</span>
-                                <strong>${formatCurrency(amount)}</strong>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-
-                <!-- By Plan -->
-                <div class="admin-card">
-                    <div class="admin-card-header">
-                        <h3>Revenue by Plan Type</h3>
-                    </div>
-                    <div class="admin-card-body">
-                        ${Object.entries(analytics.byPlan || {}).map(([plan, amount]) => `
-                            <div>
-                                <span>${plan}</span>
-                                <strong>${formatCurrency(amount)}</strong>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            </div>
-        `;
-
-        // Initialize revenue trend chart
-        this.initRevenueTrendChart(analytics.trend || []);
+        if (trend.length) this.initRevenueTrendChart(trend);
     },
 
     /**
-     * Initialize revenue trend chart
+     * Initialize revenue trend chart: one line per currency
      */
-    initRevenueTrendChart(trendData) {
+    initRevenueTrendChart(trend) {
         const canvas = document.getElementById('revenue-trend-chart');
         if (!canvas) return;
-
-        const ctx = canvas.getContext('2d');
 
         // Destroy existing chart
         if (this.revenueChart) {
             this.revenueChart.destroy();
         }
 
-        const labels = trendData.map(d => d.month);
-        const data = trendData.map(d => parseFloat(d.revenue));
+        const months = [...new Set(trend.map(row => row.month))];
+        const currencies = [...new Set(trend.map(row => row.currency))];
+        const colours = ['#2563eb', '#10b981', '#f59e0b'];
+        const datasets = currencies.map((currency, i) => ({
+            label: currency,
+            data: months.map(month => {
+                const hit = trend.find(row => row.month === month && row.currency === currency);
+                return hit ? hit.revenue : 0;
+            }),
+            borderColor: colours[i % colours.length],
+            fill: false,
+            tension: 0.3
+        }));
 
-        this.revenueChart = new Chart(ctx, {
+        this.revenueChart = new Chart(canvas.getContext('2d'), {
             type: 'line',
-            data: {
-                labels,
-                datasets: [{
-                    label: 'Revenue',
-                    data,
-                    borderColor: '#2563eb',
-                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                    fill: true,
-                    tension: 0.4
-                }]
-            },
+            data: { labels: months, datasets },
             options: {
                 responsive: true,
                 maintainAspectRatio: true,
                 plugins: {
                     legend: {
-                        display: false
+                        display: currencies.length > 1
                     },
                     tooltip: {
                         callbacks: {
-                            label: (context) => `£${context.parsed.y.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+                            label: (context) => AdminComponents.formatCurrency(context.parsed.y, context.dataset.label)
                         }
                     }
                 },
                 scales: {
                     y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: (value) => `£${value.toLocaleString()}`
-                        }
+                        beginAtZero: true
                     }
                 }
             }
@@ -317,7 +249,7 @@ const AdminAnalytics = {
                         <div class="metric-title">Daily Active Users</div>
                         <div class="metric-value">${analytics.dau || 0}</div>
                         <div class="metric-change metric-change-neutral">
-                            Last 24 hours
+                            Signed in today
                         </div>
                     </div>
                 </div>
@@ -327,8 +259,8 @@ const AdminAnalytics = {
                     <div class="metric-content">
                         <div class="metric-title">Weekly Active Users</div>
                         <div class="metric-value">${analytics.wau || 0}</div>
-                        <div class="metric-change metric-change-positive">
-                            ${analytics.wauGrowth >0 ? '↑' : '↓'} ${Math.abs(analytics.wauGrowth || 0).toFixed(1)}% vs last week
+                        <div class="metric-change metric-change-neutral">
+                            Signed in within 7 days
                         </div>
                     </div>
                 </div>
@@ -338,8 +270,8 @@ const AdminAnalytics = {
                     <div class="metric-content">
                         <div class="metric-title">Monthly Active Users</div>
                         <div class="metric-value">${analytics.mau || 0}</div>
-                        <div class="metric-change metric-change-positive">
-                            ${analytics.mauGrowth >0 ? '↑' : '↓'} ${Math.abs(analytics.mauGrowth || 0).toFixed(1)}% vs last month
+                        <div class="metric-change metric-change-neutral">
+                            Signed in within 30 days
                         </div>
                     </div>
                 </div>
@@ -350,41 +282,19 @@ const AdminAnalytics = {
                         <div class="metric-title">Inactive Users</div>
                         <div class="metric-value">${analytics.inactive || 0}</div>
                         <div class="metric-change metric-change-neutral">
-                            30+ days
+                            No sign-in for 30+ days
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- User Activity Chart -->
+            <!-- Users by the day of their last sign-in: the only activity a users row records -->
             <div class="admin-card mb-2">
                 <div class="admin-card-header">
-                    <h3>User Activity (Last 30 Days)</h3>
+                    <h3>Users by Day of Last Sign-in (last 30 days)</h3>
                 </div>
                 <div class="admin-card-body">
                     <canvas id="engagement-chart" height="80"></canvas>
-                </div>
-            </div>
-
-            <!-- Feature Usage -->
-            <div class="admin-card">
-                <div class="admin-card-header">
-                    <h3>Feature Usage</h3>
-                </div>
-                <div class="admin-card-body">
-                    <div class="feature-usage-grid">
-                        ${Object.entries(analytics.featureUsage || {}).map(([feature, percentage]) => `
-                            <div class="feature-usage-item">
-                                <div class="feature-usage-header">
-                                    <span>${feature}</span>
-                                    <strong>${percentage}%</strong>
-                                </div>
-                                <div class="progress-bar-container">
-                                    <div class="progress-bar-fill" ></div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
                 </div>
             </div>
         `;
@@ -408,14 +318,14 @@ const AdminAnalytics = {
         }
 
         const labels = activityData.map(d => d.date);
-        const data = activityData.map(d => d.activeUsers);
+        const data = activityData.map(d => Number(d.active_users));
 
         this.engagementChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels,
                 datasets: [{
-                    label: 'Active Users',
+                    label: 'Users',
                     data,
                     borderColor: '#10b981',
                     backgroundColor: 'rgba(16, 185, 129, 0.1)',
@@ -468,8 +378,8 @@ const AdminAnalytics = {
                     <div class="metric-content">
                         <div class="metric-title">Trial Conversion Rate</div>
                         <div class="metric-value">${analytics.trialConversion || 0}%</div>
-                        <div class="metric-change ${analytics.trialConversion >= 60 ? 'metric-change-positive' : 'metric-change-negative'}">
-                            ${analytics.trialConversion >= 60 ? 'Above' : 'Below'} target (60%)
+                        <div class="metric-change metric-change-neutral">
+                            Accounts with a trial that pay now
                         </div>
                     </div>
                 </div>
@@ -479,30 +389,8 @@ const AdminAnalytics = {
                     <div class="metric-content">
                         <div class="metric-title">Churn Rate</div>
                         <div class="metric-value">${analytics.churnRate || 0}%</div>
-                        <div class="metric-change ${analytics.churnRate <= 5 ? 'metric-change-positive' : 'metric-change-negative'}">
-                            Industry avg: 5-7%
-                        </div>
-                    </div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="metric-icon"></div>
-                    <div class="metric-content">
-                        <div class="metric-title">Upgrades This Month</div>
-                        <div class="metric-value">${analytics.upgrades || 0}</div>
                         <div class="metric-change metric-change-neutral">
-                            Plan upgrades
-                        </div>
-                    </div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="metric-icon"></div>
-                    <div class="metric-content">
-                        <div class="metric-title">Downgrades This Month</div>
-                        <div class="metric-value">${analytics.downgrades || 0}</div>
-                        <div class="metric-change metric-change-neutral">
-                            Plan downgrades
+                            Cancelled in the last 30 days
                         </div>
                     </div>
                 </div>
@@ -521,7 +409,7 @@ const AdminAnalytics = {
             <!-- Subscription Age Distribution -->
             <div class="admin-card">
                 <div class="admin-card-header">
-                    <h3>Subscription Age Distribution</h3>
+                    <h3>Paying Subscriptions by Age</h3>
                 </div>
                 <div class="admin-card-body">
                     <canvas id="subscription-chart" height="60"></canvas>
@@ -540,7 +428,6 @@ const AdminAnalytics = {
         const stages = [
             { key: 'signups', label: 'Sign Ups', icon: '' },
             { key: 'trialStarted', label: 'Trial Started', icon: '' },
-            { key: 'profileCompleted', label: 'Profile Completed', icon: '' },
             { key: 'converted', label: 'Converted to Paid', icon: '' }
         ];
 
@@ -626,247 +513,29 @@ const AdminAnalytics = {
     },
 
     /**
-     * Render trading analytics
+     * Render trading analytics. Built as DOM: a manual trade's symbol is whatever its owner typed.
      */
     renderTradingAnalytics(analytics) {
         const content = document.getElementById('analytics-tab-content');
 
-        content.innerHTML = `
-            <!-- Key Metrics -->
-            <div class="metrics-grid mb-2">
-                <div class="metric-card">
-                    <div class="metric-icon"></div>
-                    <div class="metric-content">
-                        <div class="metric-title">Total Trades</div>
-                        <div class="metric-value">${analytics.totalTrades || 0}</div>
-                        <div class="metric-change metric-change-neutral">
-                            All time
-                        </div>
-                    </div>
-                </div>
+        const metrics = document.createElement('div');
+        metrics.className = 'metrics-grid mb-2';
+        metrics.append(
+            AdminComponents.metricCardEl('Total Trades', String(analytics.totalTrades || 0), 'All time'),
+            AdminComponents.metricCardEl('Win Rate', `${analytics.winRate || 0}%`, `${analytics.winningTrades || 0} winning trades`),
+            AdminComponents.metricCardEl('Avg P/L per Trade', `${analytics.avgPL || 0}%`, 'Closed trades'),
+            AdminComponents.metricCardEl('Avg Trades per User', String(analytics.avgTradesPerUser || 0), 'Accounts with trades')
+        );
 
-                <div class="metric-card">
-                    <div class="metric-icon"></div>
-                    <div class="metric-content">
-                        <div class="metric-title">Win Rate</div>
-                        <div class="metric-value">${analytics.winRate || 0}%</div>
-                        <div class="metric-change ${analytics.winRate >= 50 ? 'metric-change-positive' : 'metric-change-negative'}">
-                            ${analytics.winningTrades || 0} winning trades
-                        </div>
-                    </div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="metric-icon"></div>
-                    <div class="metric-content">
-                        <div class="metric-title">Avg P/L per Trade</div>
-                        <div class="metric-value">${analytics.avgPL || 0}%</div>
-                        <div class="metric-change metric-change-positive">
-                            Platform average
-                        </div>
-                    </div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="metric-icon"></div>
-                    <div class="metric-content">
-                        <div class="metric-title">Avg Trades per User</div>
-                        <div class="metric-value">${analytics.avgTradesPerUser || 0}</div>
-                        <div class="metric-change metric-change-neutral">
-                            Active users
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Most Traded Symbols -->
-            <div class="admin-card">
-                <div class="admin-card-header">
-                    <h3>Most Traded Symbols</h3>
-                </div>
-                <div class="admin-card-body">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Rank</th>
-                                <th>Symbol</th>
-                                <th>Trades</th>
-                                <th>Win Rate</th>
-                                <th>Avg P/L</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${(analytics.topSymbols || []).map((symbol, index) => `
-                                <tr>
-                                    <td>${index + 1}</td>
-                                    <td><strong>${symbol.symbol}</strong></td>
-                                    <td>${symbol.count}</td>
-                                    <td>${symbol.winRate}%</td>
-                                    <td class="${symbol.avgPL >= 0 ? 'text-success' : 'text-danger'}">
-                                        ${symbol.avgPL >= 0 ? '+' : ''}${symbol.avgPL}%
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-    },
-
-    /**
-     * Open report generator modal
-     */
-    openReportGenerator() {
-        const modalHTML = `
-            <div class="modal-backdrop" onclick="AdminComponents.closeModal()"></div>
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3>Generate Custom Report</h3>
-                        <button class="btn-close" onclick="AdminComponents.closeModal()">×</button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="report-form">
-                            <div class="form-group">
-                                <label>Report Type:</label>
-                                <select id="report-type" class="form-control">
-                                    <option value="monthly">Monthly Business Review</option>
-                                    <option value="revenue">Revenue Report</option>
-                                    <option value="users">User Activity Report</option>
-                                    <option value="subscriptions">Subscription Health Report</option>
-                                    <option value="custom">Custom Report</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Date Range:</label>
-                                <select id="report-period" class="form-control">
-                                    <option value="last-7-days">Last 7 Days</option>
-                                    <option value="last-30-days">Last 30 Days</option>
-                                    <option value="last-month">Last Month</option>
-                                    <option value="last-quarter">Last Quarter</option>
-                                    <option value="last-year">Last Year</option>
-                                    <option value="custom">Custom Range</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Include Sections:</label>
-                                <div>
-                                    <label><input type="checkbox" id="include-summary" checked>Executive Summary</label><br>
-                                    <label><input type="checkbox" id="include-revenue" checked>Revenue Metrics</label><br>
-                                    <label><input type="checkbox" id="include-users" checked>User Growth & Engagement</label><br>
-                                    <label><input type="checkbox" id="include-subscriptions" checked>Subscription Health</label><br>
-                                    <label><input type="checkbox" id="include-payments">Payment Analytics</label><br>
-                                    <label><input type="checkbox" id="include-trades">Trading Activity</label><br>
-                                    <label><input type="checkbox" id="include-audit">Audit Trail Summary</label>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Export Format:</label>
-                                <select id="report-format" class="form-control">
-                                    <option value="pdf">PDF (formatted report)</option>
-                                    <option value="excel">Excel (data + charts)</option>
-                                    <option value="csv">CSV (raw data)</option>
-                                    <option value="json">JSON (API format)</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Email To (optional):</label>
-                                <input type="email" id="report-email" class="form-control" placeholder="admin@sutralgo.com" />
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn btn-secondary" onclick="AdminComponents.closeModal()">Cancel</button>
-                        <button class="btn btn-primary" onclick="AdminAnalytics.generateReport()">Generate Report</button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.getElementById('modal-container').innerHTML = modalHTML;
-    },
-
-    /**
-     * Generate custom report
-     */
-    async generateReport() {
-        const reportType = document.getElementById('report-type').value;
-        const period = document.getElementById('report-period').value;
-        const format = document.getElementById('report-format').value;
-        const email = document.getElementById('report-email').value;
-
-        const sections = {
-            summary: document.getElementById('include-summary').checked,
-            revenue: document.getElementById('include-revenue').checked,
-            users: document.getElementById('include-users').checked,
-            subscriptions: document.getElementById('include-subscriptions').checked,
-            payments: document.getElementById('include-payments').checked,
-            trades: document.getElementById('include-trades').checked,
-            audit: document.getElementById('include-audit').checked
-        };
-
-        try {
-            AdminComponents.closeModal();
-
-            AdminComponents.alert({
-                type: 'info',
-                message: 'Generating report...',
-                autoDismiss: false
-            });
-
-            const response = await fetch('/api/admin/analytics/reports', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    type: reportType,
-                    period,
-                    format,
-                    email,
-                    sections
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                if (email) {
-                    AdminComponents.alert({
-                        type: 'success',
-                        message: `Report generated and sent to ${email}`,
-                        autoDismiss: 5000
-                    });
-                } else {
-                    // Download report
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `report-${reportType}-${Date.now()}.${format}`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(url);
-
-                    AdminComponents.alert({
-                        type: 'success',
-                        message: 'Report downloaded successfully',
-                        autoDismiss: 3000
-                    });
-                }
-            } else {
-                throw new Error(data.error?.message || 'Failed to generate report');
-            }
-        } catch (error) {
-            AdminComponents.alert({
-                type: 'error',
-                message: `Failed to generate report: ${error.message}`,
-                autoDismiss: 5000
-            });
-        }
+        const symbols = analytics.topSymbols || [];
+        const signed = value => `${Number(value) >= 0 ? '+' : ''}${value}%`;
+        content.replaceChildren(
+            metrics,
+            AdminComponents.cardEl('Most Traded Symbols (closed trades)', symbols.length
+                ? AdminComponents.tableEl(['Rank', 'Symbol', 'Trades', 'Win Rate', 'Avg P/L'], symbols.map((row, index) => [
+                    String(index + 1), row.symbol, String(row.count), `${row.win_rate}%`, signed(row.avg_pl)
+                ]))
+                : AdminComponents.noteEl('No closed trades yet.'))
+        );
     }
 };

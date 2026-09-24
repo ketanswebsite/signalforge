@@ -22,6 +22,8 @@ const AdminPayments = {
       onLoad: () => this.loadTransactions()
     });
 
+    // Every visit renders the Transactions sub-tab, so the highlighted button must say so
+    this.currentTab = 'transactions';
     this.render();
     await this.loadTransactions();
   },
@@ -52,8 +54,8 @@ const AdminPayments = {
         </div>
       </div>
 
-      <!-- Transactions Tab -->
-      <div id="transactions-tab">
+      <!-- Transactions Tab (the sub-tab ids carry a payments- prefix: the Subscriptions tab has its own analytics-tab) -->
+      <div id="payments-transactions-tab">
         <div class="admin-card">
           <div class="admin-card-header flex-between">
             <h2 class="admin-card-title">Payment Transactions</h2>
@@ -71,9 +73,6 @@ const AdminPayments = {
                 <option value="paypal" ${this.filterProvider === 'paypal' ? 'selected' : ''}>PayPal</option>
                 <option value="razorpay" ${this.filterProvider === 'razorpay' ? 'selected' : ''}>Razorpay</option>
               </select>
-              <button class="btn btn-secondary btn-sm" onclick="AdminPayments.exportTransactions()">
-                 Export
-              </button>
             </div>
           </div>
           <div class="admin-card-body">
@@ -86,7 +85,7 @@ const AdminPayments = {
       </div>
 
       <!-- Verification Queue Tab -->
-      <div id="verification-tab" style="display: none">
+      <div id="payments-verification-tab" class="hidden">
         <div class="admin-card">
           <div class="admin-card-header">
             <h2 class="admin-card-title">Payment Verification Queue</h2>
@@ -100,7 +99,7 @@ const AdminPayments = {
       </div>
 
       <!-- Refunds Tab -->
-      <div id="refunds-tab" style="display: none">
+      <div id="payments-refunds-tab" class="hidden">
         <div class="admin-card">
           <div class="admin-card-header">
             <h2 class="admin-card-title">Refund Management</h2>
@@ -114,27 +113,23 @@ const AdminPayments = {
       </div>
 
       <!-- Analytics Tab -->
-      <div id="analytics-tab" style="display: none">
+      <div id="payments-analytics-tab" class="hidden">
         <div class="metrics-grid" id="payment-metrics">
           ${AdminComponents.spinner({ text: 'Loading analytics...' })}
         </div>
 
         <div class="admin-card mt-2">
           <div class="admin-card-header">
-            <h2 class="admin-card-title">Revenue by Provider</h2>
+            <h2 class="admin-card-title">Completed Payments by Provider</h2>
           </div>
-          <div class="admin-card-body">
-            <canvas id="provider-revenue-chart" height="80"></canvas>
-          </div>
+          <div class="admin-card-body" id="provider-revenue-body"></div>
         </div>
 
         <div class="admin-card mt-2">
           <div class="admin-card-header">
-            <h2 class="admin-card-title">Payment Success Rate</h2>
+            <h2 class="admin-card-title">Payment Success Rate (last 7 days)</h2>
           </div>
-          <div class="admin-card-body">
-            <canvas id="success-rate-chart" height="80"></canvas>
-          </div>
+          <div class="admin-card-body" id="success-rate-body"></div>
         </div>
       </div>
     `;
@@ -146,15 +141,11 @@ const AdminPayments = {
   switchTab(tab) {
     this.currentTab = tab;
 
-    // Hide all tabs
+    // Show the selected sub-tab, hide the others
     ['transactions', 'verification', 'refunds', 'analytics'].forEach(t => {
-      const el = document.getElementById(`${t}-tab`);
-      if (el) el.style.display = 'none';
+      const el = document.getElementById(`payments-${t}-tab`);
+      if (el) el.classList.toggle('hidden', t !== tab);
     });
-
-    // Show selected tab
-    const activeTab = document.getElementById(`${tab}-tab`);
-    if (activeTab) activeTab.style.display = 'block';
 
     // Update buttons
     document.querySelectorAll('#payments-page .btn').forEach(btn => {
@@ -279,7 +270,7 @@ const AdminPayments = {
           onClick: (payment) => `AdminPayments.viewPayment('${payment.transaction_id}')`
         },
         {
-          label: 'Refund',
+          label: 'Record refund',
           className: 'btn-warning',
           onClick: (payment) => `AdminPayments.initiateRefund('${payment.transaction_id}')`,
           disabled: (payment) => payment.status !== 'completed'
@@ -414,14 +405,7 @@ const AdminPayments = {
           render: (date) =>DateFormatter.format(date)
         }
       ],
-      data: refunds,
-      actions: [
-        {
-          label: 'View',
-          className: 'btn-secondary',
-          onClick: (refund) => `AdminPayments.viewRefund('${refund.id}')`
-        }
-      ]
+      data: refunds
     });
 
     document.getElementById('refunds-container').innerHTML = tableHTML;
@@ -434,72 +418,67 @@ const AdminPayments = {
     try {
       const response = await fetch('/api/admin/payment-analytics');
       const data = await response.json();
-
-      if (data.success) {
-        this.renderAnalyticsMetrics(data.data);
-        this.renderProviderChart(data.data.byProvider || []);
-        this.renderSuccessRateChart(data.data.successRateDaily || []);
+      if (!data.success) {
+        throw new Error(data.error?.message || 'Failed to load payment analytics');
       }
-
+      this.renderAnalyticsMetrics(data.data);
+      this.renderProviderChart(data.data.byProvider || []);
+      this.renderSuccessRateChart(data.data.successRateDaily || []);
     } catch (error) {
+      document.getElementById('payment-metrics')
+        .replaceChildren(AdminComponents.noteEl(`Payment analytics could not be read: ${error.message}`));
     }
   },
 
   /**
-   * Render analytics metrics
+   * Render analytics metrics: revenue per currency, never added together. The changes shown under
+   * them (+15%, +23, +2%, -1%) were made up, and the revenue added every currency up as pounds.
    */
   renderAnalyticsMetrics(analytics) {
-    const metricsHTML = `
-      ${AdminComponents.metricCard({
-        title: 'Total Revenue',
-        value: AdminComponents.formatCurrency(analytics.totalRevenue || 0, 'GBP'),
-        change: analytics.revenueChange || '+0%',
-        changeType: 'positive',
-        icon: ''
-      })}
-      ${AdminComponents.metricCard({
-        title: 'Transactions',
-        value: AdminComponents.formatNumber(analytics.totalTransactions || 0),
-        change: analytics.transactionChange || '+0',
-        changeType: 'positive',
-        icon: ''
-      })}
-      ${AdminComponents.metricCard({
-        title: 'Success Rate',
-        value: (analytics.successRate || 0) + '%',
-        change: analytics.successRateChange || '+0%',
-        changeType: 'positive',
-        icon: ''
-      })}
-      ${AdminComponents.metricCard({
-        title: 'Refund Rate',
-        value: (analytics.refundRate || 0) + '%',
-        change: analytics.refundRateChange || '-0%',
-        changeType: 'negative',
-        icon: ''
-      })}
-    `;
-
-    document.getElementById('payment-metrics').innerHTML = metricsHTML;
+    const revenue = (analytics.revenue || []).map(entry => ({ amount: entry.revenue, currency: entry.currency }));
+    document.getElementById('payment-metrics').replaceChildren(
+      AdminComponents.metricCardEl('Completed Payments', AdminComponents.moneyText(revenue), 'All time, per currency'),
+      AdminComponents.metricCardEl('Transactions', AdminComponents.formatNumber(analytics.totalTransactions || 0), 'Every status'),
+      AdminComponents.metricCardEl('Success Rate', `${analytics.successRate || 0}%`, 'Completed of all transactions'),
+      AdminComponents.metricCardEl('Refund Rate', `${analytics.refundRate || 0}%`, 'Refunded of all transactions')
+    );
   },
 
   /**
-   * Render provider revenue chart
+   * A fresh canvas in a card body, with the old chart destroyed; or a note when there is nothing to plot
+   */
+  chartCanvas(bodyId, chartKey, empty, emptyText) {
+    const body = document.getElementById(bodyId);
+    if (!body) return null;
+    if (this[chartKey]) {
+      this[chartKey].destroy();
+      this[chartKey] = null;
+    }
+    if (empty) {
+      body.replaceChildren(AdminComponents.noteEl(emptyText));
+      return null;
+    }
+    const canvas = document.createElement('canvas');
+    canvas.height = 80;
+    body.replaceChildren(canvas);
+    return canvas;
+  },
+
+  /**
+   * Render completed payments by provider: one bar per provider and currency. It used to plot
+   * made-up amounts (5000, 3000, 2000) when there were no payments.
    */
   renderProviderChart(providerData) {
-    const ctx = document.getElementById('provider-revenue-chart');
-    if (!ctx) return;
+    const canvas = this.chartCanvas('provider-revenue-body', 'providerChart', providerData.length === 0, 'No completed payments yet.');
+    if (!canvas) return;
 
-    const labels = providerData.length >0 ? providerData.map(d => d.provider) : ['Stripe', 'PayPal', 'Razorpay'];
-    const data = providerData.length >0 ? providerData.map(d => d.revenue) : [5000, 3000, 2000];
-
-    new Chart(ctx, {
+    this.providerChart = new Chart(canvas, {
       type: 'bar',
       data: {
-        labels,
+        labels: providerData.map(d => `${d.provider} (${d.currency})`),
         datasets: [{
-          label: 'Revenue (£)',
-          data,
+          label: 'Completed payments',
+          data: providerData.map(d => d.revenue),
           backgroundColor: ['#3b82f6', '#10b981', '#f59e0b']
         }]
       },
@@ -507,39 +486,35 @@ const AdminPayments = {
         responsive: true,
         maintainAspectRatio: true,
         plugins: {
-          legend: { display: false }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              callback: function(value) {
-                return '£' + value.toLocaleString();
-              }
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (context) => AdminComponents.formatCurrency(context.parsed.y, providerData[context.dataIndex].currency)
             }
           }
+        },
+        scales: {
+          y: { beginAtZero: true }
         }
       }
     });
   },
 
   /**
-   * Render success rate chart
+   * Render success rate chart: the last 7 days that had payments. It used to plot made-up rates
+   * (95%, 97%...) when there were none.
    */
   renderSuccessRateChart(successData) {
-    const ctx = document.getElementById('success-rate-chart');
-    if (!ctx) return;
+    const canvas = this.chartCanvas('success-rate-body', 'successChart', successData.length === 0, 'No payments in the last 7 days.');
+    if (!canvas) return;
 
-    const labels = successData.length >0 ? successData.map(d => d.date) : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const data = successData.length >0 ? successData.map(d => d.rate) : [95, 97, 94, 96, 98, 95, 97];
-
-    new Chart(ctx, {
+    this.successChart = new Chart(canvas, {
       type: 'line',
       data: {
-        labels,
+        labels: successData.map(d => d.date),
         datasets: [{
           label: 'Success Rate (%)',
-          data,
+          data: successData.map(d => Number(d.rate)),
           borderColor: '#10b981',
           backgroundColor: 'rgba(16, 185, 129, 0.1)',
           tension: 0.4,
@@ -655,10 +630,13 @@ const AdminPayments = {
   },
 
   /**
-   * Initiate refund
+   * Record a refund. It marks the payment refunded and files the reason: no money moves here, the
+   * refund itself is made in the payment provider (the Stripe dashboard). This used to say "Refund
+   * processed successfully".
    */
   async initiateRefund(transactionId) {
-    const reason = prompt('Enter refund reason:');
+    const reason = prompt('Record a refund made in the payment provider. This marks the payment refunded; ' +
+      'it moves no money. Reason:');
     if (!reason) return;
 
     try {
@@ -676,8 +654,8 @@ const AdminPayments = {
 
       AdminComponents.alert({
         type: 'success',
-        message: 'Refund processed successfully',
-        autoDismiss: 3000
+        message: 'Refund recorded. No money moved here: refund the payment in the payment provider if that is not done yet.',
+        autoDismiss: 6000
       });
 
       this.loadTransactions();
@@ -685,7 +663,7 @@ const AdminPayments = {
     } catch (error) {
       AdminComponents.alert({
         type: 'error',
-        message: `Failed to process refund: ${error.message}`,
+        message: `The refund was not recorded: ${AdminComponents.escapeHtml(error.message)}`,
         autoDismiss: 5000
       });
     }
@@ -723,29 +701,6 @@ const AdminPayments = {
         autoDismiss: 5000
       });
     }
-  },
-
-  /**
-   * View refund details
-   */
-  async viewRefund(refundId) {
-    AdminComponents.alert({
-      type: 'info',
-      message: 'Refund details coming soon...',
-      autoDismiss: 3000
-    });
-  },
-
-  /**
-   * Export transactions
-   */
-  async exportTransactions() {
-    AdminComponents.alert({
-      type: 'info',
-      message: 'Exporting transactions to CSV...',
-      autoDismiss: 3000
-    });
-    // TODO: Implement CSV export
   }
 };
 

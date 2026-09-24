@@ -8,6 +8,7 @@ const AdminSubscriptions = {
   currentTab: 'plans',
   pagination: null,
   filterStatus: 'all',
+  growthChart: null,
 
   /**
    * Initialize subscription management page
@@ -21,6 +22,8 @@ const AdminSubscriptions = {
       onLoad: () => this.loadSubscriptions()
     });
 
+    // Every visit renders the Plans sub-tab, so the highlighted button must say so
+    this.currentTab = 'plans';
     this.render();
     await this.loadPlans();
   },
@@ -48,8 +51,8 @@ const AdminSubscriptions = {
         </div>
       </div>
 
-      <!-- Plans Tab -->
-      <div id="plans-tab">
+      <!-- Plans Tab (the sub-tab ids carry a subscriptions- prefix: the Payments tab has sub-tabs too) -->
+      <div id="subscriptions-plans-tab">
         <div class="admin-card">
           <div class="admin-card-header flex-between">
             <h2 class="admin-card-title">Subscription Plans</h2>
@@ -66,7 +69,7 @@ const AdminSubscriptions = {
       </div>
 
       <!-- Subscriptions Tab -->
-      <div id="subscriptions-tab" style="display: none">
+      <div id="subscriptions-subscriptions-tab" class="hidden">
         <div class="admin-card">
           <div class="admin-card-header flex-between">
             <h2 class="admin-card-title">Active Subscriptions</h2>
@@ -90,29 +93,16 @@ const AdminSubscriptions = {
       </div>
 
       <!-- Analytics Tab -->
-      <div id="analytics-tab" style="display: none">
+      <div id="subscriptions-analytics-tab" class="hidden">
         <div class="metrics-grid" id="sub-metrics">
           ${AdminComponents.spinner({ text: 'Loading analytics...' })}
         </div>
 
         <div class="admin-card mt-2">
           <div class="admin-card-header">
-            <h2 class="admin-card-title">Subscription Growth</h2>
+            <h2 class="admin-card-title">Subscriptions Started per Month (trials included)</h2>
           </div>
-          <div class="admin-card-body">
-            <canvas id="subscription-growth-chart" height="80"></canvas>
-          </div>
-        </div>
-
-        <div class="admin-card mt-2">
-          <div class="admin-card-header">
-            <h2 class="admin-card-title">Cohort Retention</h2>
-          </div>
-          <div class="admin-card-body">
-            <div id="cohort-retention-container">
-              <p class="text-muted">Cohort retention analysis coming soon...</p>
-            </div>
-          </div>
+          <div class="admin-card-body" id="subscription-growth-body"></div>
         </div>
       </div>
     `;
@@ -124,15 +114,11 @@ const AdminSubscriptions = {
   switchTab(tab) {
     this.currentTab = tab;
 
-    // Hide all tabs
+    // Show the selected sub-tab, hide the others
     ['plans', 'subscriptions', 'analytics'].forEach(t => {
-      const el = document.getElementById(`${t}-tab`);
-      if (el) el.style.display = 'none';
+      const el = document.getElementById(`subscriptions-${t}-tab`);
+      if (el) el.classList.toggle('hidden', t !== tab);
     });
-
-    // Show selected tab
-    const activeTab = document.getElementById(`${tab}-tab`);
-    if (activeTab) activeTab.style.display = 'block';
 
     // Update buttons
     document.querySelectorAll('#subscriptions-page .btn').forEach(btn => {
@@ -202,12 +188,11 @@ const AdminSubscriptions = {
                 <div class="text-muted text-sm">
                   <strong>Code:</strong> ${plan.plan_code}<br>
                   <strong>Region:</strong> ${plan.region}<br>
-                  <strong>Subscribers:</strong> ${plan.subscriber_count || 0}
+                  <strong>Subscribers now (trials included):</strong> ${plan.subscriber_count || 0}
                 </div>
               </div>
 
               <div class="mt-2 flex gap-1">
-                <button class="btn btn-secondary btn-sm" onclick="AdminSubscriptions.editPlan(${plan.id})">Edit</button>
                 <button class="btn ${plan.is_active ? 'btn-warning' : 'btn-success'} btn-sm"
                   onclick="AdminSubscriptions.togglePlanStatus(${plan.id}, ${!plan.is_active})">
                   ${plan.is_active ? 'Deactivate' : 'Activate'}
@@ -266,8 +251,8 @@ const AdminSubscriptions = {
         },
         {
           label: 'Plan',
-          key: 'plan_id',
-          render: (planId) => `Plan ${planId}` // TODO: Map to plan name
+          key: 'plan_name',
+          render: (planName) => planName || '-'
         },
         {
           label: 'Status',
@@ -287,12 +272,12 @@ const AdminSubscriptions = {
         },
         {
           label: 'Start Date',
-          key: 'subscription_start_date',
+          key: 'start_date',
           render: (date) =>DateFormatter.format(date)
         },
         {
           label: 'End Date',
-          key: 'subscription_end_date',
+          key: 'end_date',
           render: (date) =>DateFormatter.format(date)
         },
         {
@@ -303,11 +288,6 @@ const AdminSubscriptions = {
       ],
       data: subscriptions,
       actions: [
-        {
-          label: 'View',
-          className: 'btn-secondary',
-          onClick: (sub) => `AdminSubscriptions.viewSubscription(${sub.id})`
-        },
         {
           label: 'Cancel',
           className: 'btn-danger',
@@ -349,61 +329,45 @@ const AdminSubscriptions = {
   },
 
   /**
-   * Render analytics metrics
+   * Render analytics metrics: MRR per currency from every paying subscription (Stripe ones included),
+   * and churn. The trends shown under them (+12%, -2%, +15%) and the lifetime value were made up.
    */
   renderAnalyticsMetrics(analytics) {
-    const metricsHTML = `
-      ${AdminComponents.metricCard({
-        title: 'Monthly Recurring Revenue',
-        value: AdminComponents.formatCurrency(analytics.mrr || 0, 'GBP'),
-        change: analytics.mrr_change || '+0%',
-        changeType: 'positive',
-        icon: ''
-      })}
-      ${AdminComponents.metricCard({
-        title: 'Annual Recurring Revenue',
-        value: AdminComponents.formatCurrency((analytics.mrr || 0) * 12, 'GBP'),
-        change: analytics.arr_change || '+0%',
-        changeType: 'positive',
-        icon: ''
-      })}
-      ${AdminComponents.metricCard({
-        title: 'Churn Rate',
-        value: (analytics.churn_rate || 0) + '%',
-        change: analytics.churn_change || '-0%',
-        changeType: 'negative',
-        icon: ''
-      })}
-      ${AdminComponents.metricCard({
-        title: 'Avg. LTV',
-        value: AdminComponents.formatCurrency(analytics.avg_ltv || 0, 'GBP'),
-        change: analytics.ltv_change || '+0%',
-        changeType: 'positive',
-        icon: ''
-      })}
-    `;
-
-    document.getElementById('sub-metrics').innerHTML = metricsHTML;
+    const mrr = (analytics.mrr || []).map(entry => ({ amount: entry.mrr, currency: entry.currency }));
+    document.getElementById('sub-metrics').replaceChildren(
+      AdminComponents.metricCardEl('Monthly Recurring Revenue', AdminComponents.moneyText(mrr), 'Per currency'),
+      AdminComponents.metricCardEl('Annual Run Rate',
+        AdminComponents.moneyText(mrr.map(entry => ({ amount: entry.amount * 12, currency: entry.currency }))), 'MRR × 12'),
+      AdminComponents.metricCardEl('Churn Rate', `${analytics.churn_rate || 0}%`, 'Cancelled in the last 30 days')
+    );
   },
 
   /**
-   * Render growth chart
+   * Render growth chart: subscriptions started per month, trials included
    */
   renderGrowthChart(growthData) {
-    const ctx = document.getElementById('subscription-growth-chart');
-    if (!ctx) return;
+    const body = document.getElementById('subscription-growth-body');
+    if (!body) return;
+    if (this.growthChart) {
+      this.growthChart.destroy();
+      this.growthChart = null;
+    }
+    if (growthData.length === 0) {
+      body.replaceChildren(AdminComponents.noteEl('No subscription started in the last 6 months.'));
+      return;
+    }
 
-    // Sample data if no real data
-    const labels = growthData.length >0 ? growthData.map(d => d.month) : [];
-    const data = growthData.length >0 ? growthData.map(d => d.count) : [];
+    const canvas = document.createElement('canvas');
+    canvas.height = 80;
+    body.replaceChildren(canvas);
 
-    new Chart(ctx, {
+    this.growthChart = new Chart(canvas, {
       type: 'line',
       data: {
-        labels: labels.length >0 ? labels : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        labels: growthData.map(d => d.month),
         datasets: [{
-          label: 'Active Subscriptions',
-          data: data.length >0 ? data : [5, 8, 12, 15, 20, 25],
+          label: 'Subscriptions started',
+          data: growthData.map(d => d.count),
           borderColor: '#10b981',
           backgroundColor: 'rgba(16, 185, 129, 0.1)',
           tension: 0.4,
@@ -573,17 +537,6 @@ const AdminSubscriptions = {
   },
 
   /**
-   * Edit plan
-   */
-  async editPlan(planId) {
-    AdminComponents.alert({
-      type: 'info',
-      message: 'Edit plan functionality coming soon...',
-      autoDismiss: 3000
-    });
-  },
-
-  /**
    * Toggle plan status
    */
   async togglePlanStatus(planId, isActive) {
@@ -651,17 +604,6 @@ const AdminSubscriptions = {
         autoDismiss: 5000
       });
     }
-  },
-
-  /**
-   * View subscription details
-   */
-  async viewSubscription(subscriptionId) {
-    AdminComponents.alert({
-      type: 'info',
-      message: 'View subscription details coming soon...',
-      autoDismiss: 3000
-    });
   },
 
   /**

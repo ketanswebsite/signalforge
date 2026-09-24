@@ -62,7 +62,7 @@ const AdminSignalTesting = {
                             <!-- 7 AM Scan Test -->
                             <div class="test-control-card">
                                 <h3>7 AM Signal Scan</h3>
-                                <p>Triggers the high conviction scanner that runs at 7 AM UK time</p>
+                                <p>Runs the real 7 AM scan now: it stores today's signals and messages every Telegram subscriber and subscribed browser</p>
                                 <button class="btn btn-primary" onclick="AdminSignalTesting.testScan()" id="test-scan-btn">
                                      Run 7 AM Scan
                                 </button>
@@ -198,6 +198,9 @@ const AdminSignalTesting = {
     async testScan() {
         const btn = document.getElementById('test-scan-btn');
         if (this.state.isScanning) return;
+        if (!confirm('Run the 7 AM scan now? It is the real scan: every Telegram subscriber and subscribed browser gets its messages.')) {
+            return;
+        }
 
         this.state.isScanning = true;
         btn.disabled = true;
@@ -361,7 +364,7 @@ const AdminSignalTesting = {
                 </div>
             </div>
 
-            <table class="signals-table">
+            <div class="table-responsive"><table class="signals-table">
                 <thead>
                     <tr>
                         <th>Symbol</th>
@@ -398,7 +401,7 @@ const AdminSignalTesting = {
 
         html += `
                 </tbody>
-            </table>
+            </table></div>
         `;
 
         return html;
@@ -431,7 +434,7 @@ const AdminSignalTesting = {
      */
     renderTradesTable(trades) {
         let html = `
-            <table class="signals-table">
+            <div class="table-responsive"><table class="signals-table">
                 <thead>
                     <tr>
                         <th>Symbol</th>
@@ -461,7 +464,7 @@ const AdminSignalTesting = {
 
         html += `
                 </tbody>
-            </table>
+            </table></div>
         `;
         return html;
     },
@@ -614,7 +617,7 @@ const AdminSignalTesting = {
             html += `
                 <div class="admin-section-spaced">
                     <h4>Validation Results for Today's Signals</h4>
-                    <table class="signals-table">
+                    <div class="table-responsive"><table class="signals-table">
                         <thead>
                             <tr>
                                 <th>Symbol</th>
@@ -643,7 +646,7 @@ const AdminSignalTesting = {
 
             html += `
                         </tbody>
-                    </table>
+                    </table></div>
                 </div>
             `;
         }

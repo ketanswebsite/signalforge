@@ -1344,172 +1344,37 @@ app.get('/api/trades/export', ensureAuthenticatedAPI, async (req, res) => {
 
 // Delete user account (GDPR Article 17 - Right to Erasure)
 //
-// One transaction: archive the payment records the law makes us keep (6 years), delete every row
-// the account owns, then the account itself. Postgres aborts the whole transaction on any error, so
-// a statement that may fail runs in its own savepoint and only that statement is undone. Until
-// 2026-09-24 a swallowed CHECK violation (user_subscriptions has no 'deleted' status) aborted the
-// transaction: every account with a subscription row got a 500 and kept all its data.
+// lib/shared/account-deletion.js does the deletion, as it does for the admin's DELETE
+// /api/admin/users/:email: one transaction archives the payment records the law makes us keep
+// (6 years), deletes every row the account owns, then the account itself.
+const AccountDeletion = require('./lib/shared/account-deletion');
 app.delete('/api/user/delete-account', ensureAuthenticatedAPI, async (req, res) => {
   const email = req.user && req.user.email;
   if (!email) {
     return res.status(401).json({ error: 'Authentication required' });
   }
   // The admin account owns the house portfolio (the executor books every signal to it).
-  if (email === ADMIN_EMAIL) {
+  if (AccountDeletion.isProtectedAccount(email)) {
     return res.status(403).json({ error: 'The admin account cannot be deleted from the app' });
   }
 
-  const rawIp = req.ip || (req.socket && req.socket.remoteAddress) || '';
-  const ipAddress = require('net').isIP(rawIp) ? rawIp : null;   // the INET columns reject anything else
-
-  let client;
+  let result;
   try {
-    client = await TradeDB.pool.connect();
-  } catch (error) {
-    console.error('Error deleting account (no database connection):', error);
-    return res.status(500).json({ error: 'Failed to delete account' });
-  }
-
-  // One statement in a savepoint. `tolerate(error)` decides whether a failure is fatal; by default
-  // only a table this database never got (42P01) is skipped - the subscription, payment and audit
-  // tables come from migrations/, not the boot DDL.
-  const missingTable = (error) => error.code === '42P01';
-  const step = async (sql, params = [email], tolerate = missingTable) => {
-    await client.query('SAVEPOINT gdpr_step');
-    try {
-      const result = await client.query(sql, params);
-      await client.query('RELEASE SAVEPOINT gdpr_step');
-      return result;
-    } catch (error) {
-      await client.query('ROLLBACK TO SAVEPOINT gdpr_step');
-      await client.query('RELEASE SAVEPOINT gdpr_step');
-      if (!tolerate(error)) throw error;
-      return { rows: [], rowCount: 0 };
-    }
-  };
-
-  let financialRecordsRetained = false;
-  let releaseError;
-  try {
-    await client.query('BEGIN');
-
-    // 1. Audit entry for the erasure itself (kept). Best effort: it never blocks the deletion.
-    await step(`
-      INSERT INTO admin_activity_log (admin_email, activity_type, description, target_type, target_id, metadata, ip_address, success)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    `, [
+    result = await AccountDeletion.deleteAccount({
+      pool: TradeDB.pool,
       email,
-      'account_deletion',
-      'User requested account deletion',
-      'user',
-      email,
-      JSON.stringify({
-        reason: 'User requested account deletion via data management page',
-        timestamp: new Date().toISOString()
-      }),
-      ipAddress,
-      true
-    ], (auditError) => {
-      console.error('Failed to create audit log:', auditError.message);
-      return true;
+      requestedBy: email,
+      ipAddress: AccountDeletion.clientAddress(req)
     });
-
-    // 2. Archive financial records (REQUIRED for 6 years per UK law)
-    // Create archive table if it doesn't exist
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS deleted_user_financial_records (
-        id SERIAL PRIMARY KEY,
-        user_email VARCHAR(255) NOT NULL,
-        deletion_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        retention_until TIMESTAMP NOT NULL,
-        financial_data JSONB NOT NULL,
-        deletion_requested_by VARCHAR(255),
-        deletion_ip_address INET,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    const financialRecords = {
-      paymentTransactions: (await step('SELECT * FROM payment_transactions WHERE user_email = $1')).rows,
-      paymentRefunds: (await step('SELECT * FROM payment_refunds WHERE user_email = $1')).rows,
-      subscriptions: (await step('SELECT * FROM user_subscriptions WHERE user_email = $1')).rows,
-      subscriptionHistory: (await step('SELECT * FROM subscription_history WHERE user_email = $1')).rows,
-      paymentVerifications: (await step('SELECT * FROM payment_verification_queue WHERE user_email = $1')).rows
-    };
-
-    // Only money makes a financial record: a free trial alone (amount 0, no Stripe id) is not kept.
-    const paidSubscription = financialRecords.subscriptions.some(s =>
-      Number(s.amount_paid) > 0 || Boolean(s.stripe_subscription_id) || (s.billing_cycle && s.billing_cycle !== 'trial'));
-    financialRecordsRetained = financialRecords.paymentTransactions.length > 0 ||
-      financialRecords.paymentRefunds.length > 0 || paidSubscription;
-
-    if (financialRecordsRetained) {
-      const retentionDate = new Date();
-      retentionDate.setFullYear(retentionDate.getFullYear() + 6);
-
-      await client.query(`
-        INSERT INTO deleted_user_financial_records (user_email, retention_until, financial_data, deletion_requested_by, deletion_ip_address)
-        VALUES ($1, $2, $3, $4, $5)
-      `, [
-        email,
-        retentionDate,
-        JSON.stringify(financialRecords),
-        email,
-        ipAddress
-      ]);
-    }
-
-    // 3. Delete everything the account owns, children first: payment_transactions references both
-    //    users and user_subscriptions without ON DELETE CASCADE.
-    await client.query('DELETE FROM trades WHERE user_id = $1', [email]);   // exit checks + daily rollup cascade
-    await client.query('DELETE FROM alert_preferences WHERE user_id = $1', [email]);
-    await client.query('DELETE FROM portfolio_capital WHERE user_id = $1', [email]);
-    await client.query('DELETE FROM user_settings WHERE user_id = $1', [email]);
-    await client.query('DELETE FROM push_subscriptions WHERE user_email = $1', [email]);
-    await step('DELETE FROM trade_alerts_sent WHERE user_id = $1');
-
-    // Telegram: the chat keeps its broadcast subscription (its owner can /stop it), unlinked from this account
-    const linked = await client.query('SELECT telegram_chat_id FROM users WHERE email = $1', [email]);
-    const chatId = linked.rows[0] && linked.rows[0].telegram_chat_id;
-    await client.query(
-      'UPDATE telegram_subscribers SET user_id = NULL WHERE user_id = $1' + (chatId ? ' OR chat_id = $2' : ''),
-      chatId ? [email, String(chatId)] : [email]
-    );
-
-    await step('DELETE FROM payment_verification_queue WHERE user_email = $1');
-    await step('DELETE FROM payment_refunds WHERE user_email = $1');
-    await step('DELETE FROM payment_transactions WHERE user_email = $1');
-    await step('DELETE FROM subscription_history WHERE user_email = $1');
-    await step('DELETE FROM subscription_grants WHERE user_email = $1');
-    await step('DELETE FROM user_subscriptions WHERE user_email = $1');
-
-    // 4. Finally, delete the user record
-    await client.query('DELETE FROM users WHERE email = $1', [email]);
-
-    // 5. The audit triggers of migrations/007 copy every changed trade, preference and profile row
-    //    (row_to_json) into these logs - including the deletions just made - so they go last.
-    for (const table of ['trade_audit_log', 'alert_preferences_audit_log', 'user_audit_log',
-      'trade_audit_log_archive', 'alert_preferences_audit_log_archive', 'user_audit_log_archive']) {
-      await step(`DELETE FROM ${table} WHERE user_email = $1`);
-    }
-
-    await client.query('COMMIT');
   } catch (error) {
-    try {
-      await client.query('ROLLBACK');
-    } catch (rollbackError) {
-      releaseError = rollbackError;   // a broken connection must not go back to the pool
-    }
     console.error('Error deleting account:', error);
     return res.status(500).json({
       error: 'Failed to delete account',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
-  } finally {
-    client.release(releaseError);
   }
 
-  // 6. End the account's sessions. The account is already gone, so a failure here is only logged.
+  // End the account's sessions. The account is already gone, so a failure here is only logged.
   try {
     // passport 0.7's logout saves, then regenerates, the session in callbacks: the session may be
     // destroyed only after it has finished. Destroying it first (as this route did) makes passport's
@@ -1520,23 +1385,8 @@ app.delete('/api/user/delete-account', ensureAuthenticatedAPI, async (req, res) 
         resolve();
       }));
     }
-    // Sessions on the account's other devices: every signed-in request re-creates a missing users
-    // row (ensureUserInDatabase), so a session left behind would bring the account back.
-    const store = req.sessionStore;
-    if (store && typeof store.destroyUserSessions === 'function') {
-      // The Postgres store (lib/shared/pg-session-store.js) ends them in one statement
-      await new Promise((resolve) => store.destroyUserSessions(email, () => resolve()));
-    } else if (store && typeof store.all === 'function') {
-      await new Promise((resolve) => store.all((err, sessions) => {
-        if (!err && sessions) {
-          for (const [sid, session] of Object.entries(sessions)) {
-            const owner = session && session.passport && session.passport.user;
-            if (owner && owner.email === email) store.destroy(sid);
-          }
-        }
-        resolve();
-      }));
-    }
+    // Sessions on the account's other devices
+    await AccountDeletion.endAccountSessions(req.sessionStore, email);
     if (req.session) {
       await new Promise((resolve) => req.session.destroy(() => resolve()));
     }
@@ -1550,8 +1400,8 @@ app.delete('/api/user/delete-account', ensureAuthenticatedAPI, async (req, res) 
     details: {
       email: email,
       deletionDate: new Date().toISOString(),
-      financialRecordsRetained,
-      retentionPeriod: financialRecordsRetained ? '6 years as required by UK financial regulations' : null
+      financialRecordsRetained: result.financialRecordsRetained,
+      retentionPeriod: result.financialRecordsRetained ? '6 years as required by UK financial regulations' : null
     }
   });
 });
@@ -2151,8 +2001,13 @@ app.post('/api/admin/test-scan', ensureAuthenticatedAPI, async (req, res) => {
 
     console.log(`🧪 [TEST] Manual 7 AM scan triggered by ${req.user?.email || 'user'}`);
 
-    // Run the high conviction scan (same as 7 AM cron job)
+    // Run the high conviction scan (same as 7 AM cron job). The scanner catches its own failures and
+    // answers { error } ("Scan already in progress", or what went wrong); this route used to report
+    // those as "Signal scan completed" with success: true.
     const result = await stockScanner.runHighConvictionScan();
+    if (!result || result.error) {
+      return res.status(500).json({ error: (result && result.error) || 'The scan returned nothing' });
+    }
 
     res.json({
       success: true,
@@ -2379,8 +2234,11 @@ app.get('/api/admin/signal-diagnostics', ensureAuthenticatedAPI, async (req, res
       return signalDateStr === today;
     });
 
-    // Get capital status
-    const capitalStatus = await CapitalManager.getCapitalStatus();
+    // The house book: the account the 1 PM executor books every signal to (lib/scheduler/trade-executor.js).
+    // Without it the capital lookup failed (getPortfolioCapital needs an account), the ledger read as empty
+    // and every signal showed MARKET_NOT_FOUND.
+    const houseAccount = process.env.ADMIN_EMAIL || ADMIN_EMAIL;
+    const capitalStatus = await CapitalManager.getCapitalStatus(houseAccount);
 
     // Get dismissed signals from today
     const dismissedToday = await TradeDB.pool.query(`
@@ -2401,7 +2259,7 @@ app.get('/api/admin/signal-diagnostics', ensureAuthenticatedAPI, async (req, res
     // Validate each pending signal
     const validationResults = [];
     for (const signal of todaySignals) {
-      const validation = await CapitalManager.validateTradeEntry(signal.market, signal.symbol);
+      const validation = await CapitalManager.validateTradeEntry(signal.market, signal.symbol, houseAccount);
       validationResults.push({
         symbol: signal.symbol,
         market: signal.market,
@@ -2427,6 +2285,7 @@ app.get('/api/admin/signal-diagnostics', ensureAuthenticatedAPI, async (req, res
       success: true,
       today,
       diagnostics: {
+        account: houseAccount,
         pendingSignalsTotal: pendingSignals.length,
         pendingSignalsToday: todaySignals.length,
         dismissedToday: dismissedToday.rows.length,
@@ -2910,28 +2769,30 @@ app.post('/api/push/test', ensureAuthenticatedAPI, async (req, res) => {
   }
 });
 
-// Admin endpoint: broadcast notification to all users
+// Admin endpoint: broadcast a notification to every subscribed browser (the admin portal's Settings tab).
+// The /api/admin guard above decides who is an admin. This route also required the email to be in
+// ADMIN_EMAILS, an environment variable nothing else reads, so the admin could be refused by it.
 app.post('/api/admin/push/broadcast', ensureAuthenticatedAPI, async (req, res) => {
   try {
-    // Check if user is admin
-    const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase());
-    if (!adminEmails.includes(req.user.email.toLowerCase())) {
-      return res.status(403).json({ error: 'Admin access required' });
-    }
-
-    if (!pushService) {
-      return res.status(503).json({ error: 'Push service not available' });
-    }
-
     const { title, body, url } = req.body;
+    const text = (v, max) => typeof v === 'string' && v.trim().length > 0 && v.length <= max;
+    if (!text(title, 100) || !text(body, 500)) {
+      return res.status(400).json({ error: 'A title (up to 100 characters) and a message (up to 500) are required' });
+    }
+    // Where a click on the notification opens: a page of this site, never another one ("//host" and
+    // "/\host" are other sites to a browser)
+    const sitePath = v => typeof v === 'string' && v.length <= 200 && /^\/(?![\/\\])[^\\\s]*$/.test(v);
+    if (url !== undefined && url !== '' && !sitePath(url)) {
+      return res.status(400).json({ error: 'url must be a path on this site, such as /index.html' });
+    }
 
-    if (!title || !body) {
-      return res.status(400).json({ error: 'Title and body required' });
+    if (!pushService || !pushService.isConfigured) {
+      return res.status(503).json({ error: 'Web push is not configured on this server (VAPID keys are not set)' });
     }
 
     const payload = {
-      title,
-      body,
+      title: title.trim(),
+      body: body.trim(),
       icon: '/images/brand/app-icon.png',
       badge: '/images/brand/app-icon.png',
       url: url || '/account.html',
@@ -2942,7 +2803,7 @@ app.post('/api/admin/push/broadcast', ensureAuthenticatedAPI, async (req, res) =
 
     res.json({
       success: true,
-      message: `Broadcast sent to ${result.sent} devices`,
+      message: `Sent to ${result.sent} device${result.sent === 1 ? '' : 's'}` + (result.failed ? `; ${result.failed} failed` : ''),
       ...result
     });
   } catch (error) {

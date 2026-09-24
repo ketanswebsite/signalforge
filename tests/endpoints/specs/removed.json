@@ -1109,5 +1109,344 @@
     "note": "signed in: no handler (and routes/stripe.js is not mounted in the harness), the 404 fallback answers"
    }
   ]
+ },
+ {
+  "route": "POST /api/admin/analytics/reports",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I12b (\"Admin portal honesty\"): a placeholder that answered \"Report generation started\" and generated nothing; the Generate Report button and its dialog (which never opened: the page has no modal container) went with it. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/database/migrations/run",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I12b (\"Admin portal honesty\"): a placeholder that ran nothing and answered success, so the Database tab said \"Migrations completed successfully\"; its button went with it. Migrations are applied by hand. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/database/migrations/run-single",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I12b (\"Admin portal honesty\"): a placeholder that answered success for any file name, even one not in migrations/ (the pinned bug); the per-file Run buttons went with it. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/database/backups",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I12b (\"Admin portal honesty\"): a placeholder that always listed no backups beside a notice claiming daily automatic backups; the Backups sub-tab went with it. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/database/backups/create",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I12b (\"Admin portal honesty\"): a placeholder that made no backup and answered \"Backup created\" with a file name. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/database/backups/download/:filename",
+  "path": "/api/admin/database/backups/download/harness-no-such-backup.sql",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I12b (\"Admin portal honesty\"): a placeholder that answered 200 \"coming soon\" for any file name (the pinned bug); no backup ever existed. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/database/backups/restore",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I12b (\"Admin portal honesty\"): a placeholder that answered success for any file name (the pinned bug), so the Database tab said \"Backup restored successfully\". Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/settings/payment",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I12b (\"Admin portal honesty\"): it offered PayPal and Razorpay, which the app has no code for, beside masked Stripe keys in inputs that saved nothing; GET /api/admin/settings/general says which Stripe keys are set. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/settings/email-templates",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I12b (\"Admin portal honesty\"): a hard-coded list of email templates and SMTP settings; the app sends no email. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/settings/email-templates/:templateId",
+  "path": "/api/admin/settings/email-templates/welcome",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I12b (\"Admin portal honesty\"): a placeholder that answered a sample template for any id (the pinned bug); the app sends no email. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "PUT /api/admin/settings/email-templates/:templateId",
+  "path": "/api/admin/settings/email-templates/welcome",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I12b (\"Admin portal honesty\"): a placeholder that saved nothing and answered \"Template updated successfully\". Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/settings/feature-flags",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I12b (\"Admin portal honesty\"): eight hard-coded flags that nothing in the app reads. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/settings/feature-flags",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I12b (\"Admin portal honesty\"): a placeholder that saved nothing and answered \"Feature flags updated successfully\". Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/settings/broadcast",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I12b (\"Admin portal honesty\"): a placeholder that sent nothing and reported a made-up count (\"Broadcast sent to 5 users\"); the Settings tab now sends a web push broadcast through POST /api/admin/push/broadcast. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/settings/maintenance",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I12b (\"Admin portal honesty\"): it read MAINTENANCE_MODE, which nothing else reads: the app has no maintenance mode. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/settings/maintenance-mode",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I12b (\"Admin portal honesty\"): a placeholder that switched nothing and answered \"Maintenance mode enabled\". Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
  }
 ]

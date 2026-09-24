@@ -21,8 +21,15 @@
    {
     "as": "admin",
     "status": 200,
-    "check": "object",
-    "note": "placeholder handler: always { logs: [] }"
+    "check": "auditLogs",
+    "note": "the audit log (admin_activity_log), newest first; account deletions write it (lib/shared/account-deletion.js). A placeholder answered an empty list until I12b"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "auditLogs",
+    "path": "/api/admin/audit/logs?limit=not-a-number",
+    "note": "a malformed limit reads as 20"
    }
   ]
  },
@@ -48,7 +55,8 @@
    {
     "as": "admin",
     "status": 200,
-    "check": "object"
+    "check": "dashboardMetrics",
+    "note": "MRR per currency, the Stripe-style subscription (seed.sql) included; no hard-coded changes or payments-this-month"
    }
   ]
  },
@@ -82,6 +90,27 @@
     "path": "/api/admin/users?page=2&limit=1",
     "check": "object",
     "note": "pagination parameters"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "path": "/api/admin/users?search=harness-victim",
+    "check": "usersSearchVictim",
+    "note": "the Users tab search: part of an email or a name (ignored until I12b)"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "path": "/api/admin/users?search=%25",
+    "check": "usersNone",
+    "note": "a LIKE wildcard is searched for as itself: no email or name holds %"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "path": "/api/admin/users?filter=telegram",
+    "check": "usersTelegramOnly",
+    "note": "the Telegram Linked filter"
    }
   ]
  },
@@ -299,7 +328,7 @@
     "as": "admin",
     "status": 404,
     "path": "/api/admin/users/nobody-writer-b@e2e.invalid",
-    "note": "USER_NOT_FOUND"
+    "note": "USER_NOT_FOUND: nothing is deleted or recorded"
    },
    {
     "as": "admin",
@@ -311,6 +340,37 @@
     "as": "admin",
     "status": 404,
     "note": "already deleted"
+   },
+   {
+    "as": "admin",
+    "status": 403,
+    "path": "/api/admin/users/{adminEmail}",
+    "note": "the admin account owns the house portfolio: refused, as the account's own delete-account refuses it"
+   },
+   {
+    "as": "trial",
+    "status": 403,
+    "path": "/api/admin/users/harness-trial@e2e.invalid",
+    "note": "the trial persona is signed in (its session exists) and is not an admin. Every spec that uses it has run: none is order last"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "path": "/api/admin/users/harness-trial@e2e.invalid",
+    "check": "accountDeleted",
+    "note": "the account goes with everything it owns and its sessions on every device, as the account's own delete-account does it (lib/shared/account-deletion.js). Until I12b only the users row went"
+   },
+   {
+    "as": "trial",
+    "status": 401,
+    "path": "/api/admin/users/harness-trial@e2e.invalid",
+    "note": "its session ended with the account: 401 at the /api sign-in gate"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "path": "/api/admin/users/harness-trial@e2e.invalid",
+    "note": "and that request did not bring the account back (server.js ensureUserInDatabase runs only for a signed-in session)"
    }
   ]
  },
@@ -336,7 +396,8 @@
    {
     "as": "admin",
     "status": 200,
-    "check": "object"
+    "check": "stripeRowCounted",
+    "note": "each plan counts the subscriptions with access now, trials included; a Stripe row (plan_code, no plan_id) counts for its plan"
    }
   ]
  },
@@ -622,7 +683,7 @@
    {
     "as": "admin",
     "status": 200,
-    "check": "object"
+    "check": "stripeRowListed"
    },
    {
     "as": "admin",
@@ -861,7 +922,7 @@
    {
     "as": "admin",
     "status": 200,
-    "check": "object"
+    "check": "mrrPerCurrency"
    }
   ]
  },
@@ -1147,7 +1208,7 @@
    {
     "as": "admin",
     "status": 200,
-    "check": "object"
+    "check": "paymentAnalytics"
    }
   ]
  },
@@ -1165,7 +1226,7 @@
    {
     "as": "admin",
     "status": 200,
-    "check": "object"
+    "check": "mrrPerCurrency"
    }
   ]
  },
@@ -1183,7 +1244,7 @@
    {
     "as": "admin",
     "status": 200,
-    "check": "object"
+    "check": "noInventedFigures"
    }
   ]
  },
@@ -1201,7 +1262,8 @@
    {
     "as": "admin",
     "status": 200,
-    "check": "object"
+    "check": "subscriptionHealth",
+    "note": "trial conversion per account (a Stripe checkout adds a paid row beside the trial row), churn dated by cancellation_date"
    }
   ]
  },
@@ -1224,36 +1286,6 @@
   ]
  },
  {
-  "route": "POST /api/admin/analytics/reports",
-  "body": {},
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401
-   },
-   {
-    "as": "user",
-    "status": 403
-   },
-   {
-    "as": "admin",
-    "status": 400,
-    "note": "requireFields type, period, format"
-   },
-   {
-    "as": "admin",
-    "status": 200,
-    "check": "object",
-    "body": {
-     "type": "revenue",
-     "period": "30d",
-     "format": "pdf"
-    },
-    "note": "placeholder (admin.js:1443): answers 'Report generation started' / status processing but generates nothing"
-   }
-  ]
- },
- {
   "route": "GET /api/admin/database/migrations",
   "cases": [
    {
@@ -1267,150 +1299,19 @@
    {
     "as": "admin",
     "status": 200,
-    "check": "object"
-   }
-  ]
- },
- {
-  "route": "POST /api/admin/database/migrations/run",
-  "body": {},
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401
-   },
-   {
-    "as": "user",
-    "status": 403
-   },
-   {
-    "as": "admin",
-    "status": 200,
-    "check": "object",
-    "note": "placeholder (admin.js:1573): runs nothing, but answers success:true, so public/js/admin-database.js:980 shows 'Migrations completed successfully'"
-   }
-  ]
- },
- {
-  "route": "POST /api/admin/database/migrations/run-single",
-  "body": {},
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401
-   },
-   {
-    "as": "user",
-    "status": 403
-   },
-   {
-    "as": "admin",
-    "status": 400,
-    "note": "requireField filename"
-   },
-   {
-    "as": "admin",
-    "status": 400,
-    "body": {
-     "filename": "harness-no-such-migration.sql"
-    },
-    "bug": "routes/admin.js:1582-1591 is a placeholder that answers 200 success:true for ANY filename, even one that is not in migrations/ (public/js/admin-database.js:1011 then says 'Migration completed'); a missing body-referenced resource is 400 INVALID_INPUT by this codebase's own convention (middleware/admin-error-handler.js:165-168)"
-   }
-  ]
- },
- {
-  "route": "GET /api/admin/database/backups",
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401
-   },
-   {
-    "as": "user",
-    "status": 403
-   },
-   {
-    "as": "admin",
-    "status": 200,
-    "check": "object",
-    "note": "placeholder: always an empty list"
-   }
-  ]
- },
- {
-  "route": "POST /api/admin/database/backups/create",
-  "body": {},
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401
-   },
-   {
-    "as": "user",
-    "status": 403
-   },
-   {
-    "as": "admin",
-    "status": 200,
-    "check": "object",
-    "note": "placeholder (admin.js:1602): creates no backup but answers 'Backup created' with a filename (public/js/admin-database.js:1047 shows 'Backup created successfully'); GET /database/backups stays empty"
-   }
-  ]
- },
- {
-  "route": "GET /api/admin/database/backups/download/:filename",
-  "path": "/api/admin/database/backups/download/harness-no-such-backup.sql",
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401
-   },
-   {
-    "as": "user",
-    "status": 403
-   },
-   {
-    "as": "admin",
-    "status": 404,
-    "bug": "routes/admin.js:1611-1617 is a placeholder that answers 200 JSON 'coming soon' for any filename; no backup exists (GET /database/backups is empty), so this must be 404"
-   }
-  ]
- },
- {
-  "route": "POST /api/admin/database/backups/restore",
-  "body": {},
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401
-   },
-   {
-    "as": "user",
-    "status": 403
-   },
-   {
-    "as": "admin",
-    "status": 400,
-    "note": "requireField filename"
-   },
-   {
-    "as": "admin",
-    "status": 400,
-    "body": {
-     "filename": "harness-no-such-backup.sql"
-    },
-    "bug": "routes/admin.js:1620-1628 is a placeholder that answers 200 success:true for a backup that does not exist (GET /database/backups is empty), so public/js/admin-database.js:1092 shows 'Backup restored successfully'; a missing body-referenced resource is 400 INVALID_INPUT by this codebase's own convention (middleware/admin-error-handler.js:165-168)"
+    "check": "migrationsHonest",
+    "note": "the migration files and which schema_migrations records; migrations are applied by hand and never recorded, so nothing is called pending"
    }
   ]
  },
  {
   "route": "POST /api/admin/database/query",
   "body": {},
+  "note": "write mode (mode 'write') runs any SQL as given: it is never called here",
   "cases": [
    {
     "as": "anon",
-    "status": 401,
-    "note": "PROBE-ONLY: arbitrary SQL runner, never called as admin"
+    "status": 401
    },
    {
     "as": "nosub",
@@ -1419,6 +1320,70 @@
    {
     "as": "user",
     "status": 403
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "note": "requireField query"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "queryRows",
+    "body": {
+     "query": "SELECT 1 AS one"
+    },
+    "note": "read mode (the default): one statement in a READ ONLY transaction that is always rolled back (lib/shared/sql-console.js)"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "queryRows",
+    "body": {
+     "query": "select 1 as one;  ",
+     "mode": "readonly"
+    },
+    "note": "a trailing semicolon is fine"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "query": "SELECT 1 AS one; SELECT 2 AS two"
+    },
+    "note": "read mode runs one statement: Postgres refuses a second (extended query protocol)"
+   },
+   {
+    "as": "admin",
+    "status": 403,
+    "body": {
+     "query": "WITH gone AS (DELETE FROM users WHERE email = 'nobody-console@e2e.invalid' RETURNING email) SELECT * FROM gone"
+    },
+    "note": "a write that does not start with a write keyword: the read-only transaction refuses it (25006). The old first-word check ran it"
+   },
+   {
+    "as": "admin",
+    "status": 403,
+    "body": {
+     "query": "CREATE TABLE harness_console_probe (id int)"
+    },
+    "note": "DDL in read mode: refused"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "query": "SELEC 1"
+    },
+    "note": "a syntax error is the admin's to read: 400 with Postgres's message (it was a 500)"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "query": 42
+    },
+    "note": "query must be text"
    }
   ]
  },
@@ -1494,8 +1459,8 @@
    {
     "as": "admin",
     "status": 200,
-    "check": "object",
-    "note": "REINDEX TABLE per public table; per-table failures are only logged"
+    "check": "reindexReport",
+    "note": "REINDEX TABLE per public table; the answer counts the tables rebuilt and names any that failed (it said \"completed successfully\" whatever happened until I12b)"
    }
   ]
  },
@@ -1513,7 +1478,8 @@
    {
     "as": "admin",
     "status": 200,
-    "check": "object"
+    "check": "configurationFacts",
+    "note": "what the server runs with, read-only: the environment, the AUTO_EXECUTE switch and which keys are set. The old answer invented a scan schedule, a session timeout and switches nothing reads"
    }
   ]
  },
@@ -1535,7 +1501,8 @@
    {
     "as": "admin",
     "status": 200,
-    "check": "object"
+    "check": "telegramFacts",
+    "note": "whether the bot is configured and whether the admin's own chat is linked"
    }
   ]
  },
@@ -1545,8 +1512,7 @@
   "cases": [
    {
     "as": "anon",
-    "status": 401,
-    "note": "PROBE-ONLY: never called as admin"
+    "status": 401
    },
    {
     "as": "nosub",
@@ -1555,233 +1521,11 @@
    {
     "as": "user",
     "status": 403
-   }
-  ]
- },
- {
-  "route": "GET /api/admin/settings/payment",
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401
-   },
-   {
-    "as": "token",
-    "status": 401
-   },
-   {
-    "as": "user",
-    "status": 403
    },
    {
     "as": "admin",
-    "status": 200,
-    "check": "object"
-   }
-  ]
- },
- {
-  "route": "GET /api/admin/settings/email-templates",
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401
-   },
-   {
-    "as": "user",
-    "status": 403
-   },
-   {
-    "as": "admin",
-    "status": 200,
-    "check": "object"
-   }
-  ]
- },
- {
-  "route": "GET /api/admin/settings/email-templates/:templateId",
-  "path": "/api/admin/settings/email-templates/welcome",
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401
-   },
-   {
-    "as": "user",
-    "status": 403
-   },
-   {
-    "as": "admin",
-    "status": 200,
-    "check": "object"
-   },
-   {
-    "as": "admin",
-    "status": 404,
-    "path": "/api/admin/settings/email-templates/harness-no-such-template",
-    "bug": "routes/admin.js:1849-1858 is a placeholder that answers 200 with a sample template for ANY templateId, including ids that GET /settings/email-templates does not list"
-   }
-  ]
- },
- {
-  "route": "PUT /api/admin/settings/email-templates/:templateId",
-  "path": "/api/admin/settings/email-templates/welcome",
-  "body": {},
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401
-   },
-   {
-    "as": "user",
-    "status": 403
-   },
-   {
-    "as": "admin",
-    "status": 400,
-    "note": "requireFields subject, body"
-   },
-   {
-    "as": "admin",
-    "status": 200,
-    "check": "object",
-    "body": {
-     "subject": "Harness subject",
-     "body": "<p>Harness body</p>"
-    },
-    "note": "placeholder (admin.js:1867): echoes the template back, persists nothing"
-   }
-  ]
- },
- {
-  "route": "GET /api/admin/settings/feature-flags",
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401
-   },
-   {
-    "as": "user",
-    "status": 403
-   },
-   {
-    "as": "admin",
-    "status": 200,
-    "check": "object"
-   }
-  ]
- },
- {
-  "route": "POST /api/admin/settings/feature-flags",
-  "body": {},
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401
-   },
-   {
-    "as": "user",
-    "status": 403
-   },
-   {
-    "as": "admin",
-    "status": 400,
-    "note": "requireField flags"
-   },
-   {
-    "as": "admin",
-    "status": 200,
-    "check": "object",
-    "body": {
-     "flags": {
-      "newDashboard": {
-       "enabled": false
-      }
-     }
-    },
-    "note": "placeholder (admin.js:1897): persists nothing; GET keeps returning the hard-coded flags"
-   }
-  ]
- },
- {
-  "route": "POST /api/admin/settings/broadcast",
-  "body": {},
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401
-   },
-   {
-    "as": "user",
-    "status": 403
-   },
-   {
-    "as": "admin",
-    "status": 400,
-    "note": "requireFields title, message, audience"
-   },
-   {
-    "as": "admin",
-    "status": 200,
-    "check": "object",
-    "body": {
-     "title": "Harness",
-     "message": "Harness broadcast",
-     "audience": "admins",
-     "viaEmail": false,
-     "viaTelegram": false,
-     "viaInApp": false
-    },
-    "note": "placeholder (admin.js:1909): sends nothing and reports a made-up sentCount (admins -> 5)"
-   }
-  ]
- },
- {
-  "route": "GET /api/admin/settings/maintenance",
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401
-   },
-   {
-    "as": "user",
-    "status": 403
-   },
-   {
-    "as": "admin",
-    "status": 200,
-    "check": "object"
-   }
-  ]
- },
- {
-  "route": "POST /api/admin/settings/maintenance-mode",
-  "body": {},
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401
-   },
-   {
-    "as": "user",
-    "status": 403
-   },
-   {
-    "as": "admin",
-    "status": 200,
-    "check": "object",
-    "note": "no validation: an empty body reads as enabled=false ('Maintenance mode disabled')"
-   },
-   {
-    "as": "admin",
-    "status": 200,
-    "check": "object",
-    "body": {
-     "enabled": false,
-     "message": "",
-     "eta": ""
-    },
-    "note": "placeholder (admin.js:1950): toggles nothing; GET /settings/maintenance reads MAINTENANCE_MODE from the environment"
+    "status": 503,
+    "note": "the harness has no bot token: 'Telegram is not configured on this server'. With one, it messages the admin's own linked chat, or answers 422 when none is linked. It answered 'Test message sent successfully' and sent nothing until I12b"
    }
   ]
  },
@@ -1805,11 +1549,27 @@
    {
     "as": "admin",
     "status": 200,
-    "check": "object",
+    "check": "cacheCleared",
+    "body": {
+     "type": "conviction"
+    },
+    "note": "clears the AI verdicts held in memory (ml/conviction-engine.js); the next read takes them from conviction_daily"
+   },
+   {
+    "as": "admin",
+    "status": 400,
     "body": {
      "type": "all"
     },
-    "note": "placeholder (admin.js:1964): clears nothing"
+    "note": "the server has one cache worth clearing; 'all' was accepted and cleared nothing until I12b"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "type": "redis"
+    },
+    "note": "there is no Redis"
    }
   ]
  },
@@ -1831,8 +1591,8 @@
    {
     "as": "admin",
     "status": 200,
-    "check": "object",
-    "note": "answered by routes/admin.js: three named checks (database, memory, uptime); the event-stream check went with the SSE module in I6"
+    "check": "healthPing",
+    "note": "answered by routes/admin.js: three named checks (database, memory, uptime). The database check runs SELECT 1 (until I12b it reported \"PostgreSQL pool responding\" from a flag set when the pool was created at boot); the event-stream check went with the SSE module in I6"
    }
   ]
  }

@@ -64,6 +64,127 @@ const CHECKS = {
         expect(trades.groups[0].ids).toHaveLength(2);
         expect(trades.groups[0].ids.every(Number.isInteger)).toBe(true);
         expect(highConviction).toEqual({ count: 0, surplusRows: 0, groups: [] });
+    },
+
+    // ---- the admin portal shows only what the database holds (I12b). seed.sql has one paid subscription stored as the
+    // Stripe checkout stores it: plan_code HARNESS_PAID and no plan_id, GBP 29.97 a quarter, so 9.99 a month.
+    // GET /api/admin/audit/logs: the audit log itself (a placeholder answered [] until I12b)
+    auditLogs: r => {
+        expect(r.json && r.json.success).toBe(true);
+        expect(Array.isArray(r.json.data.logs)).toBe(true);
+    },
+    // GET /api/admin/dashboard/metrics: counted figures, MRR per currency, nothing hard-coded
+    dashboardMetrics: r => {
+        const d = r.json.data;
+        expect(d.changes).toBeUndefined();
+        expect(d.paymentsThisMonth).toBeUndefined();
+        expect(Number.isInteger(d.totalUsers) && Number.isInteger(d.totalTrades)).toBe(true);
+        expect(d.activeSubscriptions).toBeGreaterThanOrEqual(1);
+        expect(d.mrr).toEqual(expect.arrayContaining([{ currency: 'GBP', mrr: 9.99, subscriptions: 1 }]));
+    },
+    // GET /api/admin/subscription-plans: a Stripe row counts for its plan; the seeded trials count for FREE
+    stripeRowCounted: r => {
+        const plans = r.json.data.plans;
+        expect(plans.every(p => Number.isInteger(p.subscriber_count))).toBe(true);
+        expect(plans.find(p => p.plan_code === 'HARNESS_PAID')).toMatchObject({ subscriber_count: 1 });
+        expect(plans.find(p => p.plan_code === 'FREE').subscriber_count).toBeGreaterThanOrEqual(3);
+    },
+    // GET /api/admin/subscriptions: a Stripe row shows its own plan, dates and billing period
+    stripeRowListed: r => {
+        const row = r.json.data.items.find(s => s.user_email === 'harness-stripe@e2e.invalid');
+        expect(row).toMatchObject({ plan_name: 'Harness Paid', currency: 'GBP', billing: 'quarterly', status: 'active' });
+        expect(row.start_date && row.end_date).toBeTruthy();
+    },
+    // GET /api/admin/subscription-analytics and /analytics/revenue: MRR per currency, none of the made-up trends,
+    // growth figures or lifetime values
+    mrrPerCurrency: r => {
+        const d = r.json.data;
+        expect(d.mrr).toEqual(expect.arrayContaining([{ currency: 'GBP', mrr: 9.99, subscriptions: 1 }]));
+        if ('churn_rate' in d) expect(typeof d.churn_rate).toBe('number');
+        for (const key of ['mrr_change', 'arr_change', 'churn_change', 'ltv_change', 'avg_ltv', 'mrrGrowth', 'ltv', 'arpu']) {
+            expect(d[key]).toBeUndefined();
+        }
+    },
+    // GET /api/admin/payment-analytics: revenue per currency (the seeded payments are GBP), no made-up changes
+    paymentAnalytics: r => {
+        const d = r.json.data;
+        expect(d.revenue).toEqual(expect.arrayContaining([expect.objectContaining({ currency: 'GBP' })]));
+        for (const key of ['totalRevenue', 'revenueChange', 'transactionChange', 'successRateChange', 'refundRateChange']) {
+            expect(d[key]).toBeUndefined();
+        }
+    },
+    // GET /api/admin/analytics/engagement: none of the made-up figures
+    noInventedFigures: r => {
+        const d = r.json.data;
+        for (const key of ['wauGrowth', 'mauGrowth', 'featureUsage']) expect(d[key]).toBeUndefined();
+        expect(Number.isInteger(d.dau) && Number.isInteger(d.mau)).toBe(true);
+    },
+    // GET /api/admin/analytics/subscriptions: accounts, not rows; numbers, not strings; none of the made-up figures
+    subscriptionHealth: r => {
+        const d = r.json.data;
+        for (const key of ['upgrades', 'downgrades']) expect(d[key]).toBeUndefined();
+        expect(d.funnel.profileCompleted).toBeUndefined();
+        expect(Number.isInteger(d.funnel.trialStarted) && Number.isInteger(d.funnel.converted)).toBe(true);
+        expect(d.funnel.trialStarted).toBeGreaterThanOrEqual(3);
+        expect(d.funnel.converted).toBeLessThanOrEqual(d.funnel.trialStarted);
+        expect(typeof d.trialConversion).toBe('number');
+        expect(typeof d.churnRate).toBe('number');
+    },
+    // GET /api/admin/database/migrations: recorded and unrecorded files; nothing is called pending
+    migrationsHonest: r => {
+        const d = r.json.data;
+        expect(Array.isArray(d.recorded) && Array.isArray(d.unrecorded)).toBe(true);
+        expect(d.pending).toBeUndefined();
+    },
+    // POST /api/admin/database/query, read mode: the one statement's rows
+    queryRows: r => expect(r.json.data.rows).toEqual([{ one: 1 }]),
+    // POST /api/admin/database/maintenance/reindex: the tables rebuilt, and none failed on the scratch database
+    reindexReport: r => {
+        expect(r.json.data.reindexed).toBeGreaterThan(0);
+        expect(r.json.data.failed).toEqual([]);
+    },
+    // GET /api/admin/system/health: the database check asked the database, and memory is measured against a limit
+    // (heapTotal, which V8 grows on demand, made a healthy server read "fail")
+    healthPing: r => {
+        const db = r.json.data.checks.find(c => c.name === 'Database connection');
+        expect(db).toMatchObject({ status: 'pass' });
+        expect(db.message).toMatch(/answered SELECT 1 in \d+ ms/);
+        expect(r.json.data.database.connected).toBe(true);
+        const memory = r.json.data.checks.find(c => c.name === 'Memory pressure');
+        expect(memory).toMatchObject({ status: 'pass' });
+        expect(memory.message).toMatch(/holds \d+ MB of the \d+ MB (the container allows|it may grow to)/);
+    },
+    // GET /api/admin/settings/general: facts about the harness boot (AUTO_EXECUTE=false, no keys)
+    configurationFacts: r => expect(r.json.data).toEqual({
+        environment: 'development',
+        autoExecute: false,
+        integrations: { telegramBot: false, webPush: false, stripe: false, stripeWebhook: false, gemini: false }
+    }),
+    // GET /api/admin/settings/telegram: no bot in the harness, and the admin has linked no chat
+    telegramFacts: r => expect(r.json.data).toEqual({ botConfigured: false, ownChatLinked: false }),
+    // POST /api/admin/settings/clear-cache: the AI verdicts held in memory, counted
+    cacheCleared: r => {
+        expect(r.json.data.type).toBe('conviction');
+        expect(Number.isInteger(r.json.data.cleared)).toBe(true);
+    },
+    // GET /api/admin/users?search=harness-victim: the search is applied (it was ignored until I12b)
+    usersSearchVictim: r => expect(r.json.data.items.map(u => u.email)).toEqual(['harness-victim@e2e.invalid']),
+    // ... and a LIKE wildcard is searched for as itself: no email or name holds %
+    usersNone: r => expect(r.json.data.items).toEqual([]),
+    // GET /api/admin/users?filter=telegram: only accounts with a linked chat
+    usersTelegramOnly: r => expect(r.json.data.items.every(u => u.telegram_chat_id)).toBe(true),
+    // DELETE /api/admin/users/:email: the whole account, signed out everywhere
+    accountDeleted: r => {
+        expect(r.json && r.json.success).toBe(true);
+        expect(r.json.data).toMatchObject({ email: 'harness-trial@e2e.invalid', financialRecordsRetained: false });
+        expect(r.json.data.sessionsEnded).toBeGreaterThanOrEqual(1);
+    },
+    // GET /api/admin/signal-diagnostics: the seeded signal is checked against the house book (the admin's ledger, where
+    // the 1 PM executor books); against no account every signal read MARKET_NOT_FOUND
+    diagnosticsHouseBook: r => {
+        const d = r.json.diagnostics;
+        expect(Object.keys(d.capitalStatus.capital)).toEqual(expect.arrayContaining(['India', 'UK', 'US']));
+        expect(d.validationResults.find(v => v.symbol === 'HARNESSP.L')).toMatchObject({ valid: true, code: 'OK' });
     }
 };
 

@@ -423,6 +423,92 @@ const AdminComponents = {
   formatNumber(num) {
     const value = Number(num);
     return new Intl.NumberFormat().format(Number.isFinite(value) ? value : 0);
+  },
+
+  /**
+   * Text made safe to put inside HTML markup (for the older modules that still build HTML strings)
+   */
+  escapeHtml(text) {
+    return String(text).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  },
+
+  /**
+   * Amounts in several currencies, never added together: "£9.99 · $12.99", or 0 when there are none
+   * @param {Array<{amount: number, currency: string}>} entries
+   */
+  moneyText(entries) {
+    return entries.length
+      ? entries.map(entry => this.formatCurrency(entry.amount, entry.currency)).join(' · ')
+      : '0';
+  },
+
+  /**
+   * DOM builders for new code: every value is set as text and never parsed as HTML
+   */
+  metricCardEl(title, value, note) {
+    const card = document.createElement('div');
+    card.className = 'metric-card';
+    const content = document.createElement('div');
+    content.className = 'metric-content';
+    const titleEl = document.createElement('div');
+    titleEl.className = 'metric-title';
+    titleEl.textContent = title;
+    const valueEl = document.createElement('div');
+    valueEl.className = 'metric-value';
+    valueEl.textContent = value;
+    content.append(titleEl, valueEl);
+    if (note) {
+      const noteEl = document.createElement('div');
+      noteEl.className = 'metric-change metric-change-neutral';
+      noteEl.textContent = note;
+      content.appendChild(noteEl);
+    }
+    card.appendChild(content);
+    return card;
+  },
+
+  cardEl(heading, ...children) {
+    const card = document.createElement('div');
+    card.className = 'admin-card mb-2';
+    const header = document.createElement('div');
+    header.className = 'admin-card-header';
+    const title = document.createElement('h3');
+    title.textContent = heading;
+    header.appendChild(title);
+    const body = document.createElement('div');
+    body.className = 'admin-card-body';
+    body.append(...children);
+    card.append(header, body);
+    return card;
+  },
+
+  tableEl(headers, rows) {
+    const table = document.createElement('table');
+    table.className = 'table';
+    const head = table.createTHead().insertRow();
+    for (const label of headers) {
+      const th = document.createElement('th');
+      th.textContent = label;
+      head.appendChild(th);
+    }
+    const body = table.createTBody();
+    for (const cells of rows) {
+      const row = body.insertRow();
+      for (const text of cells) {
+        row.insertCell().textContent = text;
+      }
+    }
+    const wrap = document.createElement('div');
+    wrap.className = 'table-responsive';
+    wrap.appendChild(table);
+    return wrap;
+  },
+
+  noteEl(text) {
+    const p = document.createElement('p');
+    p.className = 'text-muted';
+    p.textContent = text;
+    return p;
   }
 };
 

@@ -50,6 +50,22 @@ FROM subscription_plans WHERE plan_code = 'FREE';   -- target of the admin cance
 INSERT INTO payment_transactions (user_email, transaction_id, payment_provider, amount, currency, status, payment_date)
 VALUES ('harness-user@e2e.invalid', 'harness-txn-0001', 'manual', 9.99, 'GBP', 'completed', now() - interval '3 days');
 
+-- A paid subscription as the Stripe checkout stores it (routes/stripe.js): the plan named by plan_code with no plan_id,
+-- and the row's own amount, currency and billing period (GBP 29.97 a quarter: 9.99 a month). The admin portal's plan
+-- counts and MRR must include it: they joined on plan_id alone until I12b. Nothing signs in as this account.
+INSERT INTO subscription_plans (plan_name, plan_code, region, currency, price_monthly, trial_days, is_active)
+VALUES ('Harness Paid', 'HARNESS_PAID', 'UK', 'GBP', 9.99, 0, true)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO users (email, name, first_login, last_login, created_at)
+VALUES ('harness-stripe@e2e.invalid', 'Harness Stripe', now(), now(), now())
+ON CONFLICT (email) DO NOTHING;
+
+INSERT INTO user_subscriptions (user_email, plan_name, plan_code, status, billing_period, amount_paid, currency,
+                                stripe_subscription_id, subscription_start_date, subscription_end_date, created_at, updated_at)
+VALUES ('harness-stripe@e2e.invalid', 'Harness Paid', 'HARNESS_PAID', 'active', 'quarterly', 29.97, 'GBP',
+        'pi_harness_0001', now() - interval '10 days', now() + interval '80 days', now(), now());
+
 -- The delete persona's rows that only DELETE /api/user/delete-account removes (it runs last): a paid payment tied to
 -- its trial row (archived to deleted_user_financial_records, and deleted before the subscription it references),
 -- a saved setting and a push subscription.
