@@ -25,6 +25,8 @@ const only = (process.env.HARNESS_SPECS || '').split(',').filter(Boolean);
 const files = fs.readdirSync(DIR).filter(f => f.endsWith('.json') && (!only.length || only.includes(f))).sort();
 const specs = files.flatMap(f => JSON.parse(fs.readFileSync(path.join(DIR, f), 'utf8')).map(s => ({ ...s, file: f })));
 const ordered = [...specs.filter(s => s.order !== 'last'), ...specs.filter(s => s.order === 'last')];
+// The provenance fields every trade the API returns carries (GAPS #14, #15)
+const PROVENANCE = ['strategyVersion', 'benchmarkSymbol', 'benchmarkReturnPercent'];
 
 const CHECKS = {
     json: r => expect(r.json).toBeDefined(),
@@ -57,6 +59,28 @@ const CHECKS = {
     },
     // A trade the body tried to make automatic was stored as a manual one
     autoAddedFalse: r => expect(r.json && r.json.autoAdded).toBe(false),
+    // GAPS #14/#15: every trade the API returns carries the rules' version it was booked under (null for a row from
+    // before versioning, as every seeded row is) and its benchmark (null until the nightly fill has priced its exit)
+    provenanceList: r => {
+        expect(Array.isArray(r.json) && r.json.length > 0).toBe(true);
+        for (const trade of r.json) expect(Object.keys(trade)).toEqual(expect.arrayContaining(PROVENANCE));
+    },
+    provenanceOne: r => {
+        expect(r.json && typeof r.json === 'object' && !Array.isArray(r.json)).toBe(true);
+        expect(Object.keys(r.json)).toEqual(expect.arrayContaining(PROVENANCE));
+    },
+    // POST /api/trades: a new trade carries the current version and no benchmark, whatever the body claims (the
+    // harness sets none of the switches that would add a suffix to the version)
+    provenanceStamped: r => expect(r.json).toMatchObject({
+        strategyVersion: require('../../lib/shared/strategy-version').STRATEGY_VERSION,
+        benchmarkSymbol: null,
+        benchmarkReturnPercent: null
+    }),
+    // GET /api/trades/export: the CSV ends with the three provenance columns
+    csvProvenance: r => {
+        expect(String(r.headers['content-type'] || '')).toMatch(/text\/csv/);
+        expect(r.text.split('\n')[0]).toMatch(/,Created At,Strategy Version,Benchmark,Benchmark Return %$/);
+    },
     // POST /api/ops/reconcile-capital dry run: every ledger row matches the trades table, available
     // capital included, and the nightly drift check it reports on never ran (node-cron is stubbed)
     zeroDrift: r => {

@@ -1,6 +1,8 @@
 const { Pool } = require('pg');
 // The admin's account (ADMIN_EMAIL, config/admin.js): the one-time data migrations below move rows to it
 const { adminEmail } = require('./config/admin');
+// The trading rules' version, stamped on every trade and position at insert (GAPS #14)
+const { strategyVersion } = require('./lib/shared/strategy-version');
 
 // PostgreSQL database connection
 let pool = null;
@@ -317,6 +319,23 @@ async function initializeDatabase() {
       // Columns might already exist
     }
 
+    // Trade provenance (GAPS #14, #15). strategy_version: the trading rules' version when the row was booked
+    // (lib/shared/strategy-version.js); NULL = booked before versioning, when no one version was true.
+    // benchmark_symbol and benchmark_return_percent: the market's index and its return over the same holding
+    // window, written after the exit by the nightly fill (lib/portfolio/benchmark-fill.js); a symbol with a
+    // NULL return means the index could not price that window. Nullable with no default, so adding them
+    // rewrites no row. Every INSERT into these tables names strategy_version, so without the column no trade
+    // could be booked: a failure here is logged as such.
+    for (const table of ['trades', 'high_conviction_portfolio']) {
+      try {
+        await pool.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS strategy_version VARCHAR(64)`);
+        await pool.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS benchmark_symbol VARCHAR(20)`);
+        await pool.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS benchmark_return_percent DECIMAL(12, 4)`);
+      } catch (err) {
+        console.error(`[DB] Could not add the provenance columns to ${table} (no trade can be booked there until they exist): ${err.message}`);
+      }
+    }
+
     // Add market cap columns to pending_signals table
     try {
       await pool.query(`ALTER TABLE pending_signals ADD COLUMN IF NOT EXISTS market_cap_usd DECIMAL(20, 2)`);
@@ -505,6 +524,18 @@ function checkConnection() {
   if (!dbConnected || !pool) {
     throw new Error('PostgreSQL not configured. Please set DATABASE_URL environment variable and visit /migrate-to-postgres.html for setup instructions.');
   }
+}
+
+// The provenance fields every trade read returns (GAPS #14, #15): the rules' version the row was booked under
+// (null = before versioning), and its market index and that index's return over the same holding window (null
+// until the nightly benchmark fill has priced the exit; lib/portfolio/benchmark-fill.js)
+function tradeProvenance(row) {
+  return {
+    strategyVersion: row.strategy_version || null,
+    benchmarkSymbol: row.benchmark_symbol || null,
+    benchmarkReturnPercent: row.benchmark_return_percent === null || row.benchmark_return_percent === undefined
+      ? null : parseFloat(row.benchmark_return_percent)
+  };
 }
 
 // Migration function to populate users table from existing trades
@@ -1603,6 +1634,7 @@ const TradeDB = {
       );
       return result.rows.map(row => ({
         id: row.id,
+        ...tradeProvenance(row),
         symbol: row.symbol,
         name: row.name,
         stockIndex: row.stock_index,
@@ -1668,6 +1700,7 @@ const TradeDB = {
       }
       return result.rows.map(row => ({
         id: row.id,
+        ...tradeProvenance(row),
         symbol: row.symbol,
         name: row.name,
         stockIndex: row.stock_index,
@@ -1721,6 +1754,7 @@ const TradeDB = {
       );
       return result.rows.map(row => ({
         id: row.id,
+        ...tradeProvenance(row),
         symbol: row.symbol,
         name: row.name,
         stockIndex: row.stock_index,
@@ -1784,6 +1818,7 @@ const TradeDB = {
         entryPrice: parseFloat(row.entry_price),
         shares: row.shares ? parseFloat(row.shares) : null,
         positionSize: parseFloat(row.position_size),
+        ...tradeProvenance(row),
         stopLossPrice: row.entry_price && row.stop_loss_percent ? (row.entry_price * (1 - row.stop_loss_percent / 100)) : null,
         stopLossPercent: row.stop_loss_percent ? parseFloat(row.stop_loss_percent) : null,
         targetPrice: row.target_price ? parseFloat(row.target_price) : null,
@@ -1834,8 +1869,8 @@ const TradeDB = {
           square_off_date, notes, stock_name, investment_amount, position_size,
           currency_symbol, stop_loss_percent, take_profit_percent, user_id,
           win_rate, historical_signal_count, signal_date, market, auto_added, trade_size,
-          prev_dti, entry_dti, prev_7day_dti, entry_7day_dti
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33)
+          prev_dti, entry_dti, prev_7day_dti, entry_7day_dti, strategy_version
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34)
         RETURNING *`,
         [
           trade.symbol,
@@ -1870,13 +1905,17 @@ const TradeDB = {
           trade.prevDTI || null,
           trade.entryDTI || null,
           trade.prev7DayDTI || null,
-          trade.entry7DayDTI || null
+          trade.entry7DayDTI || null,
+          // Never the caller's: POST /api/trades spreads the request body into `trade`, so a version
+          // it carried must not reach the row (lib/shared/strategy-version.js)
+          strategyVersion()
         ]
       );
       
       const row = result.rows[0];
       return {
         id: row.id,
+        ...tradeProvenance(row),
         symbol: row.symbol,
         name: row.name,
         stockIndex: row.stock_index,
@@ -1995,8 +2034,8 @@ const TradeDB = {
             symbol, name, stock_index, entry_date, entry_price,
             shares, position_size, stop_loss_percent, target_price,
             exit_date, exit_price, status, profit_loss, profit_loss_percentage,
-            notes, user_id
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+            notes, user_id, strategy_version
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
           [
             mappedTrade.symbol,
             mappedTrade.name,
@@ -2013,7 +2052,8 @@ const TradeDB = {
             mappedTrade.profitLoss,
             mappedTrade.profitLossPercentage,
             mappedTrade.notes,
-            userId
+            userId,
+            strategyVersion()
           ]
         );
         insertedCount++;
@@ -2629,8 +2669,8 @@ const TradeDB = {
           symbol, name, market, signal_date, entry_date, entry_price,
           current_price, target_price, stop_loss_price, square_off_date,
           investment_gbp, investment_inr, investment_usd, shares,
-          currency_symbol, win_rate, total_backtest_trades, entry_dti
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+          currency_symbol, win_rate, total_backtest_trades, entry_dti, strategy_version
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
         RETURNING *
       `, [
         tradeData.symbol,
@@ -2650,7 +2690,8 @@ const TradeDB = {
         tradeData.currencySymbol,
         tradeData.winRate,
         tradeData.totalBacktestTrades,
-        tradeData.entryDTI
+        tradeData.entryDTI,
+        strategyVersion()
       ]);
       return result.rows[0];
     } catch (error) {

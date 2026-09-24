@@ -879,7 +879,8 @@
    {
     "as": "user",
     "status": 200,
-    "note": "CSV with the user's 2 trades"
+    "note": "CSV with the user's 2 trades; its last three columns are the provenance (Strategy Version, Benchmark, Benchmark Return %)",
+    "check": "csvProvenance"
    },
    {
     "as": "admin",

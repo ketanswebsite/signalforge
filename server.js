@@ -533,10 +533,11 @@ app.get('/api/ops/schedule-stats', requireOpsToken({ read: true }), async (req, 
       // 7 AM scan: the signals it stored for the day, and what the executor made of them
       rows(`SELECT market, status, count(*)::int AS signals, ${clock('min(created_at)')} AS "firstStoredAt", ${clock('max(created_at)')} AS "lastStoredAt"
             FROM pending_signals WHERE signal_date = $1 GROUP BY market, status ORDER BY market, status`),
-      // 1 PM executor: automatic trades booked that day, for the house portfolio and for subscribers
+      // 1 PM executor: automatic trades booked that day, for the house portfolio and for subscribers, by the
+      // rules' version they were stamped with (GAPS #14; null = not stamped)
       rows(`SELECT market, CASE WHEN user_id IN ('default', $2) THEN 'house' ELSE 'subscribers' END AS book,
-                   count(*)::int AS trades, count(DISTINCT user_id)::int AS accounts
-            FROM trades WHERE auto_added = true AND (${london('entry_date')})::date = $1 GROUP BY 1, 2 ORDER BY 1, 2`, house),
+                   strategy_version AS "strategyVersion", count(*)::int AS trades, count(DISTINCT user_id)::int AS accounts
+            FROM trades WHERE auto_added = true AND (${london('entry_date')})::date = $1 GROUP BY 1, 2, 3 ORDER BY 1, 2, 3`, house),
       // the same symbol booked twice into one account on one day should never happen
       rows(`SELECT count(*)::int AS "duplicateBookings" FROM (
               SELECT user_id, symbol FROM trades WHERE auto_added = true AND (${london('entry_date')})::date = $1
@@ -1309,7 +1310,8 @@ app.get('/api/trades/export', ensureAuthenticatedAPI, async (req, res) => {
         symbol, name, entry_date, entry_price, exit_date, exit_price,
         shares, status, profit_loss, profit_loss_percentage,
         entry_reason, exit_reason, target_price, stop_loss_percent,
-        investment_amount, currency_symbol, created_at
+        investment_amount, currency_symbol, created_at,
+        strategy_version, benchmark_symbol, benchmark_return_percent
        FROM trades
        WHERE user_id = $1
        ORDER BY entry_date DESC`,
@@ -1318,7 +1320,7 @@ app.get('/api/trades/export', ensureAuthenticatedAPI, async (req, res) => {
 
 
     // Build CSV
-    const csvHeader = 'Symbol,Name,Entry Date,Entry Price,Exit Date,Exit Price,Shares,Status,Profit/Loss,Profit/Loss %,Entry Reason,Exit Reason,Target Price,Stop Loss %,Investment Amount,Currency,Created At\n';
+    const csvHeader = 'Symbol,Name,Entry Date,Entry Price,Exit Date,Exit Price,Shares,Status,Profit/Loss,Profit/Loss %,Entry Reason,Exit Reason,Target Price,Stop Loss %,Investment Amount,Currency,Created At,Strategy Version,Benchmark,Benchmark Return %\n';
 
     const csvRows = result.rows.map(row => {
       return [
@@ -1338,7 +1340,10 @@ app.get('/api/trades/export', ensureAuthenticatedAPI, async (req, res) => {
         row.stop_loss_percent || '',
         row.investment_amount || '',
         row.currency_symbol || '',
-        row.created_at ? new Date(row.created_at).toISOString() : ''
+        row.created_at ? new Date(row.created_at).toISOString() : '',
+        row.strategy_version || '',
+        row.benchmark_symbol || '',
+        row.benchmark_return_percent ?? ''
       ].join(',');
     }).join('\n');
 

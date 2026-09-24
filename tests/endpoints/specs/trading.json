@@ -147,7 +147,8 @@
    {
     "as": "user",
     "status": 200,
-    "check": "array"
+    "check": "provenanceList",
+    "note": "the caller's trades, each with its provenance (GAPS #14, #15): strategyVersion, benchmarkSymbol and benchmarkReturnPercent, null on the seeded rows, which predate versioning"
    },
    {
     "as": "admin",
@@ -171,7 +172,7 @@
    {
     "as": "user",
     "status": 200,
-    "check": "array"
+    "check": "provenanceList"
    },
    {
     "as": "admin",
@@ -194,7 +195,7 @@
    {
     "as": "user",
     "status": 200,
-    "check": "array"
+    "check": "provenanceList"
    },
    {
     "as": "admin",
@@ -218,13 +219,14 @@
    {
     "as": "user",
     "status": 200,
-    "check": "object"
+    "check": "provenanceOne"
    },
    {
     "as": "user",
     "path": "/api/trades/{userClosedTradeId}",
     "status": 200,
-    "check": "object"
+    "check": "provenanceOne",
+    "note": "a closed trade: its benchmark stays null until the nightly fill has priced its exit (tests/endpoints/benchmark-fill.test.js runs that fill on this database)"
    },
    {
     "as": "user",
@@ -278,8 +280,23 @@
    {
     "as": "delete",
     "status": 201,
-    "check": "object",
-    "note": "valid manual trade on the throwaway persona"
+    "check": "provenanceStamped",
+    "note": "valid manual trade on the throwaway persona. It carries the rules' version and no benchmark, whatever the body claims (GAPS #14): the version is never read from a request",
+    "body": {
+     "symbol": "HARNESS.L",
+     "name": "Harness plc",
+     "entryDate": "2026-09-21T08:00:00.000Z",
+     "entryPrice": 100,
+     "shares": 2,
+     "targetPrice": 108,
+     "stopLossPercent": 5,
+     "investmentAmount": 200,
+     "market": "UK",
+     "currencySymbol": "£",
+     "strategyVersion": "forged-by-body",
+     "benchmarkSymbol": "^FAKE",
+     "benchmarkReturnPercent": 99
+    }
    },
    {
     "as": "delete",
