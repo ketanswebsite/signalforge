@@ -486,7 +486,34 @@
     "body": {
      "telegram_enabled": "banana"
     },
-    "bug": "no type validation: a non-boolean telegram_enabled goes straight into the upsert (server.js:3255-3260, database-postgres.js:2058) and Postgres rejects it (invalid input syntax for type boolean) -> 500; nothing is written"
+    "note": "Fixed in IV: validated before it reaches Postgres."
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "body": {
+     "telegram_enabled": "true"
+    },
+    "note": "a string is not a switch value"
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "body": {
+     "email_address": {
+      "x": 1
+     }
+    },
+    "note": "an object is not text"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "market_close_alert": null
+    },
+    "note": "null leaves the column empty, as a row saved long ago may hold it"
    }
   ]
  },

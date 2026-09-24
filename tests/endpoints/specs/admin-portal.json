@@ -530,7 +530,46 @@
      "currency": "GBP",
      "price_monthly": 1
     },
-    "bug": "region/currency are never validated (routes/admin.js:310-318); the DB CHECK subscription_plans_region_check rejects 'Mars' with 23514 and adminErrorHandler maps every 23xxx other than 23505/23503 to 500 DATABASE_ERROR (middleware/admin-error-handler.js:171-176) - a client input error answered as a server error"
+    "note": "Fixed in IV: validated before it reaches Postgres."
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "plan_name": "Harness Bad Plan",
+     "plan_code": "HARNESS_BAD",
+     "region": "UK",
+     "currency": "EUR",
+     "price_monthly": 1,
+     "trial_days": 7
+    },
+    "note": "a currency the table refuses"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "plan_name": "Harness Bad Plan",
+     "plan_code": "HARNESS_BAD",
+     "region": "UK",
+     "currency": "GBP",
+     "price_monthly": "abc",
+     "trial_days": 7
+    },
+    "note": "a price that is not a number"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "plan_name": "Harness Bad Plan",
+     "plan_code": "HARNESS_BAD",
+     "region": "UK",
+     "currency": "GBP",
+     "price_monthly": 1,
+     "trial_days": -1
+    },
+    "note": "negative trial days"
    }
   ]
  },
@@ -594,6 +633,22 @@
      "is_active": true
     },
     "note": "NOT_FOUND"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "price_monthly": "abc"
+    },
+    "note": "a price that is not a number (it reached Postgres: 500)"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "is_active": "yes"
+    },
+    "note": "is_active is true or false"
    }
   ]
  },
@@ -773,7 +828,7 @@
      "expiresAt": "not-a-date",
      "reason": "harness"
     },
-    "bug": "expiresAt is checked for presence but never parsed (routes/admin.js:481-483); Postgres rejects 'not-a-date' (22007) in the UPDATE and it surfaces as 500 INTERNAL_SERVER_ERROR instead of 400 VALIDATION_ERROR"
+    "note": "Fixed in IV: validated before it reaches Postgres."
    },
    {
     "as": "admin",
@@ -795,6 +850,16 @@
     },
     "check": "object",
     "note": "victim already has a live trial, so access is unchanged; revoke-access below takes it back"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "type": "temporary",
+     "expiresAt": "2026-02-30",
+     "reason": "harness"
+    },
+    "note": "an impossible expiry date"
    }
   ]
  },

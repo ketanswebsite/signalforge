@@ -61,7 +61,8 @@ const AdminComplimentary = {
         // Prepare request body
         const body = {
             type: accessType,
-            expiryDate: accessType === 'temporary' ? expiryDate : null,
+            // The API reads expiresAt; this form sent expiryDate, so every temporary grant was refused as missing its date
+            expiresAt: accessType === 'temporary' ? expiryDate : null,
             reason: reason,
             grantedBy: 'Admin' // Will be set by backend to actual admin email
         };

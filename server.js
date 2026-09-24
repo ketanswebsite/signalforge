@@ -4,6 +4,7 @@ const axios = require('axios');
 const path = require('path');
 const session = require('express-session');
 const rateLimit = require('express-rate-limit');
+const Input = require('./lib/shared/input');
 
 // Load environment variables
 require('dotenv').config();
@@ -387,7 +388,8 @@ app.get('/api/ops/conviction-stats', async (req, res) => {
   try {
     const { getVerdictStats, getSweepStatus } = require('./ml/conviction-sweep');
     const days = Math.min(Math.max(parseInt(req.query.days, 10) || 120, 1), 730);
-    const day = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.day || '')) ? req.query.day : null;
+    // A malformed or impossible day (2026-02-30) is ignored, like no day at all
+    const day = Input.isoDate(String(req.query.day || ''));
     res.json({ success: true, sweep: getSweepStatus(), ...(await getVerdictStats(days, { day })) });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -1481,10 +1483,12 @@ app.post('/api/admin/manual-link', ensureAuthenticatedAPI, async (req, res) => {
   }
 
   try {
-    const { email, chatId } = req.body;
+    const { email } = req.body;
+    // A whole number, as Telegram issues them: anything else reached the chat_id column and failed with 500
+    const chatId = Input.chatId(req.body.chatId);
 
     if (!email || !chatId) {
-      return res.status(400).json({ error: 'Email and Chat ID are required' });
+      return res.status(400).json({ error: 'Email and a numeric Chat ID are required' });
     }
 
     const result = await TradeDB.manualLinkTelegramToUser(email, chatId);
@@ -1538,10 +1542,11 @@ app.post('/api/admin/remove-telegram-user', ensureAuthenticatedAPI, async (req, 
   }
 
   try {
-    const { chatId } = req.body;
+    // A whole number, as Telegram issues them: anything else reached the chat_id column and failed with 500
+    const chatId = Input.chatId(req.body.chatId);
 
     if (!chatId) {
-      return res.status(400).json({ error: 'Chat ID is required' });
+      return res.status(400).json({ error: 'A numeric Chat ID is required' });
     }
 
     // Remove from telegram_subscribers (this also unlinks from OAuth via database function)
@@ -2459,6 +2464,10 @@ app.post('/api/prices', ensureAuthenticatedAPI, ensureSubscriptionActive, async 
     if (!symbols || !Array.isArray(symbols) || symbols.length === 0) {
       return res.status(400).json({ error: 'Symbols array is required' });
     }
+    // A number crashed isMarketOpen() (symbol.endsWith) and the whole request answered 500
+    if (!symbols.every(s => typeof s === 'string' && s.trim() !== '')) {
+      return res.status(400).json({ error: 'Every symbol must be a non-empty string' });
+    }
 
     const priceData = {};
 
@@ -2560,6 +2569,8 @@ const ALERT_PREFERENCE_FIELDS = [
   'alert_on_buy', 'alert_on_sell', 'alert_on_target', 'alert_on_stoploss',
   'alert_on_time_exit', 'market_open_alert', 'market_close_alert'
 ];
+// The on/off columns: true, false or null (null leaves the column empty)
+const ALERT_PREFERENCE_SWITCHES = ALERT_PREFERENCE_FIELDS.filter(key => key !== 'telegram_chat_id' && key !== 'email_address');
 app.post('/api/alerts/preferences', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
     const userId = req.user ? req.user.email : 'default';
@@ -2570,6 +2581,15 @@ app.post('/api/alerts/preferences', ensureAuthenticatedAPI, ensureSubscriptionAc
     const prefs = {};
     for (const key of ALERT_PREFERENCE_FIELDS) {
       if (key in body) prefs[key] = body[key];
+    }
+    // Wrong types reached Postgres and failed with 500 ("banana" for a switch, an object for a text field)
+    const notSwitch = ALERT_PREFERENCE_SWITCHES.filter(key => key in prefs && prefs[key] !== null && typeof prefs[key] !== 'boolean');
+    const notText = ['telegram_chat_id', 'email_address'].filter(key => key in prefs && prefs[key] !== null && !['string', 'number'].includes(typeof prefs[key]));
+    if (notSwitch.length || notText.length) {
+      return res.status(400).json({ error: [
+        ...(notSwitch.length ? [`${notSwitch.join(', ')} must be true or false`] : []),
+        ...(notText.length ? [`${notText.join(', ')} must be text`] : [])
+      ].join('; ') });
     }
     const saved = await TradeDB.saveAlertPreferences({ ...prefs, user_id: userId });
     
@@ -2856,6 +2876,15 @@ app.get('/api/portfolio/trades/active', ensureAuthenticatedAPI, async (req, res)
 });
 
 // Get all high conviction trades (with date filter)
+// Date filters on the high-conviction admin API: absent, empty, or real dates written YYYY-MM-DD.
+// Anything else reached Postgres, which threw, and the route answered 500. Returns the error text or null.
+function badDateFilter(filters) {
+  for (const [name, value] of Object.entries(filters)) {
+    if (value !== undefined && value !== '' && !Input.isoDate(value)) return `${name} must be a date written YYYY-MM-DD`;
+  }
+  return null;
+}
+
 app.get('/api/portfolio/trades/all', ensureAuthenticatedAPI, async (req, res) => {
   if (req.user.email !== ADMIN_EMAIL) {
     return res.status(403).json({ error: 'Admin access required' });
@@ -2863,6 +2892,8 @@ app.get('/api/portfolio/trades/all', ensureAuthenticatedAPI, async (req, res) =>
 
   try {
     const { startDate, endDate } = req.query;
+    const badDate = badDateFilter({ startDate, endDate });
+    if (badDate) return res.status(400).json({ error: badDate });
     const trades = await TradeDB.getAllHighConvictionTrades(startDate, endDate);
     res.json({ trades });
   } catch (error) {
@@ -2878,6 +2909,8 @@ app.get('/api/portfolio/pl-summary', ensureAuthenticatedAPI, async (req, res) =>
 
   try {
     const { startDate, endDate } = req.query;
+    const badDate = badDateFilter({ startDate, endDate });
+    if (badDate) return res.status(400).json({ error: badDate });
     const summary = await TradeDB.getHighConvictionPLSummary(startDate, endDate);
     res.json(summary);
   } catch (error) {
@@ -2947,10 +2980,12 @@ app.post('/api/portfolio/close-trade/:symbol', ensureAuthenticatedAPI, async (re
 
   try {
     const { symbol } = req.params;
-    const { exitPrice, exitReason } = req.body;
+    const { exitReason } = req.body;
+    // A price above zero, as a number or a numeric string: 'not-a-price' used to reach the DECIMAL column (500)
+    const exitPrice = Input.positiveNumber(req.body.exitPrice);
 
     if (!exitPrice || !exitReason) {
-      return res.status(400).json({ error: 'exitPrice and exitReason required' });
+      return res.status(400).json({ error: 'exitPrice (a number above zero) and exitReason required' });
     }
 
     // Get the active trade

@@ -303,7 +303,7 @@
     "path": "/api/ops/conviction-stats?day=2026-02-30",
     "status": 200,
     "check": "object",
-    "bug": "an impossible date passes the YYYY-MM-DD regex (server.js:384) and reaches Postgres in getVerdictStats (ml/conviction-sweep.js:667 WHERE score_date = $1) -> 500 'date/time field value out of range'; a day that is not a date should be ignored like any other malformed day"
+    "note": "Fixed in IV: an impossible day is ignored, like a malformed one."
    }
   ]
  },
@@ -658,7 +658,18 @@
       123
      ]
     },
-    "bug": "a non-string symbol crashes the handler: isMarketOpen() calls symbol.endsWith (server.js:3087) on unvalidated input at server.js:3161 and again inside the per-symbol catch at server.js:3207, so Promise.all rejects -> 500 'symbol.endsWith is not a function'; server.js:3145 only checks Array.isArray"
+    "note": "Fixed in IV: validated before it reaches Postgres."
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "body": {
+     "symbols": [
+      "HARNESS.L",
+      ""
+     ]
+    },
+    "note": "an empty symbol"
    }
   ]
  },

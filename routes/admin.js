@@ -36,6 +36,11 @@ const sseHandler = require('../lib/admin/sse-handler');
 
 // Import database
 const TradeDB = require('../database-postgres');
+const Input = require('../lib/shared/input');
+
+// What the subscription_plans CHECK constraints allow (migrations/003_create_subscription_tables.sql)
+const PLAN_REGIONS = ['UK', 'US', 'India', 'Global'];
+const PLAN_CURRENCIES = ['GBP', 'USD', 'INR'];
 
 // Authentication endpoints
 router.post('/auth/token', generateTokenEndpoint);
@@ -308,6 +313,21 @@ router.post('/subscription-plans', asyncHandler(async (req, res) => {
   const { plan_name, plan_code, region, currency, price_monthly, trial_days } = req.body;
 
   requireFields(req.body, ['plan_name', 'plan_code', 'region', 'currency', 'price_monthly']);
+  // Values the table refuses used to fail in Postgres and come back as 500
+  if (!PLAN_REGIONS.includes(region)) {
+    throw new AdminAPIError('VALIDATION_ERROR', `region must be one of ${PLAN_REGIONS.join(', ')}`);
+  }
+  if (!PLAN_CURRENCIES.includes(currency)) {
+    throw new AdminAPIError('VALIDATION_ERROR', `currency must be one of ${PLAN_CURRENCIES.join(', ')}`);
+  }
+  const price = Input.nonNegativeNumber(price_monthly);
+  if (price === null) {
+    throw new AdminAPIError('VALIDATION_ERROR', 'price_monthly must be a number of zero or more');
+  }
+  const trialDays = trial_days === undefined || trial_days === null || trial_days === '' ? 0 : Input.nonNegativeInteger(trial_days);
+  if (trialDays === null) {
+    throw new AdminAPIError('VALIDATION_ERROR', 'trial_days must be a whole number of zero or more');
+  }
 
   const result = await TradeDB.pool.query(`
     INSERT INTO subscription_plans (
@@ -315,7 +335,7 @@ router.post('/subscription-plans', asyncHandler(async (req, res) => {
       price_monthly, trial_days, is_active, created_at
     ) VALUES ($1, $2, $3, $4, $5, $6, true, NOW())
     RETURNING *
-  `, [plan_name, plan_code, region, currency, price_monthly, trial_days || 0]);
+  `, [plan_name, plan_code, region, currency, price, trialDays]);
 
   res.json(successResponse(result.rows[0], 'Plan created successfully'));
 }));
@@ -335,11 +355,18 @@ router.put('/subscription-plans/:id', asyncHandler(async (req, res) => {
   }
 
   if (price_monthly !== undefined) {
+    const price = Input.nonNegativeNumber(price_monthly);
+    if (price === null) {
+      throw new AdminAPIError('VALIDATION_ERROR', 'price_monthly must be a number of zero or more');
+    }
     updates.push(`price_monthly = $${paramCount++}`);
-    values.push(price_monthly);
+    values.push(price);
   }
 
   if (is_active !== undefined) {
+    if (typeof is_active !== 'boolean') {
+      throw new AdminAPIError('VALIDATION_ERROR', 'is_active must be true or false');
+    }
     updates.push(`is_active = $${paramCount++}`);
     values.push(is_active);
   }
@@ -480,6 +507,10 @@ router.post('/users/:email/grant-access', asyncHandler(async (req, res) => {
 
   if (type === 'temporary' && !expiresAt) {
     throw new AdminAPIError('VALIDATION_ERROR', 'expiresAt required for temporary access');
+  }
+  // A date (YYYY-MM-DD) or an ISO date-time: anything else failed in Postgres and came back as 500
+  if (type === 'temporary' && !Input.isoTimestamp(expiresAt)) {
+    throw new AdminAPIError('VALIDATION_ERROR', 'expiresAt must be a date written YYYY-MM-DD');
   }
 
   // Check if user exists

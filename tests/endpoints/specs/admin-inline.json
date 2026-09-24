@@ -70,7 +70,7 @@
      "email": "harness-victim@e2e.invalid",
      "chatId": "not-a-chat-id"
     },
-    "bug": "chatId is never validated: telegram_subscribers.chat_id is BIGINT in the harness schema (copied from the dev DB; the boot DDL's VARCHAR(100) never applies to an existing table), so manualLinkTelegramToUser's first SELECT (database-postgres.js:2477) raises 22P02 and the catch at server.js:1598-1600 answers 500 instead of 400. Schema-dependent: on a VARCHAR chat_id this request already gets 400"
+    "note": "Fixed in IV: validated before it reaches Postgres."
    },
    {
     "as": "admin",
@@ -90,6 +90,15 @@
      "chatId": "-1000000000001"
     },
     "note": "links the victim to the seeded harness subscriber; the manual-unlink spec right after this one undoes it"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "email": "harness-victim@e2e.invalid",
+     "chatId": 1.5
+    },
+    "note": "a chat id is a whole number"
    }
   ]
  },
@@ -172,7 +181,7 @@
     "body": {
      "chatId": "not-a-chat-id"
     },
-    "bug": "chatId is never validated: telegram_subscribers.chat_id is BIGINT in the harness schema, so removeTelegramSubscriber's UPDATE ... WHERE chat_id = $1 (database-postgres.js:2327) raises 22P02 and the catch at server.js:1650-1652 answers 500 instead of 400 (on a VARCHAR chat_id it would be a 200 no-op, still not 400)"
+    "note": "Fixed in IV: validated before it reaches Postgres."
    },
    {
     "as": "admin",
@@ -182,6 +191,14 @@
      "chatId": "-1999999999999"
     },
     "note": "unknown chat id: the soft-delete (is_active=false) matches no row and the handler reports success (idempotent removal); the seeded subscriber other specs read is never deactivated"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "chatId": "12.5"
+    },
+    "note": "a chat id is a whole number"
    }
   ],
   "order": "last",
@@ -451,7 +468,13 @@
     "as": "admin",
     "status": 400,
     "path": "/api/portfolio/trades/all?startDate=not-a-date",
-    "bug": "startDate/endDate are never validated: server.js:3757-3758 passes 'not-a-date' to getAllHighConvictionTrades (database-postgres.js:2650, 'signal_date >= $1'), Postgres rejects the date (22007) and the catch at server.js:3760-3761 answers 500 instead of 400"
+    "note": "Fixed in IV: validated before it reaches Postgres."
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "path": "/api/portfolio/trades/all?startDate=2000-01-01&endDate=2026-02-30",
+    "note": "an impossible endDate"
    }
   ]
  },
@@ -485,7 +508,13 @@
     "as": "admin",
     "status": 400,
     "path": "/api/portfolio/pl-summary?startDate=not-a-date",
-    "bug": "startDate/endDate are never validated: server.js:3772-3773 passes 'not-a-date' to getHighConvictionPLSummary (database-postgres.js:2747, 'signal_date >= $1'), Postgres rejects the date (22007) and the catch at server.js:3775-3776 answers 500 instead of 400"
+    "note": "Fixed in IV: validated before it reaches Postgres."
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "path": "/api/portfolio/pl-summary?endDate=31-12-2026",
+    "note": "a date not written YYYY-MM-DD"
    }
   ]
  },
@@ -595,7 +624,7 @@
      "exitPrice": "not-a-price",
      "exitReason": "Harness manual close"
     },
-    "bug": "server.js:3844 only checks exitPrice is truthy: 'not-a-price' (and a NaN P&L) reach the DECIMAL exit_price column in closeHighConvictionTrade (database-postgres.js:2712), Postgres rejects it (22P02) and the catch at server.js:3898-3899 answers 500 instead of 400; the UPDATE fails, so the position stays open"
+    "note": "Fixed in IV: validated before it reaches Postgres."
    },
    {
     "as": "admin",
@@ -625,6 +654,24 @@
      "exitReason": "Harness manual close"
     },
     "note": "a second close finds no active position: 404, no second alert"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "exitPrice": 0,
+     "exitReason": "Harness manual close"
+    },
+    "note": "a price of zero"
+   },
+   {
+    "as": "admin",
+    "status": 400,
+    "body": {
+     "exitPrice": "-5",
+     "exitReason": "Harness manual close"
+    },
+    "note": "a negative price"
    }
   ]
  }
