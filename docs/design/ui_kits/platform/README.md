@@ -15,7 +15,7 @@ The signed-in product, rebuilt for v2. Light by default; the toggle in the app b
 A **signal** is what the scanner finds. You *take* a signal and it becomes a **position**. A sold position is a **trade**. The kit uses those three words consistently — v1 mixed them freely, which was the single biggest source of confusion.
 
 ## Files
-`index.html` (reference entry — needs the original design project to render) · `shell.spec.jsx` (app bar, bottom nav, legal note) · `chart.spec.jsx` (Chart.js wrappers that read theme tokens) · one `*-screen.spec.jsx` per screen · `data.js` (the exact data shapes each screen consumes).
+`shell.spec.jsx` (app bar, bottom nav, legal note) · `chart.spec.jsx` (Chart.js wrappers that read theme tokens) · one `*-screen.spec.jsx` per screen · `data.js` (the exact data shapes each screen consumes).
 
 ## Interactive
 Run a scan (progress → results), take a signal (bottom sheet), sell a position, switch position tabs and filters, connect Telegram, flip alert switches, change region on the pricing tab, toggle light/dark.

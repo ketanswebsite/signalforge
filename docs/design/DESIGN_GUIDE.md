@@ -25,10 +25,10 @@ Read the repo for anything this guide doesn't cover — the product's real data 
 
 | Path | What it is |
 | --- | --- |
-| `styles.css` | **Global entry point.** Import lines only — consumers link this one file. |
-| `tokens/` | `fonts, palette, themes, typography, spacing, radii, elevation, motion, layers, base` |
-| `css/components.css` | Component class rules — real `:hover`, `:focus` and media queries |
-| `assets/` | `wordmark-light.svg`, `wordmark-dark.svg`, `app-icon.png`, `app-icon-light.png`, `favicon.png` |
+| `public/css/design-system/index.css` | **Global entry point** (the hand-off's `styles.css`). Import lines only — consumers link this one file. |
+| `public/css/design-system/tokens/` | `fonts, palette, themes, typography, spacing, radii, elevation, motion, layers, base` |
+| `public/css/design-system/components.css` | Component class rules — real `:hover`, `:focus` and media queries |
+| `public/images/brand/` | `wordmark-light.svg`, `wordmark-dark.svg`, `app-icon.png`, `app-icon-light.png` |
 | `components/` | 30 React components in six groups |
 | `ui_kits/platform/` | The signed-in app — Scanner, Positions, Simulator, Alerts, Account |
 | `ui_kits/admin/` | Admin portal — eight sections |
@@ -167,7 +167,7 @@ Vocabulary in use: `radar · account_balance_wallet · science · notifications 
 
 **The logo is a wordmark. There is no symbol, emblem or mandala.** "Sutr" in Archivo 700 in `--text`, "Algo" in 500 in gold — the weight and colour shift is the whole idea. The "SA" monogram tile (Archivo Black, gold on ink, square) covers favicons, app icons and avatars.
 
-Files: `assets/wordmark-light.svg`, `assets/wordmark-dark.svg`, `assets/app-icon.png` (dark), `assets/app-icon-light.png` (gold), `assets/favicon.png`. In React, use `<Wordmark />` — never re-typeset it by hand, and never draw a mark to sit beside it.
+Files: `public/images/brand/wordmark-light.svg`, `wordmark-dark.svg`, `app-icon.png` (dark), `app-icon-light.png` (gold). In React, use `<Wordmark />` — never re-typeset it by hand, and never draw a mark to sit beside it.
 
 ---
 

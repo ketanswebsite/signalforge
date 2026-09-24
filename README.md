@@ -126,7 +126,8 @@ Update it in the same commit as the change it describes. See rule 1.
 Newest first. Each line is one commit on `main`; `git show <sha>` has the full reasoning.
 
 **2026-09-24**
-- *(this commit)* The data, checkout, checkout-success, checkout-failure, trial, terms and privacy pages carry no inline CSS (rule 21): their 102 `style` attributes became classes in `commerce.css`. Only `style` and `class` attributes changed, and every element's computed style matches the old pages in light, dark and at 375 px. No HTML page has inline CSS left
+- *(this commit)* Structure: the three root tools move to `scripts/`, with LF line endings (CRLF broke both shell scripts) and the shell scripts executable. `run-single-migration.js` needs a file name (with none it applied migration 008 to whatever `DATABASE_URL` named), and `setup-bot.sh` reads the token from the environment and never prints it. `docs/history/` (three stale 2025 audits) and the one tracked Claude skill go; the skill told sessions to offer options and wait for the owner. `design/handoff-v3/` drops 21 files (12 byte-identical copies of `public/` tokens and wordmarks, an older components export, its entry sheet and 7 demo pages that needed a bundle never in the repo), and its guides and screen specs move to `docs/design/`
+- `be4cd2c` The data, checkout, checkout-success, checkout-failure, trial, terms and privacy pages carry no inline CSS (rule 21): their 102 `style` attributes became classes in `commerce.css`. Only `style` and `class` attributes changed, and every element's computed style matches the old pages in light, dark and at 375 px. No HTML page has inline CSS left
 - `6ad7b61` Unique indexes allow one open high-conviction row per symbol and one open automatic position per account and symbol (prod read no duplicates of either on 24 September; a second manual position stays allowed). The 1 PM executor hands a capital allocation back when the trade insert after it fails, in the house pass and the subscriber pass: the allocation stayed in the ledger with no trade behind it
 - `f869afe` High-conviction and exit-check tidy. A high-conviction price refresh is keyed by the position's row, as its close already was: keyed by symbol, two open rows in one symbol both ended every pass showing the last one's P&L. `GET /api/ops/exit-checks-stats` counts duplicate open positions per portfolio (`duplicateActive`, row ids only), which must read 0 on prod before a unique index can forbid them; the harness seeds one. The retention job, the probe, the comments and the tests stop naming a high-conviction exit-check table that never existed on prod (the probe's `highConvictionExitChecks` and `hcStaleGuards` go). The exit monitor no longer logs a trade sold elsewhere as a failed close
 - `ee9d7c3` Nightly ledger drift check (GAPS #6): at 22:30 UK on weekdays `lib/portfolio/ledger-drift-check.js` runs the reconcile's own dry run and messages the owner when a paper-capital ledger is out by more than 0.01 or counts a different number of open positions; it never writes the ledger (`LEDGER_DRIFT_CHECK=false` turns it off). The reconcile's computation moves from `server.js` to `CapitalManager.reconcileReport()` so both share it; it now reports drift in available capital too, and its answer shows the check's last run as `nightlyCheck`; the harness's closing dry run also requires zero drift in available capital and an idle check. Four caller-less methods leave `capital-manager.js`, two of them ledger writes that bypassed the trades table. The prod dry run read zero drift on all 48 ledger rows, so there is nothing to apply
@@ -360,7 +361,7 @@ These rules bind every contributor and every Claude session; `CLAUDE.md` points 
       - `app.css`: index, trades, portfolio-backtest, account, telegram-subscribe (admin-v2 adds `admin.css` on top);
       - `commerce.css`: checkout, trial activation, legal and data pages;
       - `marketing.css`: landing, pricing, login;
-    - component specs and tokens are in `design/handoff-v3/README.md`;
+    - component specs are in `docs/design/README.md` and `docs/design/DESIGN_GUIDE.md`;
     - reuse tokens and classes before adding CSS, and keep only one copy of anything duplicated;
     - never recreate `main.css`;
     - no inline CSS in HTML or JS.
@@ -389,9 +390,6 @@ signalforge/
 ├── package.json              npm start = node server.js; jest scripts
 ├── render.yaml               Render web service (npm install / npm start)
 ├── jest.config.js            jest unit config (tests/endpoints has its own)
-├── run-single-migration.js   apply one migrations/*.sql file by hand (move to scripts/ queued)
-├── setup-bot.sh              the Telegram bot's command menu (move to scripts/ queued)
-├── reset-telegram-webhook.sh Telegram webhook recovery (move to scripts/ queued)
 ├── config/                   auth.js (passport, Google OAuth, sessions), stripe.js
 ├── middleware/               subscription gate, admin auth, activity log, error handler, /lib allow-list
 ├── routes/                   auth.js, admin.js (/api/admin), subscription.js, stripe.js
@@ -404,10 +402,10 @@ signalforge/
 │   └── push/                 push-service.js (web push)
 ├── ml/                       conviction-engine.js + conviction-sweep.js (the AI gate), ml-routes.js (/api/ml/conviction/*)
 ├── migrations/               NNN_*.sql, applied by hand (names are keys)
+├── scripts/                  run-single-migration.js (one migrations/ file by hand), setup-bot.sh (the bot's command menu), reset-telegram-webhook.sh (webhook recovery); tokens come from the environment
 ├── tests/
 │   ├── unit/                 jest unit suites (npm test), including the route-spec coverage test
 │   └── endpoints/            HTTP harness (npm run test:endpoints): harness/ (preload, setup, seed), specs/*.json (one per route)
 ├── public/                   16 pages (*.html), js/ (62 files), css/ (design-system + page sheets), images/brand/
-├── design/handoff-v3/        v3 "Poster" design hand-off (tidy-up queued)
-└── docs/history/             three stale 2025 audits (removal queued)
+└── docs/design/               the v3 "Poster" hand-off: README, DESIGN_GUIDE and the screen specs (ui_kits/*/*.spec.jsx)
 ```

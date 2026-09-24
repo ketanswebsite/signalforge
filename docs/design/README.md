@@ -1,5 +1,12 @@
 # Handoff: SutrAlgo v3 "Poster" redesign
 
+> **Where things live now** (the hand-off was adopted in August 2026; this folder keeps its specs). The tokens are
+> `public/css/design-system/tokens/*.css`, the component classes `public/css/design-system/components.css` and the
+> entry sheet `public/css/design-system/index.css` (the hand-off's `styles.css` and its older `css/components.css`
+> export are not kept); the wordmarks and icons are `public/images/brand/`. The `ui_kits/*/index.html` pages needed
+> a bundle that was never in this repo and are not kept either: the `*.spec.jsx` screen specs and their `data.js`
+> are. Paths below are the hand-off's own.
+
 ## Overview
 SutrAlgo (repo `ketanswebsite/signalforge`) is being rebranded and restructured to the **v3 "Poster" design system**: cream paper + near-black ink, heavy 2px frames, hard offset shadows (zero blur), Archivo Black display type, gold as a field and a highlight. The redesign also renames the product's surfaces and vocabulary. This package contains everything needed to adapt the existing codebase.
 

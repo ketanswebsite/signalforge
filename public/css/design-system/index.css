@@ -1,6 +1,6 @@
 /* SutrAlgo Design System — global entry point.
    Light-first with a dark theme. Imports only; no rules here.
-   Adopted from the v3 "Poster" handoff (design/handoff-v3). */
+   Adopted from the v3 "Poster" handoff (docs/design). */
 @import url("tokens/fonts.css");
 @import url("tokens/palette.css");
 @import url("tokens/themes.css");
