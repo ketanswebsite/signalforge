@@ -717,5 +717,381 @@
     "note": "signed in: no handler, the 404 fallback answers"
    }
   ]
+ },
+ {
+  "route": "POST /api/admin/auth/token",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I6 (\"Remove dead admin routes, JWT and SSE\"): issued an admin JWT that nothing used; the admin API is session-only. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/auth/verify",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I6 (\"Remove dead admin routes, JWT and SSE\"): checked an admin JWT that nothing used, and crashed with 500 because cookie-parser was never installed. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/events",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I6 (\"Remove dead admin routes, JWT and SSE\"): the admin SSE stream, which nothing ever published to; the dashboard no longer opens it. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/subscriptions/:id/extend",
+  "path": "/api/admin/subscriptions/{victimSubscriptionId}/extend",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I6 (\"Remove dead admin routes, JWT and SSE\"): no page called it (the Subscriptions tab only cancels). Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/audit/unified",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I6 (\"Remove dead admin routes, JWT and SSE\"): the audit log viewer; its only caller, public/js/admin-audit.js, was loaded by no page and goes too. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/audit/analytics",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I6 (\"Remove dead admin routes, JWT and SSE\"): the audit log viewer; its only caller, public/js/admin-audit.js, was loaded by no page and goes too. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/audit/export",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I6 (\"Remove dead admin routes, JWT and SSE\"): the audit log viewer; its only caller, public/js/admin-audit.js, was loaded by no page and goes too. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/audit/statistics",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I6 (\"Remove dead admin routes, JWT and SSE\"): no caller; it summarised the admin activity log, which nothing writes. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/audit/:id",
+  "path": "/api/admin/audit/1",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I6 (\"Remove dead admin routes, JWT and SSE\"): the audit log viewer; its only caller, public/js/admin-audit.js, was loaded by no page and goes too. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/audit/:id/export",
+  "path": "/api/admin/audit/1/export",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I6 (\"Remove dead admin routes, JWT and SSE\"): the audit log viewer; its only caller, public/js/admin-audit.js, was loaded by no page and goes too. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/analytics/overview",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I6 (\"Remove dead admin routes, JWT and SSE\"): a placeholder ('Analytics coming soon') that no page called. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/database/health",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I6 (\"Remove dead admin routes, JWT and SSE\"): no caller; the Database tab reads /api/admin/system/health. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/database/status",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I6 (\"Remove dead admin routes, JWT and SSE\"): a legacy duplicate that no page called and that failed with 500 on every call. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/database/maintenance/analyze-table",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I6 (\"Remove dead admin routes, JWT and SSE\"): it put tableName into the SQL unvalidated, and the page method that called it was never invoked. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/settings",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I6 (\"Remove dead admin routes, JWT and SSE\"): a legacy summary that no page called (the Settings tab reads /api/admin/settings/*). Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/admin/system/trigger-scan",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I6 (\"Remove dead admin routes, JWT and SSE\"): a stub that triggered nothing yet answered 'Stock scanner triggered'. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "GET /api/admin/sse/connections",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I6 (\"Remove dead admin routes, JWT and SSE\"): it listed connections to the removed SSE stream; no caller. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 403,
+    "note": "not an admin: 403 at the /api/admin guard"
+   },
+   {
+    "as": "admin",
+    "status": 404,
+    "note": "admin: no handler left in the admin router or server.js, the 404 fallback answers"
+   }
+  ]
+ },
+ {
+  "route": "POST /api/stripe/validate-discount",
+  "absent": true,
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "removed in I6 (\"Remove dead admin routes, JWT and SSE\"): a stub that rejected every code; its only caller, public/js/checkout.js, is loaded by no page. Anonymous: 401 at the /api sign-in gate."
+   },
+   {
+    "as": "user",
+    "status": 404,
+    "note": "signed in: no handler (the harness mounts no Stripe router either), the 404 fallback answers"
+   }
+  ]
  }
 ]

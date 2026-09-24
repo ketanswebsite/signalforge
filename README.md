@@ -39,8 +39,8 @@ Update it in the same commit as the change it describes. See rule 1.
 |---|---|---|---|
 | Sign-in & session (Google OAuth: `/login`, `/auth/google*`, `/logout`, `GET /api/user`) | 1.2 | 2026-09-24 · endpoint | ✅ Working: sessions live in Postgres (`user_sessions`), so a deploy or a restart no longer signs anyone out; the harness proves it on every run by reading a session from a second server. Fixed on 2026-09-23: `GET /api/user` reports `isAdmin`, so the Admin link shows for the admin; an OAuth error returns to the login page instead of a JSON 502; the anonymous `/auth/debug` configuration page is gone, and the callback no longer logs session ids. |
 | Free trial & subscription access (`/api/user/subscription/*`, `ensureSubscriptionActive`) | 1.1 | 2026-09-23 · endpoint | ❌ Broken: the trial page misreads its status (always day 0), and its trial route exists only with Stripe keys; cancelling ends access at once and reactivate never finds the cancelled row; re-trials are unlimited. Fixed on 2026-09-23: on a database built from the repo, the subscription check locked out every non-admin (four missing `users` columns); boot now adds them. 1 known bug pinned in the harness. |
-| Paid checkout (Stripe: `/api/stripe/*`) | 1.0 | 2026-09-23 · endpoint (unmounted) | ❌ Broken end to end: the envelope is misread, the billing period is missing, and the webhook sits behind the sign-in gate (the harness pins it: Stripe would get 401). ⏳ Owner: the advertised price (£24/$29/₹999) ≠ the billed price (£9.99/$12.99/₹799). |
-| Privacy & GDPR (data summary, download, delete account, consent) | 1.0 | 2026-09-23 · endpoint | ❌ Broken: delete-account returns 500 and deletes nothing (a CHECK violation, swallowed, aborts the transaction). The consent POST gets 404; `user_settings` is missing from the export and the delete. 1 known bug pinned in the harness. |
+| Paid checkout (Stripe: `/api/stripe/*`) | 1.1 | 2026-09-24 · endpoint (unmounted) | ❌ Broken end to end: the envelope is misread, the billing period is missing, and the webhook sits behind the sign-in gate (the harness pins it: Stripe would get 401). ⏳ Owner: the advertised price (£24/$29/₹999) ≠ the billed price (£9.99/$12.99/₹799). The discount-code stub (`POST /api/stripe/validate-discount`), which rejected every code and was called only by the unloaded `checkout.js`, is gone. |
+| Privacy & GDPR (data summary, download, delete account, consent) | 1.1 | 2026-09-24 · endpoint | ❌ Broken: delete-account returns 500 and deletes nothing (a CHECK violation, swallowed, aborts the transaction); `user_settings` is missing from the export and the delete. 1 known bug pinned in the harness. Fixed on 2026-09-24: the cookie banner no longer POSTs to a consent route that never existed (the choice stays in the browser), and the never-mounted `routes/gdpr.js` is gone. |
 
 ### Signals & trading
 
@@ -78,27 +78,25 @@ Update it in the same commit as the change it describes. See rule 1.
 
 | Feature | Version | Last tested | Status |
 |---|---|---|---|
-| Dashboard & live events | 1.0 | 2026-09-23 · endpoint | ⚠️ Faulty: the routes answer, but the audit log is always empty, the SSE stream has no producer, and payment figures are hard-coded. |
+| Dashboard | 1.1 | 2026-09-24 · endpoint | ⚠️ Faulty: the routes answer, but the audit log is always empty and payment figures are hard-coded. The live-events stream (SSE), which nothing ever published to, is gone with its two routes and the dashboard's EventSource; the metrics load each time the tab opens. |
 | Users & complimentary access | 1.1 | 2026-09-24 · endpoint | ⚠️ Faulty: a deleted user is re-created by their next request. Fixed on 2026-09-24: the Users tab sent a temporary grant's expiry under a name the API never read, so every temporary grant was refused; a malformed expiry answers 400 instead of 500. |
-| Plans & subscriptions | 1.1 | 2026-09-24 · endpoint | ⚠️ Faulty: deleting a plan still in use reports a misleading 400; counts and MRR miss Stripe rows; the trends are hard-coded. 1 known bug pinned in the harness. An unknown region or currency, a non-numeric price or negative trial days answer 400 (they crashed with 500 until 2026-09-24). |
+| Plans & subscriptions | 1.2 | 2026-09-24 · endpoint | ⚠️ Faulty: deleting a plan still in use reports a misleading 400; counts and MRR miss Stripe rows; the trends are hard-coded. 1 known bug pinned in the harness. An unknown region or currency, a non-numeric price or negative trial days answer 400 (they crashed with 500 until 2026-09-24). The caller-less extend route is gone. |
 | Payments | 1.0 | 2026-09-23 · endpoint | ❌ Broken: refunds always return 500 (wrong table); "verify" never activates the subscription and accepts missing or already-completed transactions. 4 known bugs pinned in the harness. |
-| Analytics | 1.0 | 2026-09-23 · endpoint | ⚠️ Faulty: the routes answer, but invented numbers are shown as data. |
-| Database tools & system health | 1.1 | 2026-09-24 · endpoint | ⚠️ Faulty: `/database/status` always returns 500; stubs report success for things they never do; `analyze-table` is unvalidated; the SQL console's read-only mode is bypassable. 5 known bugs pinned in the harness. The Run-tests button is gone: it ran test scripts against the live database. |
-| Settings | 1.0 | 2026-09-23 · endpoint | ⚠️ Faulty: 8 buttons report success without doing anything; an unknown email template returns 200. 1 known bug pinned in the harness. |
+| Analytics | 1.1 | 2026-09-24 · endpoint | ⚠️ Faulty: the routes answer, but invented numbers are shown as data. The caller-less `/analytics/overview` placeholder is gone. |
+| Database tools & system health | 1.2 | 2026-09-24 · endpoint | ⚠️ Faulty: stubs report success for things they never do; the SQL console's read-only mode is bypassable. 3 known bugs pinned in the harness. Removed on 2026-09-24, none of them called by any page: the Run-tests button (it ran test scripts against the live database), `/database/status` (500 on every call), `/database/health`, the injectable `analyze-table` and the trigger-scan stub; the health check no longer lists the dead event stream. |
+| Settings | 1.1 | 2026-09-24 · endpoint | ⚠️ Faulty: 8 buttons report success without doing anything; an unknown email template returns 200. 1 known bug pinned in the harness. The caller-less legacy `GET /api/admin/settings` is gone. |
 | Signal testing & diagnostics | 1.1 | 2026-09-23 · endpoint | ⚠️ Faulty: diagnostics show every signal as `MARKET_NOT_FOUND`; test-scan reports success on errors. The caller-less dismiss-old-signals route is gone. |
 | Telegram subscribers | 1.1 | 2026-09-24 · endpoint | ✅ Working: link, unlink and remove answer 400 for a chat id that is not a whole number (they crashed with 500 until 2026-09-24). |
-| Audit log viewer, JWT token auth | 1.0 | 2026-09-23 · endpoint | 🗑️ Dead: no page loads them, and malformed input crashes them. 7 known bugs pinned in the harness. Removal queued. |
 
 ### Platform
 
 | Feature | Version | Last tested | Status |
 |---|---|---|---|
 | Ops probes & health (`/api/ops/*`, `/health`) | 1.3 | 2026-09-24 · unit + endpoint | ✅ Working: `/health` shows the right UK time and next scan all year (unit-tested on both sides of the clock change) and names the real session store. The subscription schema probe is admin-only. |
-| Access control: sign-in gate, subscription gate, one admin guard for all of `/api/admin` | 1.0 | 2026-09-23 · unit + endpoint | ✅ Working: the access matrix of every route (anonymous 401, non-subscriber 403, non-admin 403, token-only ops) passes in the harness; the admin guard is unit-tested. |
+| Access control: sign-in gate, subscription gate, one admin guard for all of `/api/admin` | 1.1 | 2026-09-24 · unit + endpoint | ✅ Working: the access matrix of every route (anonymous 401, non-subscriber 403, non-admin 403, token-only ops) passes in the harness; the admin guard is unit-tested. Since 2026-09-24 the guard is session-only: the admin JWT path (a Bearer header or cookie that nothing issued or sent) and its 2 routes are gone. |
 | Pages, static files & `/lib` allow-list (16 pages) | 1.0 | 2026-09-23 · unit + endpoint | ✅ Working |
-| Process reliability (crash handlers, shutdown, sessions, DB pools) | 1.4 | 2026-09-24 · unit + endpoint | ⚠️ Faulty: six places still open private database pools: the three GDPR routes, the subscription middleware and routes, and the Stripe routes (they move with the GDPR and trial fixes). Fixed on 2026-09-24: sessions live in Postgres (`/api/ops/sessions-stats` counts them); trade export, the boot user recovery and the subscription-setup probe use the app's one pool instead of opening a new one per call, so a deploy no longer signs everyone out; an unhandled rejection is reported to the owner instead of crashing the server, a crash reports before it exits, and a deploy's SIGTERM closes the server and exits within 20 s (`lib/shared/process-guards.js`). geoip-lite (146 MiB of memory at boot) is gone. |
-| `routes/gdpr.js` (never mounted) | 1.0 | — | 🗑️ Dead |
-| Endpoint test harness (every route, every page contract) | 1.0 | 2026-09-24 · endpoint | ✅ Working: 205 specs (160 live routes, 5 unmounted Stripe routes, 40 removed routes), 866 cases; 842 pass and 24 known bugs fail as expected. Fresh scratch database and server per run, cron stubbed, no network. |
+| Process reliability (crash handlers, shutdown, sessions, DB pools) | 1.5 | 2026-09-24 · unit + endpoint | ⚠️ Faulty: six places still open private database pools: the three GDPR routes, the subscription middleware and routes, and the Stripe routes (they move with the GDPR and trial fixes). Fixed on 2026-09-24: sessions live in Postgres, so a deploy no longer signs everyone out (`/api/ops/sessions-stats` counts them); trade export, the boot user recovery and the subscription-setup probe use the app's one pool instead of opening a new one per call; an unhandled rejection is reported to the owner instead of crashing the server; a crash reports before it exits; a deploy's SIGTERM closes the server and exits within 20 s (`lib/shared/process-guards.js`), and the dead SSE module, whose listeners kept the process alive, is gone. geoip-lite (146 MiB of memory at boot) is gone. |
+| Endpoint test harness (every route, every page contract) | 1.0 | 2026-09-24 · endpoint | ✅ Working: 205 specs (143 live routes, 4 unmounted Stripe routes, 58 removed routes), 836 cases; 821 pass and 15 known bugs fail as expected. Fresh scratch database and server per run, cron stubbed, no network. |
 
 ### Strategy & data quality: the GAPS register (from the 2026-08-07 audit; full evidence in `git show e2774d5:docs/GAPS.md`)
 
@@ -128,7 +126,8 @@ Update it in the same commit as the change it describes. See rule 1.
 Newest first. Each line is one commit on `main`; `git show <sha>` has the full reasoning.
 
 **2026-09-24**
-- *(this commit)* Trade export, the boot user recovery and the subscription-setup probe use the app's one database pool: each opened a pool of its own per call (a fresh TLS connection every time) and closed it only on success. `GET /api/ops/sessions-stats` (read-only, header token) counts the stored sessions
+- *(this commit)* Remove dead admin code: the audit log viewer (6 routes and `admin-audit.js`, which no page loaded), the admin JWT path (2 routes, the Bearer and cookie branches of the admin guard, and `jsonwebtoken`), the SSE stream that nothing published to (2 routes, `lib/admin/sse-handler.js` and the dashboard's EventSource), 6 caller-less stubs and legacy routes (analytics overview, database health and status, `analyze-table`, legacy settings, trigger-scan) and the extend route. Also gone: the Stripe discount-code stub, the cookie banner's POST to a route that never existed, and three files nothing loads (`routes/gdpr.js`, `config/security.js`, `middleware/validation.js`). The SSE module's SIGTERM and SIGINT listeners go with it, so the process guards alone handle a shutdown. The harness keeps all 58 removed routes gone
+- `050210e` Trade export, the boot user recovery and the subscription-setup probe use the app's one database pool: each opened a pool of its own per call (a fresh TLS connection every time) and closed it only on success. `GET /api/ops/sessions-stats` (read-only, header token) counts the stored sessions
 - `217e08a` Sessions live in Postgres (`user_sessions`, `lib/shared/pg-session-store.js`) instead of the server's memory, so a deploy or a restart no longer signs every user out; expired rows are pruned every 15 minutes. A harness self-check starts a second server on the same database and reads the session there
 - `27a12c6` Sweep schedule for the 2026-10-03 run: the Saturday 08:00 market-cap refresh stands aside on sweep day (it walked the same Yahoo chart endpoint as the sweep, for 40–55 minutes); a sweep-day watchdog picks up a run that ended short in a live process, every 30 minutes from 09:00 to 20:00 UK (at most 3 runs a day; `CONVICTION_SWEEP_WATCHDOG=false` turns it off); a pick-up, after a restart or by the watchdog, needs at least max(50, 1%) of the universe left. The three policies left for the owner (`shouldResumeSweep`, `shouldNotifyOwner`, `chooseRetentionDays`) are settled and written down in §4.7
 - `f697eb5` Malformed input answers 400 instead of reaching Postgres and failing with 500, on nine routes: the high-conviction admin API's dates and exit price, the sweep stats probe's day, `/api/prices` symbols, the Alerts switches, Telegram chat ids, a complimentary grant's expiry, and a plan's region, currency, price and trial days (`lib/shared/input.js`). The Users tab could never grant temporary access: it sent the expiry under a name the API did not read. The harness flipped all 10 pinned cases; 24 remain
@@ -376,24 +375,23 @@ signalforge/
 ├── run-single-migration.js   apply one migrations/*.sql file by hand (move to scripts/ queued)
 ├── setup-bot.sh              the Telegram bot's command menu (move to scripts/ queued)
 ├── reset-telegram-webhook.sh Telegram webhook recovery (move to scripts/ queued)
-├── config/                   auth.js (passport, Google OAuth, sessions), stripe.js, security.js (unused)
+├── config/                   auth.js (passport, Google OAuth, sessions), stripe.js
 ├── middleware/               subscription gate, admin auth, activity log, error handler, /lib allow-list
-├── routes/                   auth.js, admin.js (/api/admin), subscription.js, stripe.js, gdpr.js (never mounted)
+├── routes/                   auth.js, admin.js (/api/admin), subscription.js, stripe.js
 ├── lib/
 │   ├── scanner/              scanner.js: the 7 AM scan and most cron jobs; signal-store.js: stores its signals
 │   ├── scheduler/            trade-executor.js (1 PM runs), market-cap-updater.js
 │   ├── portfolio/            exit-monitor, capital-manager, high-conviction-manager, eod-summary, exit-check-retention, close-failure-alerts
 │   ├── shared/               backtest engines, DTI calculator, price-unit and stale-fill repairs, stock universe (stock-data.js), date formats, process guards, input checks, the Postgres session store
 │   ├── telegram/             telegram-bot.js
-│   ├── push/                 push-service.js (web push)
-│   └── admin/                sse-handler.js (no producer, removal queued)
+│   └── push/                 push-service.js (web push)
 ├── ml/                       conviction-engine.js + conviction-sweep.js (the AI gate), ml-routes.js (/api/ml/conviction/*)
 ├── migrations/               NNN_*.sql, applied by hand (names are keys)
 ├── tests/
 │   ├── unit/                 jest unit suites (npm test), including the route-spec coverage test
 │   ├── endpoints/            HTTP harness (npm run test:endpoints): harness/ (preload, setup, seed), specs/*.json (one per route)
 │   └── setup.js, __mocks__/  jest set-up for the unit suites (browser globals, style and image stubs)
-├── public/                   16 pages (*.html), js/ (91 files), css/ (design-system + page sheets), images/brand/
+├── public/                   16 pages (*.html), js/ (90 files), css/ (design-system + page sheets), images/brand/
 ├── design/handoff-v3/        v3 "Poster" design hand-off (tidy-up queued)
 └── docs/history/             three stale 2025 audits (removal queued)
 ```

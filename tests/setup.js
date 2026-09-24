@@ -87,13 +87,6 @@ global.ResizeObserver = jest.fn().mockImplementation(() => ({
     disconnect: jest.fn()
 }));
 
-// Mock EventSource (Server-Sent Events)
-global.EventSource = jest.fn().mockImplementation(() => ({
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    close: jest.fn()
-}));
-
 // Helper to create DOM elements
 global.createMockElement = (tag, attributes = {}) => {
     const element = document.createElement(tag);

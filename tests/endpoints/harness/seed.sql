@@ -45,7 +45,7 @@ INSERT INTO user_subscriptions (user_email, plan_id, plan_name, plan_code, statu
                                 trial_start_date, trial_end_date, start_date, amount_paid, currency, created_at, updated_at)
 SELECT 'harness-victim@e2e.invalid', id, plan_name, plan_code, 'trial', 'trial',
        now(), now() + interval '60 days', now(), 0, currency, now(), now()
-FROM subscription_plans WHERE plan_code = 'FREE';   -- target of the admin cancel/extend routes
+FROM subscription_plans WHERE plan_code = 'FREE';   -- target of the admin cancel route
 
 INSERT INTO payment_transactions (user_email, transaction_id, payment_provider, amount, currency, status, payment_date)
 VALUES ('harness-user@e2e.invalid', 'harness-txn-0001', 'manual', 9.99, 'GBP', 'completed', now() - interval '3 days');

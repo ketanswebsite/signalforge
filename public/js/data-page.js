@@ -1,6 +1,6 @@
 /* Your data page (v3.1) — summary counts, exports, typed-DELETE account removal.
    Endpoints: /api/user/data-summary, /api/user/download-data, /api/trades/export,
-   DELETE /api/user/delete-account (routes/gdpr.js). */
+   DELETE /api/user/delete-account (all four in server.js). */
 (function () {
   'use strict';
   function $(id) { return document.getElementById(id); }

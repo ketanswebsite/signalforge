@@ -1201,32 +1201,6 @@ LIMIT 10;`
         }
     },
 
-    async analyzeTable(tableName) {
-        try {
-            const response = await fetch('/api/admin/database/maintenance/analyze-table', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tableName })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                AdminComponents.alert({
-                    type: 'success',
-                    message: `Table ${tableName} analyzed successfully`,
-                    autoDismiss: 2000
-                });
-            }
-        } catch (error) {
-            AdminComponents.alert({
-                type: 'error',
-                message: `Analysis failed: ${error.message}`,
-                autoDismiss: 3000
-            });
-        }
-    },
-
     /**
      * Refresh health check
      */

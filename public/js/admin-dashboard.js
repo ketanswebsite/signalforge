@@ -1,14 +1,13 @@
 /**
  * Admin Dashboard Module
- * Handles dashboard metrics, charts, and real-time updates
+ * Handles dashboard metrics, the revenue chart and recent activity
  */
 
 const AdminDashboard = {
-  // Store SSE connection
-  eventSource: null,
-
   // Store chart instance
   revenueChart: null,
+  // The 60-second metrics refresh (startMetricsRefresh)
+  metricsTimer: null,
 
   /**
    * Initialize dashboard
@@ -18,7 +17,6 @@ const AdminDashboard = {
       await this.loadMetrics();
       await this.loadRecentActivity();
       this.initRevenueChart();
-      this.setupSSE();
       this.startMetricsRefresh();
     } catch (error) {
       AdminComponents.alert({
@@ -110,77 +108,6 @@ const AdminDashboard = {
       document.getElementById('recent-activity').innerHTML =
         '<p class="text-muted text-center">Failed to load activity</p>';
     }
-  },
-
-  /**
-   * Setup Server-Sent Events for real-time updates
-   */
-  setupSSE() {
-    if (this.eventSource) {
-      this.eventSource.close();
-    }
-
-    try {
-      this.eventSource = new EventSource('/api/admin/events');
-
-      this.eventSource.addEventListener('connected', (event) => {
-      });
-
-      this.eventSource.addEventListener('activity', (event) => {
-        const data = JSON.parse(event.data);
-        // Reload recent activity
-        this.loadRecentActivity();
-      });
-
-      this.eventSource.addEventListener('metrics', (event) => {
-        const data = JSON.parse(event.data);
-        // Update metrics without full reload
-        this.updateMetricsDisplay(data);
-      });
-
-      this.eventSource.addEventListener('heartbeat', () => {
-        // Just to keep connection alive
-      });
-
-      this.eventSource.onerror = (error) => {
-        this.eventSource.close();
-
-        // Retry connection after 30 seconds
-        setTimeout(() => this.setupSSE(), 30000);
-      };
-
-    } catch (error) {
-    }
-  },
-
-  /**
-   * Update metrics display from SSE data
-   */
-  updateMetricsDisplay(metrics) {
-    if (metrics.mrr !== undefined) {
-      document.getElementById('metric-mrr').textContent = AdminComponents.formatCurrency(metrics.mrr, 'GBP');
-    }
-    if (metrics.totalUsers !== undefined) {
-      document.getElementById('metric-users').textContent = AdminComponents.formatNumber(metrics.totalUsers);
-    }
-    if (metrics.activeSubscriptions !== undefined) {
-      document.getElementById('metric-subs').textContent = AdminComponents.formatNumber(metrics.activeSubscriptions);
-    }
-    if (metrics.totalTrades !== undefined) {
-      document.getElementById('metric-trades').textContent = AdminComponents.formatNumber(metrics.totalTrades);
-    }
-  },
-
-  /**
-   * Start periodic metrics refresh (fallback if SSE fails)
-   */
-  startMetricsRefresh() {
-    // Refresh metrics every 60 seconds as fallback
-    setInterval(() => {
-      if (!this.eventSource || this.eventSource.readyState !== EventSource.OPEN) {
-        this.loadMetrics();
-      }
-    }, 60000);
   },
 
   /**
@@ -282,12 +209,23 @@ const AdminDashboard = {
   },
 
   /**
+   * Refresh the metrics every 60 seconds while the page is visible. The dashboard has no live feed:
+   * the old event stream never carried a metric, and this refresh ran only while it was closed.
+   */
+  startMetricsRefresh() {
+    if (this.metricsTimer) return;
+    this.metricsTimer = setInterval(() => {
+      if (document.visibilityState === "visible") this.loadMetrics();
+    }, 60000);
+  },
+
+  /**
    * Cleanup on page unload
    */
   cleanup() {
-    if (this.eventSource) {
-      this.eventSource.close();
-      this.eventSource = null;
+    if (this.metricsTimer) {
+      clearInterval(this.metricsTimer);
+      this.metricsTimer = null;
     }
     if (this.revenueChart) {
       this.revenueChart.destroy();

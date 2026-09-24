@@ -7,14 +7,7 @@ const express = require('express');
 const router = express.Router();
 
 // Import middleware
-const {
-  ensureAdmin,
-  ensureAdminAPI,
-  ensureAdminRole,
-  generateTokenEndpoint,
-  verifyTokenEndpoint,
-  ADMIN_ROLES
-} = require('../middleware/admin-auth');
+const { ensureAdminAPI } = require('../middleware/admin-auth');
 
 const {
   adminErrorHandler,
@@ -28,11 +21,8 @@ const {
 
 const {
   logAdminAPIRequest,
-  getRecentActivityLogs,
-  getActivityStatistics
+  getRecentActivityLogs
 } = require('../middleware/admin-activity-log');
-
-const sseHandler = require('../lib/admin/sse-handler');
 
 // Import database
 const TradeDB = require('../database-postgres');
@@ -42,11 +32,9 @@ const Input = require('../lib/shared/input');
 const PLAN_REGIONS = ['UK', 'US', 'India', 'Global'];
 const PLAN_CURRENCIES = ['GBP', 'USD', 'INR'];
 
-// Authentication endpoints
-router.post('/auth/token', generateTokenEndpoint);
-router.post('/auth/verify', verifyTokenEndpoint);
-
-// Temporary: Audit logs endpoint WITHOUT authentication (until we fix the auth issues)
+// Dashboard "Recent activity" feed: a placeholder that always answers an empty
+// list. It sits above router.use(ensureAdminAPI), but server.js puts the admin
+// guard in front of this whole router, so it is admin-only like the rest.
 router.get('/audit/logs', (req, res) => {
   res.json({
     success: true,
@@ -59,11 +47,6 @@ router.get('/audit/logs', (req, res) => {
 router.use(ensureAdminAPI);
 // Temporarily disable activity logging to debug 500 errors
 // router.use(logAdminAPIRequest());
-
-// ========== SSE Endpoint ==========
-router.get('/events', (req, res) => {
-  sseHandler.initializeSSE(req, res);
-});
 
 // ========== Dashboard Metrics ==========
 router.get('/dashboard/metrics', asyncHandler(async (req, res) => {
@@ -576,38 +559,6 @@ router.post('/users/:email/revoke-access', asyncHandler(async (req, res) => {
   res.json(successResponse(userUpdate.rows[0], 'Complimentary access revoked successfully'));
 }));
 
-// Extend subscription
-router.post('/subscriptions/:id/extend', asyncHandler(async (req, res) => {
-  const subscriptionId = req.params.id;
-  const { days, reason } = req.body;
-
-  requireFields(req.body, ['days', 'reason']);
-
-  const daysInt = parseInt(days);
-  if (isNaN(daysInt) || daysInt <= 0) {
-    throw new AdminAPIError('VALIDATION_ERROR', 'Days must be a positive number');
-  }
-
-  const result = await TradeDB.pool.query(`
-    UPDATE user_subscriptions
-    SET
-      end_date = COALESCE(end_date, NOW()) + INTERVAL '${daysInt} days',
-      trial_end_date = CASE
-        WHEN status = 'trial' THEN COALESCE(trial_end_date, NOW()) + INTERVAL '${daysInt} days'
-        ELSE trial_end_date
-      END,
-      notes = COALESCE(notes, '') || E'\n' || NOW() || ': Extended by ${daysInt} days - ' || $1
-    WHERE id = $2
-    RETURNING *
-  `, [reason, subscriptionId]);
-
-  if (result.rows.length === 0) {
-    throw new AdminAPIError('NOT_FOUND', 'Subscription not found');
-  }
-
-  res.json(successResponse(result.rows[0], `Subscription extended by ${daysInt} days`));
-}));
-
 // Get subscription analytics
 router.get('/subscription-analytics', asyncHandler(async (req, res) => {
   // Calculate MRR
@@ -902,278 +853,6 @@ router.get('/payment-analytics', asyncHandler(async (req, res) => {
     successRateDaily: successRateResult.rows
   }));
 }));
-
-// ========== Audit Log ==========
-
-// Get unified audit log with filtering
-router.get('/audit/unified', asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 50;
-  const offset = (page - 1) * limit;
-  const entity = req.query.entity;
-  const action = req.query.action;
-  const user = req.query.user;
-  const dateFrom = req.query.dateFrom;
-  const dateTo = req.query.dateTo;
-  const search = req.query.search;
-
-  let query = `
-    SELECT
-      id, entity_type, entity_id, action, user_email,
-      ip_address, user_agent, created_at,
-      changes, old_data, new_data
-    FROM trade_audit_log
-    WHERE 1=1
-  `;
-
-  const params = [];
-  let paramCount = 1;
-
-  if (entity && entity !== 'all') {
-    query += ` AND entity_type = $${paramCount++}`;
-    params.push(entity);
-  }
-
-  if (action && action !== 'all') {
-    query += ` AND action = $${paramCount++}`;
-    params.push(action);
-  }
-
-  if (user) {
-    query += ` AND user_email ILIKE $${paramCount++}`;
-    params.push(`%${user}%`);
-  }
-
-  if (dateFrom) {
-    query += ` AND created_at >= $${paramCount++}`;
-    params.push(dateFrom);
-  }
-
-  if (dateTo) {
-    query += ` AND created_at <= $${paramCount++}`;
-    params.push(dateTo);
-  }
-
-  if (search) {
-    query += ` AND (
-      user_email ILIKE $${paramCount} OR
-      entity_type ILIKE $${paramCount} OR
-      action ILIKE $${paramCount}
-    )`;
-    params.push(`%${search}%`);
-    paramCount++;
-  }
-
-  query += ` ORDER BY created_at DESC LIMIT $${paramCount++} OFFSET $${paramCount++}`;
-  params.push(limit, offset);
-
-  // Get total count
-  let countQuery = 'SELECT COUNT(*) FROM trade_audit_log WHERE 1=1';
-  const countParams = [];
-  let countParamIdx = 1;
-
-  if (entity && entity !== 'all') {
-    countQuery += ` AND entity_type = $${countParamIdx++}`;
-    countParams.push(entity);
-  }
-
-  if (action && action !== 'all') {
-    countQuery += ` AND action = $${countParamIdx++}`;
-    countParams.push(action);
-  }
-
-  if (user) {
-    countQuery += ` AND user_email ILIKE $${countParamIdx++}`;
-    countParams.push(`%${user}%`);
-  }
-
-  if (dateFrom) {
-    countQuery += ` AND created_at >= $${countParamIdx++}`;
-    countParams.push(dateFrom);
-  }
-
-  if (dateTo) {
-    countQuery += ` AND created_at <= $${countParamIdx++}`;
-    countParams.push(dateTo);
-  }
-
-  if (search) {
-    countQuery += ` AND (
-      user_email ILIKE $${countParamIdx} OR
-      entity_type ILIKE $${countParamIdx} OR
-      action ILIKE $${countParamIdx}
-    )`;
-    countParams.push(`%${search}%`);
-  }
-
-  const countResult = await TradeDB.pool.query(countQuery, countParams);
-  const total = parseInt(countResult.rows[0].count);
-
-  const logs = await TradeDB.pool.query(query, params);
-
-  res.json(paginationResponse(logs.rows, page, limit, total));
-}));
-
-// Get audit analytics (must come BEFORE /audit/:id to avoid route conflict)
-router.get('/audit/analytics', asyncHandler(async (req, res) => {
-  // Most active users
-  const activeUsersResult = await TradeDB.pool.query(`
-    SELECT
-      user_email,
-      COUNT(*) as action_count
-    FROM trade_audit_log
-    WHERE created_at >= NOW() - INTERVAL '30 days'
-    GROUP BY user_email
-    ORDER BY action_count DESC
-    LIMIT 10
-  `);
-
-  // Action distribution
-  const actionDistResult = await TradeDB.pool.query(`
-    SELECT
-      action,
-      COUNT(*) as count
-    FROM trade_audit_log
-    WHERE created_at >= NOW() - INTERVAL '30 days'
-    GROUP BY action
-    ORDER BY count DESC
-  `);
-
-  // Total actions
-  const totalResult = await TradeDB.pool.query(`
-    SELECT COUNT(*) as total FROM trade_audit_log
-    WHERE created_at >= NOW() - INTERVAL '30 days'
-  `);
-
-  // Last 24 hours
-  const last24Result = await TradeDB.pool.query(`
-    SELECT COUNT(*) as count FROM trade_audit_log
-    WHERE created_at >= NOW() - INTERVAL '24 hours'
-  `);
-
-  const actionDistribution = {};
-  actionDistResult.rows.forEach(row => {
-    actionDistribution[row.action] = parseInt(row.count);
-  });
-
-  res.json(successResponse({
-    mostActiveUsers: activeUsersResult.rows,
-    actionDistribution,
-    totalActions: parseInt(totalResult.rows[0].total),
-    last24Hours: parseInt(last24Result.rows[0].count)
-  }));
-}));
-
-// Export audit logs (must come BEFORE /audit/:id to avoid route conflict)
-router.get('/audit/export', asyncHandler(async (req, res) => {
-  const format = req.query.format || 'csv';
-  const entity = req.query.entity;
-  const action = req.query.action;
-  const user = req.query.user;
-  const dateFrom = req.query.dateFrom;
-  const dateTo = req.query.dateTo;
-
-  let query = 'SELECT * FROM trade_audit_log WHERE 1=1';
-  const params = [];
-  let paramCount = 1;
-
-  if (entity && entity !== 'all') {
-    query += ` AND entity_type = $${paramCount++}`;
-    params.push(entity);
-  }
-
-  if (action && action !== 'all') {
-    query += ` AND action = $${paramCount++}`;
-    params.push(action);
-  }
-
-  if (user) {
-    query += ` AND user_email ILIKE $${paramCount++}`;
-    params.push(`%${user}%`);
-  }
-
-  if (dateFrom) {
-    query += ` AND created_at >= $${paramCount++}`;
-    params.push(dateFrom);
-  }
-
-  if (dateTo) {
-    query += ` AND created_at <= $${paramCount++}`;
-    params.push(dateTo);
-  }
-
-  query += ' ORDER BY created_at DESC LIMIT 10000';
-
-  const result = await TradeDB.pool.query(query, params);
-
-  if (format === 'csv') {
-    const headers = ['ID', 'Timestamp', 'Entity Type', 'Entity ID', 'Action', 'User Email', 'IP Address'];
-    const rows = result.rows.map(row => [
-      row.id,
-      row.created_at,
-      row.entity_type,
-      row.entity_id || '',
-      row.action,
-      row.user_email || '',
-      row.ip_address || ''
-    ]);
-
-    let csv = headers.join(',') + '\n';
-    rows.forEach(row => {
-      csv += row.map(cell => `"${cell}"`).join(',') + '\n';
-    });
-
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename=audit-logs.csv');
-    res.send(csv);
-  } else {
-    res.json(result.rows);
-  }
-}));
-
-// Get audit statistics (must come BEFORE /audit/:id to avoid route conflict)
-router.get('/audit/statistics', asyncHandler(async (req, res) => {
-  const startDate = req.query.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-  const endDate = req.query.endDate || new Date().toISOString();
-
-  const statistics = await getActivityStatistics({ startDate, endDate });
-
-  res.json(successResponse({ statistics }));
-}));
-
-// Get specific audit log entry (must come AFTER specific routes)
-router.get('/audit/:id', asyncHandler(async (req, res) => {
-  const logId = req.params.id;
-
-  const result = await TradeDB.pool.query(
-    'SELECT * FROM trade_audit_log WHERE id = $1',
-    [logId]
-  );
-
-  if (result.rows.length === 0) {
-    throw new AdminAPIError('NOT_FOUND', 'Audit log entry not found');
-  }
-
-  res.json(successResponse(result.rows[0]));
-}));
-
-// Export single log entry
-router.get('/audit/:id/export', asyncHandler(async (req, res) => {
-  const logId = req.params.id;
-
-  const result = await TradeDB.pool.query(
-    'SELECT * FROM trade_audit_log WHERE id = $1',
-    [logId]
-  );
-
-  if (result.rows.length === 0) {
-    throw new AdminAPIError('NOT_FOUND', 'Audit log entry not found');
-  }
-
-  res.json(successResponse(result.rows[0]));
-}));
-
-// Note: /audit/logs route is defined earlier before auth middleware
 
 // ========== Analytics ==========
 
@@ -1485,77 +1164,7 @@ router.post('/analytics/reports', asyncHandler(async (req, res) => {
   }));
 }));
 
-// Legacy analytics endpoint
-router.get('/analytics/overview', asyncHandler(async (req, res) => {
-  // Placeholder - implement detailed analytics
-  res.json(successResponse({
-    message: 'Analytics coming soon'
-  }));
-}));
-
 // ========== Database Tools ==========
-
-// Database Health Monitor
-router.get('/database/health', asyncHandler(async (req, res) => {
-  const startTime = Date.now();
-
-  const result = await TradeDB.pool.query(`
-    SELECT
-      pg_database_size(current_database()) as database_size,
-      (SELECT count(*) FROM pg_stat_activity WHERE datname = current_database()) as active_connections,
-      (SELECT setting::int FROM pg_settings WHERE name = 'max_connections') as max_connections
-  `);
-
-  const tables = await TradeDB.pool.query(`
-    SELECT
-      t.schemaname,
-      t.relname as tablename,
-      pg_size_pretty(pg_total_relation_size(t.schemaname||'.'||t.relname)) AS size,
-      t.n_live_tup as row_count,
-      (SELECT count(*) FROM pg_indexes i WHERE i.tablename = t.relname AND i.schemaname = t.schemaname) as indexes
-    FROM pg_stat_user_tables t
-    ORDER BY pg_total_relation_size(t.schemaname||'.'||t.relname) DESC
-  `);
-
-  const latency = Date.now() - startTime;
-
-  res.json(successResponse({
-    connected: TradeDB.isConnected(),
-    latency,
-    databaseSize: result.rows[0].database_size,
-    activeConnections: parseInt(result.rows[0].active_connections),
-    maxConnections: parseInt(result.rows[0].max_connections),
-    uptime: process.uptime(),
-    tables: tables.rows
-  }));
-}));
-
-// Legacy endpoint
-router.get('/database/status', asyncHandler(async (req, res) => {
-  const result = await TradeDB.pool.query(`
-    SELECT
-      pg_database_size(current_database()) as database_size,
-      (SELECT count(*) FROM pg_stat_activity WHERE datname = current_database()) as active_connections
-  `);
-
-  const tables = await TradeDB.pool.query(`
-    SELECT
-      schemaname,
-      tablename,
-      pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size,
-      n_live_tup as row_count
-    FROM pg_stat_user_tables
-    ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC
-  `);
-
-  res.json(successResponse({
-    database: {
-      size: result.rows[0].database_size,
-      activeConnections: parseInt(result.rows[0].active_connections)
-    },
-    tables: tables.rows
-  }));
-}));
 
 // Get migrations
 router.get('/database/migrations', asyncHandler(async (req, res) => {
@@ -1777,18 +1386,6 @@ router.post('/database/maintenance/reindex', asyncHandler(async (req, res) => {
   }));
 }));
 
-// Analyze specific table
-router.post('/database/maintenance/analyze-table', asyncHandler(async (req, res) => {
-  const { tableName } = req.body;
-  requireField(req.body, 'tableName');
-
-  await TradeDB.pool.query(`ANALYZE ${tableName}`);
-
-  res.json(successResponse({
-    message: `Table ${tableName} analyzed successfully`
-  }));
-}));
-
 // ========== System Settings ==========
 
 // Get general settings
@@ -1999,31 +1596,7 @@ router.post('/settings/clear-cache', asyncHandler(async (req, res) => {
   }, `${type} cache cleared successfully`));
 }));
 
-// Legacy settings endpoint
-router.get('/settings', asyncHandler(async (req, res) => {
-  // Return system settings (read-only for now)
-  res.json(successResponse({
-    environment: process.env.NODE_ENV || 'development',
-    telegram: {
-      enabled: !!process.env.TELEGRAM_BOT_TOKEN,
-      chatId: process.env.TELEGRAM_CHAT_ID || null
-    },
-    database: {
-      connected: TradeDB.isConnected()
-    }
-  }));
-}));
-
-// ========== System Actions ==========
-router.post('/system/trigger-scan', asyncHandler(async (req, res) => {
-  // Trigger stock scanner manually
-  // This will need to be implemented based on your scanner architecture
-  res.json(successResponse({
-    message: 'Stock scanner triggered',
-    scheduled: true
-  }));
-}));
-
+// ========== System Health ==========
 router.get('/system/health', asyncHandler(async (req, res) => {
   const mem = process.memoryUsage();
   const dbConnected = TradeDB.isConnected();
@@ -2047,11 +1620,6 @@ router.get('/system/health', asyncHandler(async (req, res) => {
       name: 'Server uptime',
       status: 'pass',
       message: `Up ${fmtUptime}`
-    },
-    {
-      name: 'Admin event stream',
-      status: 'pass',
-      message: `${sseHandler.getConnectionCount()} live connection(s)`
     }
   ];
 
@@ -2069,23 +1637,10 @@ router.get('/system/health', asyncHandler(async (req, res) => {
     memory: mem,
     database: {
       connected: dbConnected
-    },
-    sse: {
-      activeConnections: sseHandler.getConnectionCount()
     }
   };
 
   res.json(successResponse(health));
-}));
-
-// ========== SSE Connection Info ==========
-router.get('/sse/connections', asyncHandler(async (req, res) => {
-  const connections = sseHandler.getActiveConnections();
-
-  res.json(successResponse({
-    count: connections.length,
-    connections
-  }));
 }));
 
 // Error handler (must be last)

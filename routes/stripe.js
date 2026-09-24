@@ -305,30 +305,6 @@ router.post('/start-free-trial', ensureAuthenticated, async (req, res) => {
 });
 
 /**
- * POST /api/stripe/validate-discount
- * Validate a discount code
- * Requires authentication
- */
-router.post('/validate-discount', ensureAuthenticated, async (req, res) => {
-    try {
-        const { code, planCode } = req.body;
-        const db = getPool();
-
-        if (!db) {
-            return res.status(500).json(errorResponse('Database not available'));
-        }
-
-        // TODO: Implement discount code validation logic
-        // For now, return invalid
-        res.json(errorResponse('Invalid discount code', 'INVALID_CODE'));
-
-    } catch (error) {
-        console.error('Error validating discount:', error);
-        res.status(500).json(errorResponse('Failed to validate discount code'));
-    }
-});
-
-/**
  * POST /api/stripe/webhook
  * Handle Stripe webhook events
  * No authentication required (validated by Stripe signature)

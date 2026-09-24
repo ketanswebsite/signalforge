@@ -37,22 +37,7 @@ class CookieConsent {
         localStorage.setItem(this.consentKey, JSON.stringify(consentData));
         this.consentStatus = consentData;
         this.applyConsentChoices();
-        
-        // Send consent to server for GDPR records
-        this.recordConsentServer(consentData);
-    }
-
-    async recordConsentServer(consentData) {
-        try {
-            await fetch('/api/privacy/consent', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(consentData)
-            });
-        } catch (error) {
-        }
+        // The choice stays in this browser: there is no server-side consent record
     }
 
     showConsentBanner() {

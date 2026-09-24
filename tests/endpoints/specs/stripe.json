@@ -21,13 +21,6 @@
     ]
   },
   {
-    "route": "POST /api/stripe/validate-discount",
-    "cases": [
-      { "as": "anon", "status": 401 },
-      { "as": "user", "status": 404, "note": "not mounted in the harness" }
-    ]
-  },
-  {
     "route": "POST /api/stripe/webhook",
     "cases": [
       { "as": "anon", "status": 401, "note": "mounted after the /api sign-in gate, so Stripe itself would get 401 here too - the paid-checkout bug (owner decision E6)" }
