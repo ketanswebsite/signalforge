@@ -99,7 +99,6 @@ window.TradeUIModules.dialogs = (function() {
     function setupEditTradeDialog() {
         const dialog = document.getElementById('edit-trade-dialog');
         if (!dialog) {
-            createEditTradeDialog();
             return;
         }
         
@@ -127,6 +126,17 @@ window.TradeUIModules.dialogs = (function() {
             });
         }
         
+        // The read-only exit-rule rows follow the price being typed
+        const entryPriceInput = document.getElementById('edit-entry-price-input');
+        if (entryPriceInput) {
+            entryPriceInput.addEventListener('input', function() {
+                const trade = TradeCore.getTradeById(TradeCore.getSelectedTradeId());
+                if (trade) {
+                    renderEditExitRule(trade, parseFloat(entryPriceInput.value));
+                }
+            });
+        }
+        
         // Close on background click
         dialog.addEventListener('click', function(e) {
             if (e.target === dialog) {
@@ -137,91 +147,6 @@ window.TradeUIModules.dialogs = (function() {
         // Note: Escape key handler is now global - see setupGlobalEscapeHandler()
     }
 
-    /**
-     * Create edit trade dialog dynamically if it doesn't exist in the HTML
-     */
-    function createEditTradeDialog() {
-        const dialogOverlay = document.createElement('div');
-        dialogOverlay.id = 'edit-trade-dialog';
-        dialogOverlay.className = 'dialog-overlay';
-        
-        dialogOverlay.innerHTML = `
-            <div class="dialog-content">
-                <div class="dialog-header">
-                    <h3 class="dialog-title">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                        </svg>
-                        Edit Trade
-                    </h3>
-                    <button class="dialog-close" id="edit-dialog-x" aria-label="Close dialog">&times;</button>
-                </div>
-                <div class="dialog-body">
-                    <div class="trade-info">
-                        <h4 id="edit-stock-name">Stock Name</h4>
-                        <div class="trade-details">
-                            <div class="detail-row">
-                                <span class="detail-label">Entry Date:</span>
-                                <span id="edit-entry-date" class="detail-value">-</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Current P/L:</span>
-                                <span id="edit-current-pl" class="detail-value">-</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="parameter-group">
-                        <label for="edit-entry-price-input">Entry Price</label>
-                        <input type="number" id="edit-entry-price-input" step="0.01" min="0">
-                        <span class="form-hint" id="edit-entry-price-hint">Current: -</span>
-                    </div>
-                    
-                    <div class="parameter-group">
-                        <label for="edit-stop-loss">Stop Loss Price</label>
-                        <input type="number" id="edit-stop-loss" step="0.01" min="0">
-                        <span class="form-hint" id="edit-stop-loss-hint">Current: -</span>
-                    </div>
-                    
-                    <div class="parameter-group">
-                        <label for="edit-target">Target Price</label>
-                        <input type="number" id="edit-target" step="0.01" min="0">
-                        <span class="form-hint" id="edit-target-hint">Current: -</span>
-                    </div>
-                    
-                    <div class="parameter-group">
-                        <label for="edit-square-off-date">Square Off Date</label>
-                        <input type="date" id="edit-square-off-date">
-                        <span class="form-hint" id="edit-square-off-hint">Current: -</span>
-                    </div>
-                    
-                    <div class="parameter-group">
-                        <label for="edit-notes">Notes (Optional)</label>
-                        <textarea id="edit-notes" rows="3" placeholder="Add any notes or observations about this trade"></textarea>
-                    </div>
-                </div>
-                <div class="dialog-actions">
-                    <button id="edit-dialog-cancel" class="btn-secondary">Cancel</button>
-                    <button id="edit-dialog-confirm" class="btn-primary">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                            <polyline points="7 3 7 8 15 8"></polyline>
-                        </svg>
-                        Save Changes
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        // Append to the body
-        document.body.appendChild(dialogOverlay);
-        
-        // Set up event listeners
-        setupEditTradeDialog();
-    }
-    
     /**
      * Setup delete trade dialog
      */
@@ -750,6 +675,19 @@ window.TradeUIModules.dialogs = (function() {
                     if (closeTradeDialog) {
                         closeTradeDialog.classList.remove('active');
                     }
+                } else {
+                    // Refused, and TradeCore.closeTrade has said why: most likely the exit
+                    // monitor sold the position first (409). Free the button and reload.
+                    if (confirmButton) {
+                        confirmButton.disabled = false;
+                        confirmButton.textContent = 'Sell now';
+                    }
+                    if (TradeCore.refreshData) {
+                        await TradeCore.refreshData();
+                        if (TradeCore.refreshUI) {
+                            TradeCore.refreshUI();
+                        }
+                    }
                 }
             } catch (error) {
                 TradeCore.showNotification('Error closing trade: ' + error.message, 'error');
@@ -764,79 +702,53 @@ window.TradeUIModules.dialogs = (function() {
     }
     
     /**
-     * Handle trade edit action
+     * Handle trade edit action. Sends only what the dialog can change: the price
+     * paid (when it was changed) and the notes. The exit rule is shown read-only,
+     * and the server writes nothing else, so a save can never reopen a trade that
+     * closed while the dialog was open: it answers 409 and nothing is written.
      */
     function handleTradeEdit() {
         const tradeId = TradeCore.getSelectedTradeId();
-        if (!tradeId) {
+        const trade = tradeId ? TradeCore.getTradeById(tradeId) : null;
+        if (!trade) {
             return;
         }
-        
+
         const entryPriceInput = document.getElementById('edit-entry-price-input');
-        const stopLossInput = document.getElementById('edit-stop-loss');
-        const targetInput = document.getElementById('edit-target');
-        const squareOffDateInput = document.getElementById('edit-square-off-date');
+        const entryPriceHint = document.getElementById('edit-entry-price-hint');
         const notesInput = document.getElementById('edit-notes');
         const confirmButton = document.getElementById('edit-dialog-confirm');
-        
-        if (!entryPriceInput || !stopLossInput || !targetInput || !squareOffDateInput) {
+
+        if (!entryPriceInput) {
             TradeCore.showNotification('Error: Could not find form elements', 'error');
             return;
         }
-        
+
         const entryPrice = parseFloat(entryPriceInput.value);
-        const stopLossPrice = parseFloat(stopLossInput.value);
-        const targetPrice = parseFloat(targetInput.value);
-        const squareOffDate = squareOffDateInput.value ? new Date(squareOffDateInput.value) : null;
-        const notes = notesInput ? notesInput.value : '';
-        
-        // Validate inputs
-        let isValid = true;
-        
         if (isNaN(entryPrice) || entryPrice <= 0) {
             entryPriceInput.classList.add('error');
-            document.getElementById('edit-entry-price-hint').classList.add('error-hint');
-            document.getElementById('edit-entry-price-hint').textContent = 'Please enter a valid entry price';
-            isValid = false;
-        } else {
-            entryPriceInput.classList.remove('error');
-            document.getElementById('edit-entry-price-hint').classList.remove('error-hint');
-        }
-        
-        if (isNaN(stopLossPrice) || stopLossPrice <= 0) {
-            stopLossInput.classList.add('error');
-            document.getElementById('edit-stop-loss-hint').classList.add('error-hint');
-            document.getElementById('edit-stop-loss-hint').textContent = 'Please enter a valid stop loss price';
-            isValid = false;
-        } else {
-            stopLossInput.classList.remove('error');
-            document.getElementById('edit-stop-loss-hint').classList.remove('error-hint');
-        }
-        
-        if (isNaN(targetPrice) || targetPrice <= 0) {
-            targetInput.classList.add('error');
-            document.getElementById('edit-target-hint').classList.add('error-hint');
-            document.getElementById('edit-target-hint').textContent = 'Please enter a valid target price';
-            isValid = false;
-        } else {
-            targetInput.classList.remove('error');
-            document.getElementById('edit-target-hint').classList.remove('error-hint');
-        }
-        
-        if (!squareOffDate || isNaN(squareOffDate.getTime())) {
-            squareOffDateInput.classList.add('error');
-            document.getElementById('edit-square-off-hint').classList.add('error-hint');
-            document.getElementById('edit-square-off-hint').textContent = 'Please enter a valid date';
-            isValid = false;
-        } else {
-            squareOffDateInput.classList.remove('error');
-            document.getElementById('edit-square-off-hint').classList.remove('error-hint');
-        }
-        
-        if (!isValid) {
+            if (entryPriceHint) {
+                entryPriceHint.classList.add('error-hint');
+                entryPriceHint.textContent = 'Please enter a valid entry price';
+            }
             return;
         }
-        
+        entryPriceInput.classList.remove('error');
+        if (entryPriceHint) {
+            entryPriceHint.classList.remove('error-hint');
+        }
+
+        // The input shows the price to 2 decimals: send it only when it was changed,
+        // so saving a note never rounds the stored price
+        const priceChanged = entryPriceInput.value.trim() !== trade.entryPrice.toFixed(2);
+        const updatedData = {};
+        if (priceChanged) {
+            updatedData.entryPrice = entryPrice;
+        }
+        if (notesInput) {
+            updatedData.notes = notesInput.value;
+        }
+
         // Set loading state
         if (confirmButton) {
             confirmButton.disabled = true;
@@ -846,54 +758,37 @@ window.TradeUIModules.dialogs = (function() {
                 spin.className = 'sa-btn__spin';
                 spin.setAttribute('aria-hidden', 'true');
                 confirmButton.appendChild(spin);
-                confirmButton.appendChild(document.createTextNode(' Saving\u2026'));
+                confirmButton.appendChild(document.createTextNode(' Saving…'));
             })();
         }
-        
-        // Get the current trade to preserve all fields
-        const currentTrade = TradeCore.getTradeById(tradeId);
-        if (!currentTrade) {
-            TradeCore.showNotification('Error: Trade not found', 'error');
-            return;
-        }
-        
-        // Prepare updated data - include all fields to avoid API errors
-        const updatedData = {
-            ...currentTrade,  // Include all existing fields
-            entryPrice: entryPrice,
-            stopLossPrice: stopLossPrice,
-            targetPrice: targetPrice,
-            squareOffDate: squareOffDate,
-            notes: notes,
-            exitDate: currentTrade.exitDate || null,  // Ensure exitDate is included
-            exitPrice: currentTrade.exitPrice || null  // Ensure exitPrice is included
-        };
-        
+
         // Add a small delay for better UX
         setTimeout(async () => {
-            try {
-                // Edit the trade
-                const success = await TradeCore.updateTrade(tradeId, updatedData);
-                
-                if (success) {
-                    // Close dialog
-                    const editTradeDialog = document.getElementById('edit-trade-dialog');
-                    if (editTradeDialog) {
-                        editTradeDialog.classList.remove('active');
-                    }
+            // TradeCore.updateTrade shows the server's reason itself when it fails
+            const success = await TradeCore.updateTrade(tradeId, updatedData);
+
+            if (success) {
+                const editTradeDialog = document.getElementById('edit-trade-dialog');
+                if (editTradeDialog) {
+                    editTradeDialog.classList.remove('active');
                 }
-            } catch (error) {
-                TradeCore.showNotification('Error editing trade: ' + error.message, 'error');
-                
-                // Reset button state
-                if (confirmButton) {
-                    confirmButton.disabled = false;
-                    confirmButton.textContent = 'Save changes';
+            } else if (confirmButton) {
+                confirmButton.disabled = false;
+                confirmButton.textContent = 'Save changes';
+            }
+
+            // Reload from the server when the page's copy is now out of date: a new
+            // price paid moves the stored target with it, and a refused save most
+            // likely means the position has just been closed
+            if ((!success || priceChanged) && TradeCore.refreshData) {
+                await TradeCore.refreshData();
+                if (TradeCore.refreshUI) {
+                    TradeCore.refreshUI();
                 }
             }
         }, 500);
     }
-    
+
     /**
      * Handle trade delete action
      */
@@ -1193,8 +1088,48 @@ window.TradeUIModules.dialogs = (function() {
         }, 300);
     }
     
+    // The exit rule the exit monitor applies to every open position
+    // (lib/portfolio/exit-monitor.js CONFIG). The edit dialog shows it read-only.
+    const EXIT_RULE = { targetPercent: 8, stopPercent: 5, maxHoldingDays: 30 };
+
+    // A price the way the position card shows it: London prices are in pence
+    function formatEditPrice(trade, price) {
+        if (trade.symbol && trade.symbol.endsWith('.L')) {
+            return `${price.toFixed(2)}p`;
+        }
+        return `${trade.currencySymbol || TradeCore.CURRENCY_SYMBOL}${price.toFixed(2)}`;
+    }
+
     /**
-     * Open the edit trade dialog for a specific trade
+     * Fill the edit dialog's read-only exit-rule rows: where the rule stops and
+     * sells this position, counted from the price paid (the one being typed, so
+     * the rows follow an edit), and the last day it can be held.
+     */
+    function renderEditExitRule(trade, entryPrice) {
+        const priced = Number.isFinite(entryPrice) && entryPrice > 0;
+        const stopElement = document.getElementById('edit-rule-stop');
+        const targetElement = document.getElementById('edit-rule-target');
+        const dateElement = document.getElementById('edit-rule-date');
+
+        if (stopElement) {
+            stopElement.textContent = priced ? formatEditPrice(trade, entryPrice * (1 - EXIT_RULE.stopPercent / 100)) : '-';
+        }
+        if (targetElement) {
+            targetElement.textContent = priced ? formatEditPrice(trade, entryPrice * (1 + EXIT_RULE.targetPercent / 100)) : '-';
+        }
+        if (dateElement) {
+            // The holding limit, or the trade's own square-off date when that is sooner
+            const lastDay = new Date(trade.entryDate);
+            lastDay.setDate(lastDay.getDate() + EXIT_RULE.maxHoldingDays);
+            const squareOff = trade.squareOffDate ? new Date(trade.squareOffDate) : null;
+            const sellBy = squareOff && !isNaN(squareOff.getTime()) && squareOff < lastDay ? squareOff : lastDay;
+            dateElement.textContent = isNaN(sellBy.getTime()) ? '-' : TradeCore.formatDate(sellBy);
+        }
+    }
+
+    /**
+     * Open the edit trade dialog for a specific trade: the price paid and the
+     * notes can be changed; the exit rule is shown, read-only.
      * @param {string} tradeId - ID of the trade to edit
      */
     function openEditTradeDialog(tradeId) {
@@ -1202,107 +1137,63 @@ window.TradeUIModules.dialogs = (function() {
         if (!trade) {
             return;
         }
-        
+
+        const dialog = document.getElementById('edit-trade-dialog');
+        const entryPriceInput = document.getElementById('edit-entry-price-input');
+        const notesInput = document.getElementById('edit-notes');
+        if (!dialog || !entryPriceInput) {
+            return;
+        }
+
         // Set the selected trade ID
         TradeCore.setSelectedTradeId(tradeId);
-        
-        // Make sure dialog exists
-        let dialog = document.getElementById('edit-trade-dialog');
-        if (!dialog) {
-            createEditTradeDialog();
-            dialog = document.getElementById('edit-trade-dialog');
-        }
-        
-        if (!dialog) {
-            return;
-        }
-        
-        // Get form elements
-        const entryPriceInput = document.getElementById('edit-entry-price-input');
-        const stopLossInput = document.getElementById('edit-stop-loss');
-        const targetInput = document.getElementById('edit-target');
-        const squareOffDateInput = document.getElementById('edit-square-off-date');
-        const notesInput = document.getElementById('edit-notes');
-        
-        if (!entryPriceInput || !stopLossInput || !targetInput || !squareOffDateInput) {
-            return;
-        }
-        
+
         // Clear any error styling
         entryPriceInput.classList.remove('error');
-        stopLossInput.classList.remove('error');
-        targetInput.classList.remove('error');
-        squareOffDateInput.classList.remove('error');
-        
         const entryPriceHint = document.getElementById('edit-entry-price-hint');
-        const stopLossHint = document.getElementById('edit-stop-loss-hint');
-        const targetHint = document.getElementById('edit-target-hint');
-        const squareOffHint = document.getElementById('edit-square-off-hint');
-        
         if (entryPriceHint) {
             entryPriceHint.classList.remove('error-hint');
-            entryPriceHint.textContent = `Current: ${trade.currencySymbol || TradeCore.CURRENCY_SYMBOL}${trade.entryPrice.toFixed(2)}`;
+            entryPriceHint.textContent = `Current: ${formatEditPrice(trade, trade.entryPrice)}`;
         }
-        
-        if (stopLossHint) {
-            stopLossHint.classList.remove('error-hint');
-            stopLossHint.textContent = `Current: ${trade.currencySymbol || TradeCore.CURRENCY_SYMBOL}${trade.stopLossPrice.toFixed(2)}`;
-        }
-        
-        if (targetHint) {
-            targetHint.classList.remove('error-hint');
-            targetHint.textContent = `Current: ${trade.currencySymbol || TradeCore.CURRENCY_SYMBOL}${trade.targetPrice.toFixed(2)}`;
-        }
-        
-        if (squareOffHint) {
-            squareOffHint.classList.remove('error-hint');
-            squareOffHint.textContent = `Current: ${TradeCore.formatDate(trade.squareOffDate)}`;
-        }
-        
+
         // Reset confirm button
         const confirmButton = document.getElementById('edit-dialog-confirm');
         if (confirmButton) {
             confirmButton.disabled = false;
             confirmButton.textContent = 'Save changes';
         }
-        
+
         // Update stock info
         const stockNameElement = document.getElementById('edit-stock-name');
         const entryDateElement = document.getElementById('edit-entry-date');
         const currentPLElement = document.getElementById('edit-current-pl');
-        
+
         if (stockNameElement) stockNameElement.textContent = trade.stockName;
         if (entryDateElement) entryDateElement.textContent = TradeCore.formatDate(trade.entryDate);
-        
+
         if (currentPLElement) {
             currentPLElement.textContent = `${trade.currentPLPercent.toFixed(2)}%`;
             currentPLElement.className = `detail-value ${trade.currentPLPercent >= 0 ? 'positive' : 'negative'}`;
         }
-        
-        // Pre-fill form with current values
+
+        // Pre-fill what can be changed
         entryPriceInput.value = trade.entryPrice.toFixed(2);
-        stopLossInput.value = trade.stopLossPrice.toFixed(2);
-        targetInput.value = trade.targetPrice.toFixed(2);
-        
-        // Format date for the date input (YYYY-MM-DD)
-        const squareOffDate = new Date(trade.squareOffDate);
-        const formattedDate = squareOffDate.toISOString().split('T')[0];
-        squareOffDateInput.value = formattedDate;
-        
-        // Pre-fill notes if they exist
         if (notesInput) {
             notesInput.value = trade.notes || '';
         }
-        
+
+        // The exit rule, read-only
+        renderEditExitRule(trade, trade.entryPrice);
+
         // Update dialog title with stock name
         const dialogTitle = dialog.querySelector('.dialog-title');
         if (dialogTitle) {
             dialogTitle.textContent = 'Change ' + trade.stockName;
         }
-        
+
         // Show dialog with animation
         dialog.classList.add('active');
-        
+
         // Focus on entry price input
         setTimeout(() => {
             entryPriceInput.focus();

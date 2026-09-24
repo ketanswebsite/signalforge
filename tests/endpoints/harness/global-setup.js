@@ -154,6 +154,8 @@ async function setup(ctx) {
     userActiveTradeId: q("SELECT id FROM trades WHERE user_id = 'harness-user@e2e.invalid' AND status = 'active' ORDER BY id LIMIT 1"),
     userClosedTradeId: q("SELECT id FROM trades WHERE user_id = 'harness-user@e2e.invalid' AND status = 'closed' ORDER BY id LIMIT 1"),
     deleteTradeId: q("SELECT id FROM trades WHERE user_id = 'harness-delete@e2e.invalid' ORDER BY id LIMIT 1"),
+    deleteAutoTradeId: q("SELECT id FROM trades WHERE user_id = 'harness-delete@e2e.invalid' AND symbol = 'HARNESSA.L' ORDER BY id LIMIT 1"),
+    closeAutoTradeId: q("SELECT id FROM trades WHERE user_id = 'harness-delete@e2e.invalid' AND symbol = 'HARNESSE.L' ORDER BY id LIMIT 1"),
     pendingSignalId: q("SELECT id FROM pending_signals WHERE symbol = 'HARNESSP.L' ORDER BY id LIMIT 1"),
     hcTradeId: q("SELECT id FROM high_conviction_portfolio WHERE symbol = 'HARNESSH.L' ORDER BY id LIMIT 1"),
     victimSubscriptionId: q("SELECT id FROM user_subscriptions WHERE user_email = 'harness-victim@e2e.invalid' ORDER BY id LIMIT 1"),

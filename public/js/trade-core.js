@@ -602,6 +602,10 @@ const TradeCore = (function() {
                 profitLossPercentage: profitLossPercentage,
                 exitReason: closeData.exitReason || 'Manual Exit'
             };
+            // The sell dialog's notes are saved with the close (they used to be dropped)
+            if (typeof closeData.notes === 'string') {
+                updates.notes = closeData.notes;
+            }
 
             // Update in database
             const success = await updateTrade(tradeId, updates);

@@ -1839,104 +1839,223 @@ app.get('/api/trades/:id', ensureAuthenticatedAPI, ensureSubscriptionActive, asy
   }
 });
 
-// Create trade
+// ===== POSITIONS: the trade journal =====
+// A trade is its owner's row, but an automatic trade (auto_added) also holds
+// capital in portfolio_capital, so every write below keeps the two in step:
+// - create and bulk import only ever make manual trades, which never touch the
+//   ledger, so no request can mint a position whose close or delete would
+//   release capital it never allocated;
+// - a close goes through closeTradeAndRelease (one transaction, only while active);
+// - an edit writes only the price paid and the notes, and only while active;
+// - a delete takes the trade out of the ledger in the same statement.
+const TRADE_MARKETS = ['India', 'UK', 'US'];
+const MAX_TRADE_AMOUNT = 99999999; // the price and size columns are DECIMAL(12, 4)
+
+// A number above zero (a number, or numeric text) that fits those columns, else null
+function tradeAmount(value) {
+  const n = typeof value === 'number' ? value
+    : (typeof value === 'string' && value.trim() !== '' ? Number(value) : NaN);
+  return Number.isFinite(n) && n > 0 && n <= MAX_TRADE_AMOUNT ? n : null;
+}
+
+// A point in time written as text (ISO, or a plain YYYY-MM-DD), else null
+function tradeDate(value) {
+  if (typeof value !== 'string' || value.trim() === '') return null;
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+// Why a new manual trade cannot be stored, or null. It checks what the trades
+// table would otherwise refuse with a 500: the NOT NULL symbol, the status and
+// market CHECKs, and a closed trade's exit price and date (not before the entry).
+function tradeInputError(t) {
+  if (!t || typeof t !== 'object' || Array.isArray(t)) return 'a trade must be a JSON object';
+  if (typeof t.symbol !== 'string' || !t.symbol.trim() || t.symbol.trim().length > 50) {
+    return 'symbol is required (at most 50 characters)';
+  }
+  if (tradeAmount(t.entryPrice) === null) return 'entryPrice must be a positive number';
+  const entryDate = tradeDate(t.entryDate);
+  if (!entryDate) return 'entryDate must be a date';
+  if (t.shares && tradeAmount(t.shares) === null) return 'shares must be a positive number';
+  if (t.market && !TRADE_MARKETS.includes(t.market)) return 'market must be India, UK or US';
+  const status = t.status === undefined || t.status === null ? 'active' : t.status;
+  if (status !== 'active' && status !== 'closed') return "status must be 'active' or 'closed'";
+  if (status === 'closed') {
+    if (tradeAmount(t.exitPrice) === null) return 'a closed trade needs a positive exitPrice';
+    const exitDate = tradeDate(t.exitDate);
+    if (!exitDate) return 'a closed trade needs an exitDate';
+    if (exitDate < entryDate) return 'exitDate is before entryDate';
+  }
+  return null;
+}
+
+// Postgres refusing a value (bad number or date text, out of range, too long,
+// NULL where required, a CHECK constraint) is bad input, not a server fault
+const PG_BAD_INPUT = new Set(['22001', '22003', '22007', '22008', '22P02', '23502', '23514']);
+const isBadTradeInput = (error) => Boolean(error && PG_BAD_INPUT.has(error.code));
+
+// Create a manual trade (the add-position form). The session decides whose, and
+// the body can never make it automatic.
 app.post('/api/trades', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
     const userId = req.user ? req.user.email : 'default';
-    
-    // Debug logging for TBCG.L trade
-    if (req.body.symbol === 'TBCG.L') {
+    const problem = tradeInputError(req.body);
+    if (problem) {
+      return res.status(400).json({ error: problem });
     }
-    
-    const trade = await TradeDB.insertTrade(req.body, userId);
+    const trade = await TradeDB.insertTrade({ ...req.body, symbol: req.body.symbol.trim(), autoAdded: false }, userId);
     res.status(201).json(trade);
   } catch (error) {
+    if (isBadTradeInput(error)) {
+      return res.status(400).json({ error: 'Invalid trade: ' + error.message });
+    }
     res.status(500).json({ error: error.message });
   }
 });
 
-// Update trade
+// Update a trade. Two kinds of change, and a stale copy of the trade drives neither:
+// - a close ({ status: 'closed', exitPrice, exitDate?, exitReason?, notes? }) goes
+//   through closeTradeAndRelease: one transaction that closes the row only while it
+//   is active and settles the ledger. The P/L is worked out from the trade's own
+//   entry price and shares, never taken from the body.
+// - anything else edits the price paid and the notes, only while the trade is
+//   active (TradeDB.editActiveTrade). Every other field in the body is ignored:
+//   status, the exit fields, stop, target and dates.
+// The Positions dialog used to send its whole cached copy of the trade, so a save
+// that landed after the exit monitor had closed the position wrote status 'active'
+// and empty exit fields back: the trade reopened, and its capital, already
+// released, was released again at the next close. That save now gets a 409.
 app.put('/api/trades/:id', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
-
     const userId = req.user ? req.user.email : 'default';
+    const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
 
-    // First check if trade exists
     const existingTrade = await TradeDB.getTradeById(req.params.id, userId);
     if (!existingTrade) {
       return res.status(404).json({ error: 'Trade not found' });
     }
+    if (existingTrade.status !== 'active') {
+      return res.status(409).json({ error: 'Trade is no longer active' });
+    }
+    if (body.notes !== undefined && body.notes !== null && typeof body.notes !== 'string') {
+      return res.status(400).json({ error: 'notes must be text' });
+    }
 
-    // Check if trade is being closed (status changing from 'active' to 'closed')
-    const isBeingClosed = existingTrade.status === 'active' && req.body.status === 'closed';
-
-    if (isBeingClosed) {
-      // Close + capital release in ONE transaction against the live DB row.
-      // (The old path released from the pre-update trade object, which lacked
-      // investmentAmount/market — it released 0 and leaked the ledger.)
+    if (body.status === 'closed') {
+      const exitPrice = tradeAmount(body.exitPrice);
+      if (exitPrice === null) {
+        return res.status(400).json({ error: 'exitPrice must be a positive number' });
+      }
+      const exitDate = body.exitDate === undefined || body.exitDate === null ? new Date() : tradeDate(body.exitDate);
+      if (!exitDate) {
+        return res.status(400).json({ error: 'exitDate must be a date' });
+      }
+      if (existingTrade.entryDate && exitDate < new Date(existingTrade.entryDate)) {
+        return res.status(400).json({ error: 'exitDate is before the entry date' });
+      }
       console.log(`[TRADE UPDATE] Trade ${req.params.id} (${existingTrade.symbol}) closing via closeTradeAndRelease`);
       const closeResult = await TradeDB.closeTradeAndRelease(req.params.id, {
-        exitDate: req.body.exitDate,
-        exitPrice: req.body.exitPrice,
-        profitLoss: req.body.profitLoss,
-        profitLossPercent: req.body.profitLossPercentage !== undefined ? req.body.profitLossPercentage : req.body.profitLossPercent,
-        exitReason: req.body.exitReason
+        exitDate,
+        exitPrice,
+        exitReason: typeof body.exitReason === 'string' && body.exitReason.trim() ? body.exitReason.trim() : 'Manual Exit',
+        notes: body.notes
       }, userId);
-
       if (!closeResult.closed) {
+        // Closed (or deleted) since it was read above: nothing was written
         return res.status(409).json({ error: 'Trade is no longer active' });
       }
-      if (req.body.notes !== undefined) {
-        await TradeDB.updateTrade(req.params.id, { notes: req.body.notes }, userId);
+      return res.json({
+        success: true,
+        message: 'Trade closed',
+        profitLoss: closeResult.profitLoss,
+        profitLossPercentage: closeResult.profitLossPercent,
+        capitalReleased: closeResult.investmentReleased
+      });
+    }
+
+    const edit = {};
+    if (body.entryPrice !== undefined) {
+      const entryPrice = tradeAmount(body.entryPrice);
+      if (entryPrice === null) {
+        return res.status(400).json({ error: 'entryPrice must be a positive number' });
       }
-      return res.json({ message: 'Trade updated successfully' });
+      edit.entryPrice = entryPrice;
+    }
+    if (body.notes !== undefined) {
+      edit.notes = body.notes;
+    }
+    if (Object.keys(edit).length === 0) {
+      return res.status(400).json({ error: 'Nothing to change: an edit sends entryPrice or notes, a close sends status "closed" and exitPrice' });
     }
 
-    // Update the trade
-    const success = await TradeDB.updateTrade(req.params.id, req.body, userId);
-    if (!success) {
-      return res.status(404).json({ error: 'Trade not found' });
+    const updated = await TradeDB.editActiveTrade(req.params.id, edit, userId);
+    if (!updated) {
+      // Closed (or deleted) since it was read above: nothing was written
+      return res.status(409).json({ error: 'Trade is no longer active' });
     }
-
-    res.json({ message: 'Trade updated successfully' });
+    res.json({ success: true, message: 'Trade updated' });
   } catch (error) {
+    if (isBadTradeInput(error)) {
+      return res.status(400).json({ error: 'Invalid trade: ' + error.message });
+    }
     res.status(500).json({ error: error.message });
   }
 });
 
-// Delete trade
+// Delete a trade. An automatic trade leaves the ledger in the same statement
+// (TradeDB.deleteTrade): an open one hands back its allocation and its slot, a
+// closed one takes its realized P/L back out, so the ledger still reconciles.
 app.delete('/api/trades/:id', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
     const userId = req.user ? req.user.email : 'default';
-    const success = await TradeDB.deleteTrade(req.params.id, userId);
-    if (!success) {
+    // Trade ids are whole numbers; anything else names no trade (and Postgres
+    // would refuse to compare it with the id column: a 500)
+    if (!/^\d{1,18}$/.test(req.params.id)) {
       return res.status(404).json({ error: 'Trade not found' });
     }
-    res.json({ message: 'Trade deleted successfully' });
+    const result = await TradeDB.deleteTrade(req.params.id, userId);
+    if (result.deleted === 0) {
+      return res.status(404).json({ error: 'Trade not found' });
+    }
+    res.json({ success: true, message: 'Trade deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Delete all trades
+// Delete all of the caller's trades, settling the ledger the same way
 app.delete('/api/trades', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
     const userId = req.user ? req.user.email : 'default';
-    const count = await TradeDB.deleteAllTrades(userId);
-    res.json({ message: `Deleted ${count} trades` });
+    const result = await TradeDB.deleteAllTrades(userId);
+    res.json({ success: true, count: result.deleted, message: `Deleted ${result.deleted} trades` });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Bulk import
+// Bulk import: the one-off move of the trades the old app kept in localStorage
+// (TradeAPI.migrateFromLocalStorage clears its copy once this answers success).
+// All or nothing, and manual trades only: bulkInsertTrades never sets auto_added.
 app.post('/api/trades/bulk', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
-    const { trades } = req.body;
     const userId = req.user ? req.user.email : 'default';
-    const count = await TradeDB.bulkInsertTrades(trades, userId);
-    res.json({ message: `Imported ${count} trades` });
+    const trades = req.body && !Array.isArray(req.body) ? req.body.trades : undefined;
+    if (!Array.isArray(trades) || trades.length === 0) {
+      return res.status(400).json({ error: 'trades must be a non-empty array' });
+    }
+    for (let i = 0; i < trades.length; i++) {
+      const problem = tradeInputError(trades[i]);
+      if (problem) {
+        return res.status(400).json({ error: `trades[${i}]: ${problem}` });
+      }
+    }
+    const count = await TradeDB.bulkInsertTrades(trades.map(t => ({ ...t, symbol: t.symbol.trim() })), userId);
+    res.json({ success: true, count, message: `Imported ${count} trades` });
   } catch (error) {
+    if (isBadTradeInput(error)) {
+      return res.status(400).json({ error: 'Invalid trade: ' + error.message });
+    }
     res.status(500).json({ error: error.message });
   }
 });
@@ -3239,29 +3358,29 @@ const server = app.listen(PORT, async () => {
     console.error('❌ [MIGRATION] Failed to fix shares and profit_loss:', error.message);
   }
 
-  // Run migration to sync active_positions counters
+  // Run migration to sync active_positions counters. A position is an open
+  // AUTOMATIC trade, as in POST /api/ops/reconcile-capital and
+  // closeTradeAndRelease: manual trades never allocate, so they never take a
+  // slot. (This used to count manual trades too, so after every boot they took
+  // automatic-trading slots, and it skipped markets with nothing open, so a
+  // slot leaked there survived every boot.)
   try {
     console.log('🔧 [MIGRATION] Syncing active_positions counters...');
 
     const syncResult = await TradeDB.pool.query(`
       UPDATE portfolio_capital pc
-      SET active_positions = (
-        SELECT COUNT(*)
-        FROM trades t
-        WHERE t.status = 'active'
-          AND t.user_id = pc.user_id
-          AND t.market = pc.market
-      )
-      WHERE EXISTS (
-        SELECT 1
-        FROM trades t
-        WHERE t.user_id = pc.user_id
-          AND t.market = pc.market
-          AND t.status = 'active'
-        GROUP BY t.user_id, t.market
-        HAVING COUNT(*) != pc.active_positions
-      )
-      RETURNING market, active_positions
+      SET active_positions = counted.open_count
+      FROM (
+        SELECT p.user_id, p.market, COUNT(t.id)::int AS open_count
+        FROM portfolio_capital p
+        LEFT JOIN trades t
+          ON t.user_id = p.user_id AND t.market = p.market
+         AND t.status = 'active' AND t.auto_added = true
+        GROUP BY p.user_id, p.market
+      ) counted
+      WHERE counted.user_id = pc.user_id AND counted.market = pc.market
+        AND pc.active_positions IS DISTINCT FROM counted.open_count
+      RETURNING pc.market, pc.active_positions
     `);
 
     if (syncResult.rows.length > 0) {

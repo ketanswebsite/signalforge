@@ -272,10 +272,26 @@
     "note": "valid manual trade on the throwaway persona"
    },
    {
+    "as": "delete",
+    "status": 201,
+    "check": "autoAddedFalse",
+    "body": {
+     "symbol": "HARNESS.L",
+     "entryDate": "2026-09-21T08:00:00.000Z",
+     "entryPrice": 100,
+     "shares": 1,
+     "market": "UK",
+     "autoAdded": true,
+     "tradeSize": 1000000,
+     "investmentAmount": 1000000
+    },
+    "note": "the body cannot make a trade automatic: it is stored as a manual trade, which never touches the ledger. DELETE /api/trades removes it; stored as automatic, that delete would take 1,000,000 out of the UK ledger and the reconcile dry run at the end of this file would fail"
+   },
+   {
     "as": "user",
     "status": 400,
     "body": {},
-    "bug": "no body validation: POST /api/trades hands {} straight to TradeDB.insertTrade (server.js:2369-2382) and Postgres rejects the NULL symbol (database-postgres.js:1752; trades.symbol is NOT NULL at database-postgres.js:31) -> 500 with the raw constraint message"
+    "note": "Fixed 2026-09-24: the body is validated (symbol, entryPrice, entryDate, shares, market, status) before anything is written (server.js)."
    }
   ]
  },
@@ -312,17 +328,68 @@
     "body": {
      "status": "closed",
      "exitPrice": 101,
-     "exitDate": "2026-09-22T15:00:00.000Z",
      "exitReason": "Manual exit (harness)"
     },
-    "note": "active -> closed goes through closeTradeAndRelease (manual trade: no capital release)"
+    "note": "active -> closed goes through closeTradeAndRelease (manual trade: no capital release). The exit date is left to the server (now): the fixed 2026-09-22 this case used to send falls before the seeded entry (now - 5 days) from 2026-09-27, and an exit before the entry is refused"
+   },
+   {
+    "as": "delete",
+    "status": 409,
+    "body": {
+     "status": "active",
+     "exitDate": null,
+     "exitPrice": null,
+     "entryPrice": 100,
+     "notes": "stale save"
+    },
+    "note": "the stale-save race: the whole trade as a dialog opened before the close had it. Nothing is written and the trade stays closed (it used to be reopened, and its capital released again at the next close)"
+   },
+   {
+    "as": "delete",
+    "status": 409,
+    "body": {
+     "status": "closed",
+     "exitPrice": 102,
+     "exitReason": "Manual exit (harness, second click)"
+    },
+    "note": "a second close of a closed trade changes nothing (it used to rewrite the exit price and P/L without touching the ledger)"
+   },
+   {
+    "as": "delete",
+    "path": "/api/trades/{closeAutoTradeId}",
+    "status": 200,
+    "check": "object",
+    "body": {
+     "status": "closed",
+     "exitPrice": 105,
+     "exitReason": "Manual exit (harness)"
+    },
+    "note": "an automatic trade sold from the Positions page: its allocation (500) goes back and its P/L (+25, worked out from its own entry price and shares) is realized in the same transaction. The reconcile dry run at the end of this file checks the ledger"
    },
    {
     "as": "user",
     "path": "/api/trades/{userActiveTradeId}",
     "status": 400,
     "body": {},
-    "bug": "an update with no updatable field answers 404 'Trade not found' for a trade that exists (it was just loaded at server.js:2391): TradeDB.updateTrade returns null when nothing is set (database-postgres.js:1883) and server.js:2422-2425 maps that null to 404"
+    "note": "an update with no editable field. Fixed 2026-09-24: an edit may change only entryPrice and notes, and one with neither answers 400 (server.js)."
+   },
+   {
+    "as": "user",
+    "path": "/api/trades/{userActiveTradeId}",
+    "status": 400,
+    "body": {
+     "status": "closed"
+    },
+    "note": "a close needs a positive exitPrice; nothing is written and the trade stays open"
+   },
+   {
+    "as": "user",
+    "path": "/api/trades/{userActiveTradeId}",
+    "status": 400,
+    "body": {
+     "entryPrice": -1
+    },
+    "note": "the price paid must be a positive number; nothing is written"
    }
   ]
  },
@@ -354,14 +421,28 @@
    {
     "as": "delete",
     "status": 200,
-    "check": "object",
-    "note": "imports one trade for the throwaway persona"
+    "check": "successCount",
+    "note": "imports one trade for the throwaway persona and answers { success: true, count: 1 }, which is what TradeAPI.migrateFromLocalStorage waits for before it clears the old localStorage copy"
    },
    {
     "as": "user",
     "status": 400,
     "body": {},
-    "bug": "no validation of body.trades: server.js:2459-2468 passes undefined to TradeDB.bulkInsertTrades, whose for...of throws 'trades is not iterable' (database-postgres.js:1946) -> 500"
+    "note": "Fixed 2026-09-24: body.trades must be a non-empty array of valid trades (server.js)."
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "body": {
+     "trades": [
+      {
+       "symbol": "HARNESS.L",
+       "entryDate": "2026-09-19T08:00:00.000Z",
+       "status": "active"
+      }
+     ]
+    },
+    "note": "every trade is checked before anything is written: this one has no entryPrice, so nothing is imported"
    }
   ]
  },
@@ -700,6 +781,19 @@
     "as": "delete",
     "status": 404,
     "note": "already gone"
+   },
+   {
+    "as": "delete",
+    "path": "/api/trades/{deleteAutoTradeId}",
+    "status": 200,
+    "check": "object",
+    "note": "an open automatic trade: its allocation (500) and its slot go back to the UK ledger in the same statement. The reconcile dry run at the end of this file checks the ledger"
+   },
+   {
+    "as": "delete",
+    "path": "/api/trades/not-a-number",
+    "status": 404,
+    "note": "a trade id is a whole number; Postgres used to refuse the comparison and the route answered 500"
    }
   ]
  },
@@ -718,9 +812,40 @@
    {
     "as": "delete",
     "status": 200,
-    "check": "object",
-    "note": "deletes the throwaway persona's remaining trades (the POST and bulk imports above)"
+    "check": "successCount",
+    "note": "deletes the throwaway persona's remaining trades (the POST and bulk imports above, and the two closed automatic trades, whose realized P/L (40 seeded, 25 from the sale above) comes back out of the UK ledger) and answers { success: true, count }"
    }
   ]
+ },
+ {
+  "route": "POST /api/ops/reconcile-capital",
+  "order": "last",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "never called with ?apply=true: the harness only reads the dry-run drift report"
+   },
+   {
+    "as": "anon",
+    "path": "/api/ops/reconcile-capital?token=harness-wrong-token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 200,
+    "check": "zeroDrift",
+    "note": "dry run (no ?apply). After every trade write in this run (creates, a bulk import, the close of a manual and of an automatic trade, a stale save, the deletes of an open and of closed automatic trades) every ledger row still matches the trades table. The boot position recount must agree too: it used to count manual trades, which put 3 rows 1 position out before the first request"
+   }
+  ],
+  "note": "Lives in trading.json with order last, after the order-last DELETE /api/trades specs above (order-last specs run in file order), and before user-account.json deletes the delete persona."
  }
 ]

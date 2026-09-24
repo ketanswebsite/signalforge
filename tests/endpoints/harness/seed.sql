@@ -79,6 +79,28 @@ INSERT INTO trades (symbol, name, entry_date, entry_price, exit_date, exit_price
 VALUES ('HARNESSB.L', 'Harness B plc', now() - interval '20 days', 50, now() - interval '10 days', 54, 8, 'closed', 32,
         8, 'Target reached', 54, 5, 400, 400, '£', 'UK', 'harness-user@e2e.invalid', false);
 
+-- ---------------------------------------------------------------- automatic trades (they hold capital)
+-- The delete persona's UK ledger holds exactly their effect: 1000 allocated and 2 slots for the two open ones, 40
+-- realized for the closed one. PUT /api/trades/:id sells HARNESSE.L (its 500 goes back and its P/L is realized),
+-- DELETE /api/trades/:id removes HARNESSA.L while it is open (its allocation and slot go back), DELETE /api/trades the
+-- closed ones (their realized P/L comes back out); the reconcile dry run at the end of trading.json requires zero
+-- drift. Inserted after the manual trades, so the delete persona's first trade (deleteTradeId) stays the manual one.
+INSERT INTO trades (symbol, name, entry_date, entry_price, shares, status, target_price, stop_loss_percent,
+                    investment_amount, trade_size, currency_symbol, market, user_id, auto_added)
+VALUES
+  ('HARNESSA.L', 'Harness A plc', now() - interval '3 days', 100, 5, 'active', 108, 5, 500, 500, '£', 'UK', 'harness-delete@e2e.invalid', true),
+  ('HARNESSE.L', 'Harness E plc', now() - interval '3 days', 100, 5, 'active', 108, 5, 500, 500, '£', 'UK', 'harness-delete@e2e.invalid', true);
+
+INSERT INTO trades (symbol, name, entry_date, entry_price, exit_date, exit_price, shares, status, profit_loss,
+                    profit_loss_percentage, exit_reason, target_price, stop_loss_percent, investment_amount, trade_size,
+                    currency_symbol, market, user_id, auto_added)
+VALUES ('HARNESSC.L', 'Harness C plc', now() - interval '12 days', 50, now() - interval '4 days', 54, 10, 'closed', 40,
+        8, 'Target reached', 54, 5, 500, 500, '£', 'UK', 'harness-delete@e2e.invalid', true);
+
+UPDATE portfolio_capital
+SET allocated_capital = 1000, realized_pl = 40, available_capital = initial_capital + 40 - 1000, active_positions = 2
+WHERE user_id = 'harness-delete@e2e.invalid' AND market = 'UK';
+
 INSERT INTO trade_exit_checks (trade_id, check_time, current_price, pl_percent, days_held)
 SELECT id, now() - interval '2 days', 101, 1, 3 FROM trades WHERE symbol = 'HARNESS.L' AND user_id = 'harness-user@e2e.invalid';
 

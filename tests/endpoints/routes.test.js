@@ -36,7 +36,20 @@ const CHECKS = {
     authenticatedFalse: r => expect(r.json && r.json.authenticated).toBe(false),
     isAdminTrue: r => expect((r.json && (r.json.isAdmin ?? (r.json.user && r.json.user.isAdmin)))).toBe(true),
     isAdminFalse: r => expect(Boolean(r.json && (r.json.isAdmin ?? (r.json.user && r.json.user.isAdmin)))).toBe(false),
-    commitSha: r => expect(String(r.json && r.json.commit)).toMatch(/^([0-9a-f]{7,40}|unknown|null|undefined)$/)
+    commitSha: r => expect(String(r.json && r.json.commit)).toMatch(/^([0-9a-f]{7,40}|unknown|null|undefined)$/),
+    // { success: true, count: <whole number> }: the bulk import and delete-all answers
+    successCount: r => {
+        expect(r.json && r.json.success).toBe(true);
+        expect(Number.isInteger(r.json.count)).toBe(true);
+    },
+    // A trade the body tried to make automatic was stored as a manual one
+    autoAddedFalse: r => expect(r.json && r.json.autoAdded).toBe(false),
+    // POST /api/ops/reconcile-capital dry run: every ledger row matches the trades table
+    zeroDrift: r => {
+        expect(r.json && r.json.applied).toBe(false);
+        expect(Array.isArray(r.json.markets) && r.json.markets.length > 0).toBe(true);
+        expect(r.json.markets.filter(m => m.drift.realized !== 0 || m.drift.allocated !== 0 || m.drift.positions !== 0)).toEqual([]);
+    }
 };
 
 test('spec files load', () => {

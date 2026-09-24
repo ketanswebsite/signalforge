@@ -331,29 +331,6 @@
   ]
  },
  {
-  "route": "POST /api/ops/reconcile-capital",
-  "cases": [
-   {
-    "as": "anon",
-    "status": 401,
-    "note": "probe only: never called with the token"
-   },
-   {
-    "as": "anon",
-    "path": "/api/ops/reconcile-capital?token=harness-wrong-token",
-    "status": 401
-   },
-   {
-    "as": "nosub",
-    "status": 401
-   },
-   {
-    "as": "user",
-    "status": 401
-   }
-  ]
- },
- {
   "route": "GET /api/ops/version",
   "cases": [
    {

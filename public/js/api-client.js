@@ -150,10 +150,12 @@ const TradeAPI = {
             // Bulk import to database
             const result = await this.bulkImportTrades(transformedTrades);
             
-            // If successful, remove from localStorage
+            // If successful, remove from localStorage. (The route used to answer
+            // only a message, so the old trades were never removed and were
+            // imported again on every page load.)
             if (result.success) {
                 localStorage.removeItem(localStorageKey);
-                return { migrated: true, count: result.imported };
+                return { migrated: true, count: result.count };
             }
             
             return { migrated: false, count: 0 };

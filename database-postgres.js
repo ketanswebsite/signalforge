@@ -1445,6 +1445,50 @@ async function renamePricingPlans() {
   }
 }
 
+// Delete trades and take them out of portfolio_capital in ONE statement, so a
+// delete can never leak capital. Only automatic trades (auto_added) touch the
+// ledger: the executor allocates at entry and closeTradeAndRelease releases at
+// the exit. The amounts are the ones POST /api/ops/reconcile-capital derives
+// from the trades table, so a delete never changes the reconcile's drift: an
+// open trade hands back its allocation and its slot, a closed one takes its
+// realized P/L back out. A close racing the delete is safe: the DELETE waits for
+// closeTradeAndRelease's row lock, then deletes and settles the row as closed.
+// `where` comes from the two callers below, never from a request.
+// Returns { deleted, ledgersSettled }.
+async function deleteTradesAndSettle(where, params) {
+  checkConnection();
+  const { rows } = await pool.query(`
+    WITH gone AS (
+      DELETE FROM trades WHERE ${where} RETURNING *
+    ), effect AS (
+      SELECT user_id, market,
+             SUM(CASE WHEN status = 'active' THEN COALESCE(investment_amount, trade_size, 0) ELSE 0 END) AS allocated,
+             COUNT(*) FILTER (WHERE status = 'active') AS positions,
+             SUM(CASE WHEN status = 'closed' THEN COALESCE(
+                   profit_loss,
+                   (exit_price - entry_price) * shares,
+                   COALESCE(investment_amount, trade_size) * profit_loss_percentage / 100,
+                   0) ELSE 0 END) AS realized
+      FROM gone
+      WHERE auto_added = true AND market IS NOT NULL
+      GROUP BY user_id, market
+    ), settled AS (
+      UPDATE portfolio_capital pc
+      SET allocated_capital = pc.allocated_capital - effect.allocated,
+          realized_pl = pc.realized_pl - effect.realized,
+          available_capital = pc.initial_capital + (pc.realized_pl - effect.realized) - (pc.allocated_capital - effect.allocated),
+          active_positions = GREATEST(pc.active_positions - effect.positions, 0),
+          updated_at = CURRENT_TIMESTAMP
+      FROM effect
+      WHERE pc.user_id = effect.user_id AND pc.market = effect.market
+      RETURNING pc.market
+    )
+    SELECT (SELECT COUNT(*) FROM gone)::int AS deleted,
+           (SELECT COUNT(*) FROM settled)::int AS ledgers_settled
+  `, params);
+  return { deleted: rows[0].deleted, ledgersSettled: rows[0].ledgers_settled };
+}
+
 // Database operations
 const TradeDB = {
   // Initialize database on module load
@@ -1520,7 +1564,7 @@ const TradeDB = {
    * 3. Admin panel queries should use this transformation layer for consistency
    * 4. When debugging field name issues, check both conventions in this mapping
    *
-   * @see updateTrade - For JS → DB transformation example
+   * @see insertTrade - For JS → DB transformation example
    * @see getAllTrades - For DB → JS transformation example
    */
 
@@ -1850,99 +1894,48 @@ const TradeDB = {
     }
   },
 
-  // Update a trade
-  async updateTrade(id, updates, userId = 'default') {
-    try {
-      const setClauses = [];
-      const values = [];
-      let paramIndex = 1;
-
-      // Build dynamic SET clause
-      const fields = {
-        symbol: updates.symbol,
-        name: updates.name,
-        stock_index: updates.stockIndex,
-        entry_date: updates.entryDate,
-        entry_price: updates.entryPrice,
-        shares: updates.shares,
-        position_size: updates.positionSize,
-        stop_loss_percent: updates.stopLossPercent,
-        target_price: updates.targetPrice,
-        exit_date: updates.exitDate,
-        exit_price: updates.exitPrice,
-        status: updates.status,
-        profit_loss: updates.profitLoss,
-        profit_loss_percentage: updates.profitLossPercentage,
-        exit_reason: updates.exitReason,
-        notes: updates.notes,
-        // Missing field transformations added for standardization
-        current_market_price: updates.currentMarketPrice,
-        unrealized_pl: updates.unrealizedPL,
-        unrealized_pl_percentage: updates.unrealizedPLPercentage
-      };
-
-      for (const [dbField, value] of Object.entries(fields)) {
-        if (value !== undefined) {
-          setClauses.push(`${dbField} = $${paramIndex}`);
-          values.push(value);
-          paramIndex++;
-        }
-      }
-
-      if (setClauses.length === 0) return null;
-
-      // Add updated_at
-      setClauses.push(`updated_at = CURRENT_TIMESTAMP`);
-
-      // Add WHERE clause parameters
-      values.push(id, userId);
-
-      const query = `
-        UPDATE trades
-        SET ${setClauses.join(', ')}
-        WHERE id = $${paramIndex} AND user_id = $${paramIndex + 1}
-        RETURNING *
-      `;
-
-      const result = await pool.query(query, values);
-
-      // Return the updated row if successful, null if no rows updated
-      if (result.rowCount > 0) {
-        return result.rows[0];
-      }
-
-      console.warn(`[DB] updateTrade failed: No trade found with id=${id} and user_id=${userId}`);
-      return null;
-    } catch (error) {
-      console.error(`[DB] updateTrade error:`, error);
-      throw error;
+  // Edit an ACTIVE trade: the price paid and the notes, nothing else. Status and
+  // the exit fields are never written here (a close goes through
+  // closeTradeAndRelease), and the status = 'active' guard makes a save that
+  // arrives after the trade was closed change nothing. A new price paid takes the
+  // target with it at the same percentage (the right-hand sides read the row as it
+  // was, so entry_price there is the old price). Returns the updated row, or null
+  // when the trade is not this user's, is not active, or nothing was given.
+  async editActiveTrade(id, edit, userId = 'default') {
+    checkConnection();
+    const setClauses = [];
+    const values = [];
+    if (edit.entryPrice !== undefined) {
+      values.push(edit.entryPrice);
+      const p = `$${values.length}`;
+      setClauses.push(`entry_price = ${p}`);
+      setClauses.push(`target_price = CASE WHEN entry_price > 0 THEN target_price * ${p}::numeric / entry_price ELSE target_price END`);
     }
+    if (edit.notes !== undefined) {
+      values.push(edit.notes);
+      setClauses.push(`notes = $${values.length}`);
+    }
+    if (setClauses.length === 0) return null;
+
+    values.push(id, userId);
+    const result = await pool.query(`
+      UPDATE trades
+      SET ${setClauses.join(', ')}, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $${values.length - 1} AND user_id = $${values.length} AND status = 'active'
+      RETURNING *
+    `, values);
+    return result.rows[0] || null;
   },
 
-  // Delete a trade
+  // Delete a trade; an automatic trade leaves the ledger in the same statement
+  // (deleteTradesAndSettle). Returns { deleted, ledgersSettled }.
   async deleteTrade(id, userId = 'default') {
-    try {
-      const result = await pool.query(
-        'DELETE FROM trades WHERE id = $1 AND user_id = $2',
-        [id, userId]
-      );
-      return result.rowCount > 0;
-    } catch (error) {
-      throw error;
-    }
+    return deleteTradesAndSettle('id = $1 AND user_id = $2', [id, userId]);
   },
 
-  // Delete all trades for a user
+  // Delete all trades for a user, settling the ledger the same way
   async deleteAllTrades(userId = 'default') {
-    try {
-      const result = await pool.query(
-        'DELETE FROM trades WHERE user_id = $1',
-        [userId]
-      );
-      return result.rowCount;
-    } catch (error) {
-      throw error;
-    }
+    return deleteTradesAndSettle('user_id = $1', [userId]);
   },
 
   // Bulk insert trades
@@ -3254,34 +3247,6 @@ const TradeDB = {
     }
   },
 
-  // Close trade (wrapper around updateTrade)
-  async closeTrade(tradeId, exitData, userId = 'default') {
-    checkConnection();
-    try {
-      console.log(`[DB] Attempting to close trade: id=${tradeId}, user_id=${userId}, exitPrice=${exitData.exitPrice}, reason=${exitData.exitReason}`);
-
-      const result = await this.updateTrade(tradeId, {
-        exitDate: exitData.exitDate,
-        exitPrice: exitData.exitPrice,
-        profitLoss: exitData.profitLoss,
-        profitLossPercentage: exitData.profitLossPercent,
-        exitReason: exitData.exitReason,
-        status: 'closed'
-      }, userId);
-
-      if (result) {
-        console.log(`[DB] ✅ Trade closed successfully: id=${tradeId}, symbol=${result.symbol}, status=${result.status}`);
-      } else {
-        console.error(`[DB] ❌ Failed to close trade: id=${tradeId}, user_id=${userId} - No matching row found`);
-      }
-
-      return result;
-    } catch (error) {
-      console.error(`[DB] ❌ Error closing trade id=${tradeId}:`, error);
-      throw error;
-    }
-  },
-
   // Close a trade AND settle the capital ledger in one transaction.
   // The status='active' guard makes it idempotent: if two monitors race to close
   // the same trade, only one closes it and releases capital; the other is a no-op.
@@ -3333,6 +3298,8 @@ const TradeDB = {
         }
       }
 
+      // exitData.notes (a close from the Positions page) replaces the notes in
+      // the same UPDATE; the exit monitor sends none, so COALESCE keeps them
       await client.query(`
         UPDATE trades
         SET status = 'closed',
@@ -3341,9 +3308,11 @@ const TradeDB = {
             profit_loss = $3,
             profit_loss_percentage = $4,
             exit_reason = $5,
+            notes = COALESCE($7, notes),
             updated_at = CURRENT_TIMESTAMP
         WHERE id = $6
-      `, [exitData.exitDate, exitData.exitPrice, profitLoss, plPercent, exitData.exitReason, t.id]);
+      `, [exitData.exitDate, exitData.exitPrice, profitLoss, plPercent, exitData.exitReason, t.id,
+          exitData.notes === undefined ? null : exitData.notes]);
 
       let released = false;
       if (t.auto_added === true && t.market && invested > 0) {
