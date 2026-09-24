@@ -372,6 +372,20 @@ async function initializeDatabase() {
     await pool.query('CREATE INDEX IF NOT EXISTS idx_high_conviction_symbol ON high_conviction_portfolio(symbol)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_high_conviction_status ON high_conviction_portfolio(status)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_high_conviction_signal_date ON high_conviction_portfolio(signal_date)');
+    // One open row per high-conviction symbol, and one open AUTOMATIC position per account and symbol: the booking
+    // paths already refuse a held symbol, and prod read no duplicates on 2026-09-24 (duplicateActive in
+    // /api/ops/exit-checks-stats). A second MANUAL position stays allowed (POST /api/trades). Never fatal: while
+    // duplicates exist the index is not built, the log says so, and the probe lists them.
+    for (const [name, sql] of [
+      ['uq_high_conviction_active_symbol', "CREATE UNIQUE INDEX IF NOT EXISTS uq_high_conviction_active_symbol ON high_conviction_portfolio(symbol) WHERE status = 'active'"],
+      ['uq_trades_active_auto_symbol', "CREATE UNIQUE INDEX IF NOT EXISTS uq_trades_active_auto_symbol ON trades(user_id, symbol) WHERE status = 'active' AND auto_added = true"]
+    ]) {
+      try {
+        await pool.query(sql);
+      } catch (error) {
+        console.error(`[DB] ${name} not created (duplicate open positions?): ${error.message}`);
+      }
+    }
     await pool.query('CREATE INDEX IF NOT EXISTS idx_pending_signals_status ON pending_signals(status)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_pending_signals_date ON pending_signals(signal_date DESC)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_pending_signals_symbol ON pending_signals(symbol)');
