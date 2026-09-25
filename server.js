@@ -1786,8 +1786,16 @@ function tradePercent(value) {
   return n !== null && n < 10000 ? n : null;
 }
 
+// A number of either sign (a number, or numeric text) below limit either way, else null: a trade's P/L
+// is DECIMAL(12, 4) and its P/L % DECIMAL(8, 4)
+function tradeSigned(value, limit) {
+  const n = typeof value === 'number' ? value
+    : (typeof value === 'string' && value.trim() !== '' ? Number(value) : NaN);
+  return Number.isFinite(n) && Math.abs(n) < limit ? n : null;
+}
+
 // The text a manual trade may carry, and the most characters its column holds (0: TEXT, no limit)
-const TRADE_TEXT_FIELDS = { name: 255, stockName: 255, currencySymbol: 10, entryReason: 0, exitReason: 0, notes: 0 };
+const TRADE_TEXT_FIELDS = { name: 255, stockName: 255, stockIndex: 50, currencySymbol: 10, entryReason: 0, exitReason: 0, notes: 0 };
 
 // Why a new manual trade cannot be stored, or null. It checks what the trades
 // table would otherwise refuse: the NOT NULL symbol, the status and market
@@ -1809,6 +1817,10 @@ function tradeInputError(t) {
   for (const field of ['stopLossPercent', 'takeProfitPercent']) {
     if (t[field] && tradePercent(t[field]) === null) return `${field} must be a positive number below 10000`;
   }
+  if (t.profitLoss && tradeSigned(t.profitLoss, 100000000) === null) return 'profitLoss must be a number below 100000000 either way';
+  if (t.profitLossPercentage && tradeSigned(t.profitLossPercentage, 10000) === null) {
+    return 'profitLossPercentage must be a number below 10000 either way';
+  }
   if (t.squareOffDate && !tradeDate(t.squareOffDate)) return 'squareOffDate must be a date';
   for (const [field, max] of Object.entries(TRADE_TEXT_FIELDS)) {
     const value = t[field];
@@ -1825,9 +1837,22 @@ function tradeInputError(t) {
     const exitDate = tradeDate(t.exitDate);
     if (!exitDate) return 'a closed trade needs an exitDate';
     if (exitDate < entryDate) return 'exitDate is before entryDate';
+  } else {
+    // an open trade stores an exit price or date it carries as it is
+    if (t.exitPrice && tradeAmount(t.exitPrice) === null) return 'exitPrice must be a positive number';
+    if (t.exitDate && !tradeDate(t.exitDate)) return 'exitDate must be a date';
   }
   return null;
 }
+
+// The fields a manual trade carries: what POST /api/trades/bulk stores (TradeDB.bulkInsertTrades). The rest of
+// a body (the signal's win rate, count and day, the trade size and the DTI readings an automatic trade records,
+// auto_added) is not the caller's to set.
+const MANUAL_TRADE_FIELDS = ['symbol', 'name', 'stockName', 'stockIndex', 'market', 'currencySymbol', 'entryDate',
+  'entryPrice', 'shares', 'investmentAmount', 'positionSize', 'stopLossPercent', 'takeProfitPercent', 'targetPrice',
+  'squareOffDate', 'exitDate', 'exitPrice', 'status', 'profitLoss', 'profitLossPercentage', 'entryReason',
+  'exitReason', 'notes'];
+const manualTrade = (body) => Object.fromEntries(MANUAL_TRADE_FIELDS.filter(f => body[f] !== undefined).map(f => [f, body[f]]));
 
 // Postgres refusing a value (bad number or date text, out of range, too long,
 // NULL where required, a CHECK constraint) is bad input, not a server fault
@@ -1843,7 +1868,7 @@ app.post('/api/trades', ensureAuthenticatedAPI, ensureSubscriptionActive, async 
     if (problem) {
       return res.status(400).json({ error: problem });
     }
-    const trade = await TradeDB.insertTrade({ ...req.body, symbol: req.body.symbol.trim(), autoAdded: false }, userId);
+    const trade = await TradeDB.insertTrade({ ...manualTrade(req.body), symbol: req.body.symbol.trim(), autoAdded: false }, userId);
     res.status(201).json(trade);
   } catch (error) {
     if (isBadTradeInput(error)) {

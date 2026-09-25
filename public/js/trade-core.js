@@ -441,9 +441,6 @@ const TradeCore = (function() {
                     if (window.TradeUIModules.metrics.renderAdvancedMetricsCards) {
                         window.TradeUIModules.metrics.renderAdvancedMetricsCards();
                     }
-                    if (window.TradeUIModules.metrics.initializeCalendarHeatmap) {
-                        window.TradeUIModules.metrics.initializeCalendarHeatmap();
-                    }
                 }
             }
         } catch (error) {
@@ -694,9 +691,6 @@ const TradeCore = (function() {
                 if (window.TradeUIModules && window.TradeUIModules.metrics) {
                     if (window.TradeUIModules.metrics.renderAdvancedMetricsCards) {
                         window.TradeUIModules.metrics.renderAdvancedMetricsCards();
-                    }
-                    if (window.TradeUIModules.metrics.initializeCalendarHeatmap) {
-                        window.TradeUIModules.metrics.initializeCalendarHeatmap();
                     }
                 }
             }

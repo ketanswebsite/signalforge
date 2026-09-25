@@ -64,6 +64,12 @@ const CHECKS = {
     autoAddedFalse: r => expect(r.json && r.json.autoAdded).toBe(false),
     // POST /api/trades/bulk: a refused import names the trade (its place in the list) and the field
     bulkRefusalNamed: r => expect(String(r.json && r.json.error)).toMatch(/^trades\[\d+\]: [A-Za-z]+ must be /),
+    // POST /api/trades: a refused trade names the field (I56)
+    tradeRefusalNamed: r => expect(String(r.json && r.json.error)).toMatch(/^[A-Za-z]+ must be /),
+    // POST /api/trades stores a manual trade's fields only: the signal fields an automatic trade records stay empty
+    manualFieldsOnly: r => expect(r.json).toMatchObject({
+        autoAdded: false, winRate: null, historicalSignalCount: null, signalDate: null, tradeSize: null, prevDTI: null, entryDTI: null
+    }),
     // GAPS #14/#15: every trade the API returns carries the rules' version it was booked under (null for a row from
     // before versioning, as every seeded row is) and its benchmark (null until the nightly fill has priced its exit)
     provenanceList: r => {

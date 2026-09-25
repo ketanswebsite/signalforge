@@ -358,9 +358,11 @@ describe('server.js: the routes use only these writes', () => {
 
     test('create and bulk import only make manual trades; bulk answers { success, count }', () => {
         expect([
-            'TradeDB.insertTrade({ ...req.body, symbol: req.body.symbol.trim(), autoAdded: false }, userId)',
+            'TradeDB.insertTrade({ ...manualTrade(req.body), symbol: req.body.symbol.trim(), autoAdded: false }, userId)',
             'res.json({ success: true, count, message: `Imported ${count} trades` })'
         ].filter(line => !SERVER.includes(line))).toEqual([]);
+        // the create route passes a manual trade's fields only, never the whole body (I56)
+        expect(SERVER).not.toContain('TradeDB.insertTrade({ ...req.body');
     });
 
     test('the boot position recount counts open automatic trades only, as the reconcile does', () => {

@@ -319,6 +319,39 @@
     "status": 400,
     "body": {},
     "note": "Fixed 2026-09-24: the body is validated (symbol, entryPrice, entryDate, shares, market, status) before anything is written (server.js)."
+   },
+   {
+    "as": "delete",
+    "status": 201,
+    "check": "manualFieldsOnly",
+    "body": {
+     "symbol": "HARNESS.L",
+     "entryDate": "2026-09-21T08:00:00.000Z",
+     "entryPrice": 100,
+     "shares": 1,
+     "market": "UK",
+     "winRate": 99,
+     "historicalSignalCount": 50,
+     "signalDate": "2026-09-20",
+     "tradeSize": 5000,
+     "prevDTI": -45,
+     "entryDTI": -30
+    },
+    "note": "I56: the route stores a manual trade's fields only (the list POST /api/trades/bulk stores); the win rate, signal count and day, trade size and DTI readings an automatic trade records stay empty"
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "check": "tradeRefusalNamed",
+    "body": {
+     "symbol": "HARNESS.L",
+     "entryDate": "2026-09-21T08:00:00.000Z",
+     "entryPrice": 100,
+     "shares": 1,
+     "market": "UK",
+     "exitDate": "not a date"
+    },
+    "note": "I56: an open trade's exit date is checked too: \"exitDate must be a date\" (Postgres refused it in its own words)"
    }
   ]
  },
@@ -553,6 +586,67 @@
      ]
     },
     "note": "I53: an amount must be a positive number: \"trades[0]: investmentAmount must be a positive number\""
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "check": "bulkRefusalNamed",
+    "body": {
+     "trades": [
+      {
+       "symbol": "HARNESS.L",
+       "entryDate": "2026-09-19T08:00:00.000Z",
+       "entryPrice": 100,
+       "shares": 1,
+       "status": "closed",
+       "exitDate": "2026-09-20T15:00:00.000Z",
+       "exitPrice": 104,
+       "profitLoss": "abc"
+      }
+     ]
+    },
+    "note": "I56: the P/L is checked: \"trades[0]: profitLoss must be a number below 100000000 either way\" (Postgres refused it in its own words, naming neither the trade nor the field)"
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "check": "bulkRefusalNamed",
+    "body": {
+     "trades": [
+      {
+       "symbol": "HARNESS.L",
+       "entryDate": "2026-09-19T08:00:00.000Z",
+       "entryPrice": 100,
+       "shares": 1,
+       "status": "closed",
+       "exitDate": "2026-09-20T15:00:00.000Z",
+       "exitPrice": 104,
+       "profitLoss": 4,
+       "profitLossPercentage": 12000
+      }
+     ]
+    },
+    "note": "I56: the P/L % fits DECIMAL(8, 4): \"trades[0]: profitLossPercentage must be a number below 10000 either way\""
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "check": "bulkRefusalNamed",
+    "body": {
+     "trades": [
+      {
+       "symbol": "HARNESS.L",
+       "entryDate": "2026-09-19T08:00:00.000Z",
+       "entryPrice": 100,
+       "shares": 1,
+       "status": "closed",
+       "exitDate": "2026-09-20T15:00:00.000Z",
+       "exitPrice": 104,
+       "stockIndex": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      }
+     ]
+    },
+    "note": "I56: stock_index holds 50 characters: \"trades[0]: stockIndex must be text of at most 50 characters\""
    }
   ]
  },
