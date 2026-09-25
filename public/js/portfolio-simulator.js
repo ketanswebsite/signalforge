@@ -47,7 +47,8 @@ const PortfolioSimulator = (function() {
             safety: 6
         },
 
-        // Exchange rates
+        // Fixed approximate rates, used only when the server has no dated ones: each trade converts at the rates
+        // of its own exit day, from GET /api/fx/rates (GAPS #11; loadDatedRates below)
         EXCHANGE_RATES: {
             GBP_TO_INR: 105.0,
             GBP_TO_USD: 1.27,
@@ -178,6 +179,9 @@ const PortfolioSimulator = (function() {
             // 1. Calculate date ranges
             const dates = calculateDateRanges(startDate);
 
+            // The dated exchange rates this run converts at, each trade at its exit day's (GAPS #11)
+            const fx = await loadDatedRates(dates.simulationStart);
+
             // 2-5. One streaming pass: each stock is fetched, backtested for
             // its win rate and (if strong) mined for simulation signals, then
             // its price arrays are released. The old three-stage pipeline held
@@ -208,6 +212,8 @@ const PortfolioSimulator = (function() {
                 },
                 stats: stats,  // Include statistics in results
                 metadata: {
+                    // Exchange rates: 'dated' (daily closes, first to last day) or 'fixed'
+                    fx: fx,
                     // Date ranges
                     dates: {
                         simulationStart: dates.simulationStart,
@@ -1076,7 +1082,8 @@ const PortfolioSimulator = (function() {
             const convertedPL = convertCurrency(
                 pl,
                 trade.currency,
-                displayCurrency
+                displayCurrency,
+                trade.exitDate
             );
             totalValue += convertedPL;
         }
@@ -1084,13 +1091,69 @@ const PortfolioSimulator = (function() {
         return totalValue;
     }
 
+    // This run's dated exchange rates (GAPS #11): day -> [GBPINR, GBPUSD] for every calendar day of the run, from
+    // GET /api/fx/rates. null when none could be had: the fixed CONFIG.EXCHANGE_RATES apply
+    let datedRates = null;
+
     /**
-     * Convert currency
+     * Load the dated rates from a day to today. Never throws: without them the fixed rates apply.
+     * @returns {{source: 'dated', first: string, last: string}|{source: 'fixed'}}  first and last: the stored
+     *   closes the run's days use (a day outside them takes the nearer one)
      */
-    function convertCurrency(amount, fromCurrency, toCurrency) {
+    async function loadDatedRates(fromDay) {
+        datedRates = null;
+        let closes = null;
+        try {
+            // The server sends at most 4000 days: a run that starts earlier converts its older days at the first one
+            const earliest = new Date(Date.now() - 3999 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+            const from = fromDay < earliest ? earliest : fromDay;
+            const response = await fetch(`/api/fx/rates?from=${encodeURIComponent(from)}`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            const days = data && Array.isArray(data.days) ? data.days : [];
+            if (days.length > 0) {
+                const first = days[0][0];
+                const last = days[days.length - 1][0];
+                datedRates = { byDay: new Map(days.map(([day, gbpInr, gbpUsd]) => [day, [gbpInr, gbpUsd]])), first, last };
+                closes = {
+                    first: data.firstStoredDay && data.firstStoredDay > first ? data.firstStoredDay : first,
+                    last: data.newestStoredDay && data.newestStoredDay < last ? data.newestStoredDay : last
+                };
+            }
+        } catch (error) {
+            console.warn('[SIMULATOR] Dated exchange rates unavailable, converting at the fixed rates:', error.message);
+        }
+        return datedRates ? { source: 'dated', first: closes.first, last: closes.last } : { source: 'fixed' };
+    }
+
+    /**
+     * The six conversion rates on a day: the dated ones in force that day (a day outside the loaded range takes
+     * the nearer end), else the fixed CONFIG.EXCHANGE_RATES
+     */
+    function ratesOn(day) {
+        if (!datedRates || !day) return CONFIG.EXCHANGE_RATES;
+        const key = String(day).slice(0, 10);
+        const edge = key < datedRates.first ? datedRates.first : (key > datedRates.last ? datedRates.last : key);
+        const pair = datedRates.byDay.get(edge);
+        if (!pair) return CONFIG.EXCHANGE_RATES;
+        const [gbpInr, gbpUsd] = pair;
+        return {
+            GBP_TO_INR: gbpInr,
+            GBP_TO_USD: gbpUsd,
+            USD_TO_GBP: 1 / gbpUsd,
+            USD_TO_INR: gbpInr / gbpUsd,
+            INR_TO_GBP: 1 / gbpInr,
+            INR_TO_USD: gbpUsd / gbpInr
+        };
+    }
+
+    /**
+     * Convert currency at the rates of a day: a trade converts at its exit day's (GAPS #11)
+     */
+    function convertCurrency(amount, fromCurrency, toCurrency, day) {
         if (fromCurrency === toCurrency) return amount;
 
-        const rates = CONFIG.EXCHANGE_RATES;
+        const rates = ratesOn(day);
 
         if (fromCurrency === 'GBP' && toCurrency === 'INR') return amount * rates.GBP_TO_INR;
         if (fromCurrency === 'GBP' && toCurrency === 'USD') return amount * rates.GBP_TO_USD;
@@ -1126,6 +1189,7 @@ const PortfolioSimulator = (function() {
     return {
         runSimulation,
         getCurrencySymbol,
+        convertCurrency,
         CONFIG
     };
 })();

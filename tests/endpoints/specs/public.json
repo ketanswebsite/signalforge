@@ -1420,5 +1420,76 @@
     "note": "the read token is never read from the URL"
    }
   ]
+ },
+ {
+  "route": "GET /api/fx/rates",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401
+   },
+   {
+    "as": "token",
+    "status": 401,
+    "note": "the ops token does not pass the /api sign-in gate"
+   },
+   {
+    "as": "readtoken",
+    "status": 401,
+    "note": "the read token is not a session"
+   },
+   {
+    "as": "nosub",
+    "status": 403,
+    "note": "ensureSubscriptionActive, like the Simulator's other routes"
+   },
+   {
+    "as": "user",
+    "status": 200,
+    "check": "fxRates",
+    "note": "GAPS #11: the 365 days up to today with the rates in force each day; no day while nothing is stored (the harness never refreshes)"
+   },
+   {
+    "as": "admin",
+    "status": 200,
+    "check": "fxRates",
+    "note": "admin bypasses the subscription gate"
+   },
+   {
+    "as": "user",
+    "path": "/api/fx/rates?from=2026-09-01&to=2026-09-10",
+    "status": 200,
+    "check": "fxRatesWindow"
+   },
+   {
+    "as": "user",
+    "path": "/api/fx/rates?from=2026-02-30",
+    "status": 400,
+    "note": "not a real date"
+   },
+   {
+    "as": "user",
+    "path": "/api/fx/rates?to=abc",
+    "status": 400
+   },
+   {
+    "as": "user",
+    "path": "/api/fx/rates?from=2026-09-01&from=2026-09-02",
+    "status": 400,
+    "note": "a repeated parameter arrives as a list"
+   },
+   {
+    "as": "user",
+    "path": "/api/fx/rates?from=2026-09-10&to=2026-09-01",
+    "status": 400,
+    "note": "from after to"
+   },
+   {
+    "as": "user",
+    "path": "/api/fx/rates?from=2010-01-01&to=2026-09-01",
+    "status": 400,
+    "note": "more than 4000 days a request"
+   }
+  ]
  }
 ]

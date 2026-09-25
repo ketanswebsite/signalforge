@@ -2365,6 +2365,19 @@ app.get('/yahoo/history', ensureAuthenticatedAPI, async (req, res) => {
   }
 });
 
+// Dated exchange rates for the Simulator (GAPS #11): every calendar day from ?from to ?to (YYYY-MM-DD; by default the
+// 365 days up to today in London) with the rates in force that day, the last stored daily close on or before it
+// (lib/shared/fx-rates.js). Nothing stored yet: no days, and the page converts at its fixed approximate rates.
+const FxRates = require('./lib/shared/fx-rates');
+app.get('/api/fx/rates', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
+  const range = FxRates.parseWindow(req.query);
+  if (range.error) {
+    return res.status(400).json({ success: false, error: range.error });
+  }
+  await FxRates.ensureLoaded();
+  res.json({ success: true, ...FxRates.dailySeries(range.from, range.to) });
+});
+
 // Helper function to check if market is open for a symbol
 function isMarketOpen(symbol) {
   const now = new Date();
@@ -2997,6 +3010,8 @@ app.post('/api/portfolio/close-trade/:symbol', ensureAuthenticatedAPI, async (re
       return res.status(500).json({ error: 'Portfolio manager not initialized' });
     }
 
+    // In the other two currencies at today's dated rates (GAPS #11), as the automatic pass converts
+    await FxRates.ensureLoaded();
     const pl = stockScanner.portfolioManager.calculatePL(entryPrice, exitPrice, shares, market);
 
     const exitData = {

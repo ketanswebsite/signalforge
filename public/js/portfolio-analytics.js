@@ -312,7 +312,8 @@ const PortfolioAnalytics = (function() {
 
         for (const trade of trades) {
             const pl = (trade.tradeSize * trade.plPercent) / 100;
-            const convertedPL = convertCurrency(pl, trade.currency, displayCurrency);
+            // At the trade's exit-day rates (GAPS #11): the simulator's own converter
+            const convertedPL = window.PortfolioSimulator.convertCurrency(pl, trade.currency, displayCurrency, trade.exitDate);
             plByMarket[trade.market] += convertedPL;
         }
 
@@ -425,25 +426,6 @@ const PortfolioAnalytics = (function() {
         }
 
         return reasons;
-    }
-
-    /**
-     * Convert currency (reuse from simulator)
-     */
-    function convertCurrency(amount, fromCurrency, toCurrency) {
-        if (window.PortfolioSimulator && window.PortfolioSimulator.CONFIG) {
-            const rates = window.PortfolioSimulator.CONFIG.EXCHANGE_RATES;
-
-            if (fromCurrency === toCurrency) return amount;
-            if (fromCurrency === 'GBP' && toCurrency === 'INR') return amount * rates.GBP_TO_INR;
-            if (fromCurrency === 'GBP' && toCurrency === 'USD') return amount * rates.GBP_TO_USD;
-            if (fromCurrency === 'USD' && toCurrency === 'GBP') return amount * rates.USD_TO_GBP;
-            if (fromCurrency === 'USD' && toCurrency === 'INR') return amount * rates.USD_TO_INR;
-            if (fromCurrency === 'INR' && toCurrency === 'GBP') return amount * rates.INR_TO_GBP;
-            if (fromCurrency === 'INR' && toCurrency === 'USD') return amount * rates.INR_TO_USD;
-        }
-
-        return amount;
     }
 
     // Public API

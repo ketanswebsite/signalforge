@@ -124,7 +124,7 @@ async function setup(ctx) {
     CALLBACK_URL: `http://127.0.0.1:${port}/auth/google/callback`, SESSION_SECRET: crypto.randomBytes(32).toString('hex'),
     ANALYSIS_API_TOKEN: token, ANALYSIS_READ_TOKEN: readToken, ADMIN_EMAIL: adminEmail, TELEGRAM_WEBHOOK_SECRET: webhookSecret,
     AUTO_EXECUTE: 'false', CONVICTION_SWEEP: 'false', CONVICTION_SWEEP_BOOT_RESUME: 'false', CONVICTION_SWEEP_ALERTS: 'false',
-    CLOSE_FAILURE_ALERTS: 'false', EXIT_CHECK_PRUNE: 'false',
+    CLOSE_FAILURE_ALERTS: 'false', EXIT_CHECK_PRUNE: 'false', FX_RATES_REFRESH: 'false',
     HARNESS_LOGIN: '1', HARNESS_FIXTURES: fixtures, HARNESS_ROUTES_OUT: routesOut
   };
   const out = fs.openSync(logFile, 'a');

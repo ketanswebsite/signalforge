@@ -290,7 +290,7 @@ describe('A price refresh is keyed by the portfolio row too', () => {
         expect(db.portfolio[1].pl_amount_usd).toBeCloseTo(-9, 6);
     });
 
-    test('a pass sends no SQL of its own but the verdict lookup: every write is a row-keyed TradeDB call', async () => {
+    test('a pass sends no SQL of its own but the verdict lookup and the exchange-rate read: every write is a row-keyed TradeDB call', async () => {
         const db = fakeDatabase([
             EARLIER_AAPL(),
             ...twoOpenRows(),
@@ -306,7 +306,9 @@ describe('A price refresh is keyed by the portfolio row too', () => {
         expect(db.portfolio.map(r => [r.id, r.status])).toEqual([[1, 'closed'], [2, 'closed'], [3, 'active'], [4, 'active'], [5, 'closed']]);
         expect(broadcastToSubscribers).toHaveBeenCalledTimes(1);
         expect(db.statements.length).toBeGreaterThan(0);
-        expect(db.statements.filter(sql => !/FROM pending_signals/.test(sql))).toEqual([]);
+        // lib/shared/fx-rates.js reads the dated exchange rates the P&L is converted at (GAPS #11): a SELECT, nothing else
+        expect(db.statements.filter(sql => !/FROM (pending_signals|fx_rates)\b/.test(sql))).toEqual([]);
+        expect(db.statements.filter(sql => /fx_rates/.test(sql) && !/^\s*SELECT\b/.test(sql))).toEqual([]);
     });
 });
 

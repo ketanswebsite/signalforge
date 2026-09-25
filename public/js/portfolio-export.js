@@ -66,9 +66,11 @@ const PortfolioExport = (function() {
         for (const trade of trades) {
             // Calculate P/L in all currencies
             const plNative = (trade.tradeSize * trade.plPercent) / 100;
-            const plINR = convertToINR(plNative, trade.currency);
-            const plGBP = convertToGBP(plNative, trade.currency);
-            const plUSD = convertToUSD(plNative, trade.currency);
+            // At the trade's exit-day rates (GAPS #11): the simulator's own converter
+            const convert = to => window.PortfolioSimulator.convertCurrency(plNative, trade.currency, to, trade.exitDate);
+            const plINR = convert('INR');
+            const plGBP = convert('GBP');
+            const plUSD = convert('USD');
 
             const row = [
                 trade.symbol,
@@ -108,33 +110,6 @@ const PortfolioExport = (function() {
                 return cellStr;
             }).join(',')
         ).join('\n');
-    }
-
-    /**
-     * Currency conversion helpers
-     */
-    function convertToINR(amount, fromCurrency) {
-        const rates = window.PortfolioSimulator.CONFIG.EXCHANGE_RATES;
-        if (fromCurrency === 'INR') return amount;
-        if (fromCurrency === 'GBP') return amount * rates.GBP_TO_INR;
-        if (fromCurrency === 'USD') return amount * rates.USD_TO_INR;
-        return amount;
-    }
-
-    function convertToGBP(amount, fromCurrency) {
-        const rates = window.PortfolioSimulator.CONFIG.EXCHANGE_RATES;
-        if (fromCurrency === 'GBP') return amount;
-        if (fromCurrency === 'USD') return amount * rates.USD_TO_GBP;
-        if (fromCurrency === 'INR') return amount * rates.INR_TO_GBP;
-        return amount;
-    }
-
-    function convertToUSD(amount, fromCurrency) {
-        const rates = window.PortfolioSimulator.CONFIG.EXCHANGE_RATES;
-        if (fromCurrency === 'USD') return amount;
-        if (fromCurrency === 'GBP') return amount * rates.GBP_TO_USD;
-        if (fromCurrency === 'INR') return amount * rates.INR_TO_USD;
-        return amount;
     }
 
     /**

@@ -129,6 +129,29 @@ const CHECKS = {
         expect(r.json.dead).toEqual([]);
         expect(Array.isArray(r.json.stale) && Array.isArray(r.json.failing)).toBe(true);
     },
+    // GET /api/fx/rates (GAPS #11): every calendar day of the window with the two rates in force that day, or no day
+    // at all while nothing is stored (the harness server never refreshes: FX_RATES_REFRESH=false and no network;
+    // tests/endpoints/fx-rates.test.js fills the store in its own process)
+    fxRates: r => {
+        expect(r.json).toMatchObject({ success: true, columns: ['day', 'GBPINR', 'GBPUSD'] });
+        const { from, to, days } = r.json;
+        expect(from <= to).toBe(true);
+        expect(Array.isArray(days)).toBe(true);
+        expect(r.json.source).toBe(days.length > 0 ? 'dated' : 'none');
+        if (days.length > 0) {
+            expect(days[0][0]).toBe(from);
+            expect(days[days.length - 1][0]).toBe(to);
+            for (const [day, gbpInr, gbpUsd] of days) {
+                expect(day).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+                expect(gbpInr > 0 && gbpUsd > 0).toBe(true);
+            }
+        }
+    },
+    // ... for the window asked for: ?from=2026-09-01&to=2026-09-10
+    fxRatesWindow: r => {
+        expect(r.json).toMatchObject({ success: true, from: '2026-09-01', to: '2026-09-10' });
+        expect([0, 10]).toContain(r.json.days.length);
+    },
 
     // ---- the admin portal shows only what the database holds (I12b). seed.sql has one paid subscription stored as the
     // Stripe checkout stores it: plan_code HARNESS_PAID and no plan_id, GBP 29.97 a quarter, so 9.99 a month.
