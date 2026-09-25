@@ -51,7 +51,7 @@ test('the Saturday 08:00 refresh stands aside on sweep day, and runs on every ot
     expect(options).toMatchObject({ timezone: 'Europe/London' });
 
     ConvictionSweep.isSweepDay.mockReturnValue(true);
-    await fire();
+    await expect(fire()).resolves.toEqual({ skipped: 'sweep day: the monthly AI sweep has Yahoo this morning' });   // why, for job_runs
     expect(updater.updateAllMarketCaps).not.toHaveBeenCalled();
     expect(logged()).toMatch(/Weekend update skipped: sweep day/);
 

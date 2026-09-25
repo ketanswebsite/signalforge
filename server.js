@@ -605,8 +605,8 @@ app.get('/api/ops/telegram-stats', requireOpsToken({ read: true }), async (req, 
 });
 
 // Token-guarded, READ-ONLY probe for the Alerts page switches (alert_preferences).
-// Counts only — no emails, no chat ids. No sender reads this table today, so
-// this answers "who would honouring it affect?" BEFORE anything does:
+// Counts only — no emails, no chat ids. The senders read this table since 2026-09-24 (lib/shared/alert-policy.js:
+// only an explicit false withholds); this still answers "who does honouring it affect?":
 // telegram_enabled DEFAULTs false and the page POSTs the whole object, so a
 // stored false is not proof of an opt-out — `audience.masterOff` is how many
 // linked subscribers a naive master-switch check would silence.
@@ -2767,7 +2767,7 @@ app.get('/health', (req, res) => {
     auth: authEnabled ? 'enabled' : 'disabled',
     environment: process.env.NODE_ENV || 'development',
     render: !!process.env.RENDER,
-    // The store express-session really uses. None is configured, so it is the in-memory default.
+    // The store express-session really uses: PgSessionStore (lib/shared/pg-session-store.js); 'memory' only if none is configured
     sessionStore: authEnabled ? (sessionConfig && sessionConfig.store ? sessionConfig.store.constructor.name : 'memory') : 'none',
     timestamp: new Date().toISOString()
   };

@@ -468,7 +468,7 @@ describe('its cron and the boot catch-up', () => {
         run.mockResolvedValueOnce({ enabled: true, stored: 2 });
         await expect(fire()).resolves.toEqual({ enabled: true, stored: 2 });
         run.mockRejectedValueOnce(new Error('boom'));
-        await expect(fire()).resolves.toBeUndefined();
+        await expect(fire()).resolves.toEqual({ error: 'boom' });   // resolves (never escapes), and says why for job_runs
         expect(console.error).toHaveBeenCalledWith('[FX] Exchange rates job failed:', 'boom');
     });
 

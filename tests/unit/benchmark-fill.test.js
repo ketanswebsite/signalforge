@@ -280,7 +280,7 @@ describe('its cron', () => {
         run.mockResolvedValueOnce({ enabled: true, filled: 2 });
         await expect(fire()).resolves.toEqual({ enabled: true, filled: 2 });
         run.mockRejectedValueOnce(new Error('boom'));
-        await expect(fire()).resolves.toBeUndefined();
+        await expect(fire()).resolves.toEqual({ error: 'boom' });   // resolves (never escapes), and says why for job_runs
         expect(console.error).toHaveBeenCalledWith('[BENCHMARK] Fill job failed:', 'boom');
     });
 });
