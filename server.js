@@ -941,6 +941,19 @@ app.get('/api/ops/dead-tickers', requireOpsToken({ read: true }), async (req, re
   }
 });
 
+// Token-guarded (the full token, header only: it asks Yahoo, so never the read token): one fresh Yahoo handshake and
+// one quote for three symbols, step by step - what Yahoo answers this server right now. The 06:00 market-cap refresh
+// met 429s here on 2026-09-25 while the chart endpoint answered; this names the step. At most seven requests; no
+// database writes.
+app.post('/api/ops/yahoo-check', requireOpsToken(), async (req, res) => {
+  try {
+    const report = await require('./lib/shared/yahoo-client').checkSession();
+    res.json({ success: true, measuredAt: new Date().toISOString(), ...report });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Token-guarded manual run of the exit-check retention job — the same job the
 // 11:20 PM UK cron runs: roll complete days up into trade_exit_checks_daily,
 // then prune minute rows older than the window (never alert rows). Pass

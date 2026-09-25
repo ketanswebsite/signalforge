@@ -83,13 +83,13 @@ test('the weekday 06:00 refresh never asks about the sweep', async () => {
     expect(ConvictionSweep.isSweepDay).not.toHaveBeenCalled();
 });
 
-test('a sweep module that cannot answer never costs the refresh, and nothing escapes the cron', async () => {
+test('a sweep module that cannot answer never costs the refresh, and nothing escapes the cron (it resolves with the run\'s counts, for job_runs)', async () => {
     jest.spyOn(console, 'error').mockImplementation(() => {});
     initialize();
     const [, fire] = cronAt('0 8 * * 6');
     ConvictionSweep.isSweepDay.mockImplementation(() => { throw new Error('boom'); });
 
-    await expect(fire()).resolves.toBeUndefined();
+    await expect(fire()).resolves.toEqual({ updated: 0, failed: 0 });
 
     expect(updater.updateAllMarketCaps).toHaveBeenCalledTimes(1);
 });

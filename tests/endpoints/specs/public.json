@@ -1491,5 +1491,33 @@
     "note": "more than 4000 days a request"
    }
   ]
+ },
+ {
+  "route": "POST /api/ops/yahoo-check",
+  "cases": [
+   {
+    "as": "anon",
+    "status": 401,
+    "note": "probe only: never called with the token (it asks Yahoo; the harness has no network)"
+   },
+   {
+    "as": "anon",
+    "path": "/api/ops/yahoo-check?token=harness-wrong-token",
+    "status": 401
+   },
+   {
+    "as": "nosub",
+    "status": 401
+   },
+   {
+    "as": "user",
+    "status": 401
+   },
+   {
+    "as": "readtoken",
+    "status": 401,
+    "note": "never the read token: this route makes outbound requests. Refused by the guard; the handler never runs"
+   }
+  ]
  }
 ]

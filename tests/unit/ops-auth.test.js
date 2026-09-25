@@ -161,7 +161,7 @@ describe('server.js wiring', () => {
     const names = list => list.map(r => r.route).sort();
 
     test('control: the routes are found', () => {
-        expect(TOKEN_ROUTES.length).toBe(15);
+        expect(TOKEN_ROUTES.length).toBe(16);
         expect(names(TOKEN_ROUTES)).toEqual(expect.arrayContaining(['GET /api/ops/version', 'POST /api/ops/eod-summary', 'GET /api/signals/screened-today']));
     });
 

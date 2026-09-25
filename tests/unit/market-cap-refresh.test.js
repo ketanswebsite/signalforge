@@ -110,7 +110,7 @@ describe('updateMarketCaps', () => {
         ]);
         expect(result).toEqual({
             requested: 3, updated: 2, noCap: 1, unknownCurrency: 0, notQuoted: 0, failed: 0, skipped: 0,
-            requests: 1, failedRequests: 0, error: null,
+            requests: 1, failedRequests: 0, throttled: 0, error: null, errorStep: null,
             byMarket: { US: { requested: 1, updated: 1 }, UK: { requested: 1, updated: 1 }, India: { requested: 1, updated: 0 } }
         });
         expect(quoteRequests()[0][1].params).toEqual({ symbols: 'AAPL,VOD.L,RELIANCE.NS', crumb: 'crumb-1' });
