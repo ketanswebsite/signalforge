@@ -200,9 +200,9 @@ describe('database-postgres.js over a mocked driver', () => {
         const inserts = clientQuery.mock.calls.filter(([sql]) => /INSERT INTO trades/.test(sql));
         expect(inserts).toHaveLength(2);
         for (const [sql, params] of inserts) {
-            expect(squash(sql)).toMatch(/notes, user_id, strategy_version \) VALUES \(.*\$16, \$17\)/);
-            expect(params).toHaveLength(17);
-            expect(params[16]).toBe(STRATEGY_VERSION);
+            expect(squash(sql)).toMatch(/notes, auto_added, user_id, strategy_version \) VALUES \(.*\$25, \$26\)/);
+            expect(params).toHaveLength(26);
+            expect(params[25]).toBe(STRATEGY_VERSION);
             expect(params).not.toContain('forged');
         }
     });

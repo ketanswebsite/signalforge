@@ -1780,9 +1780,20 @@ function tradeDate(value) {
   return isNaN(d.getTime()) ? null : d;
 }
 
+// A percentage above zero that fits its DECIMAL(8, 4) column, else null
+function tradePercent(value) {
+  const n = tradeAmount(value);
+  return n !== null && n < 10000 ? n : null;
+}
+
+// The text a manual trade may carry, and the most characters its column holds (0: TEXT, no limit)
+const TRADE_TEXT_FIELDS = { name: 255, stockName: 255, currencySymbol: 10, entryReason: 0, exitReason: 0, notes: 0 };
+
 // Why a new manual trade cannot be stored, or null. It checks what the trades
-// table would otherwise refuse with a 500: the NOT NULL symbol, the status and
-// market CHECKs, and a closed trade's exit price and date (not before the entry).
+// table would otherwise refuse: the NOT NULL symbol, the status and market
+// CHECKs, a closed trade's exit price and date (not before the entry), and every
+// amount, percentage, date and text a trade may carry, so a refusal names the
+// field (and, on a bulk import, the trade) instead of passing on Postgres's words.
 function tradeInputError(t) {
   if (!t || typeof t !== 'object' || Array.isArray(t)) return 'a trade must be a JSON object';
   if (typeof t.symbol !== 'string' || !t.symbol.trim() || t.symbol.trim().length > 50) {
@@ -1792,6 +1803,20 @@ function tradeInputError(t) {
   const entryDate = tradeDate(t.entryDate);
   if (!entryDate) return 'entryDate must be a date';
   if (t.shares && tradeAmount(t.shares) === null) return 'shares must be a positive number';
+  for (const field of ['investmentAmount', 'positionSize', 'targetPrice']) {
+    if (t[field] && tradeAmount(t[field]) === null) return `${field} must be a positive number`;
+  }
+  for (const field of ['stopLossPercent', 'takeProfitPercent']) {
+    if (t[field] && tradePercent(t[field]) === null) return `${field} must be a positive number below 10000`;
+  }
+  if (t.squareOffDate && !tradeDate(t.squareOffDate)) return 'squareOffDate must be a date';
+  for (const [field, max] of Object.entries(TRADE_TEXT_FIELDS)) {
+    const value = t[field];
+    if (value === undefined || value === null) continue;
+    if (typeof value !== 'string' || (max > 0 && value.length > max)) {
+      return max > 0 ? `${field} must be text of at most ${max} characters` : `${field} must be text`;
+    }
+  }
   if (t.market && !TRADE_MARKETS.includes(t.market)) return 'market must be India, UK or US';
   const status = t.status === undefined || t.status === null ? 'active' : t.status;
   if (status !== 'active' && status !== 'closed') return "status must be 'active' or 'closed'";
@@ -1949,9 +1974,13 @@ app.delete('/api/trades', ensureAuthenticatedAPI, ensureSubscriptionActive, asyn
   }
 });
 
-// Bulk import: the one-off move of the trades the old app kept in localStorage
-// (TradeAPI.migrateFromLocalStorage clears its copy once this answers success).
-// All or nothing, and manual trades only: bulkInsertTrades never sets auto_added.
+// Bulk import: the Positions page's Import trades (the file Export everything
+// saves, which is GET /api/trades) and the one-off move of the trades the old app
+// kept in localStorage (TradeAPI.migrateFromLocalStorage clears its copy once this
+// answers success). All or nothing, and manual trades only: bulkInsertTrades
+// stores each trade as POST /api/trades would, with auto_added false, so an
+// exported trade comes back with its name, market, currency symbol, amounts,
+// reasons and notes, and never touches the capital ledger.
 app.post('/api/trades/bulk', ensureAuthenticatedAPI, ensureSubscriptionActive, async (req, res) => {
   try {
     const userId = req.user ? req.user.email : 'default';

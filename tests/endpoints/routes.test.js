@@ -62,6 +62,8 @@ const CHECKS = {
     },
     // A trade the body tried to make automatic was stored as a manual one
     autoAddedFalse: r => expect(r.json && r.json.autoAdded).toBe(false),
+    // POST /api/trades/bulk: a refused import names the trade (its place in the list) and the field
+    bulkRefusalNamed: r => expect(String(r.json && r.json.error)).toMatch(/^trades\[\d+\]: [A-Za-z]+ must be /),
     // GAPS #14/#15: every trade the API returns carries the rules' version it was booked under (null for a row from
     // before versioning, as every seeded row is) and its benchmark (null until the nightly fill has priced its exit)
     provenanceList: r => {

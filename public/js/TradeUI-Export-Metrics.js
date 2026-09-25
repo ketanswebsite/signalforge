@@ -274,13 +274,16 @@ window.TradeUIModules.export = (function() {
         return new Blob(['﻿' + [header.join(','), ...rows].join('\r\n') + '\r\n'], { type: 'text/csv;charset=utf-8' });
     }
 
+    // Export everything: each trade's own fields as GET /api/trades gives them (name and stock name,
+    // amount put in and position size each as stored), which Import sends back to POST /api/trades/bulk
     async function allTradesJsonBlob() {
         const trades = await TradeAPI.getAllTrades();
         const file = {
             metadata: { exportDate: new Date().toISOString(), trades: trades.length },
             trades: trades.map(t => ({
                 symbol: t.symbol,
-                stockName: t.stockName || t.name || null,
+                name: t.name || null,
+                stockName: t.stockName || null,
                 stockIndex: t.stockIndex || null,
                 market: t.market || null,
                 currencySymbol: t.currencySymbol || null,
@@ -288,9 +291,12 @@ window.TradeUIModules.export = (function() {
                 entryDate: t.entryDate,
                 entryPrice: t.entryPrice,
                 shares: t.shares,
-                investmentAmount: t.investmentAmount || t.positionSize || null,
+                investmentAmount: t.investmentAmount || null,
+                positionSize: t.positionSize || null,
                 targetPrice: t.targetPrice,
                 stopLossPercent: t.stopLossPercent,
+                takeProfitPercent: t.takeProfitPercent || null,
+                squareOffDate: t.squareOffDate || null,
                 exitDate: t.exitDate,
                 exitPrice: t.exitPrice,
                 profitLoss: t.profitLoss,

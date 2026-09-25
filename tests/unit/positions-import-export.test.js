@@ -72,9 +72,10 @@ const FILE = {
     metadata: { exportDate: '2026-09-25T20:00:00.000Z', trades: 3 },
     trades: [
         { symbol: 'HARNESS.L', status: 'active', entryDate: '2026-09-20T08:00:00.000Z', entryPrice: 100, shares: 4 },
-        { symbol: 'TCS.NS', stockName: 'Tata Consultancy', status: 'closed', entryDate: '2026-09-01T09:00:00.000Z', entryPrice: 3500,
-          shares: 14, investmentAmount: 49000, exitDate: '2026-09-10T09:00:00.000Z', exitPrice: 3780, profitLoss: 3920,
-          profitLossPercentage: 8, exitReason: 'Target hit: +8.00%', autoAdded: true },
+        { symbol: 'TCS.NS', name: 'Tata Consultancy Services', stockName: 'Tata Consultancy', market: 'India', currencySymbol: '₹',
+          status: 'closed', entryDate: '2026-09-01T09:00:00.000Z', entryPrice: 3500, shares: 14, investmentAmount: 49000,
+          positionSize: 49000, exitDate: '2026-09-10T09:00:00.000Z', exitPrice: 3780, profitLoss: 3920, profitLossPercentage: 8,
+          exitReason: 'Target hit: +8.00%', entryReason: 'DTI buy signal', notes: 'first lot', autoAdded: true, strategyVersion: 'v1' },
         { symbol: 'NVDA', status: 'active', entryDate: '2026-09-22T14:00:00.000Z', entryPrice: 125, shares: 4, positionSize: 500,
           exitDate: '2026-10-22T14:00:00.000Z', exitPrice: 130, squareOffDate: '2026-10-22T14:00:00.000Z' }
     ]
@@ -113,14 +114,18 @@ describe('Import trades', () => {
         confirm.click();
         await until(() => window.TradeCore.refreshUI.mock.calls.length === 1, 'the reload');
         expect(window.TradeAPI.bulkImportTrades).toHaveBeenCalledTimes(1);
+        // each field as the file has it (I53: the bulk route stores every one); never autoAdded or strategyVersion
         expect(window.TradeAPI.bulkImportTrades.mock.calls[0][0]).toEqual([
-            { symbol: 'TCS.NS', stockName: 'Tata Consultancy', stockIndex: null, status: 'closed', entryDate: '2026-09-01T09:00:00.000Z',
-              entryPrice: 3500, shares: 14, investmentAmount: 49000, targetPrice: null, stopLossPercent: null,
-              exitDate: '2026-09-10T09:00:00.000Z', exitPrice: 3780, profitLoss: 3920, profitLossPercentage: 8, notes: null },
-            // an open trade carries no exit fields (and never its squareOffDate, which bulkInsertTrades would store as exit_date)
-            { symbol: 'NVDA', stockName: null, stockIndex: null, status: 'active', entryDate: '2026-09-22T14:00:00.000Z',
-              entryPrice: 125, shares: 4, investmentAmount: 500, targetPrice: null, stopLossPercent: null,
-              exitDate: null, exitPrice: null, profitLoss: null, profitLossPercentage: null, notes: null }
+            { symbol: 'TCS.NS', name: 'Tata Consultancy Services', stockName: 'Tata Consultancy', stockIndex: null, market: 'India',
+              currencySymbol: '₹', status: 'closed', entryDate: '2026-09-01T09:00:00.000Z', entryPrice: 3500, shares: 14,
+              investmentAmount: 49000, positionSize: 49000, targetPrice: null, stopLossPercent: null, takeProfitPercent: null,
+              squareOffDate: null, exitDate: '2026-09-10T09:00:00.000Z', exitPrice: 3780, exitReason: 'Target hit: +8.00%',
+              profitLoss: 3920, profitLossPercentage: 8, entryReason: 'DTI buy signal', notes: 'first lot' },
+            // an open trade carries no exit fields; its squareOffDate (the planned exit) goes to its own column
+            { symbol: 'NVDA', name: null, stockName: null, stockIndex: null, market: null, currencySymbol: null, status: 'active',
+              entryDate: '2026-09-22T14:00:00.000Z', entryPrice: 125, shares: 4, investmentAmount: null, positionSize: 500,
+              targetPrice: null, stopLossPercent: null, takeProfitPercent: null, squareOffDate: '2026-10-22T14:00:00.000Z',
+              exitDate: null, exitPrice: null, exitReason: null, profitLoss: null, profitLossPercentage: null, entryReason: null, notes: null }
         ]);
         expect(window.TradeCore.refreshData).toHaveBeenCalledTimes(1);
         expect(text('import-status-message')).toBe('Imported 2 trades');
@@ -239,11 +244,12 @@ describe('Export sold trades and Export everything', () => {
         expect(files[0].name).toBe('dti_all_trades_2026-09-25.json');
         const file = JSON.parse(await readBlob(window, files[0].blob));
         expect(file.metadata.trades).toBe(1);
+        // each field as stored (I53): the name and the position size are not folded into stockName and investmentAmount
         expect(file.trades).toEqual([{
-            symbol: 'NVDA', stockName: 'NVIDIA', stockIndex: null, market: null, currencySymbol: null, status: 'active',
-            entryDate: '2026-09-22T14:00:00.000Z', entryPrice: 125, shares: 4, investmentAmount: 500, targetPrice: null,
-            stopLossPercent: null, exitDate: null, exitPrice: null, profitLoss: null, profitLossPercentage: null,
-            entryReason: null, exitReason: null, notes: null
+            symbol: 'NVDA', name: 'NVIDIA', stockName: null, stockIndex: null, market: null, currencySymbol: null, status: 'active',
+            entryDate: '2026-09-22T14:00:00.000Z', entryPrice: 125, shares: 4, investmentAmount: null, positionSize: 500,
+            targetPrice: null, stopLossPercent: null, takeProfitPercent: null, squareOffDate: null, exitDate: null, exitPrice: null,
+            profitLoss: null, profitLossPercentage: null, entryReason: null, exitReason: null, notes: null
         }]);
     });
 });

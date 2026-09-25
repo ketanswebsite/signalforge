@@ -358,7 +358,9 @@ window.TradeUIModules.dialogs = (function() {
         return symbol.trim().toUpperCase() + '|' + day.toISOString().slice(0, 10) + '|' + price.toFixed(4);
     }
 
-    // The file's trades, in the shape POST /api/trades/bulk takes. Only a sold trade carries exit fields.
+    // The file's trades, in the shape POST /api/trades/bulk takes: each field a trade entered by hand
+    // carries, as GET /api/trades gave it, so an exported trade comes back as it was. Only a sold trade
+    // carries exit fields. What the server decides (id, owner, automatic or not, rules' version) is not sent.
     function tradesFromImportFile(json) {
         const list = Array.isArray(json) ? json : (json && Array.isArray(json.trades) ? json.trades : null);
         if (!list || list.length === 0) throw new Error('There are no trades in this file');
@@ -367,20 +369,28 @@ window.TradeUIModules.dialogs = (function() {
             const sold = t.status === 'closed';
             return {
                 symbol: t.symbol,
-                stockName: t.stockName || t.name || null,
+                name: t.name || null,
+                stockName: t.stockName || null,
                 stockIndex: t.stockIndex || null,
+                market: t.market || null,
+                currencySymbol: t.currencySymbol || null,
                 status: t.status || 'active',
                 entryDate: importDateText(t.entryDate),
                 entryPrice: t.entryPrice,
                 shares: t.shares || null,
-                investmentAmount: t.investmentAmount || t.positionSize || null,
+                investmentAmount: t.investmentAmount || null,
+                positionSize: t.positionSize || null,
                 targetPrice: t.targetPrice || null,
                 stopLossPercent: t.stopLossPercent || null,
+                takeProfitPercent: t.takeProfitPercent || null,
+                squareOffDate: importDateText(t.squareOffDate),
                 exitDate: sold ? importDateText(t.exitDate) : null,
                 exitPrice: sold ? t.exitPrice : null,
+                exitReason: sold ? (t.exitReason || null) : null,
                 profitLoss: sold ? (t.profitLoss ?? null) : null,
                 profitLossPercentage: sold ? (t.profitLossPercentage ?? null) : null,
-                notes: t.notes || t.entryReason || null
+                entryReason: t.entryReason || null,
+                notes: t.notes || null
             };
         });
     }

@@ -2002,7 +2002,13 @@ const TradeDB = {
     return deleteTradesAndSettle('user_id = $1', [userId]);
   },
 
-  // Bulk insert trades
+  // Bulk insert trades (POST /api/trades/bulk: the Positions page's Import, and the
+  // old app's localStorage move). Each trade is stored as insertTrade stores a manual
+  // trade from POST /api/trades, so a trade exported by GET /api/trades comes back
+  // with its name, market, currency symbol, amounts, reasons, notes and planned exit.
+  // What the server decides is never read from the trade: user_id is the caller's,
+  // strategy_version is stamped here, and auto_added is false (a manual trade never
+  // touches the capital ledger).
   async bulkInsertTrades(trades, userId = 'default') {
     const client = await pool.connect();
     try {
@@ -2010,48 +2016,39 @@ const TradeDB = {
       
       let insertedCount = 0;
       for (const trade of trades) {
-        // Map backup fields to PostgreSQL schema (same as in server.js)
-        const mappedTrade = {
-          symbol: trade.symbol,
-          name: trade.stockName || trade.name || null,
-          stockIndex: trade.stockIndex || null,
-          entryDate: trade.entryDate,
-          entryPrice: trade.entryPrice,
-          shares: trade.shares || null,
-          positionSize: trade.investmentAmount || trade.positionSize || null,
-          stopLossPercent: trade.stopLossPercent || null,
-          targetPrice: trade.targetPrice || null,
-          exitDate: trade.exitDate || trade.squareOffDate || null,
-          exitPrice: trade.exitPrice || null,
-          status: trade.status || 'active',
-          profitLoss: trade.profitLoss || null,
-          profitLossPercentage: trade.profitLossPercentage || null,
-          notes: trade.notes || trade.entryReason || null
-        };
-
         await client.query(
           `INSERT INTO trades (
-            symbol, name, stock_index, entry_date, entry_price,
-            shares, position_size, stop_loss_percent, target_price,
+            symbol, name, stock_name, stock_index, market, currency_symbol,
+            entry_date, entry_price, shares, investment_amount, position_size,
+            stop_loss_percent, take_profit_percent, target_price, square_off_date,
             exit_date, exit_price, status, profit_loss, profit_loss_percentage,
-            notes, user_id, strategy_version
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
+            entry_reason, exit_reason, notes, auto_added, user_id, strategy_version
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)`,
           [
-            mappedTrade.symbol,
-            mappedTrade.name,
-            mappedTrade.stockIndex,
-            mappedTrade.entryDate,
-            mappedTrade.entryPrice,
-            mappedTrade.shares,
-            mappedTrade.positionSize,
-            mappedTrade.stopLossPercent,
-            mappedTrade.targetPrice,
-            mappedTrade.exitDate,
-            mappedTrade.exitPrice,
-            mappedTrade.status,
-            mappedTrade.profitLoss,
-            mappedTrade.profitLossPercentage,
-            mappedTrade.notes,
+            trade.symbol,
+            trade.name || trade.stockName || null,
+            trade.stockName || null,
+            trade.stockIndex || null,
+            trade.market || null,
+            trade.currencySymbol || null,
+            trade.entryDate,
+            trade.entryPrice,
+            trade.shares || null,
+            trade.investmentAmount || null,
+            trade.positionSize || trade.investmentAmount || null,
+            trade.stopLossPercent || null,
+            trade.takeProfitPercent || null,
+            trade.targetPrice || null,
+            trade.squareOffDate || null,
+            trade.exitDate || null,
+            trade.exitPrice || null,
+            trade.status || 'active',
+            trade.profitLoss || null,
+            trade.profitLossPercentage || null,
+            trade.entryReason || null,
+            trade.exitReason || null,
+            trade.notes || null,
+            false,
             userId,
             strategyVersion()
           ]

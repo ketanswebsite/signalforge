@@ -470,6 +470,89 @@
      ]
     },
     "note": "every trade is checked before anything is written: this one has no entryPrice, so nothing is imported"
+   },
+   {
+    "as": "delete",
+    "status": 200,
+    "check": "successCount",
+    "body": {
+     "trades": [
+      {
+       "symbol": "HARNESS.L",
+       "name": "Harness plc",
+       "stockName": "Harness",
+       "stockIndex": "ftse100",
+       "market": "UK",
+       "currencySymbol": "£",
+       "status": "closed",
+       "entryDate": "2026-09-01T08:00:00.000Z",
+       "entryPrice": 100,
+       "shares": 4,
+       "investmentAmount": 400,
+       "positionSize": 400,
+       "targetPrice": 108,
+       "stopLossPercent": 5,
+       "takeProfitPercent": 8,
+       "squareOffDate": "2026-10-01T08:00:00.000Z",
+       "exitDate": "2026-09-10T15:00:00.000Z",
+       "exitPrice": 108,
+       "exitReason": "Target hit: +8.00%",
+       "profitLoss": 32,
+       "profitLossPercentage": 8,
+       "entryReason": "DTI buy signal",
+       "notes": "imported from an export",
+       "autoAdded": true,
+       "strategyVersion": "forged",
+       "id": 1
+      }
+     ]
+    },
+    "note": "I53: a sold trade as Export everything saves it (GET /api/trades) goes back in with every field a manual trade carries, on the real INSERT: name, stock name, market, currency symbol, amounts, take-profit, planned exit, exit reason, entry reason and notes each land in their own column (tests/unit/bulk-import-round-trip.test.js reads the row back); autoAdded, strategyVersion and id in the file are ignored"
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "check": "bulkRefusalNamed",
+    "body": {
+     "trades": [
+      {
+       "symbol": "HARNESS.L",
+       "entryDate": "2026-09-19T08:00:00.000Z",
+       "entryPrice": 100,
+       "shares": 1,
+       "status": "active"
+      },
+      {
+       "symbol": "HARNESS.L",
+       "entryDate": "2026-09-19T08:00:00.000Z",
+       "entryPrice": 100,
+       "shares": 1,
+       "status": "active",
+       "currencySymbol": "POUNDS STERLING"
+      }
+     ]
+    },
+    "note": "I53: currency_symbol holds 10 characters: \"trades[1]: currencySymbol must be text of at most 10 characters\", and the valid trades[0] is not written either"
+   },
+   {
+    "as": "user",
+    "status": 400,
+    "check": "bulkRefusalNamed",
+    "body": {
+     "trades": [
+      {
+       "symbol": "HARNESS.L",
+       "entryDate": "2026-09-19T08:00:00.000Z",
+       "entryPrice": 100,
+       "shares": 1,
+       "status": "closed",
+       "exitDate": "2026-09-20T15:00:00.000Z",
+       "exitPrice": 104,
+       "investmentAmount": -100
+      }
+     ]
+    },
+    "note": "I53: an amount must be a positive number: \"trades[0]: investmentAmount must be a positive number\""
    }
   ]
  },
