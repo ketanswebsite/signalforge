@@ -41,13 +41,14 @@ window.applyPosterPositionBits = function (card, plValue, holdingDays, daysRemai
     const railFill = card.querySelector('.sa-pos__fill');
     if (railFill) {
         const clamped = Math.max(-5, Math.min(8, plValue));
-        railFill.style.width = (((clamped + 5) / 13) * 100).toFixed(2) + '%';
+        // The fill's width is data: the stylesheet reads it from --pos-fill (rule 21)
+        railFill.style.setProperty('--pos-fill', (((clamped + 5) / 13) * 100).toFixed(2) + '%');
         railFill.classList.toggle('is-gain', plValue >= 0);
         railFill.classList.toggle('is-loss', plValue < 0);
     }
     const daysBar = card.querySelector('.pos-daysbar i');
     if (daysBar) {
-        daysBar.style.width = Math.max(0, Math.min(100, (holdingDays / 30) * 100)).toFixed(1) + '%';
+        daysBar.style.setProperty('--pos-days', Math.max(0, Math.min(100, (holdingDays / 30) * 100)).toFixed(1) + '%');
     }
     const exitBadge = card.querySelector('.pos-exit-badge');
     if (exitBadge) {
@@ -135,7 +136,7 @@ function renderActiveTrades() {
     const activeTrades = TradeCore.getTrades('active');
 
     if (activeTrades.length === 0) {
-        noActiveTradesMsg.style.display = 'block';
+        noActiveTradesMsg.hidden = false;
         // Remove any existing trade cards
         const existingCards = container.querySelectorAll('.trade-card');
         existingCards.forEach(card => card.remove());
@@ -143,7 +144,7 @@ function renderActiveTrades() {
     }
 
     // Hide empty state message
-    noActiveTradesMsg.style.display = 'none';
+    noActiveTradesMsg.hidden = true;
     
     // Remove any existing trade cards
     const existingCards = container.querySelectorAll('.trade-card');
@@ -168,8 +169,7 @@ function renderActiveTrades() {
             card.dataset.investment = trade.investment;
             
             // Add animation delay for staggered entry
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(20px)';
+            card.classList.add('is-entering');
             
             // Stock info - Show proper company name with ticker below
             const stockNameElement = card.querySelector('.stock-name');
@@ -328,9 +328,8 @@ function renderActiveTrades() {
             
             // Trigger animation after a short delay (staggered)
             setTimeout(() => {
-                card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-                card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
+                card.classList.remove('is-entering');
+                card.classList.add('is-entered');
             }, 50 * index); // Stagger the animations
         } catch (error) {
             TradeCore.showNotification('Error displaying a trade card', 'error');
@@ -357,24 +356,24 @@ function renderActiveTrades() {
         const closedTrades = TradeCore.getTrades('closed');
 
         if (closedTrades.length === 0) {
-            noTradeHistory.style.display = 'block';
-            tradesHistoryTable.style.display = 'none';
+            noTradeHistory.hidden = false;
+            tradesHistoryTable.hidden = true;
 
             if (noWinningTrades && winningTradesTable) {
-                noWinningTrades.style.display = 'block';
-                winningTradesTable.style.display = 'none';
+                noWinningTrades.hidden = false;
+                winningTradesTable.hidden = true;
             }
 
             if (noLosingTrades && losingTradesTable) {
-                noLosingTrades.style.display = 'block';
-                losingTradesTable.style.display = 'none';
+                noLosingTrades.hidden = false;
+                losingTradesTable.hidden = true;
             }
             return;
         }
 
         // Populate all trades table
-        noTradeHistory.style.display = 'none';
-        tradesHistoryTable.style.display = 'block';
+        noTradeHistory.hidden = true;
+        tradesHistoryTable.hidden = false;
         
         // Show P&L summary for all trades
         renderPLSummary(closedTrades, 'pl-summary-all');
@@ -396,11 +395,11 @@ function renderActiveTrades() {
             const winningTrades = closedTrades.filter(trade => (trade.profitLossPercentage || trade.profitLoss || 0) > 0);
 
             if (winningTrades.length === 0) {
-                noWinningTrades.style.display = 'block';
-                winningTradesTable.style.display = 'none';
+                noWinningTrades.hidden = false;
+                winningTradesTable.hidden = true;
             } else {
-                noWinningTrades.style.display = 'none';
-                winningTradesTable.style.display = 'block';
+                noWinningTrades.hidden = true;
+                winningTradesTable.hidden = false;
                 
                 // Show P&L summary for winning trades
                 renderPLSummary(winningTrades, 'pl-summary-winning');
@@ -424,11 +423,11 @@ function renderActiveTrades() {
             const losingTrades = closedTrades.filter(trade => (trade.profitLossPercentage || trade.profitLoss || 0) <= 0);
 
             if (losingTrades.length === 0) {
-                noLosingTrades.style.display = 'block';
-                losingTradesTable.style.display = 'none';
+                noLosingTrades.hidden = false;
+                losingTradesTable.hidden = true;
             } else {
-                noLosingTrades.style.display = 'none';
-                losingTradesTable.style.display = 'block';
+                noLosingTrades.hidden = true;
+                losingTradesTable.hidden = false;
                 
                 // Show P&L summary for losing trades
                 renderPLSummary(losingTrades, 'pl-summary-losing');
@@ -456,7 +455,7 @@ function renderActiveTrades() {
     function renderPLSummary(trades, containerId) {
         const container = document.getElementById(containerId);
         if (!container || trades.length === 0) {
-            if (container) container.style.display = 'none';
+            if (container) container.classList.remove('is-shown');
             return;
         }
 
@@ -516,7 +515,7 @@ function renderActiveTrades() {
             container.appendChild(card);
         });
 
-        container.style.display = 'grid';
+        container.classList.add('is-shown');
     }
     
     /**
@@ -698,12 +697,10 @@ function renderActiveTrades() {
         const statCards = document.querySelectorAll('.statistic-card');
         if (statCards.length > 0) {
             statCards.forEach((card, index) => {
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(20px)';
+                card.classList.add('is-entering');
                 setTimeout(() => {
-                    card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateY(0)';
+                    card.classList.remove('is-entering');
+                    card.classList.add('is-entered');
                 }, 100 + (index * 30));
             });
         }

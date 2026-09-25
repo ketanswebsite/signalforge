@@ -319,12 +319,10 @@ window.TradeUI = (function() {
         const statCards = document.querySelectorAll('.statistic-card');
         if (statCards.length > 0) {
             statCards.forEach((card, index) => {
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(20px)';
+                card.classList.add('is-entering');
                 setTimeout(() => {
-                    card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateY(0)';
+                    card.classList.remove('is-entering');
+                    card.classList.add('is-entered');
                 }, 100 + (index * 50));
             });
         }
@@ -334,12 +332,10 @@ window.TradeUI = (function() {
         if (cards.length > 0) {
             cards.forEach((card, index) => {
                 if (index > 0) { // Skip the first card (statistics) as it's handled separately
-                    card.style.opacity = '0';
-                    card.style.transform = 'translateY(20px)';
+                    card.classList.add('is-entering');
                     setTimeout(() => {
-                        card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-                        card.style.opacity = '1';
-                        card.style.transform = 'translateY(0)';
+                        card.classList.remove('is-entering');
+                        card.classList.add('is-entered');
                     }, 300 + (index * 100));
                 }
             });
@@ -349,12 +345,10 @@ window.TradeUI = (function() {
         const chartContainers = document.querySelectorAll('.chart-container');
         if (chartContainers.length > 0) {
             chartContainers.forEach((container, index) => {
-                container.style.opacity = '0';
-                container.style.transform = 'translateY(20px)';
+                container.classList.add('is-entering');
                 setTimeout(() => {
-                    container.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-                    container.style.opacity = '1';
-                    container.style.transform = 'translateY(0)';
+                    container.classList.remove('is-entering');
+                    container.classList.add('is-entered');
                 }, 400 + (index * 80));
             });
         }
@@ -396,7 +390,9 @@ window.TradeUI = (function() {
             // Update card styling
             const plCard = openPLElement.closest('.statistic-card');
             if (plCard) {
-                plCard.className = `statistic-card ${newValue > 0 ? 'success' : (newValue < 0 ? 'danger' : '')}`;
+                // Toggle, not className =: the card keeps its other classes (is-entered holds its entry end state)
+                plCard.classList.toggle('success', newValue > 0);
+                plCard.classList.toggle('danger', newValue < 0);
             }
         }
         
@@ -431,7 +427,8 @@ window.TradeUI = (function() {
                     // Update card styling
                     const plCard = element.closest('.statistic-card');
                     if (plCard) {
-                        plCard.className = `statistic-card ${newValue > 0 ? 'success' : (newValue < 0 ? 'danger' : '')}`;
+                        plCard.classList.toggle('success', newValue > 0);
+                        plCard.classList.toggle('danger', newValue < 0);
                     }
                 }
             }
@@ -627,12 +624,6 @@ window.TradeUI = (function() {
                 tradeCard.dataset.prevPL = plPercent;
             }
 
-            // Update price movement badge — only on a real movement, never on
-            // rounding noise
-            if (priceChanged) {
-                updatePriceMovementBadge(tradeCard, newPrice > prevPrice);
-            }
-
             // Update status badge
             const statusElement = tradeCard.querySelector('.trade-status');
             if (statusElement) {
@@ -727,8 +718,7 @@ window.TradeUI = (function() {
         // Clear existing badges with fade out if needed
         if (!shouldAnimate && existingBadges.length > 0) {
             existingBadges.forEach(badge => {
-                badge.style.opacity = '0.5';
-                badge.style.transform = 'scale(0.98)';
+                badge.classList.add('is-leaving');
             });
         }
         
@@ -898,7 +888,7 @@ window.TradeUI = (function() {
                 
                 const badge = document.createElement('div');
                 badge.className = `market-status-badge ${status.status}${status.isHoliday ? ' holiday' : ''}`;
-                badge.style.opacity = '0.7'; // Dimmed since no active trades
+                badge.classList.add('is-dimmed'); // Dimmed since no active trades
                 
                 badge.innerHTML = `
                     <span class="market-status-indicator"></span>
@@ -988,27 +978,14 @@ window.TradeUI = (function() {
         span.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
         indicator.appendChild(span);
 
-        // Position near the P&L display (coordinates only; looks come from CSS)
+        // Position near the P&L display: the coordinates are measured now, so they reach the stylesheet as
+        // custom properties (--pnl-left, --pnl-top); everything else about the look is CSS (rule 21)
         const rect = element.getBoundingClientRect();
-        indicator.style.left = `${rect.left}px`;
-        indicator.style.top = `${rect.top - 20}px`;
+        indicator.style.setProperty('--pnl-left', `${rect.left}px`);
+        indicator.style.setProperty('--pnl-top', `${rect.top - 20}px`);
 
         document.body.appendChild(indicator);
         setTimeout(() => indicator.remove(), 2000);
-    }
-    
-    /**
-     * Update price movement badge
-     */
-    function updatePriceMovementBadge(tradeCard, isPositive) {
-        const badge = tradeCard.querySelector('.price-movement-badge');
-        if (badge) {
-            badge.className = `price-movement-badge ${isPositive ? 'positive' : 'negative'}`;
-            badge.style.opacity = '1';
-            setTimeout(() => {
-                badge.style.opacity = '0';
-            }, 3000);
-        }
     }
 
     // Public API - backwards compatible with the original

@@ -140,7 +140,7 @@ window.TradeUIModules.filters = (function() {
                 // Show/hide clear button based on whether there's a search query
                 const clearButton = document.getElementById('clear-search');
                 if (clearButton) {
-                    clearButton.style.display = searchQuery ? 'block' : 'none';
+                    clearButton.hidden = !searchQuery;
                 }
             });
             
@@ -154,7 +154,7 @@ window.TradeUIModules.filters = (function() {
                     
                     const clearButton = document.getElementById('clear-search');
                     if (clearButton) {
-                        clearButton.style.display = 'none';
+                        clearButton.hidden = true;
                     }
                 }
             });
@@ -163,7 +163,7 @@ window.TradeUIModules.filters = (function() {
         // Clear search button
         const clearButton = document.getElementById('clear-search');
         if (clearButton) {
-            clearButton.style.display = 'none'; // Initially hidden
+            clearButton.hidden = true; // Initially hidden
             clearButton.addEventListener('click', function() {
                 const searchInput = document.getElementById('trade-search');
                 if (searchInput) {
@@ -171,7 +171,7 @@ window.TradeUIModules.filters = (function() {
                     searchQuery = '';
                     applyFiltersAndSort();
                     updateFilterSummary();
-                    this.style.display = 'none';
+                    this.hidden = true;
                 }
             });
         }
@@ -306,7 +306,7 @@ window.TradeUIModules.filters = (function() {
             // Show a custom message for when no trades match the filter
             if (currentFilter !== 'all' || searchQuery) {
                 // Custom message for when filters are applied but no matches
-                noActiveTradesMsg.style.display = 'block';
+                noActiveTradesMsg.hidden = false;
                 noActiveTradesMsg.querySelector('.empty-state-message').textContent = 'Nothing matches those filters';
                 const emptyStateDesc = noActiveTradesMsg.querySelector('p');
                 if (emptyStateDesc) {
@@ -315,7 +315,7 @@ window.TradeUIModules.filters = (function() {
             } else {
                 // Default message when there are genuinely no active trades —
                 // keep the page's own hand-written copy
-                noActiveTradesMsg.style.display = 'block';
+                noActiveTradesMsg.hidden = false;
                 noActiveTradesMsg.querySelector('.empty-state-message').textContent = 'Nothing open';
                 const emptyStateDesc = noActiveTradesMsg.querySelector('p');
                 if (emptyStateDesc) {
@@ -330,7 +330,7 @@ window.TradeUIModules.filters = (function() {
         }
         
         // Hide empty state message
-        noActiveTradesMsg.style.display = 'none';
+        noActiveTradesMsg.hidden = true;
 
         // Remove any existing trade cards
         const existingCards = container.querySelectorAll('.trade-card');
@@ -352,8 +352,7 @@ window.TradeUIModules.filters = (function() {
                 card.dataset.tradeId = trade.id;
                 
                 // Add animation delay for staggered entry
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(20px)';
+                card.classList.add('is-entering');
                 
                 // Stock info - Show proper company name with ticker below
                 const stockNameElement = card.querySelector('.stock-name');
@@ -480,9 +479,8 @@ window.TradeUIModules.filters = (function() {
                 
                 // Trigger animation after a short delay (staggered)
                 setTimeout(() => {
-                    card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateY(0)';
+                    card.classList.remove('is-entering');
+                    card.classList.add('is-entered');
                 }, 50 * index); // Stagger the animations
             } catch (error) {
                 TradeCore.showNotification('Error displaying a trade card', 'error');
@@ -564,7 +562,7 @@ window.TradeUIModules.filters = (function() {
                 
                 // Hide clear search button
                 const clearSearchBtn = document.getElementById('clear-search');
-                if (clearSearchBtn) clearSearchBtn.style.display = 'none';
+                if (clearSearchBtn) clearSearchBtn.hidden = true;
                 
                 // Re-apply (now reset) filters
                 applyFiltersAndSort();

@@ -108,7 +108,7 @@
 .value-decrease{text-shadow:0 0 12px var(--loss);transition:text-shadow .2s ease}
 .significant-change{animation:sa-tick-pulse .6s ease}
 @keyframes sa-tick-pulse{50%{transform:scale(1.04)}}
-.pnl-change-indicator{position:fixed;z-index:1000;font-size:var(--size-xs);font-weight:var(--w-bold);pointer-events:none;animation:sa-float-up 2s ease-out forwards}
+.pnl-change-indicator{position:fixed;left:var(--pnl-left);top:var(--pnl-top);z-index:1000;font-size:var(--size-xs);font-weight:var(--w-bold);pointer-events:none;animation:sa-float-up 2s ease-out forwards}
 .pnl-change-indicator .positive{color:var(--gain)}
 .pnl-change-indicator .negative{color:var(--loss)}
 @keyframes sa-float-up{to{transform:translateY(-24px);opacity:0}}
@@ -175,7 +175,7 @@ body.positions-page .capital-row{display:flex;justify-content:space-between;gap:
 body.positions-page .capital-label{color:var(--text-2)}
 body.positions-page .positions-bar{margin-top:6px;font-size:var(--size-xs);color:var(--text-3)}
 body.positions-page .positions-bar .progress-bar{height:6px;background:var(--surface-3);border:1px solid var(--line-strong);margin-top:4px;overflow:hidden}
-body.positions-page .positions-bar .progress-fill{display:block;height:100%;background:var(--accent-field)}
+body.positions-page .positions-bar .progress-fill{display:block;width:var(--capital-fill);height:100%;background:var(--accent-field)}
 body.positions-page .positions-bar .progress-fill.warning{background:var(--warn)}
 body.positions-page .positions-bar .progress-fill.success{background:var(--gain)}
 body.positions-page .sa-empty{padding:var(--s-5) var(--s-4);gap:var(--s-2)}
@@ -187,7 +187,7 @@ body.positions-page #advanced-metrics-container .metric-card{padding:var(--s-3)}
 .pos-scale-mid{position:relative;left:-6%}
 .pos-detailgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s-2) var(--s-3)}
 .pos-daysbar{height:4px;background:var(--surface-3);border:1px solid var(--line-strong)}
-.pos-daysbar i{display:block;height:100%;background:var(--text-3)}
+.pos-daysbar i{display:block;width:var(--pos-days);height:100%;background:var(--text-3)}
 .pos-v-gain{color:var(--gain)}
 .pos-v-loss{color:var(--loss)}
 .stock-symbol{font-size:var(--size-xs);color:var(--text-3);font-weight:600}
@@ -196,7 +196,6 @@ body.positions-page #advanced-metrics-container .metric-card{padding:var(--s-3)}
 .trade-status.status-loss{color:var(--loss);background:var(--loss-soft);border-color:currentColor}
 .shares-warning{color:var(--warn)}
 .sparkline-container{margin-left:8px}
-.price-movement-badge{display:none}
 .pos-actions{display:flex;gap:var(--s-2);flex-wrap:wrap;border-top:1.5px solid var(--line);padding-top:var(--s-4);margin-top:var(--s-4)}
 
 .pl-summary-container{display:none;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:var(--s-3);margin-bottom:var(--s-4)}
@@ -433,7 +432,7 @@ body.positions-page #advanced-metrics-container .metric-card{padding:var(--s-3)}
 
 /* ---------- legacy bridge: market status pills (market-status-manager.js) ---------- */
 #market-status-container{display:flex;gap:var(--s-2);flex-wrap:wrap}
-.market-status-badge{display:inline-flex;align-items:center;gap:8px;font-size:var(--size-xs);font-weight:600;color:var(--text-2);padding:6px 12px;border:1.5px solid var(--frame);border-radius:var(--r-pill);background:var(--surface)}
+.market-status-badge{display:inline-flex;align-items:center;gap:8px;font-size:var(--size-xs);font-weight:600;color:var(--text-2);padding:6px 12px;border:1.5px solid var(--frame);border-radius:var(--r-pill);background:var(--surface);cursor:pointer}
 .market-status-indicator{width:8px;height:8px;border-radius:50%;flex:0 0 auto;background:var(--text-3)}
 .market-status-badge.open .market-status-indicator{background:var(--gain);animation:sa-pulse 2.4s ease-in-out infinite}
 .market-status-badge.holiday .market-status-indicator{background:var(--warn)}
@@ -599,6 +598,33 @@ body.positions-page #advanced-metrics-container .metric-card{padding:var(--s-3)}
 .cookie-consent-links{font-size:var(--size-xs);color:var(--text-3)}
 .cookie-category h4{font-size:var(--size-xs)}
 .cookie-category p{font-size:var(--size-xs);color:var(--text-3)}
+
+/* ---------- state set by the Positions page's scripts (rule 21: a class, the hidden attribute or a custom property, never an inline style) ---------- */
+/* Entry animations: a script adds .is-entering, then swaps it for .is-entered, which holds the end state and its
+   transition. .is-entering comes after .is-entered, so it wins while both are set (a card animated twice). */
+.card.is-entered,.statistic-card.is-entered,.chart-container.is-entered{opacity:1;transform:translateY(0);transition:opacity .5s ease,transform .5s ease}
+.trade-card.is-entered{opacity:1;transform:translateY(0);transition:opacity .4s ease,transform .4s ease}
+.card.is-entering,.statistic-card.is-entering,.chart-container.is-entering,.trade-card.is-entering{opacity:0;transform:translateY(20px)}
+/* Market pills (market-status-manager.js, TradeUI-Core.js): a later rule wins while two are set */
+.market-status-badge.is-entered{opacity:1;transform:translateY(0);transition:opacity .3s ease,transform .3s ease}
+.market-status-badge.is-entering{opacity:0;transform:translateY(10px)}
+.market-status-badge.is-pressed{transform:scale(.98)}
+.market-status-badge.is-dimmed{opacity:.7}
+.market-status-badge.is-leaving{opacity:.5;transform:scale(.98)}
+/* A toast on its way out (utils/notifications.js) */
+.notification.is-dismissed{opacity:0;transform:translateX(100%);transition:opacity .3s,transform .3s}
+/* Closed-trade P&L summary (TradeUI-Trades.js): hidden until it has trades */
+.pl-summary-container.is-shown{display:grid}
+/* Import dialog progress (TradeUI-Dialogs.js): fixed steps */
+#import-progress[data-progress="0"]{width:0%}
+#import-progress[data-progress="10"]{width:10%}
+#import-progress[data-progress="30"]{width:30%}
+#import-progress[data-progress="60"]{width:60%}
+#import-progress[data-progress="100"]{width:100%}
+#import-progress.is-error{background-color:var(--loss)}
+#import-status-message.is-error{color:var(--loss)}
+/* Trade-entry modal: the market-cap row's icon (trade-modal.js) */
+.detail-icon{font-size:14px}
 
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}

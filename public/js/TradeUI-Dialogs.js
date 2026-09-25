@@ -577,7 +577,7 @@ window.TradeUIModules.dialogs = (function() {
         if (importStatus) importStatus
         
         // Reset progress
-        if (progress) progress.style.width = '0%';
+        if (progress) progress.dataset.progress = '0';
         
         // Disable import button
         if (confirmBtn) {
@@ -866,7 +866,7 @@ window.TradeUIModules.dialogs = (function() {
         // Show import status
         importStatus
         statusMessage.textContent = 'Reading import file...';
-        progress.style.width = '10%';
+        progress.dataset.progress = '10';
         
         // Disable confirm button during import
         confirmBtn.disabled = true;
@@ -893,14 +893,14 @@ window.TradeUIModules.dialogs = (function() {
                 
                 // Update progress
                 statusMessage.textContent = 'Validating import data...';
-                progress.style.width = '30%';
+                progress.dataset.progress = '30';
                 
                 // Short delay to show progress
                 setTimeout(() => {
                     try {
                         // Update progress
                         statusMessage.textContent = 'Importing trades...';
-                        progress.style.width = '60%';
+                        progress.dataset.progress = '60';
                         
                         // Import the trades
                         const results = TradeCore.importTradesFromJSON(jsonData, {
@@ -910,13 +910,13 @@ window.TradeUIModules.dialogs = (function() {
                         
                         // Update progress to complete
                         statusMessage.textContent = 'Import completed successfully!';
-                        progress.style.width = '100%';
+                        progress.dataset.progress = '100';
                         
                         // Show result summary
                         setTimeout(() => {
                             if (results.error) {
                                 statusMessage.textContent = `Error: ${results.error}`;
-                                statusMessage.style.color = 'var(--danger-color)';
+                                statusMessage.classList.add('is-error');
                             } else {
                                 statusMessage.textContent = `Import complete: Added ${results.added}, Updated ${results.updated}`;
                                 
@@ -929,9 +929,9 @@ window.TradeUIModules.dialogs = (function() {
                         }, 500);
                     } catch (importError) {
                         statusMessage.textContent = `Error: ${importError.message}`;
-                        statusMessage.style.color = 'var(--danger-color)';
-                        progress.style.width = '100%';
-                        progress.style.backgroundColor = 'var(--danger-color)';
+                        statusMessage.classList.add('is-error');
+                        progress.dataset.progress = '100';
+                        progress.classList.add('is-error');
                         
                         // Reset confirm button
                         confirmBtn.disabled = false;
@@ -947,9 +947,9 @@ window.TradeUIModules.dialogs = (function() {
                 }, 300);
             } catch (parseError) {
                 statusMessage.textContent = 'Error: Invalid JSON file format';
-                statusMessage.style.color = 'var(--danger-color)';
-                progress.style.width = '100%';
-                progress.style.backgroundColor = 'var(--danger-color)';
+                statusMessage.classList.add('is-error');
+                progress.dataset.progress = '100';
+                progress.classList.add('is-error');
                 
                 // Reset confirm button
                 confirmBtn.disabled = true;
@@ -966,9 +966,9 @@ window.TradeUIModules.dialogs = (function() {
         
         reader.onerror = function() {
             statusMessage.textContent = 'Error reading file';
-            statusMessage.style.color = 'var(--danger-color)';
-            progress.style.width = '100%';
-            progress.style.backgroundColor = 'var(--danger-color)';
+            statusMessage.classList.add('is-error');
+            progress.dataset.progress = '100';
+            progress.classList.add('is-error');
             
             // Reset confirm button
             confirmBtn.disabled = false;

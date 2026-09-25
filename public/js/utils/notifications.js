@@ -85,9 +85,7 @@ window.NotificationManager = (function() {
   function dismiss(notification) {
     if (!notification || !notification.parentNode) return;
 
-    notification.style.opacity = '0';
-    notification.style.transform = 'translateX(100%)';
-    notification.style.transition = 'opacity 0.3s, transform 0.3s';
+    notification.classList.add('is-dismissed');
 
     setTimeout(() => {
       if (notification.parentNode) {

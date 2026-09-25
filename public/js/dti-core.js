@@ -76,27 +76,11 @@ const DTIBacktester = {
         const cards = document.querySelectorAll('.card');
         if (cards.length > 0) {
             cards.forEach((card, index) => {
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(20px)';
+                card.classList.add('is-entering');
                 setTimeout(() => {
-                    card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateY(0)';
+                    card.classList.remove('is-entering');
+                    card.classList.add('is-entered');
                 }, 100 + (index * 100));
-            });
-        }
-        
-        // Animate parameter sections
-        const paramSections = document.querySelectorAll('.parameters-section');
-        if (paramSections.length > 0) {
-            paramSections.forEach((section, index) => {
-                section.style.opacity = '0';
-                section.style.transform = 'translateY(10px)';
-                setTimeout(() => {
-                    section.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-                    section.style.opacity = '1';
-                    section.style.transform = 'translateY(0)';
-                }, 200 + (index * 100));
             });
         }
     },

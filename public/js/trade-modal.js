@@ -92,7 +92,7 @@ const TradeModal = (function() {
                         </div>
                         <div class="detail-row" id="market-cap-row">
                             <div class="detail-label">
-                                <span class="material-icons-outlined" style="font-size: 14px;">trending_up</span>
+                                <span class="material-icons-outlined detail-icon">trending_up</span>
                                 Market Cap
                             </div>
                             <div id="trade-market-cap" class="detail-value">
@@ -623,7 +623,6 @@ function calculateTradeDetails() {
         
         // Remove after 3 seconds
         setTimeout(() => {
-            notification.style.animation = 'fadeOut 0.3s ease-in-out';
             setTimeout(() => {
                 if (notification.parentNode) {
                     notification.parentNode.removeChild(notification);

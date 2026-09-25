@@ -327,7 +327,6 @@
             const nextAction = document.createElement('div');
             nextAction.className = 'market-next-action';
             nextAction.textContent = marketStatus.nextActionText;
-            nextAction.style.transition = 'opacity 0.3s ease';
             content.appendChild(nextAction);
         }
         
@@ -358,9 +357,9 @@
         // Add click handler for interactive feedback
         badge.addEventListener('click', function() {
             // Add click animation
-            badge.style.transform = 'scale(0.98)';
+            badge.classList.add('is-pressed');
             setTimeout(() => {
-                badge.style.transform = '';
+                badge.classList.remove('is-pressed');
             }, 150);
             
             // Show detailed market information
@@ -397,11 +396,6 @@
             }
         });
         
-        // Add hover effect
-        badge.addEventListener('mouseenter', function() {
-            badge.style.cursor = 'pointer';
-        });
-        
         // Add data attributes for debugging
         badge.setAttribute('data-market-status', marketStatus.status);
         badge.setAttribute('data-market-timezone', marketStatus.timezone);
@@ -413,12 +407,10 @@
         }
         
         // Add entrance animation
-        badge.style.opacity = '0';
-        badge.style.transform = 'translateY(10px)';
+        badge.classList.add('is-entering');
         setTimeout(() => {
-            badge.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-            badge.style.opacity = '1';
-            badge.style.transform = 'translateY(0)';
+            badge.classList.remove('is-entering');
+            badge.classList.add('is-entered');
         }, 50);
         
         return badge;

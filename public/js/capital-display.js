@@ -129,6 +129,9 @@ const CapitalDisplay = (function() {
 
         document.getElementById('capital-grid').innerHTML = gridHtml;
 
+        // Each bar's width is data (positions / maximum): the stylesheet reads it from --capital-fill (rule 21)
+        document.getElementById('capital-grid').querySelectorAll('.progress-fill[data-fill]').forEach(fill => fill.style.setProperty('--capital-fill', fill.dataset.fill + '%'));
+
         // Render totals
         const utilizationClass = totals.utilizationPercent > 80 ? 'warning' : '';
         const totalsHtml = `
@@ -230,8 +233,7 @@ const CapitalDisplay = (function() {
                         Positions: ${marketData.positions}/${marketData.maxPositions}
                     </div>
                     <div class="progress-bar">
-                        <div class="progress-fill ${utilizationClass}"
-                             style="width: ${utilization}%">
+                        <div class="progress-fill ${utilizationClass}" data-fill="${utilization}">
                         </div>
                     </div>
                 </div>

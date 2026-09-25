@@ -18,6 +18,7 @@ function fakeElement(tag) {
         appendChild(child) { this.children.push(child); return child; },
         setAttribute(name, value) { this.attributes[name] = String(value); },
         replaceChildren(...nodes) { this.children = nodes; this.markup = ''; },
+        querySelectorAll() { return []; },
         set innerHTML(html) { this.markup = html; this.children = []; },
         get innerHTML() { return this.markup; }
     };
@@ -63,6 +64,9 @@ test('a ledger with some markets shows those markets only', async () => {
     expect(notifications).toEqual([]);
     expect(cardTitles(elements['capital-grid'].innerHTML)).toEqual(['UK']);
     expect(elements['capital-grid'].innerHTML).toMatch(/£9,040/);
+    // the bar's width is data for the stylesheet (--capital-fill), never an inline style (rule 21)
+    expect(elements['capital-grid'].innerHTML).toMatch(/class="progress-fill success" data-fill="20"/);
+    expect(elements['capital-grid'].innerHTML).not.toMatch(/style=/);
     expect(elements['capital-totals'].innerHTML).toMatch(/2\/30/);
 });
 
