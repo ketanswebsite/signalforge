@@ -477,8 +477,9 @@ function renderActiveTrades() {
                 };
             }
 
-            const plValue = Number(trade.profitLoss || trade.plValue) || 0;
-            const displayPLValue = isUKStock ? plValue / 100 : plValue;
+            // A trade's P/L is in its own currency's main unit, a UK trade's in pounds like its row in the table:
+            // the server books shares = pounds / price, so the pence of a London price cancel out of (exit - entry) x shares
+            const displayPLValue = Number(trade.profitLoss || trade.plValue) || 0;
 
             currencyStats[currencySymbol].totalPL += displayPLValue;
             currencyStats[currencySymbol].tradeCount++;

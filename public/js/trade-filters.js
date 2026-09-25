@@ -276,10 +276,10 @@ window.TradeUIModules.filters = (function() {
                 return sortedTrades.sort((a, b) => b.currentPLPercent - a.currentPLPercent);
             case 'pl-asc': // Lowest P/L first
                 return sortedTrades.sort((a, b) => a.currentPLPercent - b.currentPLPercent);
-            case 'investment-desc': // Highest investment first
-                return sortedTrades.sort((a, b) => b.investmentAmount - a.investmentAmount);
+            case 'investment-desc': // Highest investment first, in pounds so ₹, £ and $ rank on one scale (GAPS #11)
+                return sortedTrades.sort((a, b) => TradeCore.inPounds(b, b.investmentAmount) - TradeCore.inPounds(a, a.investmentAmount));
             case 'investment-asc': // Lowest investment first
-                return sortedTrades.sort((a, b) => a.investmentAmount - b.investmentAmount);
+                return sortedTrades.sort((a, b) => TradeCore.inPounds(a, a.investmentAmount) - TradeCore.inPounds(b, b.investmentAmount));
             case 'expiry-asc': // Soonest expiry first
                 return sortedTrades.sort((a, b) => a.squareOffDate - b.squareOffDate);
             case 'expiry-desc': // Latest expiry first

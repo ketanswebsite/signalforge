@@ -1286,7 +1286,7 @@ window.TradeUIModules.charts = (function() {
 
         // Prepare data
         const labels = data.map(d => d.name);
-        const plData = data.map(d => d.avgPL);
+        const plData = data.map(d => d.avgPLPercent);
         const tradeCountData = data.map(d => d.trades);
         const winRateData = data.map(d => d.winRate);
 
@@ -1424,8 +1424,8 @@ window.TradeUIModules.charts = (function() {
                                 const datasetLabel = context.dataset.label;
                                 const value = context.parsed.y;
                                 
-                                if (datasetLabel === 'Average P&L (%)') {
-                                    return `Avg P&L: ${value.toFixed(2)}%`;
+                                if (datasetLabel === 'Average result (%)') {
+                                    return `Average result: ${value.toFixed(2)}%`;
                                 } else if (datasetLabel === 'Win Rate (%)') {
                                     return `Win rate: ${value.toFixed(2)}%`;
                                 } else if (datasetLabel === 'Trade Count') {
@@ -1437,7 +1437,8 @@ window.TradeUIModules.charts = (function() {
                             afterBody: function(tooltipItems) {
                                 const dataIndex = tooltipItems[0].dataIndex;
                                 const marketData = data[dataIndex];
-                                return [`Total Trades: ${marketData.trades}`, `Total P/L: ${marketData.totalPL.toFixed(2)}`];
+                                const total = marketData.totalPL; // in pounds (GAPS #11)
+                                return [`Total Trades: ${marketData.trades}`, `Total P/L: ${total < 0 ? '−' : ''}£${Math.abs(total).toFixed(2)}`];
                             }
                         }
                     }

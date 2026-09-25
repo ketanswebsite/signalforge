@@ -408,6 +408,13 @@ const TradeCore = (function() {
             // Separate active and closed trades
             activeTrades = allTrades.filter(trade => trade.status === 'active');
             closedTrades = allTrades.filter(trade => trade.status !== 'active');
+
+            // The dated exchange rates the views that add money across markets convert with (inPounds), from the
+            // oldest sell day on (GAPS #11). Never throws: without them the fixed rates apply
+            if (window.FxConvert) {
+                const soldDays = closedTrades.map(trade => window.FxConvert.dayOf(trade.exitDate)).filter(Boolean).sort();
+                await window.FxConvert.load(soldDays[0] || null);
+            }
             
             
             // Update prices for active trades immediately after loading
@@ -1058,6 +1065,22 @@ const TradeCore = (function() {
     }
     
     /**
+     * A trade's money in pounds, so a view that adds or ranks amounts across India, the UK and the US adds like
+     * with like (GAPS #11): a sold trade converts at its sell day's rate, an open position at the latest, from
+     * GET /api/fx/rates (public/js/fx-convert.js; the fixed rates only while the server has none). A trade's own
+     * P/L % needs no conversion.
+     * @param {Object} trade - the trade the amount belongs to (its market or symbol gives the currency)
+     * @param {number} amount - an amount in the trade's own currency
+     * @returns {number} the amount in pounds
+     */
+    function inPounds(trade, amount) {
+        const value = Number(amount) || 0;
+        if (!window.FxConvert || !trade) return value;
+        const day = trade.status !== 'active' && trade.exitDate ? trade.exitDate : null;
+        return window.FxConvert.toPounds(value, window.FxConvert.currencyOf(trade), day);
+    }
+
+    /**
      * Get equity curve data for charting
      * @returns {Array} Array of equity curve data points
      */
@@ -1088,7 +1111,8 @@ const TradeCore = (function() {
                     date: new Date(trade.exitDate),
                     type: 'exit',
                     trade: trade,
-                    profit: trade.profitLoss || 0
+                    // In pounds, so the three markets add up (GAPS #11)
+                    profit: inPounds(trade, trade.profitLoss || 0)
                 });
             }
         });
@@ -1143,7 +1167,7 @@ const TradeCore = (function() {
         const currentDate = new Date();
         let unrealizedPL = 0;
         activeTrades.forEach(trade => {
-            unrealizedPL += (trade.unrealizedPL || 0);
+            unrealizedPL += inPounds(trade, trade.unrealizedPL || 0);
         });
         
         equityData.push({
@@ -1304,8 +1328,9 @@ const TradeCore = (function() {
                 }
                 
                 monthlyData[monthKey].trades++;
-                monthlyData[monthKey].profit += (trade.profit || 0);
-                monthlyData[monthKey].investment += (trade.entryPrice * trade.shares);
+                // In pounds at the sell day's rate, so a month's % adds its markets like with like (GAPS #11)
+                monthlyData[monthKey].profit += inPounds(trade, trade.profit || 0);
+                monthlyData[monthKey].investment += inPounds(trade, trade.entryPrice * trade.shares);
                 
                 if (trade.profit > 0) {
                     monthlyData[monthKey].wins++;
@@ -1451,7 +1476,8 @@ const TradeCore = (function() {
                 }
                 
                 data.push({
-                    size: trade.investmentAmount || (trade.entryPrice * trade.shares),
+                    // In pounds, so the size quarters rank ₹, £ and $ trades on one scale (GAPS #11)
+                    size: inPounds(trade, trade.investmentAmount || (trade.entryPrice * trade.shares)),
                     return: trade.percentGain || ((trade.profit / (trade.entryPrice * trade.shares)) * 100),
                     symbol: trade.symbol,
                     stockName: trade.symbol, // Could be enhanced with actual names
@@ -1511,13 +1537,17 @@ const TradeCore = (function() {
                     name: market,
                     trades: 0,
                     totalPL: 0,
+                    totalPercent: 0,
                     wins: 0,
                     losses: 0
                 };
             }
             
+            // Each trade adds its own P/L % (the chart's axis is %) and its money in pounds, so the markets'
+            // totals compare in one currency (GAPS #11)
             marketData[market].trades++;
-            marketData[market].totalPL += trade.profit;
+            marketData[market].totalPL += inPounds(trade, trade.profit);
+            marketData[market].totalPercent += Number(trade.percentGain) || 0;
             
             if (trade.profit > 0) {
                 marketData[market].wins++;
@@ -1530,10 +1560,10 @@ const TradeCore = (function() {
         return Object.values(marketData).map(market => ({
             name: market.name,
             trades: market.trades,
-            avgPL: market.totalPL / market.trades,
+            avgPLPercent: market.totalPercent / market.trades,
             winRate: (market.wins / market.trades) * 100,
             totalPL: market.totalPL
-        })).sort((a, b) => b.totalPL - a.totalPL); // Sort by total P&L descending
+        })).sort((a, b) => b.totalPL - a.totalPL); // Sort by total P&L in pounds, descending
     }
     
     /**
@@ -1580,8 +1610,9 @@ const TradeCore = (function() {
             const investment = trade.entryPrice * trade.shares;
             
             stats[category].count++;
-            stats[category].totalPL += trade.profit;
-            stats[category].totalInvestment += investment;
+            // In pounds at the sell day's rate (GAPS #11)
+            stats[category].totalPL += inPounds(trade, trade.profit);
+            stats[category].totalInvestment += inPounds(trade, investment);
             
             if (trade.profit > 0) {
                 stats[category].wins++;
@@ -1649,12 +1680,13 @@ const TradeCore = (function() {
         }
         
         // Calculate basic metrics
-        const totalProfit = closedTrades.reduce((sum, trade) => sum + trade.profit, 0);
+        // Money in pounds, each trade at its sell day's rate, so the markets add up (GAPS #11)
+        const totalProfit = closedTrades.reduce((sum, trade) => sum + inPounds(trade, trade.profit), 0);
         const profits = closedTrades.filter(trade => trade.profit > 0);
         const losses = closedTrades.filter(trade => trade.profit < 0);
         
-        const grossProfit = profits.reduce((sum, trade) => sum + trade.profit, 0);
-        const grossLoss = Math.abs(losses.reduce((sum, trade) => sum + trade.profit, 0));
+        const grossProfit = profits.reduce((sum, trade) => sum + inPounds(trade, trade.profit), 0);
+        const grossLoss = Math.abs(losses.reduce((sum, trade) => sum + inPounds(trade, trade.profit), 0));
         
         // Profit Factor
         const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? grossProfit : 0;
@@ -1749,7 +1781,7 @@ const TradeCore = (function() {
         const streakInfo = calculateStreaks(closedTrades);
         
         // Annualized return (simplified)
-        const totalInvested = closedTrades.reduce((sum, trade) => sum + (trade.entryPrice * trade.shares), 0);
+        const totalInvested = closedTrades.reduce((sum, trade) => sum + inPounds(trade, trade.entryPrice * trade.shares), 0);
         const totalReturn = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
         const yearsOfTrading = validDurationTrades > 0 ? (totalDuration / validDurationTrades / 365) : 1;
         const annualizedReturn = yearsOfTrading > 0 ? totalReturn / yearsOfTrading : totalReturn;
@@ -2151,6 +2183,7 @@ const TradeCore = (function() {
         getPerformanceByMarket, // For market comparison chart
         getHoldingPeriodStats, // For holding period analysis
         getAdvancedMetrics, // For advanced metrics display
+        inPounds, // A trade's money in pounds at its own day's rate (GAPS #11)
         getCalendarHeatmapData, // For calendar heatmap visualization
         getExitReasonBreakdown, // For exit reason analysis
         getMarketStatus, // For market status display

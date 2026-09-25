@@ -6,6 +6,12 @@
 const TradeUIMetricCards = (function() {
     'use strict';
 
+    // A trade's money in pounds at its own day's rate (TradeCore.inPounds, GAPS #11): a figure that adds amounts
+    // across India, the UK and the US uses it, so rupees, pounds and dollars never add as one number
+    const inPounds = (trade, amount) => (window.TradeCore && typeof window.TradeCore.inPounds === 'function'
+        ? window.TradeCore.inPounds(trade, amount)
+        : Number(amount) || 0);
+
     /**
      * Show error message in container
      * @param {HTMLElement} container - Container element
@@ -231,9 +237,9 @@ const TradeUIMetricCards = (function() {
               ((returnData[returnData.length - 1] - returnData[0])).toFixed(1) + '%'
             : null;
 
-        // Overall P&L sign for the card colour (raw sum across currencies —
-        // only the sign is used, never the magnitude)
-        const totalPLSign = plByMarket['India'] + plByMarket['UK'] + plByMarket['US'];
+        // Overall P&L sign for the card colour: the markets added in pounds,
+        // each sold trade at its sell day's rate (only the sign is used)
+        const totalPLSign = closedTrades.reduce((sum, t) => sum + inPounds(t, parseFloat(t.profitLoss || t.plValue || 0)), 0);
 
         return {
             winRate,
@@ -274,7 +280,7 @@ const TradeUIMetricCards = (function() {
         } else if (type === 'pl') {
             let cumulative = 0;
             return trades.map(t => {
-                cumulative += parseFloat(t.profitLoss || t.plValue || 0);
+                cumulative += inPounds(t, parseFloat(t.profitLoss || t.plValue || 0)); // in pounds (GAPS #11)
                 return cumulative;
             });
         } else if (type === 'return') {
@@ -544,38 +550,16 @@ const TradeUIMetricCards = (function() {
     }
 
     /**
-     * Create calendar legend with auto-detected currency
-     * @param {Array} trades - Array of trade objects to detect currencies from
+     * Create the calendar legend: the day bands, in pounds (GAPS #11)
+     * @param {Array} trades - the trades on the calendar (unused: every day is in pounds)
      * @returns {HTMLElement} Legend element
      */
     function createCalendarLegend(trades = []) {
         const legend = document.createElement('div');
         legend.className = 'calendar-legend';
 
-        // Auto-detect currencies from trades
-        const markets = new Set();
-        trades.forEach(trade => {
-            if (trade.market) {
-                markets.add(trade.market);
-            }
-        });
-
-        // Determine currency symbols and ranges
-        let currencyInfo = [];
-        if (markets.has('India')) {
-            currencyInfo.push({ symbol: '₹', lowHigh: '1-300', medHigh: '300-1K', highPlus: '1K+' });
-        }
-        if (markets.has('US')) {
-            currencyInfo.push({ symbol: '$', lowHigh: '1-100', medHigh: '100-500', highPlus: '500+' });
-        }
-        if (markets.has('UK')) {
-            currencyInfo.push({ symbol: '£', lowHigh: '1-100', medHigh: '100-500', highPlus: '500+' });
-        }
-
-        // Default to India if no markets detected
-        if (currencyInfo.length === 0) {
-            currencyInfo = [{ symbol: '₹', lowHigh: '1-300', medHigh: '300-1K', highPlus: '1K+' }];
-        }
+        // The cells classify each day's result in pounds (GAPS #11), whatever market its trades were in
+        const currencyInfo = [{ symbol: '£', lowHigh: '1-100', medHigh: '100-500', highPlus: '500+' }];
 
         // Format legend ranges (combine multiple currencies if needed)
         const formatRange = (rangeKey) => {
@@ -661,19 +645,13 @@ const TradeUIMetricCards = (function() {
 
             if (tradesByDate[dateStr]) {
                 const dayTrades = tradesByDate[dateStr];
-                const dayPL = dayTrades.reduce((sum, t) => sum + parseFloat(t.profitLoss || t.plValue || 0), 0);
+                // The day's result in pounds, each trade at its sell day's rate (GAPS #11), so a day with trades in
+                // two markets adds up in one currency, classified on the pound bands the legend shows
+                const dayPL = dayTrades.reduce((sum, t) => sum + inPounds(t, parseFloat(t.profitLoss || t.plValue || 0)), 0);
                 const tradeCount = dayTrades.length;
                 const plType = dayPL > 0 ? 'profit' : 'loss';
-
-                // Currency and intensity bands follow the day's market (the
-                // legend advertises ₹300/1K for India and 100/500 for £/$ —
-                // the cells must classify on the same bands)
-                const firstMarket = dayTrades[0].market ||
-                    (dayTrades[0].symbol && dayTrades[0].symbol.endsWith('.NS') ? 'India'
-                        : dayTrades[0].symbol && dayTrades[0].symbol.endsWith('.L') ? 'UK' : 'US');
-                const sameMarket = dayTrades.every(t => (t.market || firstMarket) === firstMarket);
-                const symbol = !sameMarket ? '' : firstMarket === 'India' ? '₹' : firstMarket === 'UK' ? '£' : '$';
-                const bands = firstMarket === 'India' ? { med: 300, high: 1000 } : { med: 100, high: 500 };
+                const symbol = '£';
+                const bands = { med: 100, high: 500 };
 
                 // Format P&L with currency symbol
                 const formattedPL = symbol + Math.abs(dayPL).toFixed(2);
@@ -690,7 +668,7 @@ const TradeUIMetricCards = (function() {
 
                 // Accessibility: Add descriptive ARIA label
                 dayCell.setAttribute('aria-label', `${dateStr}: ${plType} of ${formattedPL}, ${tradeCount} ${tradeCount === 1 ? 'trade' : 'trades'}`);
-                dayCell.title = `${dateStr}: ${dayPL > 0 ? '+' : ''}${symbol}${dayPL.toFixed(2)} (${tradeCount} ${tradeCount === 1 ? 'trade' : 'trades'})`;
+                dayCell.title = `${dateStr}: ${dayPL > 0 ? '+' : dayPL < 0 ? '−' : ''}${symbol}${Math.abs(dayPL).toFixed(2)} (${tradeCount} ${tradeCount === 1 ? 'trade' : 'trades'})`;
 
                 // Add keyboard event handler for Enter and Space keys
                 dayCell.addEventListener('keydown', (e) => {
