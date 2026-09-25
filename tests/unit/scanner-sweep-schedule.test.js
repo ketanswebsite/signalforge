@@ -75,7 +75,7 @@ test('a sweep that throws never escapes the cron callback', async () => {
     ConvictionSweep.isSweepDay.mockReturnValue(true);
     ConvictionSweep.runConvictionSweep.mockRejectedValue(new Error('boom'));
 
-    await expect(fire()).resolves.toBeUndefined();
+    await expect(fire()).resolves.toEqual({ error: 'boom' });   // resolves (never escapes), and says why for job_runs
     expect(console.error).toHaveBeenCalledWith('❌ [CRON] Conviction sweep failed:', 'boom');
 });
 
@@ -106,7 +106,7 @@ test('a watchdog that throws never escapes the cron callback', async () => {
     const [[, fire]] = watchdogCrons();
     ConvictionSweep.runSweepWatchdog.mockRejectedValue(new Error('boom'));
 
-    await expect(fire()).resolves.toBeUndefined();
+    await expect(fire()).resolves.toEqual({ error: 'boom' });
     expect(console.error).toHaveBeenCalledWith('❌ [CRON] AI sweep watchdog failed:', 'boom');
 });
 

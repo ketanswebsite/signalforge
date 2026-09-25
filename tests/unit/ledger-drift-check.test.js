@@ -322,7 +322,7 @@ describe('the cron (lib/scanner/scanner.js)', () => {
         const [[, fire]] = driftCrons();
         jest.spyOn(LedgerDrift, 'runLedgerDriftCheck').mockRejectedValue(new Error('boom'));
 
-        await expect(fire()).resolves.toBeUndefined();
+        await expect(fire()).resolves.toEqual({ error: 'boom' });   // resolves (never escapes), and says why for job_runs
         expect(console.error).toHaveBeenCalledWith('❌ [LEDGER DRIFT] Check failed:', 'boom');
     });
 });
