@@ -8,11 +8,13 @@
  *   - the 1 PM trade executor safety net (signals without a stored verdict
  *     are scored live before any capital moves)
  *
- * Framework (fixed — mirrored by the cloud ntfy routine, change both places):
- *   Technical 45% (momentum positive, stop-vs-ADR fit is a moderator, not a veto)
- *   Fundamental 30% (Yahoo quoteSummary via cookie+crumb; missing data = neutral 5)
- *   Information 25% (Google News RSS; earnings inside the 30d window caps the pillar)
- *   Blended confidence: >6.0 = GO, 5-6 = WATCH, <5 = PASS.
+ * Framework (the weights and the bands are in lib/shared/strategy-params.js; mirrored by the cloud ntfy
+ * routine, change both places):
+ *   Technical (momentum positive, stop-vs-ADR fit is a moderator, not a veto)
+ *   Fundamental (Yahoo quoteSummary via cookie+crumb; missing data = neutral 5)
+ *   Information (Google News RSS; earnings inside the 30d window caps the pillar)
+ *   Blended confidence: the pillars' weighted mean; above CONVICTION_GO_ABOVE = GO, from
+ *   CONVICTION_WATCH_FROM = WATCH, below = PASS.
  *   Backtest win rate is context only — never part of the score.
  *
  * Every pillar degrades to neutral 5 on failure, so a dead data source yields
@@ -26,6 +28,8 @@ const { repairYahooChartResult, describeReport, isRepairEnabled } = require('../
 // Yahoo in process: the chart, and the cookie + crumb quoteSummary needs (one session, shared with
 // the market-cap refresh)
 const { getSession: getYahooSession, fetchChart: fetchYahooChart } = require('../lib/shared/yahoo-client');
+// The gate's weights and bands, and the target, stop and holding limit it scores against (GAPS #9)
+const StrategyParams = require('../lib/shared/strategy-params');
 const headlineSentiment = new Sentiment();
 
 // Verdicts are scored by the MONTHLY SWEEP (first Saturday of the month,
@@ -189,7 +193,7 @@ async function scoreTechnical(symbol) {
     const ma50 = bars.slice(-50).reduce((s, b) => s + b.close, 0) / 50;
     const vsMa50 = (last / ma50 - 1) * 100;
     const adr20 = bars.slice(-20).reduce((s, b) => s + (b.high - b.low) / b.close, 0) / 20 * 100;
-    const stopFitDays = adr20 > 0 ? 5 / adr20 : 99;
+    const stopFitDays = adr20 > 0 ? StrategyParams.STOP_LOSS_PERCENT / adr20 : 99;
 
     let score = 5;
     const evidence = [];
@@ -200,9 +204,9 @@ async function scoreTechnical(symbol) {
     evidence.push(`5-day move ${pct(mom5)}`);
     if (vsMa50 > 2) score += 1; else if (vsMa50 < -2) score -= 1;
     evidence.push(`Price ${pct(vsMa50)} vs its 50-day average`);
-    // Moderator, not a veto: how many typical days' range sits before the −5% stop
+    // Moderator, not a veto: how many typical days' range sits before the stop
     if (stopFitDays < 1.25) score -= 1; else if (stopFitDays > 2.5) score += 0.5;
-    evidence.push(`Typical daily range ${adr20.toFixed(1)}% — the −5% stop is ~${stopFitDays.toFixed(1)} days of range`);
+    evidence.push(`Typical daily range ${adr20.toFixed(1)}% — the −${StrategyParams.STOP_LOSS_PERCENT}% stop is ~${stopFitDays.toFixed(1)} days of range`);
 
     return { score: clampScore(score), evidence };
 }
@@ -364,11 +368,11 @@ async function geminiConviction({ symbol, name, technical, fundamental, informat
     };
 
     const prompt =
-        'You are the conviction checker for a swing-trade scanner (entry now, +8% target, −5% stop, 30-day limit).\n' +
+        `You are the conviction checker for a swing-trade scanner (entry now, +${StrategyParams.TAKE_PROFIT_PERCENT}% target, −${StrategyParams.STOP_LOSS_PERCENT}% stop, ${StrategyParams.MAX_HOLDING_DAYS}-day limit).\n` +
         'Score three pillars from 1 to 10 using ONLY the facts given:\n' +
-        '- technical (weight 45%): price behaviour. Momentum counts POSITIVE. The stop-vs-daily-range fit is a moderator, never a veto.\n' +
-        '- fundamental (weight 30%): business quality. If facts say data is unavailable, score exactly 5.\n' +
-        '- information (weight 25%): the news tone. If earningsInsideNewsWindow is true, this pillar is capped at 5.\n' +
+        `- technical (weight ${StrategyParams.CONVICTION_WEIGHTS.technical}%): price behaviour. Momentum counts POSITIVE. The stop-vs-daily-range fit is a moderator, never a veto.\n` +
+        `- fundamental (weight ${StrategyParams.CONVICTION_WEIGHTS.fundamental}%): business quality. If facts say data is unavailable, score exactly 5.\n` +
+        `- information (weight ${StrategyParams.CONVICTION_WEIGHTS.information}%): the news tone. If earningsInsideNewsWindow is true, this pillar is capped at 5.\n` +
         'backtestWinRatePercent is CONTEXT ONLY — it must not move any score.\n' +
         'For each pillar give 2-4 evidence lines; every line must contain a number or cite a headline. ' +
         'Neither cheerlead nor auto-sceptic — follow the facts. ' +
@@ -518,10 +522,13 @@ async function computeConviction({ symbol, name, winRate = null, fresh = false }
         console.error(`Gemini conviction failed for ${symbol} (falling back to rule-based):`, e.message);
     }
 
+    const weights = StrategyParams.CONVICTION_WEIGHTS;
     const confidence = Math.round(
-        (pillars.technical.score * 0.45 + pillars.fundamental.score * 0.30 + pillars.information.score * 0.25) * 10
+        (pillars.technical.score * (weights.technical / 100) + pillars.fundamental.score * (weights.fundamental / 100) +
+            pillars.information.score * (weights.information / 100)) * 10
     ) / 10;
-    const verdict = confidence > 6 ? 'GO' : confidence >= 5 ? 'WATCH' : 'PASS';
+    const verdict = confidence > StrategyParams.CONVICTION_GO_ABOVE ? 'GO'
+        : confidence >= StrategyParams.CONVICTION_WATCH_FROM ? 'WATCH' : 'PASS';
 
     const payload = {
         success: true,
@@ -532,9 +539,9 @@ async function computeConviction({ symbol, name, winRate = null, fresh = false }
         engine,
         summary,
         pillars: {
-            technical: { ...pillars.technical, weight: 45 },
-            fundamental: { ...pillars.fundamental, weight: 30 },
-            information: { ...pillars.information, weight: 25 }
+            technical: { ...pillars.technical, weight: weights.technical },
+            fundamental: { ...pillars.fundamental, weight: weights.fundamental },
+            information: { ...pillars.information, weight: weights.information }
         },
         context: {
             winRate,

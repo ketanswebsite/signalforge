@@ -1088,9 +1088,13 @@ window.TradeUIModules.dialogs = (function() {
         }, 300);
     }
     
-    // The exit rule the exit monitor applies to every open position
-    // (lib/portfolio/exit-monitor.js CONFIG). The edit dialog shows it read-only.
-    const EXIT_RULE = { targetPercent: 8, stopPercent: 5, maxHoldingDays: 30 };
+    // The exit rule the exit monitor applies to every open position (lib/shared/strategy-params.js,
+    // loaded by the page before this file). The edit dialog shows it read-only.
+    const EXIT_RULE = {
+        targetPercent: window.StrategyParams.TAKE_PROFIT_PERCENT,
+        stopPercent: window.StrategyParams.STOP_LOSS_PERCENT,
+        maxHoldingDays: window.StrategyParams.MAX_HOLDING_DAYS
+    };
 
     // A price the way the position card shows it: London prices are in pence
     function formatEditPrice(trade, price) {

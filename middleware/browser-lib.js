@@ -18,10 +18,12 @@
  * fails when a page loads a lib/ script that is not on the list.
  */
 
-// Relative to lib/. backtest-stop.js and trailing-stop.js come with the trailing-stop
-// work, whose versions of trades.html and portfolio-backtest.html load them; until it
-// lands they are a 404.
+// Relative to lib/. strategy-params.js holds the strategy's numbers, which the engines
+// below and the pages' own scripts read. backtest-stop.js and trailing-stop.js come with
+// the trailing-stop work, whose versions of trades.html and portfolio-backtest.html load
+// them; until it lands they are a 404.
 const BROWSER_LIB_FILES = Object.freeze([
+  'shared/strategy-params.js',
   'shared/stock-data.js',
   'shared/dti-calculator.js',
   'shared/backtest-calculator.js',

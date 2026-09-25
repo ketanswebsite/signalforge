@@ -252,10 +252,10 @@ const DTIBacktest = (function() {
         
         const { daily7DayDTI, sevenDayData, sevenDayDTI } = sevenDayDTIData;
         
-        // Calculate the earliest allowed trade date (6 months after the first date)
+        // Calculate the earliest allowed trade date (WARMUP_MONTHS after the first date)
         const firstDate = new Date(dates[0]);
         const earliestAllowableDate = new Date(firstDate);
-        earliestAllowableDate.setMonth(firstDate.getMonth() + 6);
+        earliestAllowableDate.setMonth(firstDate.getMonth() + window.StrategyParams.WARMUP_MONTHS);
         
         // Initialize result variables
         let completedTrades = [];

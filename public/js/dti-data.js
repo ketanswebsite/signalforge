@@ -246,10 +246,8 @@ if (period === '5y') {
             const low = parsedData.map(item => item.low);
             const close = parsedData.map(item => item.close);
             
-            // Get DTI parameters (fixed values)
-            const r = 14;
-            const s = 10;
-            const u = 5;
+            // The DTI's periods (lib/shared/strategy-params.js, loaded by the page)
+            const { r, s, u } = window.StrategyParams.DTI_PERIODS;
             
             // Calculate daily DTI - calling function from DTI indicators module
             const dti = DTIIndicators.calculateDTI(high, low, r, s, u);

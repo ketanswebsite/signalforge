@@ -7,11 +7,14 @@
 const PortfolioSimulator = (function() {
     'use strict';
 
+    // The strategy's parameters (lib/shared/strategy-params.js; the page loads it before this file)
+    const Params = window.StrategyParams;
+
     // Configuration
     const CONFIG = {
         // Position limits
-        MAX_POSITIONS_TOTAL: 30,
-        MAX_POSITIONS_PER_MARKET: 10,
+        MAX_POSITIONS_TOTAL: Params.MAX_POSITIONS_TOTAL,
+        MAX_POSITIONS_PER_MARKET: Params.MAX_POSITIONS_PER_MARKET,
 
         // Default investment amounts (for display)
         INITIAL_INVESTMENTS: {
@@ -21,29 +24,17 @@ const PortfolioSimulator = (function() {
         },
 
         // Trade sizes per position
-        TRADE_SIZES: {
-            'India': { currency: 'INR', amount: 50000 },  // 50k per trade
-            'UK': { currency: 'GBP', amount: 400 },       // 400 per trade
-            'US': { currency: 'USD', amount: 500 }        // 500 per trade
-        },
+        TRADE_SIZES: Params.TRADE_SIZES,
 
-        // High conviction threshold
-        HIGH_CONVICTION_THRESHOLD: 75,
+        // High conviction threshold: a backtest win rate above this
+        HIGH_CONVICTION_THRESHOLD: Params.WIN_RATE_BAR_PERCENT,
 
-        // DTI parameters
-        DTI_PARAMS: {
-            r: 14,
-            s: 10,
-            u: 5,
-            entryThreshold: 0,
-            takeProfitPercent: 8,
-            stopLossPercent: 5,
-            maxHoldingDays: 30
-        },
+        // DTI parameters (r, s, u, entryThreshold, takeProfitPercent, stopLossPercent, maxHoldingDays)
+        DTI_PARAMS: Params.BACKTEST_PARAMS,
 
         // Data buffer (months)
         DATA_BUFFER: {
-            warmup: 6,
+            warmup: Params.WARMUP_MONTHS,
             safety: 6
         },
 
@@ -306,25 +297,25 @@ const PortfolioSimulator = (function() {
 
     /**
      * Calculate date ranges for backtest and simulation
-     * Data fetch: 5 years before simulation start
-     * Buffer period: First 6 months of data (for DTI warmup only, no signals counted)
-     * Historical signals: From 6 months after data start to simulation start (4.5 years)
+     * Data fetch: BACKTEST_HISTORY_YEARS before simulation start
+     * Buffer period: the first WARMUP_MONTHS of data (for DTI warmup only, no signals counted)
+     * Historical signals: from the end of the buffer to simulation start
      * Simulation period: simulation start to today
      */
     function calculateDateRanges(simulationStart) {
         const simStart = new Date(simulationStart);
 
-        // Data start: 5 years before simulation start
+        // Data start: BACKTEST_HISTORY_YEARS before simulation start
         const dataStart = new Date(simStart);
-        dataStart.setFullYear(dataStart.getFullYear() - 5);
+        dataStart.setFullYear(dataStart.getFullYear() - Params.BACKTEST_HISTORY_YEARS);
 
-        // Buffer end: 6 months after data start (DTI warmup period)
+        // Buffer end: WARMUP_MONTHS after data start (DTI warmup period)
         const bufferEnd = new Date(dataStart);
-        bufferEnd.setMonth(bufferEnd.getMonth() + 6);
+        bufferEnd.setMonth(bufferEnd.getMonth() + Params.WARMUP_MONTHS);
 
         return {
-            dataStart: dataStart.toISOString().split('T')[0],          // Data fetch start (5 years before sim)
-            bufferEnd: bufferEnd.toISOString().split('T')[0],          // End of buffer period (6 months after data start)
+            dataStart: dataStart.toISOString().split('T')[0],          // Data fetch start (BACKTEST_HISTORY_YEARS before sim)
+            bufferEnd: bufferEnd.toISOString().split('T')[0],          // End of buffer period (WARMUP_MONTHS after data start)
             simulationStart: simStart.toISOString().split('T')[0],     // Simulation start (user selected)
             simulationEnd: new Date().toISOString().split('T')[0]      // Today
         };
@@ -818,7 +809,7 @@ const PortfolioSimulator = (function() {
             const current = new Date(currentDate);
             const holdingDays = Math.floor((current - entryDate) / (24 * 60 * 60 * 1000));
 
-            // SAFETY CHECK: Force-close if held >= 30 days
+            // SAFETY CHECK: Force-close once held for the holding limit (maxHoldingDays)
             // Layer 4: Fetch REAL price to calculate actual P/L (not 0%)
             if (holdingDays >= CONFIG.DTI_PARAMS.maxHoldingDays) {
                 let exitPrice = position.entryPrice;  // Fallback: assume breakeven
@@ -954,11 +945,11 @@ const PortfolioSimulator = (function() {
         const totalCapital = marketCap.initial + marketCap.realized;
 
         // Divide by max positions per market for equal allocation
-        // This ensures we can always fill all 10 positions per market
+        // This ensures we can always fill all MAX_POSITIONS_PER_MARKET positions per market
         const dynamicSize = totalCapital / CONFIG.MAX_POSITIONS_PER_MARKET;
 
-        // Safety floor: Don't go below 10% of initial per-trade amount
-        const minSize = CONFIG.TRADE_SIZES[market].amount * 0.1;
+        // Safety floor: never below MIN_TRADE_SIZE_SHARE of the standard per-trade amount
+        const minSize = CONFIG.TRADE_SIZES[market].amount * Params.MIN_TRADE_SIZE_SHARE;
 
         return Math.max(dynamicSize, minSize);
     }

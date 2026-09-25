@@ -35,7 +35,7 @@ const LIB = path.join(REPO, 'lib');
 const PUBLIC = path.join(REPO, 'public');
 
 // On main today. backtest-stop.js and trailing-stop.js are listed ahead of their arrival.
-const LIVE = ['shared/stock-data.js', 'shared/dti-calculator.js', 'shared/backtest-calculator.js'];
+const LIVE = ['shared/strategy-params.js', 'shared/stock-data.js', 'shared/dti-calculator.js', 'shared/backtest-calculator.js'];
 
 // Server source that the old mount handed to anyone. Each must exist, or its 404 proves nothing.
 const SERVER_ONLY = [

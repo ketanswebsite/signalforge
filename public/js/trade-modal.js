@@ -14,10 +14,10 @@ const TradeModal = (function() {
     let currentPrice = 0;
     let currencySymbol = '$'; // Default, will be set dynamically
     
-    // Parameters from backtester
-    let stopLossPercent = 5;
-    let takeProfitPercent = 8;
-    let maxHoldingDays = 30;
+    // Parameters from backtester: the strategy's (lib/shared/strategy-params.js) until init reads the page's inputs
+    let stopLossPercent = window.StrategyParams.STOP_LOSS_PERCENT;
+    let takeProfitPercent = window.StrategyParams.TAKE_PROFIT_PERCENT;
+    let maxHoldingDays = window.StrategyParams.MAX_HOLDING_DAYS;
     
     // DOM Elements
     let investmentInput = null;
