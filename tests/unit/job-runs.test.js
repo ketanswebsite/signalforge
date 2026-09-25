@@ -105,10 +105,44 @@ describe('recordRun', () => {
 });
 
 describe('summarize', () => {
-    test('keeps plain fields, counts arrays, drops objects', () => {
-        expect(JobRuns.summarize({ a: 1, b: 'x', c: true, d: null, e: [1, 2, 3], f: { deep: 1 } })).toEqual({ a: 1, b: 'x', c: true, d: null, e: { items: 3 } });
+    test('keeps plain fields and counts arrays of values', () => {
+        expect(JobRuns.summarize({ a: 1, b: 'x', c: true, d: null, e: [1, 2, 3] })).toEqual({ a: 1, b: 'x', c: true, d: null, e: { items: 3 } });
         expect(JobRuns.summarize(undefined)).toBeNull();
         expect(JobRuns.summarize([1, 2])).toEqual({ items: 2 });
+    });
+
+    // Until 2026-09-25 a nested object was dropped and every array cut to its length: the market-cap run's counts by
+    // market never reached job_runs, and the exit-check prune's row read { tables: { items: 1 } }
+    test('keeps two levels down: the market-cap run\'s counts by market', () => {
+        const result = { requested: 5029, updated: 4000, throttled: 0, errorStep: null,
+            byMarket: { India: { requested: 2000, updated: 1500 }, UK: { requested: 760, updated: 700 } } };
+        expect(JobRuns.summarize(result)).toEqual(result);
+    });
+
+    test('keeps each item of a list of up to 10 objects (the prune\'s tables), and nothing below two levels', () => {
+        const prune = { dryRun: false, enabled: true, configuredDays: 30, tables: [
+            { table: 'trade_exit_checks', exists: true, retentionDays: 30, rolledUp: 21, deleted: 11104, batches: 3, capped: false,
+                detail: { kept: 1, deeper: { dropped: 1 } }, list: [1, 2] }
+        ] };
+        expect(JobRuns.summarize(prune)).toEqual({ dryRun: false, enabled: true, configuredDays: 30, tables: [
+            { table: 'trade_exit_checks', exists: true, retentionDays: 30, rolledUp: 21, deleted: 11104, batches: 3, capped: false,
+                detail: { kept: 1 }, list: { items: 2 } }
+        ] });
+        expect(JobRuns.summarize({ a: { b: { c: { d: 1 }, n: 2 } } })).toEqual({ a: { b: { n: 2 } } });
+    });
+
+    test('a long list, a list of values or an empty list is its length; a date is ISO text', () => {
+        const eleven = Array.from({ length: 11 }, (_, i) => ({ i }));
+        expect(JobRuns.summarize({ many: eleven, mixed: [{ a: 1 }, 2], none: [] })).toEqual({ many: { items: 11 }, mixed: { items: 2 }, none: { items: 0 } });
+        expect(JobRuns.summarize({ at: new Date('2026-09-25T21:30:00.000Z') })).toEqual({ at: '2026-09-25T21:30:00.000Z' });
+    });
+
+    test('a summary over the size cap keeps fewer levels, down to the top level, never less than before', () => {
+        const wide = Object.fromEntries(Array.from({ length: 30 }, (_, i) => ['k' + i, 'x'.repeat(200)]));
+        expect(JobRuns.summarize({ count: 3, nested: wide })).toEqual({ count: 3 });
+        expect(JobRuns.summarize({ count: 3, byMarket: { UK: { updated: 1 } }, deep: { wide } })).toEqual({ count: 3, byMarket: {}, deep: {} });
+        const tooWide = Object.fromEntries(Array.from({ length: 30 }, (_, i) => ['k' + i, 'x'.repeat(200)]));
+        expect(JobRuns.summarize(tooWide)).toEqual({ truncated: true });
     });
 });
 
