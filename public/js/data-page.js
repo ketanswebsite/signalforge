@@ -10,7 +10,7 @@
       var r = await fetch('/api/user/data-summary');
       if (r.status === 401) {
         $('signin-note').hidden = false;
-        $('data-grid').style.opacity = '.45';
+        $('data-grid').classList.add('dm-dimmed');
         $('open-delete').disabled = true;
         return;
       }

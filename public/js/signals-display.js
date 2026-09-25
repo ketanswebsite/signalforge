@@ -60,7 +60,7 @@ const SignalsDisplay = (function() {
                     <polyline points="17 11 19 13 23 9"></polyline>
                 </svg>
                 7 AM signals — executed automatically at 1 PM
-                <span class="signal-count" id="signal-count" style="display: none;">0</span>
+                <span class="signal-count" id="signal-count" hidden>0</span>
             </h3>
 
             <div class="signals-content" id="signals-content">
@@ -173,7 +173,7 @@ const SignalsDisplay = (function() {
 
         // Update count badge
         countBadge.textContent = pendingSignals.length;
-        countBadge.style.display = pendingSignals.length > 0 ? 'inline-block' : 'none';
+        countBadge.hidden = pendingSignals.length === 0;
 
         // Render signals
         if (pendingSignals.length === 0) {

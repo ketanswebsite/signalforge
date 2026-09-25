@@ -18,6 +18,7 @@
 .dm-stored{border-bottom:1.5px solid var(--line);padding-bottom:var(--s-3)}
 .dm-stored strong{font-size:var(--size-sm)}
 .dm-stored p{font-size:var(--size-xs);color:var(--text-3);margin-top:2px}
+.dm-dimmed{opacity:.45} /* the page's panels while signed out (data-page.js) */
 
 /* Inline-style extraction (checkout, success, failure, trial, data, terms,
    privacy). Icon and wordmark sizes are contextual, because every element they

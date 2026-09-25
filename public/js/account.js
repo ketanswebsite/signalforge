@@ -24,8 +24,9 @@ function acStat(label, value, context, options) {
     stat.appendChild(acEl('span', 'sa-stat__value' + (opts.small ? ' sa-stat__value--sm' : '') + (opts.tone ? ' sa-stat__value--' + opts.tone : ''), value));
     if (typeof opts.barPercent === 'number') {
         const bar = acEl('div', 'sa-stat__bar');
-        const fill = acEl('i');
-        fill.style.width = Math.max(0, Math.min(100, opts.barPercent)) + '%';
+        // Its width is a number known only at run time: .ac-statbar-fill (app.css) reads it from this custom property
+        const fill = acEl('i', 'ac-statbar-fill');
+        fill.style.setProperty('--ac-statbar', Math.max(0, Math.min(100, opts.barPercent)) + '%');
         bar.appendChild(fill);
         stat.appendChild(bar);
     }
@@ -480,14 +481,10 @@ class SettingsManager {
     }
 
     applyFontSize() {
-        const root = document.documentElement;
-        const sizes = {
-            'small': '14px',
-            'medium': '16px',
-            'large': '18px',
-            'extra-large': '20px'
-        };
-        root.style.fontSize = sizes[this.currentSettings.fontSize] || '16px';
+        // One class on <html> per text size (app.css: 14, 16, 18 or 20px); anything else reads as medium
+        const sizes = ['small', 'medium', 'large', 'extra-large'];
+        const chosen = sizes.includes(this.currentSettings.fontSize) ? this.currentSettings.fontSize : 'medium';
+        sizes.forEach(size => document.documentElement.classList.toggle('ac-text-' + size, size === chosen));
     }
 
     applyAnimationPreferences() {
@@ -799,7 +796,7 @@ class AccountPage {
 
         document.getElementById('recent-payment-card').replaceChildren(
             acStat('Last payment',
-                this.getCurrencySymbol(recentPayment.currency) + recentPayment.amount.toFixed(2),
+                this.getCurrencySymbol(recentPayment.currency) + Number(recentPayment.amount).toFixed(2),
                 DateFormatter.format(paymentDate) + ' \u00b7 ' + this.formatPaymentStatus(recentPayment.status) + '.',
                 { small: true }));
         document.getElementById('recent-payment-section').hidden = false;
@@ -887,7 +884,7 @@ class AccountPage {
         const cards = acEl('div', 'sa-table__cards');
 
         this.payments.forEach(payment => {
-            const amountText = this.getCurrencySymbol(payment.currency) + payment.amount.toFixed(2);
+            const amountText = this.getCurrencySymbol(payment.currency) + Number(payment.amount).toFixed(2);
             const statusText = this.formatPaymentStatus(payment.status);
             const reference = payment.transaction_id ? payment.transaction_id.substring(0, 12) + '\u2026' : 'N/A';
             const what = payment.plan_name || 'SutrAlgo subscription';

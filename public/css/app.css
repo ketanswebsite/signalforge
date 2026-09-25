@@ -244,6 +244,7 @@ body.positions-page #advanced-metrics-container .metric-card{padding:var(--s-3)}
 .simulation-status:empty{display:none}
 .simulation-status.success{color:var(--gain);font-weight:600}
 .simulation-status.error{color:var(--loss);font-weight:600}
+.sim-progress-fill{width:var(--sim-progress)} /* run progress bar: portfolio-ui.js sets the width, a run-time number, as --sim-progress */
 .sim-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s-3)}
 @media (max-width:1040px){.sim-stats{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:720px){.sim-stats{grid-template-columns:1fr}}
@@ -399,6 +400,11 @@ body.positions-page #advanced-metrics-container .metric-card{padding:var(--s-3)}
 @media (max-width:960px){.quick-stats-grid{grid-template-columns:1fr}}
 #recent-payment-section{margin-bottom:var(--s-4)}
 .ac-adminwrap{display:grid;gap:0}
+.ac-statbar-fill{width:var(--ac-statbar)} /* days-left bar: account.js sets the width, a run-time number, as --ac-statbar */
+html.ac-text-small{font-size:14px} /* the Text size setting: account.js puts one of these on <html> */
+html.ac-text-medium{font-size:16px}
+html.ac-text-large{font-size:18px}
+html.ac-text-extra-large{font-size:20px}
 
 .loading-state{padding:var(--s-7) var(--s-4);text-align:center;color:var(--text-3);font-size:var(--size-sm)}
 .loading-state .spinner{width:22px;height:22px;border:2px solid var(--text-3);border-right-color:transparent;border-radius:50%;animation:sa-spin .7s linear infinite;margin:0 auto var(--s-3)}

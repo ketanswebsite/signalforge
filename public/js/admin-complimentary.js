@@ -238,13 +238,14 @@ const AdminComplimentary = {
         element.className = `status-message ${type}`;
         element.innerHTML = `<span class="material-icons">${icons[type]}</span> ${message}`;
 
-        // Auto-hide success messages after 5 seconds
+        // Auto-hide success messages after 5 seconds: invisible for 300 ms (admin.css .status-message[data-fading];
+        // an attribute, so a message shown meanwhile keeps it, as the inline opacity did), then emptied
         if (type === 'success') {
             setTimeout(() => {
-                element.style.opacity = '0';
+                element.setAttribute('data-fading', '');
                 setTimeout(() => {
                     element.innerHTML = '';
-                    element.style.opacity = '1';
+                    element.removeAttribute('data-fading');
                 }, 300);
             }, 5000);
         }

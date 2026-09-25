@@ -130,7 +130,7 @@ const PortfolioUI = (function() {
                         const track = document.createElement('div');
                         track.className = 'sa-prog__track';
                         const fill = document.createElement('div');
-                        fill.className = 'sa-prog__fill';
+                        fill.className = 'sa-prog__fill sim-progress-fill';
                         track.appendChild(fill);
                         prog.appendChild(track);
 
@@ -147,7 +147,8 @@ const PortfolioUI = (function() {
                 if (hasBar) {
                     if (metaSpans[1]) metaSpans[1].textContent = progress.percent + '%';
                     const fill = prog.querySelector('.sa-prog__fill');
-                    if (fill) fill.style.width = progress.percent + '%';
+                    // The width is a run-time number: .sim-progress-fill (app.css) reads it from this custom property
+                    if (fill) fill.style.setProperty('--sim-progress', progress.percent + '%');
                     const detail = prog.querySelector('.sa-prog__detail');
                     if (detail) {
                         detail.textContent = progress.detail

@@ -84,7 +84,7 @@ window.ApiClient = (function() {
    */
   function createErrorUI(message, retryFn) {
     return `
-      <div class="text-center text-muted" style="padding: 2rem;">
+      <div class="text-center text-muted api-state">
         <p>${message}</p>
         ${retryFn ? `<button class="btn btn-primary btn-sm" onclick="${retryFn}">Retry</button>` : ''}
       </div>
@@ -102,7 +102,7 @@ window.ApiClient = (function() {
       return AdminComponents.spinner({ text });
     }
     return `
-      <div class="text-center text-muted" style="padding: 2rem;">
+      <div class="text-center text-muted api-state">
         <p>${text}</p>
       </div>
     `;

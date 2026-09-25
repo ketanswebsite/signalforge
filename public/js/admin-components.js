@@ -189,7 +189,7 @@ const AdminComponents = {
   dismissAlert(id) {
     const alert = document.getElementById(id);
     if (alert) {
-      alert.style.animation = 'slideOut 0.3s ease';
+      // Removed after 300 ms, as before (its old inline 'slideOut' animation named keyframes no sheet defines, so nothing moved)
       setTimeout(() => alert.remove(), 300);
     }
   },

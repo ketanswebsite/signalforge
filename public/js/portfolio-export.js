@@ -25,7 +25,7 @@ const PortfolioExport = (function() {
 
         link.setAttribute('href', url);
         link.setAttribute('download', `portfolio-backtest-${getTimestamp()}.csv`);
-        link.style.visibility = 'hidden';
+        link.hidden = true;
 
         document.body.appendChild(link);
         link.click();

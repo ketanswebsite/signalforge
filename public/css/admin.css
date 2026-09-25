@@ -123,6 +123,7 @@
 .admin-portal .alert-dismiss{background:none;border:0;cursor:pointer;color:var(--text-2);font-size:18px;line-height:1}
 .admin-portal .status-message{font-size:var(--size-sm);margin-top:var(--s-3)}
 .admin-portal .status-message:empty{display:none}
+.admin-portal .status-message[data-fading]{opacity:0} /* a success note's last 300 ms (admin-complimentary.js) */
 
 /* ---------- pagination ---------- */
 .admin-portal .pagination{display:flex;gap:6px;align-items:center;justify-content:center;margin-top:var(--s-4);flex-wrap:wrap}
@@ -136,6 +137,7 @@
 .admin-portal .empty-state{display:grid;justify-items:center;gap:var(--s-2);padding:var(--s-8) var(--s-4);text-align:center;color:var(--text-3)}
 .admin-portal .empty-icon{font-size:34px;color:var(--text-3)}
 .admin-portal .spinner-container{display:grid;justify-items:center;padding:var(--s-6)}
+.admin-portal .api-state{padding:2rem} /* ApiClient's loading and error notes (utils/api-client.js) */
 /* Spinner elements sometimes carry loading text — spin a pseudo circle, never the text */
 .admin-portal .spinner,.admin-portal .spinner-medium{display:grid;justify-items:center;gap:10px;color:var(--text-3);font-size:var(--size-xs);animation:none}
 .admin-portal .spinner::before,.admin-portal .spinner-medium::before{content:"";width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--text);border-radius:50%;animation:sa-spin .8s linear infinite}
