@@ -1125,12 +1125,12 @@ window.TradeUIModules.charts = (function() {
                         },
                         callbacks: {
                             label: function(context) {
-                                if (context.dataset.label === 'Monthly P&L (%)') {
+                                if (context.dataset.label === 'Monthly result (%)') {
                                     const value = context.parsed.y;
                                     return value !== null && value !== undefined 
-                                        ? `P&L: ${value.toFixed(2)}%` 
-                                        : 'P&L: N/A';
-                                } else if (context.dataset.label === 'Trade Count') {
+                                        ? `Result: ${value.toFixed(2)}%` 
+                                        : 'Result: N/A';
+                                } else if (context.dataset.label === 'Trades') {
                                     const value = context.parsed.y;
                                     return value !== null && value !== undefined 
                                         ? `Trades: ${value}` 
@@ -1426,9 +1426,9 @@ window.TradeUIModules.charts = (function() {
                                 
                                 if (datasetLabel === 'Average result (%)') {
                                     return `Average result: ${value.toFixed(2)}%`;
-                                } else if (datasetLabel === 'Win Rate (%)') {
+                                } else if (datasetLabel === 'Win rate (%)') {
                                     return `Win rate: ${value.toFixed(2)}%`;
-                                } else if (datasetLabel === 'Trade Count') {
+                                } else if (datasetLabel === 'Trades') {
                                     return `Trades: ${value}`;
                                 }
                                 
@@ -1718,12 +1718,12 @@ window.TradeUIModules.charts = (function() {
                                 return `${tradeCounts[index]} trades in this range`;
                             },
                             label: function(context) {
-                                if (context.dataset.label === 'Average Return (%)') {
+                                if (context.dataset.label === 'Average return (%)') {
                                     const value = context.parsed.y;
                                     return value !== null && value !== undefined 
-                                        ? `Avg Return: ${value.toFixed(2)}%` 
-                                        : 'Avg Return: N/A';
-                                } else if (context.dataset.label === 'Win Rate (%)') {
+                                        ? `Average return: ${value.toFixed(2)}%` 
+                                        : 'Average return: N/A';
+                                } else if (context.dataset.label === 'Win rate (%)') {
                                     const value = context.parsed.y;
                                     return value !== null && value !== undefined 
                                         ? `Win rate: ${value.toFixed(1)}%` 
@@ -1954,7 +1954,7 @@ window.TradeUIModules.charts = (function() {
                                 const datasetIndex = context.datasetIndex;
 
                                 if (datasetIndex === 0) {
-                                    return `Average P&L: ${value.toFixed(2)}%`;
+                                    return `Average result: ${value.toFixed(2)}%`;
                                 } else if (datasetIndex === 1) {
                                     return `Win rate: ${value.toFixed(2)}%`;
                                 }
