@@ -1907,69 +1907,6 @@ const TradeCore = (function() {
     }
     
     /**
-     * Get calendar heatmap data for a specific year
-     * @param {number} year - Year to get data for
-     * @returns {Array} Array of daily trading data for heatmap
-     */
-    function getCalendarHeatmapData(year = new Date().getFullYear()) {
-        // Safety check for initialization
-        if (!allTrades || !Array.isArray(allTrades)) {
-            return [];
-        }
-        
-        const yearTrades = allTrades.filter(trade => {
-            if (!trade.exitDate) return false;
-            const exitYear = new Date(trade.exitDate).getFullYear();
-            return exitYear === year;
-        });
-        
-        // Group trades by date
-        const dailyData = {};
-        
-        yearTrades.forEach(trade => {
-            if (trade.exitDate && trade.profit !== undefined) {
-                const date = new Date(trade.exitDate).toISOString().split('T')[0];
-                
-                if (!dailyData[date]) {
-                    dailyData[date] = {
-                        date: date,
-                        dateObj: date,
-                        profit: 0,
-                        trades: 0,
-                        wins: 0,
-                        losses: 0,
-                        totalValue: 0,
-                        totalInvestment: 0
-                    };
-                }
-                
-                dailyData[date].profit += trade.profit;
-                dailyData[date].totalValue += trade.profit || 0;
-                dailyData[date].totalInvestment += trade.investmentAmount || (trade.entryPrice * trade.shares);
-                dailyData[date].trades++;
-                
-                if (trade.profit > 0) {
-                    dailyData[date].wins++;
-                } else if (trade.profit < 0) {
-                    dailyData[date].losses++;
-                }
-            }
-        });
-        
-        // Calculate percentage value for each day
-        Object.values(dailyData).forEach(day => {
-            if (day.totalInvestment > 0) {
-                day.value = (day.profit / day.totalInvestment) * 100;
-            } else {
-                day.value = 0;
-            }
-        });
-        
-        // Convert to array and sort by date
-        return Object.values(dailyData).sort((a, b) => new Date(a.date) - new Date(b.date));
-    }
-    
-    /**
      * Get trade statistics grouped by currency
      * @returns {Object} Statistics object with currency-based breakdowns
      */
@@ -2184,7 +2121,6 @@ const TradeCore = (function() {
         getHoldingPeriodStats, // For holding period analysis
         getAdvancedMetrics, // For advanced metrics display
         inPounds, // A trade's money in pounds at its own day's rate (GAPS #11)
-        getCalendarHeatmapData, // For calendar heatmap visualization
         getExitReasonBreakdown, // For exit reason analysis
         getMarketStatus, // For market status display
         startMarketMonitoring,
