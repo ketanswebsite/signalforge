@@ -187,6 +187,7 @@ window.TradeUIModules.filters = (function() {
                 return;
             }
             applyFiltersAndSort();
+            updateFilterSummary();
         });
         
         // Initialize with current values
@@ -499,10 +500,16 @@ window.TradeUIModules.filters = (function() {
         const element = card.querySelector(selector);
         if (!element || !text || !query) return;
         
-        // Case insensitive search
+        // Case insensitive search. split() with a capture group puts each match at an odd
+        // index; the pieces go in as text and spans, never as HTML (a name is data)
         const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-        const highlightedText = text.replace(regex, '<span class="search-highlight">$1</span>');
-        element.innerHTML = highlightedText;
+        element.replaceChildren(...String(text).split(regex).map((piece, i) => {
+            if (i % 2 === 0) return document.createTextNode(piece);
+            const mark = document.createElement('span');
+            mark.className = 'search-highlight';
+            mark.textContent = piece;
+            return mark;
+        }));
     }
     
     /**
@@ -538,17 +545,17 @@ window.TradeUIModules.filters = (function() {
         // Add count of filtered trades
         summaryText += `Showing ${filteredTrades} of ${totalActiveTrades} open positions`;
 
+        // As text: the search is what the user typed, and it shows exactly as typed
+        summaryElement.textContent = summaryText;
+
         // Add a clear all button if filters are applied
         if (currentFilter !== 'all' || searchQuery) {
-            summaryText += ` • <button id="clear-all-filters" class="clear-all-btn">Clear filters</button>`;
-        }
-        
-        // Update the summary element
-        summaryElement.innerHTML = summaryText;
-        
-        // Add event listener to clear all button if it exists
-        const clearAllBtn = document.getElementById('clear-all-filters');
-        if (clearAllBtn) {
+            const clearAllBtn = document.createElement('button');
+            clearAllBtn.type = 'button';
+            clearAllBtn.id = 'clear-all-filters';
+            clearAllBtn.className = 'clear-all-btn';
+            clearAllBtn.textContent = 'Clear filters';
+            summaryElement.append(' • ', clearAllBtn);
             clearAllBtn.addEventListener('click', function() {
                 // Reset filter dropdown
                 const filterSelect = document.getElementById('trade-filter');

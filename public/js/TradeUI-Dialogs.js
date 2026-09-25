@@ -334,275 +334,154 @@ window.TradeUIModules.dialogs = (function() {
     }
 
     /**
-     * Create import trades dialog
+     * Import. The file is the one "Export everything" saves ({ metadata, trades });
+     * { trades } or a plain array of trades reads too. Its trades go to POST
+     * /api/trades/bulk, which checks every one and adds them all or none, as trades
+     * entered by hand. A trade already on this page (same symbol, day bought and
+     * price paid) is left out, so importing an export again adds nothing twice.
      */
-    function createImportTradesDialog() {
-        // Check if dialog already exists
-        if (document.getElementById('import-trades-dialog')) return;
-        
-        const dialogOverlay = document.createElement('div');
-        dialogOverlay.id = 'import-trades-dialog';
-        dialogOverlay.className = 'dialog-overlay';
-        
-        dialogOverlay.innerHTML = `
-            <div class="dialog-content">
-                <div class="dialog-header">
-                    <h3 class="dialog-title">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="17 8 12 3 7 8"></polyline>
-                            <line x1="12" y1="3" x2="12" y2="15"></line>
-                        </svg>
-                        Import Trades
-                    </h3>
-                    <button class="dialog-close" id="import-dialog-x" aria-label="Close dialog">&times;</button>
-                </div>
-                <div class="dialog-body">
-                    <p>Import trades from a JSON file. This will allow you to restore your trades if you clear your browser data.</p>
-                    
-                    <div class="file-upload-container">
-                        <label for="import-file-input" class="file-upload-label">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-                                <polyline points="13 2 13 9 20 9"></polyline>
-                            </svg>
-                            <span>Choose File</span>
-                        </label>
-                        <input type="file" id="import-file-input" accept=".json">
-                        <span id="selected-filename">No file selected</span>
-                    </div>
+    let importDialogReady = false;
+    let importCandidates = null; // the file's trades still to add, in the bulk route's shape
 
-                    <div id="import-preview" class="import-preview">
-                        <h4>File Preview</h4>
-                        <div class="preview-stats">
-                            <div class="preview-stat">
-                                <span class="preview-label">Total Trades:</span>
-                                <span id="preview-total" class="preview-value">0</span>
-                            </div>
-                            <div class="preview-stat">
-                                <span class="preview-label">Active Trades:</span>
-                                <span id="preview-active" class="preview-value">0</span>
-                            </div>
-                            <div class="preview-stat">
-                                <span class="preview-label">Closed Trades:</span>
-                                <span id="preview-closed" class="preview-value">0</span>
-                            </div>
-                            <div class="preview-stat">
-                                <span class="preview-label">Export Date:</span>
-                                <span id="preview-date" class="preview-value">-</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="import-options">
-                        <h4>Import Options</h4>
-                        <div class="radio-option">
-                            <input type="radio" id="import-mode-merge" name="import-mode" value="merge" checked>
-                            <label for="import-mode-merge">Merge with existing trades (update existing, add new)</label>
-                        </div>
-                        <div class="radio-option">
-                            <input type="radio" id="import-mode-add" name="import-mode" value="add">
-                            <label for="import-mode-add">Add all as new trades (avoids conflicts)</label>
-                        </div>
-                        <div class="radio-option">
-                            <input type="radio" id="import-mode-replace" name="import-mode" value="replace">
-                            <label for="import-mode-replace">Replace all trades</label>
-                        </div>
-                        <div class="checkbox-option" id="keep-active-container">
-                            <input type="checkbox" id="keep-active-trades" name="keep-active-trades" checked>
-                            <label for="keep-active-trades">Keep current active trades</label>
-                        </div>
-                    </div>
-
-                    <div id="import-status" class="import-status">
-                        <div class="status-message" id="import-status-message"></div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="import-progress"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="dialog-actions">
-                    <button id="import-dialog-cancel" class="btn-secondary">Cancel</button>
-                    <button id="import-dialog-confirm" class="btn-primary" disabled>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="17 8 12 3 7 8"></polyline>
-                            <line x1="12" y1="3" x2="12" y2="15"></line>
-                        </svg>
-                        Import Trades
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        // Append to the body
-        document.body.appendChild(dialogOverlay);
+    // A date as ISO text (the bulk route reads dates as text); anything else goes as it is, for the route to refuse
+    function importDateText(value) {
+        if (value === undefined || value === null || value === '') return null;
+        const date = new Date(value);
+        return isNaN(date.getTime()) ? value : date.toISOString();
     }
-    
+
+    // What makes two trades the same trade: symbol, the day bought and the price paid
+    function importTradeKey(symbol, entryDate, entryPrice) {
+        const day = new Date(entryDate);
+        const price = Number(entryPrice);
+        if (typeof symbol !== 'string' || !symbol.trim() || isNaN(day.getTime()) || !Number.isFinite(price)) return null;
+        return symbol.trim().toUpperCase() + '|' + day.toISOString().slice(0, 10) + '|' + price.toFixed(4);
+    }
+
+    // The file's trades, in the shape POST /api/trades/bulk takes. Only a sold trade carries exit fields.
+    function tradesFromImportFile(json) {
+        const list = Array.isArray(json) ? json : (json && Array.isArray(json.trades) ? json.trades : null);
+        if (!list || list.length === 0) throw new Error('There are no trades in this file');
+        return list.map(item => {
+            const t = item && typeof item === 'object' ? item : {};
+            const sold = t.status === 'closed';
+            return {
+                symbol: t.symbol,
+                stockName: t.stockName || t.name || null,
+                stockIndex: t.stockIndex || null,
+                status: t.status || 'active',
+                entryDate: importDateText(t.entryDate),
+                entryPrice: t.entryPrice,
+                shares: t.shares || null,
+                investmentAmount: t.investmentAmount || t.positionSize || null,
+                targetPrice: t.targetPrice || null,
+                stopLossPercent: t.stopLossPercent || null,
+                exitDate: sold ? importDateText(t.exitDate) : null,
+                exitPrice: sold ? t.exitPrice : null,
+                profitLoss: sold ? (t.profitLoss ?? null) : null,
+                profitLossPercentage: sold ? (t.profitLossPercentage ?? null) : null,
+                notes: t.notes || t.entryReason || null
+            };
+        });
+    }
+
     /**
-     * Setup import dialog event listeners
+     * Setup import dialog event listeners (once: the dialog is in trades.html)
      */
     function setupImportDialog() {
-        // Make sure dialog is created first
-        createImportTradesDialog();
-        
         const dialog = document.getElementById('import-trades-dialog');
-        if (!dialog) return;
-        
+        if (!dialog || importDialogReady) return;
+        importDialogReady = true;
+
         const fileInput = document.getElementById('import-file-input');
         const selectedFilename = document.getElementById('selected-filename');
         const importPreview = document.getElementById('import-preview');
         const confirmBtn = document.getElementById('import-dialog-confirm');
-        const keepActiveContainer = document.getElementById('keep-active-container');
-        
-        // Setup file input change event
-        if (fileInput) {
-            fileInput.addEventListener('change', function(event) {
-                const file = event.target.files[0];
-                if (!file) {
-                    selectedFilename.textContent = 'No file selected';
-                    importPreview
-                    confirmBtn.disabled = true;
-                    return;
-                }
-                
-                selectedFilename.textContent = file.name;
-                
-                // Parse and preview the file
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    try {
-                        const jsonData = JSON.parse(e.target.result);
-                        
-                        // Validate data format
-                        if (!jsonData.metadata || !jsonData.trades || !Array.isArray(jsonData.trades)) {
-                            throw new Error('Invalid file format');
-                        }
-                        
-                        // Display preview
-                        document.getElementById('preview-total').textContent = jsonData.trades.length;
-                        document.getElementById('preview-active').textContent = jsonData.trades.filter(t => t.status === 'active').length;
-                        document.getElementById('preview-closed').textContent = jsonData.trades.filter(t => t.status !== 'active').length;
-                        
-                        // Format date
-                        const exportDate = new Date(jsonData.metadata.exportDate);
-                        document.getElementById('preview-date').textContent = isNaN(exportDate) ?
-                            jsonData.metadata.exportDate :
-                            (window.DateFormatter ? window.DateFormatter.formatTime(exportDate) : exportDate.toLocaleString());
-                        
-                        // Show preview and enable import button
-                        importPreview
-                        confirmBtn.disabled = false;
-                    } catch (error) {
-                        selectedFilename.textContent = 'Error: Invalid JSON file format';
-                        importPreview
-                        confirmBtn.disabled = true;
-                    }
-                };
-                
-                reader.readAsText(file);
-            });
-        }
-        
-        // Setup import mode change event
-        const radioButtons = document.querySelectorAll('input[name="import-mode"]');
-        radioButtons.forEach(radio => {
-            radio.addEventListener('change', function() {
-                // Only show keep active trades option for replace mode
-                keepActiveContainer
-            });
-        });
-        
-        // Setup close button
-        const closeBtn = document.getElementById('import-dialog-x');
-        if (closeBtn) {
-            closeBtn.addEventListener('click', function() {
-                dialog.classList.remove('active');
-                resetImportDialog();
-            });
-        }
-        
-        // Setup cancel button
-        const cancelBtn = document.getElementById('import-dialog-cancel');
-        if (cancelBtn) {
-            cancelBtn.addEventListener('click', function() {
-                dialog.classList.remove('active');
-                resetImportDialog();
-            });
-        }
-        
-        // Setup confirm button
-        if (confirmBtn) {
-            confirmBtn.addEventListener('click', function() {
-                handleTradeImport();
-            });
-        }
-        
-        // Close on background click
-        dialog.addEventListener('click', function(e) {
-            if (e.target === dialog) {
-                dialog.classList.remove('active');
-                resetImportDialog();
+
+        fileInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            importCandidates = null;
+            importPreview.hidden = true;
+            confirmBtn.disabled = true;
+            if (!file) {
+                selectedFilename.textContent = 'No file selected';
+                return;
             }
+            selectedFilename.textContent = file.name;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const json = JSON.parse(e.target.result);
+                    const trades = tradesFromImportFile(json);
+                    const onPage = new Set(TradeCore.getTrades('all').map(t => importTradeKey(t.symbol, t.entryDate, t.entryPrice)));
+                    importCandidates = trades.filter(t => {
+                        const key = importTradeKey(t.symbol, t.entryDate, t.entryPrice);
+                        return key === null || !onPage.has(key);
+                    });
+
+                    document.getElementById('preview-total').textContent = trades.length;
+                    document.getElementById('preview-active').textContent = trades.filter(t => t.status === 'active').length;
+                    document.getElementById('preview-closed').textContent = trades.filter(t => t.status === 'closed').length;
+                    document.getElementById('preview-skipped').textContent = trades.length - importCandidates.length;
+                    const exportDate = new Date(json && json.metadata ? json.metadata.exportDate : NaN);
+                    document.getElementById('preview-date').textContent = isNaN(exportDate.getTime()) ? '-' :
+                        (window.DateFormatter ? window.DateFormatter.formatTime(exportDate) : exportDate.toLocaleString());
+
+                    importPreview.hidden = false;
+                    confirmBtn.disabled = importCandidates.length === 0;
+                } catch (error) {
+                    importCandidates = null;
+                    selectedFilename.textContent = error instanceof SyntaxError ? 'This file is not JSON' : error.message;
+                }
+            };
+            reader.readAsText(file);
         });
 
-        // Note: Escape key handler is now global - see setupGlobalEscapeHandler()
-        // The global handler will close the dialog, and we should also reset it
-        dialog.addEventListener('transitionend', function(e) {
-            if (!dialog.classList.contains('active')) {
-                resetImportDialog();
-            }
+        const close = function() {
+            dialog.classList.remove('active');
+            resetImportDialog();
+        };
+        document.getElementById('import-dialog-x').addEventListener('click', close);
+        document.getElementById('import-dialog-cancel').addEventListener('click', close);
+        confirmBtn.addEventListener('click', handleTradeImport);
+
+        // Close on background click
+        dialog.addEventListener('click', function(e) {
+            if (e.target === dialog) close();
         });
+        // Escape closes every dialog (setupGlobalEscapeHandler); opening the dialog resets it
     }
 
     /**
      * Reset import dialog to initial state
      */
     function resetImportDialog() {
+        importCandidates = null;
         const fileInput = document.getElementById('import-file-input');
         const selectedFilename = document.getElementById('selected-filename');
         const importPreview = document.getElementById('import-preview');
-        const confirmBtn = document.getElementById('import-dialog-confirm');
         const importStatus = document.getElementById('import-status');
+        const statusMessage = document.getElementById('import-status-message');
         const progress = document.getElementById('import-progress');
-        
-        // Reset file input
+        const confirmBtn = document.getElementById('import-dialog-confirm');
+
         if (fileInput) fileInput.value = '';
-        
-        // Reset text
         if (selectedFilename) selectedFilename.textContent = 'No file selected';
-        
-        // Hide preview and status
-        if (importPreview) importPreview
-        if (importStatus) importStatus
-        
-        // Reset progress
-        if (progress) progress.dataset.progress = '0';
-        
-        // Disable import button
+        if (importPreview) importPreview.hidden = true;
+        if (importStatus) importStatus.hidden = true;
+        if (statusMessage) {
+            statusMessage.textContent = '';
+            statusMessage.classList.remove('is-error');
+        }
+        if (progress) {
+            progress.dataset.progress = '0';
+            progress.classList.remove('is-error');
+        }
         if (confirmBtn) {
             confirmBtn.disabled = true;
-            confirmBtn.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="17 8 12 3 7 8"></polyline>
-                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                </svg>
-                Import Trades
-            `;
+            confirmBtn.textContent = 'Import';
         }
-        
-        // Set merge mode as default
-        const mergeMode = document.getElementById('import-mode-merge');
-        if (mergeMode) mergeMode.checked = true;
-        
-        // Hide keep active option by default
-        const keepActiveContainer = document.getElementById('keep-active-container');
-        if (keepActiveContainer) keepActiveContainer
-        
-        // Check the keep active checkbox by default
-        const keepActive = document.getElementById('keep-active-trades');
-        if (keepActive) keepActive.checked = true;
     }
     
     /**
@@ -839,150 +718,49 @@ window.TradeUIModules.dialogs = (function() {
     }
     
     /**
-     * Handle trade import
+     * Handle trade import: the file's new trades go to POST /api/trades/bulk in one
+     * request, then the page reloads its trades
      */
-    function handleTradeImport() {
+    async function handleTradeImport() {
         const dialog = document.getElementById('import-trades-dialog');
-        const fileInput = document.getElementById('import-file-input');
         const importStatus = document.getElementById('import-status');
         const statusMessage = document.getElementById('import-status-message');
         const progress = document.getElementById('import-progress');
         const confirmBtn = document.getElementById('import-dialog-confirm');
-        
-        // Get selected file
-        const file = fileInput.files[0];
-        if (!file) {
-            TradeCore.showNotification('No file selected for import', 'error');
-            return;
-        }
-        
-        // Get import options
-        const modeElement = document.querySelector('input[name="import-mode"]:checked');
-        const keepActiveElement = document.getElementById('keep-active-trades');
-        
-        const mode = modeElement ? modeElement.value : 'merge';
-        const keepActive = keepActiveElement ? keepActiveElement.checked : true;
-        
-        // Show import status
-        importStatus
-        statusMessage.textContent = 'Reading import file...';
-        progress.dataset.progress = '10';
-        
-        // Disable confirm button during import
+        const trades = importCandidates;
+        if (!trades || trades.length === 0) return;
+
+        importStatus.hidden = false;
+        statusMessage.classList.remove('is-error');
+        progress.classList.remove('is-error');
+        statusMessage.textContent = `Importing ${trades.length} trade${trades.length === 1 ? '' : 's'}…`;
+        progress.dataset.progress = '30';
         confirmBtn.disabled = true;
-        confirmBtn.innerHTML = `
-            <svg class="spinner" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="2" x2="12" y2="6"></line>
-                <line x1="12" y1="18" x2="12" y2="22"></line>
-                <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
-                <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
-                <line x1="2" y1="12" x2="6" y2="12"></line>
-                <line x1="18" y1="12" x2="22" y2="12"></line>
-                <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
-                <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
-            </svg>
-            Importing...
-        `;
-        
-        // Read the file
-        const reader = new FileReader();
-        
-        reader.onload = function(e) {
-            try {
-                const jsonData = JSON.parse(e.target.result);
-                
-                // Update progress
-                statusMessage.textContent = 'Validating import data...';
-                progress.dataset.progress = '30';
-                
-                // Short delay to show progress
-                setTimeout(() => {
-                    try {
-                        // Update progress
-                        statusMessage.textContent = 'Importing trades...';
-                        progress.dataset.progress = '60';
-                        
-                        // Import the trades
-                        const results = TradeCore.importTradesFromJSON(jsonData, {
-                            mode: mode,
-                            keepActive: keepActive
-                        });
-                        
-                        // Update progress to complete
-                        statusMessage.textContent = 'Import completed successfully!';
-                        progress.dataset.progress = '100';
-                        
-                        // Show result summary
-                        setTimeout(() => {
-                            if (results.error) {
-                                statusMessage.textContent = `Error: ${results.error}`;
-                                statusMessage.classList.add('is-error');
-                            } else {
-                                statusMessage.textContent = `Import complete: Added ${results.added}, Updated ${results.updated}`;
-                                
-                                // Close dialog after short delay
-                                setTimeout(() => {
-                                    dialog.classList.remove('active');
-                                    resetImportDialog();
-                                }, 1500);
-                            }
-                        }, 500);
-                    } catch (importError) {
-                        statusMessage.textContent = `Error: ${importError.message}`;
-                        statusMessage.classList.add('is-error');
-                        progress.dataset.progress = '100';
-                        progress.classList.add('is-error');
-                        
-                        // Reset confirm button
-                        confirmBtn.disabled = false;
-                        confirmBtn.innerHTML = `
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                <polyline points="17 8 12 3 7 8"></polyline>
-                                <line x1="12" y1="3" x2="12" y2="15"></line>
-                            </svg>
-                            Retry Import
-                        `;
-                    }
-                }, 300);
-            } catch (parseError) {
-                statusMessage.textContent = 'Error: Invalid JSON file format';
-                statusMessage.classList.add('is-error');
-                progress.dataset.progress = '100';
-                progress.classList.add('is-error');
-                
-                // Reset confirm button
-                confirmBtn.disabled = true;
-                confirmBtn.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="17 8 12 3 7 8"></polyline>
-                        <line x1="12" y1="3" x2="12" y2="15"></line>
-                    </svg>
-                    Import Trades
-                `;
-            }
-        };
-        
-        reader.onerror = function() {
-            statusMessage.textContent = 'Error reading file';
-            statusMessage.classList.add('is-error');
+        confirmBtn.textContent = 'Importing…';
+
+        try {
+            const result = await TradeAPI.bulkImportTrades(trades);
+            importCandidates = null;
+            progress.dataset.progress = '100';
+            statusMessage.textContent = `Imported ${result.count} trade${result.count === 1 ? '' : 's'}`;
+            TradeCore.showNotification(statusMessage.textContent, 'success');
+            await TradeCore.refreshData();
+            TradeCore.refreshUI();
+            setTimeout(() => {
+                dialog.classList.remove('active');
+                resetImportDialog();
+            }, 1500);
+        } catch (error) {
             progress.dataset.progress = '100';
             progress.classList.add('is-error');
-            
-            // Reset confirm button
+            // The route names a refused trade by its place in the request: name it by its symbol
+            const refused = /^trades\[(\d+)\]: (.*)$/.exec(error.message);
+            const reason = refused && trades[Number(refused[1])] ? `${trades[Number(refused[1])].symbol}: ${refused[2]}` : error.message;
+            statusMessage.textContent = 'Nothing was imported. ' + reason;
+            statusMessage.classList.add('is-error');
             confirmBtn.disabled = false;
-            confirmBtn.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="17 8 12 3 7 8"></polyline>
-                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                </svg>
-                Retry Import
-            `;
-        };
-        
-        reader.readAsText(file);
+            confirmBtn.textContent = 'Try again';
+        }
     }
     
     /**
@@ -1245,18 +1023,10 @@ window.TradeUIModules.dialogs = (function() {
         if (entryDateElement) entryDateElement.textContent = TradeCore.formatDate(trade.entryDate);
         if (investmentElement) investmentElement.textContent = `${trade.currencySymbol || TradeCore.CURRENCY_SYMBOL}${trade.investmentAmount.toFixed(2)}`;
         
-        // Update dialog title
+        // Update dialog title (as text: a trade's name is data)
         const dialogTitle = dialog.querySelector('.dialog-title');
         if (dialogTitle) {
-            dialogTitle.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    <line x1="10" y1="11" x2="10" y2="17"></line>
-                    <line x1="14" y1="11" x2="14" y2="17"></line>
-                </svg>
-                Delete Trade: ${trade.stockName}
-            `;
+            dialogTitle.textContent = 'Delete ' + trade.stockName + '?';
         }
         
         // Show dialog with animation
@@ -1267,18 +1037,12 @@ window.TradeUIModules.dialogs = (function() {
      * Open import dialog
      */
     function openImportDialog() {
-        // Make sure dialog exists
-        setupImportDialog();
-        
         const dialog = document.getElementById('import-trades-dialog');
         if (!dialog) {
             return;
         }
-        
-        // Reset dialog state
+        setupImportDialog();
         resetImportDialog();
-        
-        // Show dialog
         dialog.classList.add('active');
     }
 
@@ -1288,6 +1052,7 @@ window.TradeUIModules.dialogs = (function() {
         setupAllDialogs,
         openCloseTradeDialog,
         openEditTradeDialog,
-        openDeleteTradeDialog
+        openDeleteTradeDialog,
+        openImportDialog
     };
 })();

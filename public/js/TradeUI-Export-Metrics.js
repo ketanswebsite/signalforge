@@ -107,7 +107,7 @@ window.TradeUIModules.export = (function() {
                 setTimeout(() => {
                     try {
                         // Generate CSV
-                        const blob = TradeCore.exportTradeHistoryCSV();
+                        const blob = soldTradesCsvBlob(closedTrades);
                         
                         if (blob) {
                             // Create download link
@@ -204,10 +204,10 @@ window.TradeUIModules.export = (function() {
         }
         
         // Small delay for better UX
-        setTimeout(() => {
+        setTimeout(async () => {
             try {
-                // Generate JSON
-                const blob = TradeCore.exportAllTradesJSON();
+                // Every trade as the database has it: the file Import reads
+                const blob = await allTradesJsonBlob();
                 
                 if (blob) {
                     // Create download link
@@ -239,6 +239,70 @@ window.TradeUIModules.export = (function() {
         }, 500);
     }
     
+    /**
+     * The Positions page's two trade files. "Export sold trades" is a CSV of the sold
+     * trades as the history table shows them, each amount in its own trade's currency
+     * (nothing is added up across currencies). "Export everything" is JSON of every
+     * trade as the database has it (GET /api/trades): the file the Import dialog reads.
+     */
+    function csvText(value) {
+        const text = value === undefined || value === null ? '' : String(value);
+        // Always quoted; a leading = + - @ stays text, so a spreadsheet never runs it as a formula
+        return '"' + (/^[=+\-@]/.test(text) ? "'" + text : text).replace(/"/g, '""') + '"';
+    }
+
+    function csvNumber(value) {
+        const n = typeof value === 'number' ? value : parseFloat(value);
+        return Number.isFinite(n) ? String(Math.round(n * 10000) / 10000) : '';
+    }
+
+    function csvDay(value) {
+        const date = value instanceof Date ? value : new Date(value);
+        return value && !isNaN(date.getTime()) ? date.toISOString().slice(0, 10) : '';
+    }
+
+    function soldTradesCsvBlob(closedTrades) {
+        const header = ['Symbol', 'Name', 'Bought on', 'Price paid', 'Sold on', 'Sold at', 'Shares',
+            'Put in', 'Currency', 'Result', 'Result %', 'Why it sold'];
+        const rows = closedTrades.map(t => [
+            csvText(t.symbol), csvText(t.stockName || t.name), csvDay(t.entryDate), csvNumber(t.entryPrice),
+            csvDay(t.exitDate), csvNumber(t.exitPrice), csvNumber(t.shares), csvNumber(t.investmentAmount),
+            csvText(t.currencySymbol), csvNumber(t.profitLoss || t.plValue),
+            csvNumber(t.profitLossPercentage || t.plPercent), csvText(t.exitReason)
+        ].join(','));
+        // The byte-order mark lets a spreadsheet read the currency signs as UTF-8
+        return new Blob(['﻿' + [header.join(','), ...rows].join('\r\n') + '\r\n'], { type: 'text/csv;charset=utf-8' });
+    }
+
+    async function allTradesJsonBlob() {
+        const trades = await TradeAPI.getAllTrades();
+        const file = {
+            metadata: { exportDate: new Date().toISOString(), trades: trades.length },
+            trades: trades.map(t => ({
+                symbol: t.symbol,
+                stockName: t.stockName || t.name || null,
+                stockIndex: t.stockIndex || null,
+                market: t.market || null,
+                currencySymbol: t.currencySymbol || null,
+                status: t.status,
+                entryDate: t.entryDate,
+                entryPrice: t.entryPrice,
+                shares: t.shares,
+                investmentAmount: t.investmentAmount || t.positionSize || null,
+                targetPrice: t.targetPrice,
+                stopLossPercent: t.stopLossPercent,
+                exitDate: t.exitDate,
+                exitPrice: t.exitPrice,
+                profitLoss: t.profitLoss,
+                profitLossPercentage: t.profitLossPercentage,
+                entryReason: t.entryReason || null,
+                exitReason: t.exitReason || null,
+                notes: t.notes || null
+            }))
+        };
+        return new Blob([JSON.stringify(file, null, 2) + '\n'], { type: 'application/json' });
+    }
+
     /**
      * Get chart instance by canvas ID
      * @param {string} canvasId - Canvas element ID

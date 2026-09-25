@@ -605,7 +605,7 @@
                     <button class="dialog-close" id="import-dialog-x" aria-label="Close dialog">&times;</button>
                 </div>
                 <div class="dialog-body">
-                    <p>Bring trades back from a JSON export.</p>
+                    <p>Bring back trades from a file saved with Export everything. They come in as trades you entered yourself, all or none; any already here (same symbol, day bought and price paid) are left out.</p>
                     <div class="file-upload-container">
                         <label for="import-file-input" class="file-upload-label sa-btn sa-btn--secondary sa-btn--sm">
                             <span class="material-symbols-rounded" aria-hidden="true">upload_file</span>
@@ -614,7 +614,7 @@
                         <input type="file" id="import-file-input" accept=".json">
                         <span id="selected-filename">No file selected</span>
                     </div>
-                    <div id="import-preview" class="import-preview">
+                    <div id="import-preview" class="import-preview" hidden>
                         <h4>What's in the file</h4>
                         <div class="preview-stats">
                             <div class="preview-stat">
@@ -630,31 +630,16 @@
                                 <span id="preview-closed" class="preview-value">0</span>
                             </div>
                             <div class="preview-stat">
+                                <span class="preview-label">Already here</span>
+                                <span id="preview-skipped" class="preview-value">0</span>
+                            </div>
+                            <div class="preview-stat">
                                 <span class="preview-label">Exported on</span>
                                 <span id="preview-date" class="preview-value">-</span>
                             </div>
                         </div>
                     </div>
-                    <div class="import-options">
-                        <h4>How to bring them in</h4>
-                        <div class="radio-option">
-                            <input type="radio" id="import-mode-merge" name="import-mode" value="merge" checked>
-                            <label for="import-mode-merge">Merge — update matches, add the rest</label>
-                        </div>
-                        <div class="radio-option">
-                            <input type="radio" id="import-mode-add" name="import-mode" value="add">
-                            <label for="import-mode-add">Add everything as new</label>
-                        </div>
-                        <div class="radio-option">
-                            <input type="radio" id="import-mode-replace" name="import-mode" value="replace">
-                            <label for="import-mode-replace">Replace everything</label>
-                        </div>
-                        <div class="checkbox-option" id="keep-active-container">
-                            <input type="checkbox" id="keep-active-trades" name="keep-active-trades" checked>
-                            <label for="keep-active-trades">Keep what I'm holding now</label>
-                        </div>
-                    </div>
-                    <div id="import-status" class="import-status">
+                    <div id="import-status" class="import-status" hidden>
                         <div class="status-message" id="import-status-message"></div>
                         <div class="sa-prog__track"><div class="sa-prog__fill progress-fill" id="import-progress"></div></div>
                     </div>

@@ -287,7 +287,8 @@ const TradeCore = (function() {
                 trade.profitLossPercentage = parseFloat(trade.profitLossPercentage) || 0;
 
                 // API now always provides investmentAmount field
-                trade.investmentAmount = parseFloat(trade.investmentAmount) || 0;
+                // A bulk-imported trade has its amount in position_size only (bulkInsertTrades)
+                trade.investmentAmount = parseFloat(trade.investmentAmount) || parseFloat(trade.positionSize) || 0;
 
                 // Debug investment amount calculation for UK stocks
                 if (trade.symbol && trade.symbol.endsWith('.L')) {
@@ -354,7 +355,7 @@ const TradeCore = (function() {
                 
                 // Set stockName and companyName
                 if (!trade.stockName) {
-                    trade.stockName = trade.symbol || 'Unknown'; // Use symbol as default stock name
+                    trade.stockName = trade.name || trade.symbol || 'Unknown'; // the name column (a bulk import fills only that), else the symbol
                 }
                 
                 // Get proper company name from mapping

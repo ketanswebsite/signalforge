@@ -347,15 +347,11 @@ body.positions-page #advanced-metrics-container .metric-card{padding:var(--s-3)}
 .file-upload-container{display:flex;align-items:center;gap:var(--s-3);flex-wrap:wrap}
 .file-upload-container input[type="file"]{position:absolute;width:1px;height:1px;opacity:0}
 #selected-filename{font-size:var(--size-sm);color:var(--text-3)}
-.import-preview{display:none;border:1.5px solid var(--line-strong);padding:var(--s-3) var(--s-4)}
+.import-preview{border:1.5px solid var(--line-strong);padding:var(--s-3) var(--s-4)}
 .preview-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px var(--s-4);margin-top:var(--s-2)}
 .preview-stat{display:flex;justify-content:space-between;gap:var(--s-3);font-size:var(--size-sm)}
 .preview-label{color:var(--text-3)}
 .preview-value{font-weight:var(--w-bold);font-variant-numeric:tabular-nums}
-.import-options{display:grid;gap:var(--s-2)}
-.radio-option,.checkbox-option{display:flex;align-items:center;gap:10px;font-size:var(--size-sm);color:var(--text-2);min-height:32px}
-.radio-option input,.checkbox-option input{accent-color:var(--accent)}
-.import-status{display:none}
 .status-message{font-size:var(--size-sm);margin-bottom:var(--s-2)}
 
 /* ---------- legacy bridge: cards injected by capital-display / signals-display ---------- */
